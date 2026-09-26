@@ -6,7 +6,7 @@ Its purpose is a reusable engineering environment that remains understandable as
 
 ## Current state
 
-Orion has a validated Approval Request reference vertical slice across the API, PostgreSQL, generated SDK, and web application, with a pnpm workspace, CI, and generated API/database references. The [Living Documentation Portal](docs/architecture/living-documentation.md) and generated frontend component reference are required foundation work in [Phase 11](docs/implementation-plan.md#phase-11); they are not implemented yet. A concrete authentication provider and production environment have not been selected. Consult the [CI status](docs/architecture/continuous-integration.md) for remote execution and repository-setting availability.
+Orion's development foundation is complete: a validated Approval Request reference slice across the API, PostgreSQL, generated SDK, and web application, with a pnpm workspace, CI, and generated API/database/component references. The [Living Documentation Portal](apps/web/README.md#living-documentation-portal) runs locally at `/docs` in the web app; the [acceptance report](docs/foundation-acceptance.md#phase-11-foundation-acceptance) records the evidence. A concrete authentication provider and production environment have not been selected. Consult the [CI status](docs/architecture/continuous-integration.md) for remote execution and repository-setting availability.
 
 Accepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate. See the [API runtime](apps/api/README.md) and [web workflow](apps/web/README.md) for application-specific behavior.
 
@@ -22,7 +22,7 @@ Directory trees in architecture documents describe intended responsibilities, no
 | Find a selected technology or its rationale | [Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md) |
 | Determine available verification | [Validation](docs/validation.md) |
 | Reproduce the local workflow | [Development setup](docs/setup.md) |
-| Find API, database, and component documentation ownership | [Living documentation](docs/architecture/living-documentation.md), [generated references](docs/README.md#apis-and-data), and [Phase 11](docs/implementation-plan.md#phase-11) |
+| Explore API, database, and component documentation | [Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data) |
 | Review reference vertical-slice acceptance evidence | [Phase 9 acceptance](docs/foundation-acceptance.md) |
 | Create an operational procedure | [Runbooks](docs/runbooks/README.md) |
 

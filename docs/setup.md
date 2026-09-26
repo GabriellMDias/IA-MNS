@@ -35,6 +35,12 @@ pnpm --filter @orion/web dev
 
 Open the URL printed by Vite, normally `http://127.0.0.1:5173`. Vite forwards `/api` to the local API by default and loads its own `apps/web/.env.local` if web-specific `VITE_` values are needed. Do not copy the root API `.env.local` into the web app: server-only values must not enter a browser build. This health-only mode leaves the reference UI disconnected. [API configuration](generated/configuration/api.md) names the four settings required together for the feature.
 
+## Living Documentation Portal
+
+The portal needs no API, database, identity provider, or `.env.local`. After the clean-checkout install above, run `pnpm --filter @orion/web dev` and open `http://127.0.0.1:5173/docs` (or the Vite-printed port plus `/docs`). Use its navigation for the current API contract, migrated data dictionary, and live examples of actual web components. The route is public even when the Approval Request workflow has no token. Links in each section expose the AI-readable OpenAPI, database, error, and component references and canonical source/policy.
+
+To verify the deployable static build, run `pnpm --filter @orion/web build`, then `pnpm --filter @orion/web exec vite preview --host 127.0.0.1` and open the printed URL plus `/docs`. For the complete authenticated workflow, use the separate `pnpm dev:approval` command below.
+
 ## Manually exercise Approval Requests
 
 With Docker running, use the one-command local workflow from the repository root:
@@ -71,6 +77,8 @@ Run the full, non-mutating tracked-source gate after changes:
 pnpm validate
 ```
 
-It checks format, lint, types, dependency boundaries, documentation, `.env.example` against API configuration metadata, migration release history, current generated references, real PostgreSQL and browser tests, builds, and process smokes. `pnpm references:check` diagnoses generated drift independently; it migrates a fresh PostgreSQL for the physical database reference and does not repair tracked files. To intentionally change derived references, edit their canonical TypeBox/schema/metadata sources and run `pnpm --filter @orion/api references:write`, then `pnpm --filter @orion/sdk generate` after an OpenAPI change. Review the generated diff and rerun `pnpm references:check`. Never edit generated output to hide a source mismatch. [Living documentation](architecture/living-documentation.md) defines the remaining portal and component-reference work in Phase 11.
+It checks format, lint, types, dependency boundaries, documentation, `.env.example` against API configuration metadata, migration release history, current generated references, real PostgreSQL and browser tests, builds, and process smokes. `pnpm references:check` diagnoses generated API/database/SDK drift independently; it migrates a fresh PostgreSQL for the physical database reference and does not repair tracked files. To intentionally change those references, edit their canonical TypeBox/schema/metadata sources and run `pnpm --filter @orion/api references:write`, then `pnpm --filter @orion/sdk generate` after an OpenAPI change. Review the generated diff and rerun `pnpm references:check`.
+
+After intentional API, database, or component-metadata changes, run `pnpm docs:references:write` and review the generated component Markdown and browser dataset. Vite serves/emits the existing API, database, error, and component artifacts without committing duplicate copies. `pnpm docs:references:check` is non-mutating and fails on drift, missing component metadata, or known secret patterns; it runs within `pnpm validate` and CI. Do not edit either generated layer directly.
 
 `pnpm build` emits the API ESM and web static assets into ignored `dist/` directories and checks the browser bundle for known server-only markers. The [release evolution workflow](database/release-evolution.md) governs migrations; no durable release is recorded merely by running these commands.

@@ -13,7 +13,7 @@
 
 ## Commands and current state
 
-The pnpm workspace, local validation tooling, CI configuration, Approval Request API/PostgreSQL feature, generated OpenAPI/SDK, and `apps/web` reference workflow exist. The Living Documentation Portal and generated component reference are Phase 11 work; a concrete authentication provider has not been selected. Use Node.js 24.13.0 and pnpm 11.25.0; run `pnpm install --frozen-lockfile` to install dependencies and `pnpm validate` before considering substantial work complete. Use [setup](docs/setup.md) for local environment loading and startup. Run individual checks through the scripts in `package.json`. See [validation availability and responsibilities](docs/validation.md) and [CI status](docs/architecture/continuous-integration.md); do not claim a remote check or future capability has run without evidence.
+The pnpm workspace, local validation tooling, CI configuration, Approval Request API/PostgreSQL feature, generated OpenAPI/SDK, `apps/web` reference workflow, and Living Documentation Portal exist. A concrete authentication provider has not been selected. Use Node.js 24.13.0 and pnpm 11.25.0; run `pnpm install --frozen-lockfile` to install dependencies and `pnpm validate` before considering substantial work complete. Use [setup](docs/setup.md) for local environment loading and startup. Run individual checks through the scripts in `package.json`. See [validation availability and responsibilities](docs/validation.md) and [CI status](docs/architecture/continuous-integration.md); do not claim a remote check or future capability has run without evidence.
 
 ## Conditional reading routes
 

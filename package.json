@@ -19,13 +19,15 @@
     "smoke": "node apps/api/scripts/smoke.mjs && pnpm --filter @orion/api feature:smoke",
     "test:e2e": "pnpm --filter @orion/web test:e2e",
     "references:check": "pnpm --filter @orion/api references:check && pnpm --filter @orion/sdk references:check",
+    "docs:references:write": "node tooling/documentation/generate.mjs --write",
+    "docs:references:check": "node tooling/documentation/generate.mjs --check",
     "architecture": "depcruise --config .dependency-cruiser.mjs --include-only \"^(apps|packages|tooling|infra)/|^(eslint\\.config|\\.dependency-cruiser)\" .",
     "docs:check": "node tooling/validate/docs.ts",
     "env:example:check": "node tooling/validate/env-example.ts",
     "release:check": "node tooling/validate/release-history.ts",
     "release:checksums": "node tooling/validate/release-history.ts --print-checksums",
     "release:test": "node --test tooling/validate/release-history.test.ts",
-    "validate": "pnpm db:generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm architecture && pnpm docs:check && pnpm env:example:check && pnpm release:check && pnpm release:test && pnpm references:check && pnpm test && pnpm build && pnpm smoke && pnpm test:e2e"
+    "validate": "pnpm db:generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm architecture && pnpm docs:check && pnpm env:example:check && pnpm release:check && pnpm release:test && pnpm references:check && pnpm docs:references:check && pnpm test && pnpm build && pnpm smoke && pnpm test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

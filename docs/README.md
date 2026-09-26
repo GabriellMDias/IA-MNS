@@ -8,7 +8,7 @@ Choose the route relevant to the change. Policy pages provide section links for 
 | --- | --- |
 | Execute or track implementation phases | [Living implementation plan](implementation-plan.md) |
 | Reproduce development setup, local execution, and the validation gate | [Development setup](setup.md) |
-| Understand the living API/data/component documentation architecture and portal scope | [Living documentation](architecture/living-documentation.md), [Phase 11](implementation-plan.md#phase-11) |
+| Run the living API/data/component portal and understand its architecture | [Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md) |
 | Review accepted reference vertical-slice capabilities and limitations | [Phase 9 acceptance](foundation-acceptance.md) |
 | Resolve owner decisions, external access, or other human prerequisites | [Human-action checklist](human-actions.md) |
 | Understand the reference feature's business rules and acceptance scenarios | [Approval Request](domains/approval-request.md) |
@@ -42,7 +42,7 @@ Choose the route relevant to the change. Policy pages provide section links for 
 | Document or generate database reference | [Schema documentation](database/schema-documentation.md) |
 | Inspect the migrated Approval Request schema | [Generated database reference](generated/database/approval-requests.md) |
 | Find the current machine-readable API contract and public errors | [OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md) |
-| Find the generated frontend component reference | [Phase 11 delivery plan](implementation-plan.md#phase-11); no component reference exists yet |
+| Find the generated frontend component reference | [Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json) |
 | Protect atomicity or concurrent writes | [Transactions and concurrency](database/transactions-and-concurrency.md) |
 
 ## Reliability
@@ -78,4 +78,4 @@ Choose the route relevant to the change. Policy pages provide section links for 
 - [Contributing](contributing.md): change workflow, documentation ownership, canonical sources, maintenance, and review.
 - [Global agent instructions](../AGENTS.md): invariants, command availability, and conditional routes.
 
-Current policies describe current architectural expectations. ADRs preserve decision history; [setup](setup.md) and [release evolution](database/release-evolution.md) describe real procedures. Generated references exist for the current API, configuration, errors, and database; the [portal and component reference](implementation-plan.md#phase-11) remain foundation deliverables. No production runbook exists without a selected environment.
+Current policies describe current architectural expectations. ADRs preserve decision history; [setup](setup.md) and [release evolution](database/release-evolution.md) describe real procedures. Generated references exist for the current API, configuration, errors, database, and web components. The portal renders these sources in the existing web application. No production runbook exists without a selected environment.

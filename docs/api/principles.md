@@ -40,7 +40,7 @@ It must not be treated as a direct serialization of internal implementation.
 
 This document is technology-agnostic.
 
-Fastify, HTTP/JSON, TypeBox, generated OpenAPI, and the thin SDK are implemented for the reference feature under ADR-0004 and ADR-0007. Gateways and other explicitly deferred mechanisms remain application decisions. [Living documentation](../architecture/living-documentation.md) owns the human-facing presentation of the existing machine-readable contract in Phase 11.
+Fastify, HTTP/JSON, TypeBox, generated OpenAPI, and the thin SDK are implemented for the reference feature under ADR-0004 and ADR-0007. Gateways and other explicitly deferred mechanisms remain application decisions. [Living documentation](../architecture/living-documentation.md) owns the human-facing presentation of the existing machine-readable contract.
 
 This document complements:
 

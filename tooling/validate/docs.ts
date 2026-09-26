@@ -13,6 +13,7 @@ const ignoredDirectories = new Set([
   ".git",
   "node_modules",
   "coverage",
+  "dist",
   "playwright-report",
   "test-results",
 ]);

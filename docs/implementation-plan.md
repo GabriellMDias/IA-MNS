@@ -61,7 +61,7 @@ This table owns phase-level status; the tables within each phase own task-level 
 | [8](#phase-8) | Safe evolution and reproducible artifacts | completed | 5-7; actual baselines where applicable | Release-aware migration guard and clean-clone validation pass local and [PR #9 CI](https://github.com/GabriellMDias/Orion/actions/runs/36087095948); [Phase 8 evidence](#phase-8). Historical baselines and H-08 remain conditional. |
 | [9](#phase-9) | Reference vertical-slice acceptance and contributor handoff | completed | 1-8 | [Acceptance report](foundation-acceptance.md), clean-checkout onboarding, local full gate, and [PR #10 CI run #33](https://github.com/GabriellMDias/Orion/actions/runs/36120843908) satisfy Phase 9 criteria. |
 | [10](#phase-10) | Documentation architecture, simplification, and developer setup | completed | 9 | Canonical [setup](setup.md), [living-documentation boundary](architecture/living-documentation.md), policy/index review, schema-checked `.env.example`, local full gate, and [PR #11 CI run #36](https://github.com/GabriellMDias/Orion/actions/runs/36135591982) satisfy Phase 10 criteria. |
-| [11](#phase-11) | Living Documentation Portal | pending | 10 | Required foundation work: navigable API, data dictionary, and component references with reproducible AI-readable artifacts. |
+| [11](#phase-11) | Living Documentation Portal | completed | 10 | Public `/docs` portal, AI-readable component reference, local full gate, clean-checkout preview, and [PR #13 CI run #42](https://github.com/GabriellMDias/Orion/actions/runs/36179651470) satisfy the foundation criteria. |
 | [12](#phase-12) | Deployment-specific operationalization | pending | 11 and concrete deployment requirements | Conditional; no deployment selected. |
 
 ## Phase 1
@@ -418,13 +418,13 @@ This table owns phase-level status; the tables within each phase own task-level 
 
 | Task | Main work | Status | Evidence / dependency |
 | --- | --- | --- | --- |
-| P11.1 | Choose the smallest coherent portal/component-documentation implementation within existing application/package boundaries; record a new ADR only if the ADR policy requires one. | pending | Phase 10 architecture and actual dependency review. |
-| P11.2 | Render the current TypeBox/OpenAPI operations, schemas, authentication, and stable public errors from canonical/generated API sources. | pending | API contract and error registry; no independent endpoint prose. |
-| P11.3 | Render the migrated PostgreSQL structure and schema-adjacent data dictionary, including ownership, classification, null semantics, lifecycle, and constraints as recorded. | pending | Current generated database reference and schema metadata. |
-| P11.4 | Add component-owned examples/metadata and a generated AI-readable component reference for real web components; show states, accessibility, and usage in the human interface. | pending | Existing `apps/web` components; no speculative component catalog. |
-| P11.5 | Provide clear navigation and links among API, data, components, domain policy, and canonical artifacts; make the portal reachable from the README and docs index. | pending | P11.2-P11.4. |
-| P11.6 | Add deterministic generation/freshness, missing-metadata, link, and sensitive-content checks to the shared local/CI validation path; document regeneration commands. | pending | P11.2-P11.5. |
-| P11.7 | Exercise a clean setup, portal build/serve, browser navigation and representative pages, accessibility at the relevant UI boundary, generated-artifact drift failures, and the full gate; report acceptance evidence. | pending | P11.1-P11.6. |
+| P11.1 | Choose the smallest coherent portal/component-documentation implementation within existing application/package boundaries; record a new ADR only if the ADR policy requires one. | completed | Public `/docs` route in existing React/Vite web app uses no new dependency or boundary. ADR policy review found no significant new architectural decision. |
+| P11.2 | Render the current TypeBox/OpenAPI operations, schemas, authentication, and stable public errors from canonical/generated API sources. | completed | Generator derives 11 operations, nested request/response fields, declared bearer security, statuses, error envelope, and registered codes from committed OpenAPI/error reference. |
+| P11.3 | Render the migrated PostgreSQL structure and schema-adjacent data dictionary, including ownership, classification, null semantics, lifecycle, and constraints as recorded. | completed | Portal derives the table, columns, constraints/indexes, and enum from the migrated-database Markdown; `references:check` verifies physical and semantic source freshness. |
+| P11.4 | Add component-owned examples/metadata and a generated AI-readable component reference for real web components; show states, accessibility, and usage in the human interface. | completed | `components.docs.json` covers both exported web components; generated `docs/generated/components/web.md`; live synthetic previews and browser checks. |
+| P11.5 | Provide clear navigation and links among API, data, components, domain policy, and canonical artifacts; make the portal reachable from the README and docs index. | completed | Sidebar/operation navigation, local AI-readable artifact links, canonical source/policy links, README/index/setup routes, Playwright navigation test. |
+| P11.6 | Add deterministic generation/freshness, missing-metadata, link, and sensitive-content checks to the shared local/CI validation path; document regeneration commands. | completed | `docs:references:write/check` and `docs:check` run in `pnpm validate`; deliberate stale artifact, missing metadata, and token-pattern mutations all failed and were restored. Setup documents regeneration. |
+| P11.7 | Exercise a clean setup, portal build/serve, browser navigation and representative pages, accessibility at the relevant UI boundary, generated-artifact drift failures, and the full gate; report acceptance evidence. | completed | Local `pnpm validate` passed (40 API, 2 web unit, 2 browser component, 5 Playwright tests). Separate clean worktree passed frozen install, generation with no diff, Vite production build/preview, browser page and all four reference assets. Deliberate stale/metadata/token-pattern changes failed checks and were restored. [PR #13 CI run #42](https://github.com/GabriellMDias/Orion/actions/runs/36179651470) passed Validate, Dependency Review, and Orion required gate. |
 
 **Expected deliverables:** Navigable Living Documentation Portal, generated API/data/component references, documented ownership and regeneration, and browser/CI acceptance evidence.
 
@@ -436,6 +436,8 @@ This table owns phase-level status; the tables within each phase own task-level 
 - No page invents business semantics or exposes real secrets/data; API and database pages reflect current generated artifacts, and component pages reflect actual source/examples.
 - Generated representations are reproducible from documented inputs, and `pnpm validate`/CI fail on stale output or missing required metadata.
 - Clean-checkout setup, portal build/serve, representative browser flows, and full validation pass with evidence. The foundation is complete only after these criteria pass.
+
+**Completion evidence:** P11.1–P11.7 and every criterion above are satisfied by the linked source, generated references, local/clean-checkout checks, and PR CI run. The development foundation is complete; conditional deployment-specific Phase 12 has not started.
 
 **Usable state:** The complete development foundation, including a navigable living documentation interface and machine-readable references, without requiring a deployed product.
 

@@ -1249,7 +1249,7 @@ Do not include an example hash copied from production.
 
 ## Generated Reference
 
-The current [generated Markdown reference](../generated/database/approval-requests.md) contains the migrated Approval Request schema and its semantic metadata. The [Living Documentation Portal](../architecture/living-documentation.md) must present it as navigable human documentation in Phase 11 while preserving the AI-readable generated file. Portal page layout is an implementation detail, not a second schema source.
+The current [generated Markdown reference](../generated/database/approval-requests.md) contains the migrated Approval Request schema and its semantic metadata. The [Living Documentation Portal](../architecture/living-documentation.md) presents it as navigable human documentation while preserving the AI-readable generated file. Portal page layout is an implementation detail, not a second schema source.
 
 ---
 
@@ -1638,7 +1638,7 @@ and pretend the schema is documented.
 
 ## Documentation Validation
 
-CI validates the current database documentation through `pnpm references:check` and must retain this protection as the portal is added.
+CI validates the current database documentation through `pnpm references:check` and the portal's derived view through `pnpm docs:references:check`.
 
 Potential checks include:
 
@@ -2095,7 +2095,7 @@ Significant decisions should be captured through ADRs.
 
 ## Related Documentation
 
-The [current generated reference](../generated/database/approval-requests.md) and [Approval Request business specification](../domains/approval-request.md) complement this policy. [Living documentation](../architecture/living-documentation.md) defines the navigable human presentation required in Phase 11.
+The [current generated reference](../generated/database/approval-requests.md) and [Approval Request business specification](../domains/approval-request.md) complement this policy. [Living documentation](../architecture/living-documentation.md) defines the navigable human presentation.
 
 Implementation-specific database documentation should reference this policy rather than redefine documentation requirements independently.
 
@@ -2264,7 +2264,7 @@ Where practical, CI should validate generated documentation against the canonica
 
 ## Database Introspection
 
-AI agents can inspect current database structure through the migrated schema, schema metadata, and generated Markdown. Phase 11 adds the navigable human interface without replacing those sources.
+AI agents can inspect current database structure through the migrated schema, schema metadata, and generated Markdown. The navigable human interface does not replace those sources.
 
 The intended investigation flow is:
 

@@ -3,8 +3,10 @@ import { failureMessage } from "./api.js";
 
 export function AccessTokenForm({
   onConnect,
+  showLocalIdentity = true,
 }: {
   onConnect: (token: string) => void;
+  showLocalIdentity?: boolean;
 }) {
   const [entry, setEntry] = useState("");
   function connect(event: FormEvent) {
@@ -39,7 +41,7 @@ export function AccessTokenForm({
           Connect
         </button>
       </form>
-      <LocalIdentityConnect onConnect={onConnect} />
+      {showLocalIdentity && <LocalIdentityConnect onConnect={onConnect} />}
     </section>
   );
 }

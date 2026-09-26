@@ -1,8 +1,8 @@
-# Reference Vertical-Slice Acceptance Report
+# Development Foundation Acceptance Report
 
-[Implementation plan](implementation-plan.md#phase-9) · [Development setup](setup.md) · [Human actions](human-actions.md) · [Validation](validation.md)
+[Implementation plan](implementation-plan.md#phase-11) · [Development setup](setup.md) · [Human actions](human-actions.md) · [Validation](validation.md)
 
-This report assesses the implemented development foundation and Approval Request reference feature against Phase 9. It does not certify a production deployment, select an identity provider, create historical release obligations, or replace the governing policies and ADRs.
+This report assesses the Approval Request reference feature against Phase 9 and the completed living-documentation foundation against Phase 11. It does not certify a production deployment, select an identity provider, create historical release obligations, or replace the governing policies and ADRs.
 
 ## Reference feature evidence map
 
@@ -33,4 +33,15 @@ The backend owns its feature schema, domain/application operations, and PostgreS
 
 The development UI accepts an already-issued token in memory and has no login flow. A real environment must resolve [H-07](human-actions.md#h-07) and the applicable deployment decisions before this becomes a production user workflow. The current process-local source-IP rate limit is not a fleet-wide or trusted-proxy guarantee. There is no released compatibility baseline for upgrade tests, no automatic deletion or legal retention duration, and no production runbook or recovery objective. Those are explicit conditional boundaries, not missing Phase 9 implementation.
 
-All applicable Phase 9 criteria are satisfied by the evidence above. The accepted state is a reproducible reference vertical slice, not a released or deployed product. [Phase 10](implementation-plan.md#phase-10) owns documentation architecture and setup; [Phase 11](implementation-plan.md#phase-11) delivers the navigable Living Documentation Portal and generated component reference required for the complete foundation. Deployment-specific work remains conditional in [Phase 12](implementation-plan.md#phase-12).
+All applicable Phase 9 criteria are satisfied by the evidence above. The accepted state at that point was a reproducible reference vertical slice, not a released or deployed product. [Phase 10](implementation-plan.md#phase-10) established documentation architecture and setup; Phase 11 acceptance is recorded below. Deployment-specific work remains conditional in [Phase 12](implementation-plan.md#phase-12).
+
+## Phase 11 foundation acceptance
+
+| Criterion | Evidence and disposition |
+| --- | --- |
+| Human navigation and canonical links | The public [web `/docs` route](../apps/web/src/documentation.tsx) presents 11 current API operations with request/response fields, declared authentication and public errors; the migrated Approval Request table, columns, constraints, classification, null meaning and lifecycle; and both exported web components with live synthetic examples. It links domain/policy/source and Vite-served existing [OpenAPI](generated/api/openapi.json), [error](generated/api/errors.md), [database](generated/database/approval-requests.md), and [component](generated/components/web.md) artifacts. |
+| One source and safe output | The [generator](../tooling/documentation/generate.mjs) derives a committed portal dataset and component Markdown from the API/database references and [component-owned metadata](../apps/web/src/components.docs.json). Vite serves/emits the existing artifacts, without another tracked copy. The generator rejects undocumented exported components, incomplete metadata, stale output, and known secret patterns. Three deliberate local mutations—stale artifact, missing component metadata, and token-shaped metadata—failed and were restored. Existing migrated-database checks protect schema documentation completeness. |
+| Clean setup and production preview | A separate checkout of commit `22d2cef` passed `pnpm install --frozen-lockfile`, `pnpm docs:references:check`, regeneration with no Git diff, and `pnpm --filter @orion/web build`. Vite preview served `/docs` without API or identity setup; Chromium confirmed the page title/heading and fetched all four reference assets. The visible portal page was inspected at desktop size. |
+| Local and CI validation | Local `pnpm validate` passed formatting, lint, types, dependency and Markdown links, environment/release/reference checks, 40 API tests, two web unit tests, two browser component tests, API/web builds, process smokes, and five Playwright journeys. The new journeys verified public navigation, representative API/data/component content, source asset links, alert and reload semantics, discarded synthetic input, keyboard action, and narrow viewport. [PR #13 CI run #42](https://github.com/GabriellMDias/Orion/actions/runs/36179651470) passed Validate, Dependency Review, and Orion required gate on the implementation commit. |
+
+The development foundation is complete against the [Phase 11 criteria](implementation-plan.md#phase-11). The deployment, provider, retention, and operational choices described above remain conditional; completing the foundation does not activate Phase 12.

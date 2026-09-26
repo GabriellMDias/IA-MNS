@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react({ compiler: true })],
+  build: { assetsInlineLimit: 0 },
   server: {
     proxy: {
       "/api": {

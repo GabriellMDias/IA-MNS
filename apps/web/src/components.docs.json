@@ -1,0 +1,65 @@
+{
+  "components": [
+    {
+      "name": "AccessTokenForm",
+      "summary": "Collects an already-issued bearer token and passes it to the in-memory credential boundary.",
+      "props": [
+        {
+          "name": "onConnect",
+          "type": "(token: string) => void",
+          "meaning": "Receives the trimmed token on form submission; the component clears its input."
+        },
+        {
+          "name": "showLocalIdentity",
+          "type": "boolean (optional)",
+          "meaning": "Shows development-only local identity controls when available; defaults to true and is disabled in documentation previews."
+        }
+      ],
+      "states": [
+        "Empty input",
+        "Entered token",
+        "Optional local synthetic identity controls in development"
+      ],
+      "accessibility": "Labels the password input, uses a submit button, and supports keyboard submission. The local identity buttons have descriptive names when available.",
+      "usage": "Use only at the authentication boundary. Keep the token in memory; never persist it or include it in a URL.",
+      "examples": [
+        {
+          "id": "access-token",
+          "label": "Empty token form",
+          "description": "Enter only a non-secret demonstration value here; the preview discards submitted values."
+        }
+      ]
+    },
+    {
+      "name": "ErrorNotice",
+      "summary": "Displays a public API failure message and an optional reload action.",
+      "props": [
+        {
+          "name": "error",
+          "type": "unknown",
+          "meaning": "Mapped through the existing public failure-message boundary."
+        },
+        {
+          "name": "operation",
+          "type": "read | create | write",
+          "meaning": "Selects the relevant user-facing failure wording; defaults to read."
+        },
+        {
+          "name": "onReload",
+          "type": "() => void",
+          "meaning": "Optional recovery action for stale resource state."
+        }
+      ],
+      "states": ["Failure message", "Failure message with reload action"],
+      "accessibility": "Uses role=alert so the failure is announced; the optional reload control is a native button.",
+      "usage": "Pass the original error to preserve stable-code mapping. Offer reload only when the current request can be refreshed.",
+      "examples": [
+        {
+          "id": "version-conflict",
+          "label": "Stale version with reload",
+          "description": "A synthetic RESOURCE_VERSION_CONFLICT response; no live request is involved."
+        }
+      ]
+    }
+  ]
+}

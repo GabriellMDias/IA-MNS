@@ -9,12 +9,14 @@ import {
   Outlet,
   RouterProvider,
   useNavigate,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CredentialProvider, useCredential } from "./auth.js";
 import { approvalApi, type ApprovalRequest, type Scope } from "./api.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccessTokenForm, ErrorNotice } from "./components.js";
+import { DocumentationPage } from "./documentation.js";
 import "./styles.css";
 
 const queryClient = new QueryClient({
@@ -26,6 +28,9 @@ const queryClient = new QueryClient({
 
 function Shell() {
   const { token, setToken } = useCredential();
+  const isDocumentation = useRouterState({
+    select: (state) => state.location.pathname === "/docs",
+  });
   function connect(value: string) {
     queryClient.clear();
     setToken(value);
@@ -41,11 +46,18 @@ function Shell() {
           <Link to="/" search={{ scope: "mine" }} className="brand">
             ORION<span> / APPROVAL REQUESTS</span>
           </Link>
-          <span className="header-note">Reference workflow</span>
+          <span className="header-note">
+            {isDocumentation ? "Living documentation" : "Reference workflow"}
+          </span>
+          <Link to="/docs" className="header-docs-link">
+            Documentation
+          </Link>
         </div>
       </header>
       <main className="main-content">
-        {!token ? (
+        {isDocumentation ? (
+          <Outlet />
+        ) : !token ? (
           <AccessTokenForm onConnect={connect} />
         ) : (
           <>
@@ -86,7 +98,16 @@ const detailRoute = createRoute({
   path: "/requests/$id",
   component: DetailPage,
 });
-const routeTree = rootRoute.addChildren([listRoute, detailRoute]);
+const documentationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/docs",
+  component: DocumentationPage,
+});
+const routeTree = rootRoute.addChildren([
+  listRoute,
+  detailRoute,
+  documentationRoute,
+]);
 const router = createRouter({ routeTree, defaultPreload: "intent" });
 declare module "@tanstack/react-router" {
   interface Register {

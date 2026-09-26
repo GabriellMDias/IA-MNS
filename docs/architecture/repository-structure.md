@@ -744,7 +744,7 @@ configuration references
 component catalogs
 ```
 
-Files under this directory must not be edited manually unless explicitly designed otherwise. API, database, error, and configuration references exist now; [living documentation](living-documentation.md) requires a generated component reference and navigable portal in Phase 11. The generation process must be reproducible.
+Files under this directory must not be edited manually unless explicitly designed otherwise. API, database, error, configuration, and component references exist now; [living documentation](living-documentation.md) presents them in the navigable portal. The generation process must be reproducible.
 
 ---
 
