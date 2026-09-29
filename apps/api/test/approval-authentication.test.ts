@@ -2,7 +2,10 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
-import { createAccessTokenVerifier } from "../src/features/approval-requests/authentication.js";
+import {
+  AuthenticationUnavailableError,
+  createAccessTokenVerifier,
+} from "../src/features/approval-requests/authentication.js";
 
 describe("provider-independent access-token boundary", () => {
   const issuer = "https://issuer.example.test/";
@@ -92,5 +95,30 @@ describe("provider-independent access-token boundary", () => {
       await verifier.verify(`Bearer ${await wrong.sign(privateKey)}`),
     ).toBeNull();
     expect(await verifier.verify("Bearer garbage")).toBeNull();
+  });
+
+  it("distinguishes a trusted-key endpoint outage from invalid credentials", async () => {
+    const unavailable = createServer((_request, reply) =>
+      reply.writeHead(503).end("synthetic-secret-key-service-detail"),
+    );
+    await new Promise<void>((resolve) =>
+      unavailable.listen(0, "127.0.0.1", resolve),
+    );
+    try {
+      const address = unavailable.address();
+      if (!address || typeof address === "string")
+        throw new Error("No local JWKS address");
+      const interrupted = createAccessTokenVerifier({
+        issuer,
+        audience,
+        jwksUrl: `http://127.0.0.1:${address.port}/jwks`,
+      });
+      await expect(
+        interrupted.verify(`Bearer ${await sign({})}`),
+      ).rejects.toBeInstanceOf(AuthenticationUnavailableError);
+      expect(await interrupted.verify("Bearer malformed")).toBeNull();
+    } finally {
+      await new Promise<void>((resolve) => unavailable.close(() => resolve()));
+    }
   });
 });

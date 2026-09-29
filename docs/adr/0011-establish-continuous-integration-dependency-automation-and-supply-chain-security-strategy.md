@@ -1066,29 +1066,29 @@ Changing Orion's default CI platform, replacing Renovate as the primary dependen
 
 ## References
 
-Related ADR: `ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime`
+Related ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)
 
-Related ADR: `ADR-0002: Select pnpm for Package and Workspace Management`
+Related ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)
 
-Related ADR: `ADR-0003: Establish Repository Validation and Architecture Enforcement`
+Related ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)
 
-Related ADR: `ADR-0009: Establish Testing Strategy and Tooling`
+Related ADR: [ADR-0009: Establish Testing Strategy and Tooling](0009-establish-testing-strategy-and-tooling.md)
 
-Related ADR: `ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy`
+Related ADR: [ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/dependency-rules.md`
+Related policy: [dependency rules](../architecture/dependency-rules.md)
 
-Related policy: `docs/architecture/testing-strategy.md`
+Related policy: [testing strategy](../architecture/testing-strategy.md)
 
-Related policy: `docs/architecture/versioning-and-compatibility.md`
+Related policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)
 
-Related policy: `docs/security/secrets-management.md`
+Related policy: [secrets management](../security/secrets-management.md)
 
-Related policy: `docs/security/dependency-security.md`
+Related policy: [continuous integration](../architecture/continuous-integration.md)
 
-Related policy: `docs/security/secure-development.md`
+Related policy: [contributing](../contributing.md)
 
 External reference: GitHub Actions documentation.
 

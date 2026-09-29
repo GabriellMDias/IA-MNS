@@ -11,6 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Report whether the process has completed startup initialization. */
         get: operations["getStartupHealth"];
         put?: never;
         post?: never;
@@ -27,6 +28,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Report whether the process is alive without testing downstream dependencies. */
         get: operations["getLiveness"];
         put?: never;
         post?: never;
@@ -43,6 +45,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Report whether the process can serve requests, including its required database dependency. */
         get: operations["getReadiness"];
         put?: never;
         post?: never;
@@ -59,8 +62,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description List requests visible to the authenticated principal. The mine scope shows owned requests; reviewable requires review capability and excludes requests owned by the reviewer. */
         get: operations["listApprovalRequests"];
         put?: never;
+        /** @description Create a draft owned by the authenticated requester. A repeated idempotency key may safely replay the same creation, but cannot be reused for different input. */
         post: operations["createApprovalRequest"];
         delete?: never;
         options?: never;
@@ -75,6 +80,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Read one request when the principal owns it or has review access to a submitted request. */
         get: operations["getApprovalRequest"];
         put?: never;
         post?: never;
@@ -92,6 +98,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Edit an owned draft. The expected version prevents a stale write from overwriting newer data or a state transition. */
         put: operations["editApprovalRequestDraft"];
         post?: never;
         delete?: never;
@@ -109,6 +116,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Submit an owned draft for review when its version still matches. A submitted request cannot be edited as a draft. */
         post: operations["submitApprovalRequest"];
         delete?: never;
         options?: never;
@@ -125,6 +133,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Approve a submitted request as a reviewer other than its owner. The expected version protects competing decisions. */
         post: operations["approveApprovalRequest"];
         delete?: never;
         options?: never;
@@ -141,6 +150,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Reject a submitted request as a reviewer other than its owner, recording the required reason. The expected version protects competing decisions. */
         post: operations["rejectApprovalRequest"];
         delete?: never;
         options?: never;
@@ -157,6 +167,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Cancel an owned draft or submitted request when its version still matches. A terminal request cannot be cancelled. */
         post: operations["cancelApprovalRequest"];
         delete?: never;
         options?: never;

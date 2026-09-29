@@ -1,8 +1,11 @@
-# API-local instructions
+# API-local Instructions
 
-- The composition root is `src/main.ts`: parse configuration, initialize Pino and OpenTelemetry, then dynamically load Fastify and compose `src/app.ts`. Preserve that order when adding instrumented infrastructure.
-- Keep `src/config.ts` as the only environment parser; add schema and reference metadata together. Client-eligible values must pass through `clientConfigFrom` explicitly.
-- Register transport routes and TypeBox wire schemas at the Fastify boundary. Keep Approval Request business rules and application operations independent of Fastify and Prisma; the repository adapter owns PostgreSQL calls and conditional writes.
-- Keep `prisma/schema.prisma`, reviewed SQL migrations, and `prisma/schema-metadata.json` synchronized. Generate the ignored Prisma client with `pnpm db:generate`; use `ORION_MIGRATION_DATABASE_URL` only for the Prisma CLI and `ORION_DATABASE_URL` only at runtime. Regenerate API/database/configuration/error references through `references:write`, and let `references:check` detect drift against a freshly migrated Testcontainers PostgreSQL.
-- Use `pnpm --filter @orion/api test`, `typecheck`, and `build`; run the root `pnpm validate` before handoff.
-- Log only allowlisted operational fields. Never attach request bodies, raw URLs, headers, configuration objects, or arbitrary exception messages to logs or spans. Keep expected failures explicit and unexpected failures to one diagnostic event.
+Read [the runtime guide](README.md) for source locations and local commands, and [feature conventions](../../docs/domains/approval-request-implementation.md) before changing Approval Request behavior. Global repository instructions still apply.
+
+- Preserve `src/main.ts` ordering: parse configuration, initialize Pino/OpenTelemetry, then dynamically load Fastify and compose `src/app.ts` before listening. Instrumented infrastructure depends on this order.
+- Keep `src/config.ts` as the runtime environment parser. Change schemas and reference metadata together; client-eligible values must pass explicitly through `clientConfigFrom`.
+- Keep TypeBox wire schemas/routes at the Fastify boundary. Domain rules and application operations remain independent of Fastify and Prisma; the adapter owns PostgreSQL and conditional writes.
+- Keep Prisma schema, reviewed SQL, and semantic metadata coherent under [migration](../../docs/database/migrations.md) and [schema-documentation](../../docs/database/schema-documentation.md) policies. The Prisma CLI alone receives `ORION_MIGRATION_DATABASE_URL`; runtime uses `ORION_DATABASE_URL`.
+- Generate the ignored Prisma client with root `pnpm db:generate`. For tracked references, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md); root `pnpm references:check` includes fresh migrated PostgreSQL and SDK drift checks.
+- Use allowlisted diagnostics under [redaction policy](../../docs/security/telemetry-redaction.md). Do not attach request bodies, raw URLs, headers, configuration objects, or arbitrary exception messages to logs/spans. Expected failures are explicit; unexpected failures have one authoritative diagnostic event.
+- Run focused API `test`, `typecheck`, and `build` scripts as applicable, then root `pnpm validate` before substantial-work handoff. Report unavailable checks honestly.

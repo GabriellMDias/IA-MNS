@@ -533,27 +533,27 @@ Replacing Prisma as Orion's primary database-access and migration strategy would
 
 ## References
 
-Related ADR: `ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime`
+Related ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)
 
-Related ADR: `ADR-0002: Select pnpm for Package and Workspace Management`
+Related ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)
 
-Related ADR: `ADR-0003: Establish Repository Validation and Architecture Enforcement`
+Related ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)
 
-Related ADR: `ADR-0005: Select PostgreSQL as the Primary Database`
+Related ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/application-boundaries.md`
+Related policy: [application boundaries](../architecture/application-boundaries.md)
 
-Related policy: `docs/architecture/dependency-rules.md`
+Related policy: [dependency rules](../architecture/dependency-rules.md)
 
-Related policy: `docs/database/principles.md`
+Related policy: [principles](../database/principles.md)
 
-Related policy: `docs/database/migrations.md`
+Related policy: [migrations](../database/migrations.md)
 
-Related policy: `docs/database/schema-documentation.md`
+Related policy: [schema documentation](../database/schema-documentation.md)
 
-Related policy: `docs/database/transactions-and-concurrency.md`
+Related policy: [transactions and concurrency](../database/transactions-and-concurrency.md)
 
 External reference: Prisma ORM release-status documentation.
 

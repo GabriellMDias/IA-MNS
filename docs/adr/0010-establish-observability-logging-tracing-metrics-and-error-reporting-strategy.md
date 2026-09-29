@@ -992,23 +992,23 @@ Replacing OpenTelemetry as the observability standard, replacing Pino as the log
 
 ## References
 
-Related ADR: `ADR-0003: Establish Repository Validation and Architecture Enforcement`
+Related ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)
 
-Related ADR: `ADR-0004: Select Fastify as the Backend HTTP Framework`
+Related ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)
 
-Related ADR: `ADR-0006: Select Prisma ORM for Database Access and Migrations`
+Related ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)
 
-Related policy: `docs/architecture/error-handling.md`
+Related policy: [error handling](../architecture/error-handling.md)
 
-Related policy: `docs/architecture/configuration.md`
+Related policy: [configuration](../architecture/configuration.md)
 
-Related policy: `docs/reliability/logging.md`
+Related policy: [logging](../reliability/logging.md)
 
-Related policy: `docs/reliability/observability.md`
+Related policy: [observability](../reliability/observability.md)
 
-Related policy: `docs/security/data-classification.md`
+Related policy: [data classification](../security/data-classification.md)
 
-Related policy: `docs/security/secrets-management.md`
+Related policy: [secrets management](../security/secrets-management.md)
 
 External reference: OpenTelemetry JavaScript documentation.
 

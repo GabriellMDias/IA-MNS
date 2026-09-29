@@ -24,11 +24,11 @@ Application rollback means running earlier application code against the **curren
 
 The current API, generated OpenAPI, SDK, and web consumer evolve together in this repository. `pnpm references:check` regenerates API and SDK representations from current executable contracts without changing tracked files; it detects current-source drift, not compatibility with a released historical consumer. Before a change, review the executable operation IDs, requests/responses, [error registry](../generated/api/errors.md), authorization, list scope/order/cursor/defaults, state transitions, idempotency, and side effects against the [Approval Request specification](../domains/approval-request.md) and [implementation conventions](../domains/approval-request-implementation.md). The server and browser tests protect those current semantics.
 
-The Phase 8 review of the implemented contract found these current boundaries:
+Use these current sources when reviewing contract impact:
 
 | Concern | Current source and verification |
 | --- | --- |
-| Structure and defaults | [TypeBox operations](../../apps/api/src/features/approval-requests/contracts.ts) own request/response shapes and stable operation IDs; [service](../../apps/api/src/features/approval-requests/service.ts) owns default `mine` scope and 20-item pages, while the contract caps requested pages at 100. OpenAPI and SDK freshness checks keep current artifacts aligned. |
+| Structure and defaults | [TypeBox operations](../../apps/api/src/features/approval-requests/contracts.ts) own request/response shapes and stable operation IDs; [routes](../../apps/api/src/features/approval-requests/routes.ts) own default `mine` scope and 20-item pages, while the contract caps requested pages at 100. OpenAPI and SDK freshness checks keep current artifacts aligned. |
 | Errors | [Registry](../../apps/api/src/errors.ts) owns stable codes and status mapping; [HTTP integration tests](../../apps/api/test/approval-integration.test.ts) cover denials, validation, stale conflicts, invalid states, idempotency conflicts, and rate limiting. No historical status/code compatibility is asserted. |
 | Authorization | [Business specification](../domains/approval-request.md#identity-and-authorization-boundary) owns owner/reviewer/self-review rules; synthetic-principal tests exercise the transport and persisted query scopes. |
 | Ordering and cursor | [Implementation conventions](../domains/approval-request-implementation.md#read-and-list-contracts) own `createdAt DESC, id DESC`, scope-bound cursor behavior, and non-snapshot membership; migrated-PostgreSQL tests verify authorization before pagination and cursor use. |

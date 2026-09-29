@@ -5,7 +5,10 @@ import { configReference } from "../src/config.js";
 import { errorRegistry } from "../src/errors.js";
 import { generateOpenApi } from "./openapi.js";
 import { generateDatabaseReference } from "./database-reference.js";
-import { withMigratedDatabase } from "./migrated-database.js";
+import {
+  assertPrismaSchemaMatchesDatabase,
+  withMigratedDatabase,
+} from "./migrated-database.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const generated = [
@@ -24,11 +27,11 @@ const generated = [
       "",
       "No values are eligible for client exposure. `ORION_ENV` is always required; the database and token settings are required together to enable the Approval Request feature and in production.",
       "",
-      "| Environment variable | Type | Required | Default | Visibility | Purpose |",
-      "| --- | --- | --- | --- | --- | --- |",
+      "| Environment variable | Type | Required | Default | Visibility | Classification | Secret | Purpose |",
+      "| --- | --- | --- | --- | --- | --- | --- | --- |",
       ...configReference.map(
         (item) =>
-          `| \`${item.name}\` | ${item.type.replaceAll("|", "\\|")} | ${item.required ? "yes" : "no"} | ${item.default ? `\`${item.default}\`` : "—"} | ${item.visibility} | ${item.purpose} |`,
+          `| \`${item.name}\` | ${item.type.replaceAll("|", "\\|")} | ${item.required ? "yes" : "no"} | ${item.default ? `\`${item.default}\`` : "—"} | ${item.visibility} | ${item.classification} | ${item.secret ? "yes" : "no"} | ${item.purpose} |`,
       ),
       "",
     ].join("\n"),
@@ -59,9 +62,10 @@ if (!write && process.argv[2] !== "--check")
 const normalizeLineEndings = (value: string) => value.replace(/\r\n?/g, "\n");
 generated.push({
   path: resolve(root, "docs/generated/database/approval-requests.md"),
-  content: await withMigratedDatabase((_runtimeUrl, migrationUrl) =>
-    generateDatabaseReference(migrationUrl),
-  ),
+  content: await withMigratedDatabase(async (_runtimeUrl, migrationUrl) => {
+    await assertPrismaSchemaMatchesDatabase(migrationUrl);
+    return generateDatabaseReference(migrationUrl);
+  }),
 });
 for (const artifact of generated) {
   if (write) {

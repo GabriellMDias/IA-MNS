@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { failureMessage } from "./api.js";
 
 export function AccessTokenForm({
@@ -54,6 +54,7 @@ function LocalIdentityConnect({
   const [available, setAvailable] = useState(false);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
+  const pendingRequest = useRef<AbortController | null>(null);
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const controller = new AbortController();
@@ -75,10 +76,16 @@ function LocalIdentityConnect({
       .catch(() => {
         /* The manual issuer is optional in ordinary web development. */
       });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      pendingRequest.current?.abort();
+    };
   }, []);
 
   async function connectLocal(actor: "owner" | "reviewer") {
+    if (pendingRequest.current) return;
+    const controller = new AbortController();
+    pendingRequest.current = controller;
     setPending(true);
     setFailed(false);
     try {
@@ -86,6 +93,8 @@ function LocalIdentityConnect({
         method: "POST",
         cache: "no-store",
         credentials: "omit",
+        redirect: "error",
+        signal: controller.signal,
       });
       if (!response.ok) throw new Error("Local identity unavailable.");
       const body: unknown = await response.json();
@@ -96,11 +105,13 @@ function LocalIdentityConnect({
         typeof body.accessToken !== "string"
       )
         throw new Error("Invalid local identity response.");
+      controller.signal.throwIfAborted();
       onConnect(body.accessToken);
     } catch {
-      setFailed(true);
+      if (!controller.signal.aborted) setFailed(true);
     } finally {
-      setPending(false);
+      pendingRequest.current = null;
+      if (!controller.signal.aborted) setPending(false);
     }
   }
 

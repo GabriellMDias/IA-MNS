@@ -13,6 +13,7 @@
     "/health/startup": {
       "get": {
         "operationId": "getStartupHealth",
+        "description": "Report whether the process has completed startup initialization.",
         "tags": ["Health"],
         "parameters": [],
         "responses": {
@@ -72,6 +73,7 @@
     "/health/live": {
       "get": {
         "operationId": "getLiveness",
+        "description": "Report whether the process is alive without testing downstream dependencies.",
         "tags": ["Health"],
         "parameters": [],
         "responses": {
@@ -131,6 +133,7 @@
     "/health/ready": {
       "get": {
         "operationId": "getReadiness",
+        "description": "Report whether the process can serve requests, including its required database dependency.",
         "tags": ["Health"],
         "parameters": [],
         "responses": {
@@ -190,6 +193,7 @@
     "/approval-requests": {
       "post": {
         "operationId": "createApprovalRequest",
+        "description": "Create a draft owned by the authenticated requester. A repeated idempotency key may safely replay the same creation, but cannot be reused for different input.",
         "tags": ["Approval Requests"],
         "security": [
           {
@@ -584,6 +588,7 @@
       },
       "get": {
         "operationId": "listApprovalRequests",
+        "description": "List requests visible to the authenticated principal. The mine scope shows owned requests; reviewable requires review capability and excludes requests owned by the reviewer.",
         "tags": ["Approval Requests"],
         "security": [
           {
@@ -993,6 +998,7 @@
     "/approval-requests/{id}": {
       "get": {
         "operationId": "getApprovalRequest",
+        "description": "Read one request when the principal owns it or has review access to a submitted request.",
         "tags": ["Approval Requests"],
         "security": [
           {
@@ -1354,6 +1360,7 @@
     "/approval-requests/{id}/draft": {
       "put": {
         "operationId": "editApprovalRequestDraft",
+        "description": "Edit an owned draft. The expected version prevents a stale write from overwriting newer data or a state transition.",
         "tags": ["Approval Requests"],
         "security": [
           {
@@ -1828,6 +1835,7 @@
     "/approval-requests/{id}/submit": {
       "post": {
         "operationId": "submitApprovalRequest",
+        "description": "Submit an owned draft for review when its version still matches. A submitted request cannot be edited as a draft.",
         "tags": ["Approval Requests"],
         "security": [
           {
@@ -2283,6 +2291,7 @@
     "/approval-requests/{id}/approve": {
       "post": {
         "operationId": "approveApprovalRequest",
+        "description": "Approve a submitted request as a reviewer other than its owner. The expected version protects competing decisions.",
         "tags": ["Approval Requests"],
         "security": [
           {
@@ -2739,6 +2748,7 @@
     "/approval-requests/{id}/reject": {
       "post": {
         "operationId": "rejectApprovalRequest",
+        "description": "Reject a submitted request as a reviewer other than its owner, recording the required reason. The expected version protects competing decisions.",
         "tags": ["Approval Requests"],
         "security": [
           {
@@ -3201,6 +3211,7 @@
     "/approval-requests/{id}/cancel": {
       "post": {
         "operationId": "cancelApprovalRequest",
+        "description": "Cancel an owned draft or submitted request when its version still matches. A terminal request cannot be cancelled.",
         "tags": ["Approval Requests"],
         "security": [
           {

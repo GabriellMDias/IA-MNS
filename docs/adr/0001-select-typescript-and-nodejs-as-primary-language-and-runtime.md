@@ -200,12 +200,12 @@ A future change away from TypeScript and Node.js as Orion's primary language and
 
 ## References
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/repository-structure.md`
+Related policy: [repository structure](../architecture/repository-structure.md)
 
-Related policy: `docs/architecture/application-boundaries.md`
+Related policy: [application boundaries](../architecture/application-boundaries.md)
 
-Related policy: `docs/architecture/dependency-rules.md`
+Related policy: [dependency rules](../architecture/dependency-rules.md)
 
-Related policy: `docs/architecture/versioning-and-compatibility.md`
+Related policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)

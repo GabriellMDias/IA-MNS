@@ -34,7 +34,7 @@ Use monotonic numeric identifiers and descriptive English filenames of the form 
 
 Record title, status, date, context, decision, and consequences. For accepted records, the date should generally be the acceptance date. Titles should describe the decision rather than merely name a topic. Preserve identifiers once merged and referenced.
 
-Simple Markdown metadata is sufficient until tooling exists. Do not introduce custom ADR software or parsing prematurely. Machine-readable metadata, generated indexes, status checks, and supersession checks may be introduced when they provide value. ADR files remain canonical; avoid duplicate status stores. Field names become tooling contracts once tooling depends on them.
+Simple Markdown metadata is the current format. `pnpm docs:check` validates filenames, matching titles/IDs, status, ISO dates, required sections, and index membership. Preserve these field names as tooling contracts. Supersession semantics still require review; no automatic numbering or supersession checker is implemented. ADR files remain canonical; avoid duplicate status stores or custom ADR software without a concrete need.
 
 ## Content and evidence
 

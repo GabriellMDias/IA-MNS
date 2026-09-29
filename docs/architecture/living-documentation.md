@@ -1,30 +1,76 @@
 # Living Documentation
 
-[Documentation index](../README.md) · [Implementation plan](../implementation-plan.md#phase-11) · [Contributing](../contributing.md)
+[Documentation index](../README.md) · [Portal setup](../setup.md#living-documentation-portal) · [Contributing](../contributing.md)
 
-Orion's foundation includes a navigable human interface for the current API, database/data dictionary, and frontend components. The interface presents derived facts; it does not replace the canonical schemas, metadata, source, ADRs, or machine-readable generated artifacts. This responsibility is part of the foundation, not a deployment-specific extra.
+The Living Documentation portal is Orion's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources.
+
+## Information architecture
+
+| Route | Responsibility |
+| --- | --- |
+| `/docs` | Overview and starting routes for contributors |
+| `/docs/api` and `/docs/api/<operationId>` | Operation catalog, request/response contracts, local OpenAPI download, and explicit API exploration |
+| `/docs/database` and `/docs/database/<table>` | Table catalog, ownership, classification, lifecycle, columns, and physical constraints |
+| `/docs/components` and `/docs/components/<export>` | Component properties, usage, accessibility, states, and live synthetic examples |
+| `/docs/repository/<repository-path-without-md>` | Locally rendered repository Markdown; parent paths are navigable collections |
+| `/docs/search?q=<query>&scope=<kind>` | Full-text results across authored and generated knowledge; links identify the matching page/section |
+
+The shell provides section navigation, breadcrumbs, responsive navigation, search, per-page outlines, focused route changes, and recoverable missing/loading/error states. Collections show at most 24 folders and document entries combined per page, with folder counts computed in one pass. Page IDs derive from repository paths, stable operation IDs, table names, or component names; titles can evolve without changing those IDs. A file move changes its path-based route and requires updating references. Repository hierarchy is derived rather than maintained in a second navigation inventory.
+
+All Markdown under `docs/`, and repository `README.md`/`AGENTS.md` files, are included. Relative links between those documents and their heading anchors stay in the local portal. OpenAPI links lead to the local API artifact section. Links to code and other source-only files may open GitHub; normal documentation reading does not require GitHub. Existing Markdown/JSON artifacts remain directly available to AI agents and repository readers.
 
 ## Sources and representations
 
-| Subject | Canonical source | Existing or required derived representation |
+| Subject | Canonical source | Derived representation |
 | --- | --- | --- |
-| API operations, requests, responses, and expected errors | Executable TypeBox wire contracts, route metadata, and the API error registry | Committed [OpenAPI 3.1](../generated/api/openapi.json) and [error reference](../generated/api/errors.md); the portal renders operations, fields, authentication, statuses, and registered errors. The SDK remains a separate generated consumer. |
-| Database structure and data dictionary | Migrated PostgreSQL, reviewed SQL migrations, and [schema-adjacent semantic metadata](../../apps/api/prisma/schema-metadata.json) | Committed [physical and semantic reference](../generated/database/approval-requests.md); the portal renders tables, columns, constraints, ownership, classification, null semantics, and lifecycle where recorded. Never infer missing meaning from names. |
-| Frontend components | Actual [web component source](../../apps/web/src/components.tsx) and [component-owned examples/metadata](../../apps/web/src/components.docs.json) | Generated [AI-readable component reference](../generated/components/web.md) and portal examples render only exported components that exist, with API, states, accessibility behavior, and usage constraints. |
-| Configuration | API TypeBox schema and [reference metadata](../../apps/api/src/config.ts) | [Generated safe configuration reference](../generated/configuration/api.md) and the mechanically checked [local example](../../.env.example); never publish secret values. |
+| Repository knowledge | Authored Markdown under `docs/` and local README/instruction files | Safe rendered page JSON, headings, catalog summaries, and searchable sections |
+| API | Executable TypeBox contracts, route metadata, and error registry, through generated OpenAPI/errors | Operation detail pages with full schemas and referenced components; error-registry document; generated SDK remains a separate consumer |
+| Database | Migrated PostgreSQL and [schema-adjacent semantic metadata](../../apps/api/prisma/schema-metadata.json), through generated database Markdown | Table dictionary pages and complete physical/semantic reference, including enums |
+| Components | [Actual exports](../../apps/web/src/components.tsx) and [owned examples/metadata](../../apps/web/src/components.docs.json) | Component detail pages, safe previews, and [AI-readable Markdown](../generated/components/web.md) |
+| Configuration | API TypeBox schema and [reference metadata](../../apps/api/src/config.ts) | Locally readable [safe configuration reference](../generated/configuration/api.md); no environment values |
 
-Authored documentation owns intent, invariants, operational procedures, and rationale that cannot be reliably generated. Derived structural facts have one source and may be rendered in several forms. The portal should link back to canonical sources and relevant policy instead of maintaining independent narrative copies. ADRs retain decision history; the portal shows current behavior.
+Authored guidance owns intent, constraints, rationale, and procedures. The portal may summarize, index, or render those sources but must not invent missing meaning. Accepted ADRs retain decision-time context and status. Repository policy, current implementation, and deliberately conditional capabilities remain distinguishable.
 
-## Portal requirements and boundary
+## Generation and drift protection
 
-The portal is the public `/docs` route in the existing React/Vite web application. This keeps live examples with the component owner and requires no new application boundary, framework, or ADR. It is discoverable from the repository README and documentation index, navigates API, data dictionary, and components, and links the underlying AI-readable artifacts and canonical policy. Human pages remain usable without reading raw JSON or source files. Generated output is deterministic, safe to publish from tracked repository data, and freshness-checked by `pnpm validate`/CI. A clean checkout can regenerate or check it through documented commands. Broken local documentation links and undocumented application-owned schema objects fail validation.
+The [generator entry point](../../tooling/documentation/generate.mjs) delegates discovery/output handling, Markdown rendering, and reference transformation to small tooling modules. It emits `apps/web/src/generated/manifest.json`, individual JSON files under `pages/`, bounded search assets under `search/`, and the component Markdown reference. The manifest contains navigation metadata, not the repository body text. Repository outlines load with their page. The browser loads only the selected page; the application workflow lazy-loads the documentation UI separately.
 
-Do not copy real environment values, production data, tokens, or unrestricted examples into generated pages. Preserve the API's server/client configuration boundary and database classification. A portal renderer may transform the existing artifacts, but it must not become the source for API, database, or component semantics. Choose and justify any new portal or component-documentation dependency during Phase 11 against existing ADRs and the [ADR policy](../adr/authoring.md); this document does not select a framework.
+Discovery uses Git's tracked and non-ignored new files, constrained to the documented source scope. Dependencies, ignored local files, runtime environment, databases, and arbitrary filesystem paths are not publication inputs. Symlinks and paths escaping the repository are rejected. Files, IDs, headings, search records, and serialized outputs have deterministic ordering; output contains no clock, host path, or environment-dependent values. Line endings normalize before comparison.
 
-## Change workflow
+`pnpm docs:references:write` deliberately regenerates owned output and removes obsolete generated files. `pnpm docs:references:check` detects missing, stale, or orphaned generated output without repairing it. Component metadata completeness, supported schema metadata, duplicate identifiers, referenced schemas, local links, and known secret patterns are checked at their owning layers. Test fixtures exercise malicious Markdown, links, identifiers, drift, and larger document inventories. These controls do not prove authored meaning is correct or detect every secret; review remains required.
 
-1. Change the owning source and its meaningful tests. Add component examples/metadata beside the owning component when needed.
-2. Regenerate derived files through their owners. Review the diff for loss of meaning, sensitive content, and unexpected changes.
-3. Run `pnpm docs:references:write` after changes to API/database references or component metadata. It generates the browser dataset and component Markdown; Vite serves the existing AI-readable files directly in development and emits them as build assets. `pnpm docs:references:check` compares generated outputs without editing tracked files. Run the full [validation gate](../validation.md) for links, metadata, browser navigation, and live examples.
+The database introspector supports current ordinary application tables, columns, non-primary constraints/indexes, and enums. Extend it before introducing uncovered PostgreSQL object kinds; [schema documentation](../database/schema-documentation.md) retains the broader physical-truth requirement. The portal does not reinterpret an absent catalog object as permission to omit it.
 
-The committed files under `docs/generated/` remain authoritative; the browser downloads those same files as Vite assets, with no second tracked copy. Repository-relative links inside downloaded Markdown are intended for repository readers; the portal provides direct links to the canonical source and policy. The generator fails when an exported web component lacks metadata, when required component fields are missing, or when known secret patterns appear in output or referenced artifacts. Existing database generation checks ensure every migrated application-owned table, column, and physical object has required semantic metadata. No real identity provider or deployed environment is needed to browse the portal.
+## Safe local reading and API exploration
+
+Markdown is rendered at generation time with raw HTML disabled. Unsafe protocols and escaping local paths are rejected; links are rewritten from known repository paths. Images do not initiate automatic external requests. Browser insertion is limited to this generated, tested HTML; runtime API responses are rendered as text, never HTML. Keep the generator's escaping and URL rules covered by regression tests.
+
+Reading documentation, searching, and component previews need no API, identity provider, token, database, or external service. Search queries remain local browser work; no third-party search provider receives repository content. Component previews keep synthetic input local and never connect identities or perform domain requests.
+
+The API explorer is an intentionally generic OpenAPI consumer: it uses the generated operation contract to build explicit same-origin HTTP requests. Product workflows continue to use the typed `@orion/sdk`; the explorer imports no API implementation and duplicates no business authorization. A raw HTTP boundary is appropriate here because inspecting rejection and unsupported future operations is part of the tool, not typed product orchestration. It introduces no replacement SDK or new application boundary.
+
+- The configured browser API base must be a safe same-origin path. OpenAPI server URLs and user-provided hosts cannot redirect execution elsewhere. Path and header controls reject traversal, encoded separators, protected headers, and unsupported encodings.
+- Nothing executes on page load or navigation. The user fills declared parameters/JSON, supplies an in-memory bearer token when required, and explicitly sends. Writes require acknowledgement that the request can change real data.
+- Tokens never enter URLs, storage, logs, generated assets, or copied examples. Execution omits ambient cookies and referrers, rejects redirects, and disables request caching. Navigation, clearing, and unmount release sensitive state and abort pending work.
+- Requests have a bounded timeout and cancellation. Cancellation or a network failure cannot prove a mutation was rolled back; inspect actual state and follow the operation's idempotency/concurrency contract before retrying. The explorer does not retry automatically.
+- Response display is bounded and masks known credential fields and the supplied bearer value. It displays status, duration, safe headers, and text/JSON without executing content. This is not a general data-loss prevention system; use appropriate local/test data and access.
+- Unsupported authentication, media types, or parameter serialization remain inspectable with an explicit execution limitation. The server continues to enforce authentication, authorization, validation, concurrency, and rate limits.
+
+## Scaling and maintenance
+
+Rendering, search, catalog navigation, and API execution have separate modules. Adding a document requires no JSX page or navigation registration. Only live examples need explicit component-owned renderers, so arbitrary metadata cannot instantiate executable UI. Generated operation pages include their referenced schema closure rather than every unrelated schema.
+
+Full-text search runs in a dedicated worker after an explicit query. It processes bounded shards, retains a bounded ranked result set, and terminates obsolete searches. Overlapping chunks preserve terms at boundaries; streamed section matching combines terms across chunks and shards without retaining a complete section or returning duplicates. Initial navigation does not load the search corpus or render all document bodies. Results link to matching headings and can be narrowed by kind. Catalog pagination bounds both folders and documents; outlines are local to the open page.
+
+The catalog still grows with entry count; search and static asset volume grow with indexed content. This is a static local foundation, not a promise of constant-time search over unlimited content. Measure generated sizes, worker latency, build time, and browser memory for the real project. Very large deployments may need further catalog partitioning or a deliberate indexed search service; preserve canonical inputs, local privacy expectations, deterministic artifacts, and a no-service reading path when making that decision. Do not load every detail into one bundle or add an external index merely because more files exist.
+
+## Change and verification workflow
+
+1. Edit the owning Markdown, contract, schema, or component metadata. Regenerate upstream API/database/SDK references when their sources change.
+2. Run `pnpm docs:references:write`, including after ordinary authored documentation changes. Review generated differences, links, sensitive content, and obsolete output removal.
+3. Run `pnpm docs:references:test`, `pnpm docs:check`, `pnpm docs:references:check`, relevant unit/browser checks, and the full `pnpm validate` gate. Generator tests protect publication boundaries; browser tests cover routes, search, exploration, synthetic previews, and automated accessibility checks plus keyboard/mobile behavior.
+4. For substantial generation/build changes, verify frozen installation, regeneration with no diff, build, and a real browser in a clean checkout without a local environment file or existing generated cache. Remote CI runs the same full gate; record actual results separately from local evidence.
+
+See [setup](../setup.md#living-documentation-portal) for commands and [validation](../validation.md) for available checks. This foundation work does not select providers, deploy infrastructure, or activate Phase 12.
+
+The owner retained interactive manual browser verification and reported [H-12](../human-actions.md#h-12) complete. The [manual checklist](../validation.md#living-documentation-manual-browser-checks) remains the recheck guide after material UI changes. Keep human-observed acceptance distinct from the automated browser suites in the normal repository gate.

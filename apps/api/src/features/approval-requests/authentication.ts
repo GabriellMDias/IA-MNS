@@ -1,8 +1,15 @@
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, errors, jwtVerify } from "jose";
 import type { Principal } from "./domain.js";
 
 export interface AccessTokenVerifier {
   verify(authorization: string | undefined): Promise<Principal | null>;
+}
+
+export class AuthenticationUnavailableError extends Error {
+  constructor(cause: unknown) {
+    super("Authentication verification unavailable", { cause });
+    this.name = "AuthenticationUnavailableError";
+  }
 }
 
 const uuid =
@@ -45,8 +52,21 @@ export function createAccessTokenVerifier(config: {
         if (payload.scope.split(" ").includes("approval:review"))
           capabilities.add("approval:review");
         return { id, capabilities };
-      } catch {
-        return null;
+      } catch (error) {
+        // Reject invalid credentials normally. Key retrieval, malformed trusted
+        // JWKS data, and unexpected verifier failures must remain observable.
+        if (
+          error instanceof errors.JWTClaimValidationFailed ||
+          error instanceof errors.JWTExpired ||
+          error instanceof errors.JOSEAlgNotAllowed ||
+          error instanceof errors.JOSENotSupported ||
+          error instanceof errors.JWSInvalid ||
+          error instanceof errors.JWTInvalid ||
+          error instanceof errors.JWKSNoMatchingKey ||
+          error instanceof errors.JWSSignatureVerificationFailed
+        )
+          return null;
+        throw new AuthenticationUnavailableError(error);
       }
     },
   };

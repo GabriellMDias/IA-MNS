@@ -1,6 +1,15 @@
 # Documentation Task Index
 
-Choose the route relevant to the change. Policy pages provide section links for focused reading; related policies apply when the change crosses their boundaries. The repository has the Approval Request server, PostgreSQL persistence, generated SDK, and web workflow. [Selected technologies](architecture/technology-decisions.md) are not proof of [implemented commands](validation.md).
+Choose the route relevant to the change, then use the policy's headings and source links for focused reading. Related policies apply when the change crosses their boundaries. The repository has the Approval Request server, PostgreSQL persistence, generated SDK, and web workflow. [Selected technologies](architecture/technology-decisions.md) are not proof of [implemented commands](validation.md).
+
+## Find the smallest useful context
+
+1. Read the root and applicable nested `AGENTS.md`, then select the task route below. Read related policies only when the change crosses their boundaries.
+2. Follow the owner to its canonical source and relevant tests. For an implemented example, start at the [reference feature map](foundation-acceptance.md#reference-feature-evidence-map). For commands, use [setup](setup.md) and [validation](validation.md).
+3. Consult the [technology map](architecture/technology-decisions.md) and governing ADR for an architectural choice or rationale. Accepted ADRs preserve decision-time context; their future-tense examples are not current command inventories.
+4. If implementation and policy disagree, record the discrepancy and resolve it within the task's scope. Do not infer that a requirement is implemented or weaken it to match a gap.
+
+[Contributing](contributing.md#documentation-ownership) owns documentation responsibilities. The [plan](implementation-plan.md) owns execution status; [human actions](human-actions.md) owns actual owner/access prerequisites. Neither activates conditional deployment work.
 
 ## Architecture and implementation
 
@@ -9,7 +18,7 @@ Choose the route relevant to the change. Policy pages provide section links for 
 | Execute or track implementation phases | [Living implementation plan](implementation-plan.md) |
 | Reproduce development setup, local execution, and the validation gate | [Development setup](setup.md) |
 | Run the living API/data/component portal and understand its architecture | [Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md) |
-| Review accepted reference vertical-slice capabilities and limitations | [Phase 9 acceptance](foundation-acceptance.md) |
+| Review accepted reference feature and portal capabilities, evidence, and limitations | [Foundation acceptance](foundation-acceptance.md) |
 | Resolve owner decisions, external access, or other human prerequisites | [Human-action checklist](human-actions.md) |
 | Understand the reference feature's business rules and acceptance scenarios | [Approval Request](domains/approval-request.md) |
 | Implement the reference feature's persistence, concurrency, access, and list contracts | [Approval Request implementation conventions](domains/approval-request-implementation.md) |
@@ -23,7 +32,7 @@ Choose the route relevant to the change. Policy pages provide section links for 
 | Change independently deployed or persisted contracts | [Versioning and compatibility](architecture/versioning-and-compatibility.md) |
 | Handle delivery, retries, and external side effects | [Delivery and side effects](architecture/delivery-and-side-effects.md) |
 | Implement CI or dependency automation | [Continuous integration](architecture/continuous-integration.md) |
-| Build the first API or regenerate derived references | [Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md) |
+| Change backend execution or regenerate derived references | [Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md) |
 | Run or extend the current API feature | [API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json) |
 | Run or extend the web workflow or generated SDK | [Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts) |
 | Change the SDK public surface or generated types | [SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md) |
@@ -42,6 +51,7 @@ Choose the route relevant to the change. Policy pages provide section links for 
 | Document or generate database reference | [Schema documentation](database/schema-documentation.md) |
 | Inspect the migrated Approval Request schema | [Generated database reference](generated/database/approval-requests.md) |
 | Find the current machine-readable API contract and public errors | [OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md) |
+| Inspect API configuration names, types, defaults, and visibility | [Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md) |
 | Find the generated frontend component reference | [Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json) |
 | Protect atomicity or concurrent writes | [Transactions and concurrency](database/transactions-and-concurrency.md) |
 

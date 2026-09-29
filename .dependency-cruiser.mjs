@@ -51,18 +51,25 @@ export default {
       { path: "^(apps/api|packages/database)/" },
     ),
     error(
+      "no-client-node-builtins",
+      "Browser runtime and its SDK must not depend on Node.js built-ins.",
+      { path: "^apps/(web|mobile|desktop)/src/|^packages/sdk/src/" },
+      { dependencyTypes: ["core"] },
+    ),
+    error(
       "no-domain-to-infrastructure",
       "Domain code must stay independent of HTTP, persistence, and infrastructure adapters.",
-      { path: "^(apps|packages)/.+/domain/" },
+      { path: "^(apps|packages)/.+/domain(/|\\.[cm]?[jt]sx?$)" },
       {
-        path: "(^|/)(infrastructure|transport|persistence)/|^packages/database/",
+        path: "(^|/)(infrastructure|transport|persistence)/|^packages/database/|/(prisma-repository|routes|authentication|contracts|config|main|logging|telemetry)\\.[cm]?[jt]sx?$",
       },
     ),
   ],
   options: {
     doNotFollow: { path: "node_modules" },
+    // Bundler chunks are derived output; inspect their canonical source graph.
     exclude:
-      "(^|/)(node_modules|coverage|test-results|playwright-report|generated)/",
+      "(^|/)(node_modules|dist|coverage|test-results|playwright-report|generated)/",
     tsConfig: { fileName: "tsconfig.json" },
   },
 };

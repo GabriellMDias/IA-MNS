@@ -7,6 +7,43 @@ import pg from "pg";
 const run = promisify(execFile);
 const appRoot = resolve(import.meta.dirname, "..");
 
+/** Compare only Prisma-representable structure; SQL-only objects use catalog checks. */
+export async function assertPrismaSchemaMatchesDatabase(
+  migrationUrl: string,
+): Promise<void> {
+  try {
+    await run(
+      process.execPath,
+      [
+        resolve(appRoot, "node_modules/prisma/build/index.js"),
+        "migrate",
+        "diff",
+        "--from-config-datasource",
+        "--to-schema",
+        resolve(appRoot, "prisma/schema.prisma"),
+        "--exit-code",
+      ],
+      {
+        cwd: appRoot,
+        env: { ...process.env, ORION_MIGRATION_DATABASE_URL: migrationUrl },
+        timeout: 90_000,
+      },
+    );
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === 2
+    )
+      throw new Error(
+        "Prisma schema differs from committed migrations. Reconcile schema.prisma and reviewed migration SQL before generating references.",
+        { cause: error },
+      );
+    throw error;
+  }
+}
+
 export async function withMigratedDatabase<T>(
   work: (runtimeUrl: string, migrationUrl: string) => Promise<T>,
 ): Promise<T> {

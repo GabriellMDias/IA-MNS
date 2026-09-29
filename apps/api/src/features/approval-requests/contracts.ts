@@ -76,6 +76,8 @@ export const approvalOperations = [
     method: "POST",
     url: "/approval-requests",
     operationId: "createApprovalRequest",
+    description:
+      "Create a draft owned by the authenticated requester. A repeated idempotency key may safely replay the same creation, but cannot be reused for different input.",
     schema: {
       headers,
       body: Type.Object(
@@ -99,6 +101,8 @@ export const approvalOperations = [
     method: "GET",
     url: "/approval-requests",
     operationId: "listApprovalRequests",
+    description:
+      "List requests visible to the authenticated principal. The mine scope shows owned requests; reviewable requires review capability and excludes requests owned by the reviewer.",
     schema: {
       querystring: Type.Object(
         {
@@ -123,6 +127,8 @@ export const approvalOperations = [
     method: "GET",
     url: "/approval-requests/:id",
     operationId: "getApprovalRequest",
+    description:
+      "Read one request when the principal owns it or has review access to a submitted request.",
     schema: { params, response: { 200: requestSchema, ...readErrors } },
     expectedErrors: [
       "VALIDATION_FAILED",
@@ -135,6 +141,8 @@ export const approvalOperations = [
     method: "PUT",
     url: "/approval-requests/:id/draft",
     operationId: "editApprovalRequestDraft",
+    description:
+      "Edit an owned draft. The expected version prevents a stale write from overwriting newer data or a state transition.",
     schema: {
       params,
       body: Type.Object(
@@ -160,6 +168,8 @@ export const approvalOperations = [
     method: "POST",
     url: "/approval-requests/:id/submit",
     operationId: "submitApprovalRequest",
+    description:
+      "Submit an owned draft for review when its version still matches. A submitted request cannot be edited as a draft.",
     schema: {
       params,
       body: expectedVersion,
@@ -178,6 +188,8 @@ export const approvalOperations = [
     method: "POST",
     url: "/approval-requests/:id/approve",
     operationId: "approveApprovalRequest",
+    description:
+      "Approve a submitted request as a reviewer other than its owner. The expected version protects competing decisions.",
     schema: {
       params,
       body: expectedVersion,
@@ -197,6 +209,8 @@ export const approvalOperations = [
     method: "POST",
     url: "/approval-requests/:id/reject",
     operationId: "rejectApprovalRequest",
+    description:
+      "Reject a submitted request as a reviewer other than its owner, recording the required reason. The expected version protects competing decisions.",
     schema: {
       params,
       body: Type.Object(
@@ -219,6 +233,8 @@ export const approvalOperations = [
     method: "POST",
     url: "/approval-requests/:id/cancel",
     operationId: "cancelApprovalRequest",
+    description:
+      "Cancel an owned draft or submitted request when its version still matches. A terminal request cannot be cancelled.",
     schema: {
       params,
       body: expectedVersion,

@@ -388,24 +388,24 @@ Replacing PostgreSQL as Orion's primary database would be an architectural chang
 
 ## References
 
-Related ADR: `ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime`
+Related ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)
 
-Related ADR: `ADR-0004: Select Fastify as the Backend HTTP Framework`
+Related ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/application-boundaries.md`
+Related policy: [application boundaries](../architecture/application-boundaries.md)
 
-Related policy: `docs/database/principles.md`
+Related policy: [principles](../database/principles.md)
 
-Related policy: `docs/database/migrations.md`
+Related policy: [migrations](../database/migrations.md)
 
-Related policy: `docs/database/schema-documentation.md`
+Related policy: [schema documentation](../database/schema-documentation.md)
 
-Related policy: `docs/database/transactions-and-concurrency.md`
+Related policy: [transactions and concurrency](../database/transactions-and-concurrency.md)
 
-Related policy: `docs/security/data-classification.md`
+Related policy: [data classification](../security/data-classification.md)
 
-Related policy: `docs/security/data-retention.md`
+Related policy: [data retention](../security/data-retention.md)
 
-Related policy: `docs/security/production-access.md`
+Related policy: [production access](../security/production-access.md)

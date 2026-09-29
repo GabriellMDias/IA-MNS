@@ -1,0 +1,1029 @@
+{
+  "version": 1,
+  "title": "Orion Living Documentation",
+  "api": { "title": "Orion API", "version": "1.0.0" },
+  "entries": [
+    {
+      "id": "api/approveApprovalRequest",
+      "kind": "api",
+      "title": "approveApprovalRequest",
+      "group": "Approval Requests",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /approval-requests/{id}/approve",
+      "method": "POST",
+      "path": "/approval-requests/{id}/approve",
+      "tags": ["Approval Requests"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/approveApprovalRequest.json"
+    },
+    {
+      "id": "api/cancelApprovalRequest",
+      "kind": "api",
+      "title": "cancelApprovalRequest",
+      "group": "Approval Requests",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /approval-requests/{id}/cancel",
+      "method": "POST",
+      "path": "/approval-requests/{id}/cancel",
+      "tags": ["Approval Requests"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/cancelApprovalRequest.json"
+    },
+    {
+      "id": "api/createApprovalRequest",
+      "kind": "api",
+      "title": "createApprovalRequest",
+      "group": "Approval Requests",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /approval-requests",
+      "method": "POST",
+      "path": "/approval-requests",
+      "tags": ["Approval Requests"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createApprovalRequest.json"
+    },
+    {
+      "id": "api/editApprovalRequestDraft",
+      "kind": "api",
+      "title": "editApprovalRequestDraft",
+      "group": "Approval Requests",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /approval-requests/{id}/draft",
+      "method": "PUT",
+      "path": "/approval-requests/{id}/draft",
+      "tags": ["Approval Requests"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/editApprovalRequestDraft.json"
+    },
+    {
+      "id": "api/getApprovalRequest",
+      "kind": "api",
+      "title": "getApprovalRequest",
+      "group": "Approval Requests",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /approval-requests/{id}",
+      "method": "GET",
+      "path": "/approval-requests/{id}",
+      "tags": ["Approval Requests"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getApprovalRequest.json"
+    },
+    {
+      "id": "api/getLiveness",
+      "kind": "api",
+      "title": "getLiveness",
+      "group": "Health",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /health/live",
+      "method": "GET",
+      "path": "/health/live",
+      "tags": ["Health"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getLiveness.json"
+    },
+    {
+      "id": "api/getReadiness",
+      "kind": "api",
+      "title": "getReadiness",
+      "group": "Health",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /health/ready",
+      "method": "GET",
+      "path": "/health/ready",
+      "tags": ["Health"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getReadiness.json"
+    },
+    {
+      "id": "api/getStartupHealth",
+      "kind": "api",
+      "title": "getStartupHealth",
+      "group": "Health",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /health/startup",
+      "method": "GET",
+      "path": "/health/startup",
+      "tags": ["Health"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getStartupHealth.json"
+    },
+    {
+      "id": "api/listApprovalRequests",
+      "kind": "api",
+      "title": "listApprovalRequests",
+      "group": "Approval Requests",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /approval-requests",
+      "method": "GET",
+      "path": "/approval-requests",
+      "tags": ["Approval Requests"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listApprovalRequests.json"
+    },
+    {
+      "id": "api/rejectApprovalRequest",
+      "kind": "api",
+      "title": "rejectApprovalRequest",
+      "group": "Approval Requests",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /approval-requests/{id}/reject",
+      "method": "POST",
+      "path": "/approval-requests/{id}/reject",
+      "tags": ["Approval Requests"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/rejectApprovalRequest.json"
+    },
+    {
+      "id": "api/submitApprovalRequest",
+      "kind": "api",
+      "title": "submitApprovalRequest",
+      "group": "Approval Requests",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /approval-requests/{id}/submit",
+      "method": "POST",
+      "path": "/approval-requests/{id}/submit",
+      "tags": ["Approval Requests"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/submitApprovalRequest.json"
+    },
+    {
+      "id": "database/approval_requests",
+      "kind": "database",
+      "title": "approval_requests",
+      "group": "Approval Request",
+      "source": "docs/generated/database/approval-requests.md",
+      "summary": "Canonical current state of a human-owned Approval Request, from draft through a terminal decision or cancellation.",
+      "headings": [],
+      "file": "pages/database/approval_requests.json"
+    },
+    {
+      "id": "components/AccessTokenForm",
+      "kind": "component",
+      "title": "AccessTokenForm",
+      "group": "Web components",
+      "source": "apps/web/src/components.tsx",
+      "summary": "Collects an already-issued bearer token and passes it to the in-memory credential boundary.",
+      "headings": [],
+      "file": "pages/components/AccessTokenForm.json"
+    },
+    {
+      "id": "components/ErrorNotice",
+      "kind": "component",
+      "title": "ErrorNotice",
+      "group": "Web components",
+      "source": "apps/web/src/components.tsx",
+      "summary": "Displays a public API failure message and an optional reload action.",
+      "headings": [],
+      "file": "pages/components/ErrorNotice.json"
+    },
+    {
+      "id": "repository/AGENTS",
+      "kind": "repository",
+      "title": "Repository Instructions",
+      "group": "Agent instructions",
+      "source": "AGENTS.md",
+      "summary": "The repository is the primary source of truth. Keep implementation, schemas, contracts, tests, documentation, and generated artifacts consistent. Do not invent undocumented…",
+      "headings": [],
+      "file": "pages/repository/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/api/AGENTS",
+      "kind": "repository",
+      "title": "API-local Instructions",
+      "group": "Agent instructions",
+      "source": "apps/api/AGENTS.md",
+      "summary": "Read the runtime guide for source locations and local commands, and feature conventions before changing Approval Request behavior. Global repository instructions still apply.",
+      "headings": [],
+      "file": "pages/repository/apps/api/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/api/README",
+      "kind": "repository",
+      "title": "Orion API Runtime",
+      "group": "Workspace guides",
+      "source": "apps/api/README.md",
+      "summary": "The Fastify API exposes health routes and the authenticated Approval Request feature, persisted in PostgreSQL through Prisma. The web workflow consumes its generated API…",
+      "headings": [],
+      "file": "pages/repository/apps/api/README.json"
+    },
+    {
+      "id": "repository/apps/web/AGENTS",
+      "kind": "repository",
+      "title": "Web Application Instructions",
+      "group": "Agent instructions",
+      "source": "apps/web/AGENTS.md",
+      "summary": "Use the web guide for source locations, startup, and browser checks. Global repository instructions still apply.",
+      "headings": [],
+      "file": "pages/repository/apps/web/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/web/README",
+      "kind": "repository",
+      "title": "Orion Web Reference Workflow",
+      "group": "Workspace guides",
+      "source": "apps/web/README.md",
+      "summary": "This React/Vite application demonstrates the Approval Request workflow through the generated @orion/sdk client. TanStack Router owns detail IDs and list scope/cursor in the…",
+      "headings": [],
+      "file": "pages/repository/apps/web/README.json"
+    },
+    {
+      "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
+      "kind": "repository",
+      "title": "ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime",
+      "group": "Decisions",
+      "source": "docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md",
+      "summary": "Orion requires a primary programming language and runtime before repository tooling, backend infrastructure, shared contracts, validation workflows, and application foundations…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.json"
+    },
+    {
+      "id": "repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management",
+      "kind": "repository",
+      "title": "ADR-0002: Select pnpm for Package and Workspace Management",
+      "group": "Decisions",
+      "source": "docs/adr/0002-select-pnpm-for-package-and-workspace-management.md",
+      "summary": "Orion requires a package and workspace management strategy before repository tooling, applications, shared packages, dependency rules, validation workflows, and CI can be…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0002-select-pnpm-for-package-and-workspace-management.json"
+    },
+    {
+      "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+      "kind": "repository",
+      "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+      "group": "Decisions",
+      "source": "docs/adr/0003-establish-repository-validation-and-architecture-enforcement.md",
+      "summary": "Orion requires a canonical way for human contributors, AI agents, local development environments, and CI to determine whether a repository change satisfies the engineering…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement.json"
+    },
+    {
+      "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+      "kind": "repository",
+      "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+      "group": "Decisions",
+      "source": "docs/adr/0004-select-fastify-as-the-backend-http-framework.md",
+      "summary": "Orion requires a backend HTTP framework before the initial API application and its transport layer can be implemented consistently.",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0004-select-fastify-as-the-backend-http-framework.json"
+    },
+    {
+      "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+      "kind": "repository",
+      "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+      "group": "Decisions",
+      "source": "docs/adr/0005-select-postgresql-as-the-primary-database.md",
+      "summary": "Orion requires a primary database technology before the persistence strategy, migration tooling, schema canonical source, integration-testing infrastructure, and initial…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0005-select-postgresql-as-the-primary-database.json"
+    },
+    {
+      "id": "repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations",
+      "kind": "repository",
+      "title": "ADR-0006: Select Prisma ORM for Database Access and Migrations",
+      "group": "Decisions",
+      "source": "docs/adr/0006-select-prisma-orm-for-database-access-and-migrations.md",
+      "summary": "Orion requires a database access and schema-evolution strategy after selecting PostgreSQL as its primary relational database.",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0006-select-prisma-orm-for-database-access-and-migrations.json"
+    },
+    {
+      "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
+      "kind": "repository",
+      "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
+      "group": "Decisions",
+      "source": "docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md",
+      "summary": "Orion requires a consistent strategy for defining API contracts, validating external data at runtime, describing HTTP APIs, generating client integrations, and validating…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.json"
+    },
+    {
+      "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
+      "kind": "repository",
+      "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
+      "group": "Decisions",
+      "source": "docs/adr/0008-select-react-vite-and-tanstack-for-web-applications.md",
+      "summary": "Orion requires a default web application stack before the initial web application and its integration with the backend API can be implemented consistently.",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications.json"
+    },
+    {
+      "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+      "kind": "repository",
+      "title": "ADR-0009: Establish Testing Strategy and Tooling",
+      "group": "Decisions",
+      "source": "docs/adr/0009-establish-testing-strategy-and-tooling.md",
+      "summary": "Orion requires a concrete testing strategy that implements the testing principles already established by the architecture foundation.",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0009-establish-testing-strategy-and-tooling.json"
+    },
+    {
+      "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+      "kind": "repository",
+      "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+      "group": "Decisions",
+      "source": "docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md",
+      "summary": "Orion requires a concrete observability strategy before production-oriented backend implementation proceeds further.",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.json"
+    },
+    {
+      "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+      "kind": "repository",
+      "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+      "group": "Decisions",
+      "source": "docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md",
+      "summary": "Orion requires a continuous-integration strategy that converts the repository validation contract established by ADR-0003 into an enforceable pull-request and primary-branch…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.json"
+    },
+    {
+      "id": "repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+      "kind": "repository",
+      "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+      "group": "Decisions",
+      "source": "docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md",
+      "summary": "The Approval Request feature requires every operation to authenticate a human before applying ownership and review-capability rules. H-05 selected a provider-independent…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.json"
+    },
+    {
+      "id": "repository/docs/adr/AGENTS",
+      "kind": "repository",
+      "title": "ADR Instructions",
+      "group": "Decisions",
+      "source": "docs/adr/AGENTS.md",
+      "summary": "Consult the decision index and authoring policy before creating or changing an ADR.",
+      "headings": [],
+      "file": "pages/repository/docs/adr/AGENTS.json"
+    },
+    {
+      "id": "repository/docs/adr/authoring",
+      "kind": "repository",
+      "title": "Authoring Architecture Decision Records",
+      "group": "Decisions",
+      "source": "docs/adr/authoring.md",
+      "summary": "Use the decision index to search existing decisions and the template to draft a record. ADRs preserve decision history and rationale; current policy describes current…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/authoring.json"
+    },
+    {
+      "id": "repository/docs/adr/README",
+      "kind": "repository",
+      "title": "Architecture Decision Records",
+      "group": "Decisions",
+      "source": "docs/adr/README.md",
+      "summary": "Use this index to locate governing decisions without reading the full history. Each linked record owns its status, decision, rationale, and consequences. Acceptance does not…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/README.json"
+    },
+    {
+      "id": "repository/docs/adr/template",
+      "kind": "repository",
+      "title": "ADR-NNNN: Decision Title",
+      "group": "Decisions",
+      "source": "docs/adr/template.md",
+      "summary": "Describe the architectural problem or constraint that requires a decision.",
+      "headings": [],
+      "file": "pages/repository/docs/adr/template.json"
+    },
+    {
+      "id": "repository/docs/AGENTS",
+      "kind": "repository",
+      "title": "Documentation Instructions",
+      "group": "Agent instructions",
+      "source": "docs/AGENTS.md",
+      "summary": "Use the task index to locate the owner of the information being changed. Read contributing guidance when creating, moving, or maintaining documentation.",
+      "headings": [],
+      "file": "pages/repository/docs/AGENTS.json"
+    },
+    {
+      "id": "repository/docs/api/error-contract",
+      "kind": "repository",
+      "title": "API Error Contract",
+      "group": "API guides",
+      "source": "docs/api/error-contract.md",
+      "summary": "This policy owns public failure semantics. The API's errorRegistry, envelope schema, and constructor are canonical; the generated error reference lists implemented codes,…",
+      "headings": [],
+      "file": "pages/repository/docs/api/error-contract.json"
+    },
+    {
+      "id": "repository/docs/api/principles",
+      "kind": "repository",
+      "title": "API Principles",
+      "group": "API guides",
+      "source": "docs/api/principles.md",
+      "summary": "This policy owns API boundary design. ADR-0004 selects Fastify; ADR-0007 selects executable TypeBox wire contracts, generated OpenAPI, and the thin TypeScript SDK. These are…",
+      "headings": [],
+      "file": "pages/repository/docs/api/principles.json"
+    },
+    {
+      "id": "repository/docs/api/versioning",
+      "kind": "repository",
+      "title": "API Versioning",
+      "group": "API guides",
+      "source": "docs/api/versioning.md",
+      "summary": "This policy owns consumer-facing API evolution. Prefer compatible evolution; create a new API version only when a meaningful incompatibility cannot reasonably be handled within…",
+      "headings": [],
+      "file": "pages/repository/docs/api/versioning.json"
+    },
+    {
+      "id": "repository/docs/architecture/application-boundaries",
+      "kind": "repository",
+      "title": "Application Boundaries",
+      "group": "Architecture",
+      "source": "docs/architecture/application-boundaries.md",
+      "summary": "Applications are executable boundaries with explicit ownership; sharing a monorepo does not merge their runtime, trust, or persistence responsibilities. This page owns runtime…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/application-boundaries.json"
+    },
+    {
+      "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
+      "kind": "repository",
+      "title": "Backend Execution and Generated Artifacts",
+      "group": "Architecture",
+      "source": "docs/architecture/backend-execution-and-generated-artifacts.md",
+      "summary": "This page owns API execution and generated-artifact storage conventions. The implemented pipeline follows TypeScript/Node.js, pnpm, API generation, Prisma/PostgreSQL, and…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/backend-execution-and-generated-artifacts.json"
+    },
+    {
+      "id": "repository/docs/architecture/configuration",
+      "kind": "repository",
+      "title": "Configuration",
+      "group": "Architecture",
+      "source": "docs/architecture/configuration.md",
+      "summary": "Configuration is an explicit application dependency: validate it before use, expose only safe projections, and keep its meaning discoverable without access to secret values.…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/configuration.json"
+    },
+    {
+      "id": "repository/docs/architecture/continuous-integration",
+      "kind": "repository",
+      "title": "Continuous Integration",
+      "group": "Architecture",
+      "source": "docs/architecture/continuous-integration.md",
+      "summary": "This page owns the map from repository CI configuration to the accepted policy in ADR-0011. See validation availability for local commands. Effective remote settings and…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/continuous-integration.json"
+    },
+    {
+      "id": "repository/docs/architecture/delivery-and-side-effects",
+      "kind": "repository",
+      "title": "Delivery and Side Effects",
+      "group": "Architecture",
+      "source": "docs/architecture/delivery-and-side-effects.md",
+      "summary": "This page owns cross-system delivery, idempotency, retry, and crash recovery. Database atomicity, isolation, constraints, locking, and transaction retries belong to transaction…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/delivery-and-side-effects.json"
+    },
+    {
+      "id": "repository/docs/architecture/dependency-rules",
+      "kind": "repository",
+      "title": "Dependency Rules",
+      "group": "Architecture",
+      "source": "docs/architecture/dependency-rules.md",
+      "summary": "This page owns allowed dependency directions and their enforcement. A resolving import or passing build does not grant architectural permission. Dependencies must follow…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/dependency-rules.json"
+    },
+    {
+      "id": "repository/docs/architecture/error-handling",
+      "kind": "repository",
+      "title": "Error Handling",
+      "group": "Architecture",
+      "source": "docs/architecture/error-handling.md",
+      "summary": "This page owns failure semantics and translation between layers. ADR-0007 governs executable contracts and ADR-0010 diagnostic signals. Separate what happened, what the caller…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/error-handling.json"
+    },
+    {
+      "id": "repository/docs/architecture/living-documentation",
+      "kind": "repository",
+      "title": "Living Documentation",
+      "group": "Architecture",
+      "source": "docs/architecture/living-documentation.md",
+      "summary": "The Living Documentation portal is Orion's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application.…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/living-documentation.json"
+    },
+    {
+      "id": "repository/docs/architecture/principles",
+      "kind": "repository",
+      "title": "Architecture Principles",
+      "group": "Architecture",
+      "source": "docs/architecture/principles.md",
+      "summary": "These are durable principles for humans and AI agents. Current policies own detailed rules; ADRs preserve significant choices and rationale. Make a conflict explicit and use…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/principles.json"
+    },
+    {
+      "id": "repository/docs/architecture/repository-structure",
+      "kind": "repository",
+      "title": "Repository Structure",
+      "group": "Architecture",
+      "source": "docs/architecture/repository-structure.md",
+      "summary": "This page owns repository placement and local discovery. ADR-0002 governs workspace management; ADR-0003 governs enforcement. Organize by responsibility so humans and agents…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/repository-structure.json"
+    },
+    {
+      "id": "repository/docs/architecture/technology-decisions",
+      "kind": "repository",
+      "title": "Technology Decision Map",
+      "group": "Architecture",
+      "source": "docs/architecture/technology-decisions.md",
+      "summary": "This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. All twelve records…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/technology-decisions.json"
+    },
+    {
+      "id": "repository/docs/architecture/testing-strategy",
+      "kind": "repository",
+      "title": "Testing Strategy",
+      "group": "Architecture",
+      "source": "docs/architecture/testing-strategy.md",
+      "summary": "Tests protect behavior, contracts, invariants, security, and architectural boundaries. Ask which important defect a test would detect, then choose the cheapest reliable…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/testing-strategy.json"
+    },
+    {
+      "id": "repository/docs/architecture/versioning-and-compatibility",
+      "kind": "repository",
+      "title": "Versioning and Compatibility",
+      "group": "Architecture",
+      "source": "docs/architecture/versioning-and-compatibility.md",
+      "summary": "Compatibility protects consumers that cannot change atomically. This page owns cross-boundary evolution; API, database, configuration, and security policies own their specific…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/versioning-and-compatibility.json"
+    },
+    {
+      "id": "repository/docs/contributing",
+      "kind": "repository",
+      "title": "Contributing and Documentation",
+      "group": "Project guides",
+      "source": "docs/contributing.md",
+      "summary": "Use the task index to locate the policy relevant to a change. This guide owns the contributor workflow and documentation-maintenance rules; it does not replace the…",
+      "headings": [],
+      "file": "pages/repository/docs/contributing.json"
+    },
+    {
+      "id": "repository/docs/database/migrations",
+      "kind": "repository",
+      "title": "Database Migrations",
+      "group": "Database guides",
+      "source": "docs/database/migrations.md",
+      "summary": "This policy owns safe transitions between durable database states. ADR-0006 selects reviewed SQL migrations through Prisma Migrate. The initial SQL migration, release registry,…",
+      "headings": [],
+      "file": "pages/repository/docs/database/migrations.json"
+    },
+    {
+      "id": "repository/docs/database/principles",
+      "kind": "repository",
+      "title": "Database Principles",
+      "group": "Database guides",
+      "source": "docs/database/principles.md",
+      "summary": "This policy owns durable data design and persistence boundaries. ADR-0005 selects PostgreSQL and ADR-0006 selects Prisma ORM/Migrate. Both are implemented for Approval Request;…",
+      "headings": [],
+      "file": "pages/repository/docs/database/principles.json"
+    },
+    {
+      "id": "repository/docs/database/release-evolution",
+      "kind": "repository",
+      "title": "Release and Evolution Workflow",
+      "group": "Database guides",
+      "source": "docs/database/release-evolution.md",
+      "summary": "This is the current contributor workflow for deciding whether a database or API change needs historical compatibility protection. It implements the policies above without…",
+      "headings": [],
+      "file": "pages/repository/docs/database/release-evolution.json"
+    },
+    {
+      "id": "repository/docs/database/schema-documentation",
+      "kind": "repository",
+      "title": "Database Schema Documentation",
+      "group": "Database guides",
+      "source": "docs/database/schema-documentation.md",
+      "summary": "This policy owns documentation of application-owned database structures. ADR-0006 makes fully migrated PostgreSQL the complete physical authority, including custom SQL absent…",
+      "headings": [],
+      "file": "pages/repository/docs/database/schema-documentation.json"
+    },
+    {
+      "id": "repository/docs/database/transactions-and-concurrency",
+      "kind": "repository",
+      "title": "Transactions and Concurrency",
+      "group": "Database guides",
+      "source": "docs/database/transactions-and-concurrency.md",
+      "summary": "This policy owns database atomicity, isolation, conditional writes, locks, and transaction retries. Cross-system delivery, idempotency, message claiming, retry ownership, and…",
+      "headings": [],
+      "file": "pages/repository/docs/database/transactions-and-concurrency.json"
+    },
+    {
+      "id": "repository/docs/domains/approval-request-implementation",
+      "kind": "repository",
+      "title": "Approval Request Implementation Conventions",
+      "group": "Domain guides",
+      "source": "docs/domains/approval-request-implementation.md",
+      "summary": "This document owns implementation conventions for the reference feature. The business specification owns actors, invariants, and transitions; executable sources own wire and…",
+      "headings": [],
+      "file": "pages/repository/docs/domains/approval-request-implementation.json"
+    },
+    {
+      "id": "repository/docs/domains/approval-request",
+      "kind": "repository",
+      "title": "Approval Request: Reference Feature",
+      "group": "Domain guides",
+      "source": "docs/domains/approval-request.md",
+      "summary": "This is the canonical business specification for Orion’s Approval Request reference feature, implemented by the API, durable PostgreSQL schema, and web interface. It preserves…",
+      "headings": [],
+      "file": "pages/repository/docs/domains/approval-request.json"
+    },
+    {
+      "id": "repository/docs/foundation-acceptance",
+      "kind": "repository",
+      "title": "Development Foundation Acceptance Report",
+      "group": "Project guides",
+      "source": "docs/foundation-acceptance.md",
+      "summary": "This report assesses the Approval Request reference feature against Phase 9 and the completed living-documentation foundation against Phase 11. It does not certify a production…",
+      "headings": [],
+      "file": "pages/repository/docs/foundation-acceptance.json"
+    },
+    {
+      "id": "repository/docs/generated/api/errors",
+      "kind": "repository",
+      "title": "API Error Registry",
+      "group": "Generated references",
+      "source": "docs/generated/api/errors.md",
+      "summary": "",
+      "headings": [],
+      "file": "pages/repository/docs/generated/api/errors.json"
+    },
+    {
+      "id": "repository/docs/generated/components/web",
+      "kind": "repository",
+      "title": "Web Component Reference",
+      "group": "Generated references",
+      "source": "docs/generated/components/web.md",
+      "summary": "Collects an already-issued bearer token and passes it to the in-memory credential boundary.",
+      "headings": [],
+      "file": "pages/repository/docs/generated/components/web.json"
+    },
+    {
+      "id": "repository/docs/generated/configuration/api",
+      "kind": "repository",
+      "title": "API Configuration Reference",
+      "group": "Generated references",
+      "source": "docs/generated/configuration/api.md",
+      "summary": "No values are eligible for client exposure. ORION_ENV is always required; the database and token settings are required together to enable the Approval Request feature and in…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/configuration/api.json"
+    },
+    {
+      "id": "repository/docs/generated/database/approval-requests",
+      "kind": "repository",
+      "title": "Approval Request Database Reference",
+      "group": "Generated references",
+      "source": "docs/generated/database/approval-requests.md",
+      "summary": "Canonical current state of a human-owned Approval Request, from draft through a terminal decision or cancellation.",
+      "headings": [],
+      "file": "pages/repository/docs/generated/database/approval-requests.json"
+    },
+    {
+      "id": "repository/docs/human-actions",
+      "kind": "repository",
+      "title": "Human Actions for Implementation",
+      "group": "Project guides",
+      "source": "docs/human-actions.md",
+      "summary": "This checklist records implementation prerequisites that require a project-owner decision, human-controlled account action, unavailable privilege, or securely supplied external…",
+      "headings": [],
+      "file": "pages/repository/docs/human-actions.json"
+    },
+    {
+      "id": "repository/docs/implementation-plan",
+      "kind": "repository",
+      "title": "Orion Implementation Plan",
+      "group": "Project guides",
+      "source": "docs/implementation-plan.md",
+      "summary": "This is Orion's living execution plan. It tracks implementation progress; it does not replace current architectural policy or accepted ADRs. Preserve accepted decisions,…",
+      "headings": [],
+      "file": "pages/repository/docs/implementation-plan.json"
+    },
+    {
+      "id": "repository/docs/README",
+      "kind": "repository",
+      "title": "Documentation Task Index",
+      "group": "Project guides",
+      "source": "docs/README.md",
+      "summary": "Choose the route relevant to the change, then use the policy's headings and source links for focused reading. Related policies apply when the change crosses their boundaries.…",
+      "headings": [],
+      "file": "pages/repository/docs/README.json"
+    },
+    {
+      "id": "repository/docs/reliability/alerting",
+      "kind": "repository",
+      "title": "Alerting",
+      "group": "Reliability",
+      "source": "docs/reliability/alerting.md",
+      "summary": "This policy owns actionable alert conditions, severity, ownership, notification, and rule maintenance. Metrics owns measurement semantics; incident response owns incidents;…",
+      "headings": [],
+      "file": "pages/repository/docs/reliability/alerting.json"
+    },
+    {
+      "id": "repository/docs/reliability/error-reporting",
+      "kind": "repository",
+      "title": "Error Reporting",
+      "group": "Reliability",
+      "source": "docs/reliability/error-reporting.md",
+      "summary": "This policy owns unexpected-failure capture, diagnostic context, grouping, and issue triage. Error handling owns application failure semantics; the public error contract owns…",
+      "headings": [],
+      "file": "pages/repository/docs/reliability/error-reporting.json"
+    },
+    {
+      "id": "repository/docs/reliability/health-checks",
+      "kind": "repository",
+      "title": "Health Checks",
+      "group": "Reliability",
+      "source": "docs/reliability/health-checks.md",
+      "summary": "This policy owns startup, liveness, readiness, and diagnostic-health semantics. Probes answer narrow operational questions; metrics, alerts, synthetic monitoring, and full…",
+      "headings": [],
+      "file": "pages/repository/docs/reliability/health-checks.json"
+    },
+    {
+      "id": "repository/docs/reliability/logging",
+      "kind": "repository",
+      "title": "Logging",
+      "group": "Reliability",
+      "source": "docs/reliability/logging.md",
+      "summary": "This policy owns structured operational log events, levels, correlation, and reporting boundaries. Observability explains signal selection; redaction owns what may be captured.…",
+      "headings": [],
+      "file": "pages/repository/docs/reliability/logging.json"
+    },
+    {
+      "id": "repository/docs/reliability/metrics",
+      "kind": "repository",
+      "title": "Metrics",
+      "group": "Reliability",
+      "source": "docs/reliability/metrics.md",
+      "summary": "This policy owns aggregate measurements, units, dimensions, cardinality, and measurement semantics. Use logs, traces, or error reports to investigate individual…",
+      "headings": [],
+      "file": "pages/repository/docs/reliability/metrics.json"
+    },
+    {
+      "id": "repository/docs/reliability/observability",
+      "kind": "repository",
+      "title": "Observability",
+      "group": "Reliability",
+      "source": "docs/reliability/observability.md",
+      "summary": "This policy owns the observability model and signal ownership. Production-relevant behavior must be explainable from structured, safe, correlated evidence. Use this page to…",
+      "headings": [],
+      "file": "pages/repository/docs/reliability/observability.json"
+    },
+    {
+      "id": "repository/docs/reliability/tracing",
+      "kind": "repository",
+      "title": "Tracing",
+      "group": "Reliability",
+      "source": "docs/reliability/tracing.md",
+      "summary": "This policy owns causal spans, context propagation, sampling, and tracing safety. Observability owns the cross-signal model; redaction owns collection restrictions. A trace…",
+      "headings": [],
+      "file": "pages/repository/docs/reliability/tracing.json"
+    },
+    {
+      "id": "repository/docs/runbooks/AGENTS",
+      "kind": "repository",
+      "title": "Runbook Instructions",
+      "group": "Runbooks",
+      "source": "docs/runbooks/AGENTS.md",
+      "summary": "Document real operational conditions only. Do not invent provider commands, organizational roles, or runnable procedures before they exist.",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/AGENTS.json"
+    },
+    {
+      "id": "repository/docs/runbooks/authoring",
+      "kind": "repository",
+      "title": "Authoring and Using Runbooks",
+      "group": "Runbooks",
+      "source": "docs/runbooks/authoring.md",
+      "summary": "Use the index and template. Runbooks are current, repeatable operational procedures for authorized operators, not architecture explanations, ADRs, incident histories, or…",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/authoring.json"
+    },
+    {
+      "id": "repository/docs/runbooks/README",
+      "kind": "repository",
+      "title": "Runbooks",
+      "group": "Runbooks",
+      "source": "docs/runbooks/README.md",
+      "summary": "No operational runbooks exist yet. This directory contains the authoring policy, template, and local instructions. Add index entries only for real procedures when the…",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/README.json"
+    },
+    {
+      "id": "repository/docs/runbooks/template",
+      "kind": "repository",
+      "title": "Runbook: Procedure Title",
+      "group": "Runbooks",
+      "source": "docs/runbooks/template.md",
+      "summary": "Follow authoring policy, production access, incident response, and redaction. Replace prompts with current, verified details; this template is not an executable procedure or an…",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/template.json"
+    },
+    {
+      "id": "repository/docs/security/authentication",
+      "kind": "repository",
+      "title": "Authentication",
+      "group": "Security",
+      "source": "docs/security/authentication.md",
+      "summary": "This policy owns trusted identity, credential, and session requirements. Authorization owns permission decisions; secrets management owns credential lifecycle and redaction…",
+      "headings": [],
+      "file": "pages/repository/docs/security/authentication.json"
+    },
+    {
+      "id": "repository/docs/security/authorization",
+      "kind": "repository",
+      "title": "Authorization",
+      "group": "Security",
+      "source": "docs/security/authorization.md",
+      "summary": "This policy owns permission decisions for application actors. Authentication establishes trusted identity; production access governs operational capabilities. Use the task…",
+      "headings": [],
+      "file": "pages/repository/docs/security/authorization.json"
+    },
+    {
+      "id": "repository/docs/security/data-classification",
+      "kind": "repository",
+      "title": "Data Classification",
+      "group": "Security",
+      "source": "docs/security/data-classification.md",
+      "summary": "This policy owns Orion's sensitivity model and data-handling baseline. Redaction, retention, secrets management, and production access own their detailed controls.…",
+      "headings": [],
+      "file": "pages/repository/docs/security/data-classification.json"
+    },
+    {
+      "id": "repository/docs/security/data-retention",
+      "kind": "repository",
+      "title": "Data Retention",
+      "group": "Security",
+      "source": "docs/security/data-retention.md",
+      "summary": "This policy owns data lifecycle, retention, deletion, archival, and recovery requirements. Classification determines sensitivity; domain owners define purpose and meaning.…",
+      "headings": [],
+      "file": "pages/repository/docs/security/data-retention.json"
+    },
+    {
+      "id": "repository/docs/security/incident-response",
+      "kind": "repository",
+      "title": "Incident Response",
+      "group": "Security",
+      "source": "docs/security/incident-response.md",
+      "summary": "This policy owns coordinated response to material reliability, security, and data incidents. It defines requirements, not deployed incident tooling or authority.…",
+      "headings": [],
+      "file": "pages/repository/docs/security/incident-response.json"
+    },
+    {
+      "id": "repository/docs/security/production-access",
+      "kind": "repository",
+      "title": "Production Access",
+      "group": "Security",
+      "source": "docs/security/production-access.md",
+      "summary": "This policy owns privileged operational access. Authentication, authorization, secrets, and classification supply the underlying controls. Incident response and runbooks do not…",
+      "headings": [],
+      "file": "pages/repository/docs/security/production-access.json"
+    },
+    {
+      "id": "repository/docs/security/secrets-management",
+      "kind": "repository",
+      "title": "Secrets Management",
+      "group": "Security",
+      "source": "docs/security/secrets-management.md",
+      "summary": "Secrets grant capabilities and are RESTRICTED, not ordinary configuration. This policy owns their creation, storage, delivery, rotation, revocation, and removal.…",
+      "headings": [],
+      "file": "pages/repository/docs/security/secrets-management.json"
+    },
+    {
+      "id": "repository/docs/security/telemetry-redaction",
+      "kind": "repository",
+      "title": "Telemetry Redaction",
+      "group": "Security",
+      "source": "docs/security/telemetry-redaction.md",
+      "summary": "This policy owns safe data selection and sanitization for logs, traces, metrics, errors, breadcrumbs, audit/security records, profiling, diagnostics, and support artifacts…",
+      "headings": [],
+      "file": "pages/repository/docs/security/telemetry-redaction.json"
+    },
+    {
+      "id": "repository/docs/setup",
+      "kind": "repository",
+      "title": "Development Setup",
+      "group": "Project guides",
+      "source": "docs/setup.md",
+      "summary": "This is the canonical local setup and execution path. Tests use disposable PostgreSQL and synthetic identities; no production database, identity provider, telemetry vendor, or…",
+      "headings": [],
+      "file": "pages/repository/docs/setup.json"
+    },
+    {
+      "id": "repository/docs/validation",
+      "kind": "repository",
+      "title": "Validation",
+      "group": "Project guides",
+      "source": "docs/validation.md",
+      "summary": "The repository has a pnpm workspace, a committed lockfile, and local validation tooling. Install Node.js 24.13.0 and pnpm 11.25.0 (pinned in .node-version and package.json),…",
+      "headings": [],
+      "file": "pages/repository/docs/validation.json"
+    },
+    {
+      "id": "repository/packages/sdk/AGENTS",
+      "kind": "repository",
+      "title": "SDK-local Instructions",
+      "group": "Agent instructions",
+      "source": "packages/sdk/AGENTS.md",
+      "summary": "Use the package guide for ownership and generation. Global repository instructions still apply.",
+      "headings": [],
+      "file": "pages/repository/packages/sdk/AGENTS.json"
+    },
+    {
+      "id": "repository/packages/sdk/README",
+      "kind": "repository",
+      "title": "Orion API SDK",
+      "group": "Workspace guides",
+      "source": "packages/sdk/README.md",
+      "summary": "@orion/sdk is the private workspace client boundary for the API. src/index.ts exports createOrionClient(baseUrl, getAccessToken), OrionClient, and generated paths types. The…",
+      "headings": [],
+      "file": "pages/repository/packages/sdk/README.json"
+    },
+    {
+      "id": "repository/README",
+      "kind": "repository",
+      "title": "Orion",
+      "group": "Project guides",
+      "source": "README.md",
+      "summary": "Orion is an AI-first engineering foundation for applications maintained collaboratively by humans and AI agents. The repository connects architecture, contracts, schemas,…",
+      "headings": [],
+      "file": "pages/repository/README.json"
+    }
+  ],
+  "search": {
+    "shards": [
+      { "file": "search/0000.json", "count": 16, "kinds": ["api"] },
+      {
+        "file": "search/0001.json",
+        "count": 93,
+        "kinds": ["api", "component", "database", "repository"]
+      },
+      { "file": "search/0002.json", "count": 113, "kinds": ["repository"] },
+      { "file": "search/0003.json", "count": 127, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 122, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 124, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 92, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 87, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 32, "kinds": ["repository"] }
+    ],
+    "count": 913
+  }
+}

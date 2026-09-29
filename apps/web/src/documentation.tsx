@@ -1,505 +1,378 @@
-import { useEffect, useRef, useState } from "react";
-import documentation from "./generated/documentation.json";
-import { AccessTokenForm, ErrorNotice } from "./components.js";
-import { ApiFailure } from "./api.js";
-import openapiUrl from "../../../docs/generated/api/openapi.json?url";
-import errorsUrl from "../../../docs/generated/api/errors.md?url";
-import databaseUrl from "../../../docs/generated/database/approval-requests.md?url";
-import componentsUrl from "../../../docs/generated/components/web.md?url";
-
-const source = "https://github.com/GabriellMDias/Orion/blob/main/";
-type Field = { name: string; type: string; required: boolean };
-
-function FieldTable({ fields }: { fields: Field[] }) {
-  if (!fields.length) return <p className="docs-muted">No fields declared.</p>;
-  return (
-    <div className="docs-table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Field</th>
-            <th scope="col">Type and constraints</th>
-            <th scope="col">Required</th>
-          </tr>
-        </thead>
-        <tbody>
-          {fields.map((field) => (
-            <tr key={field.name}>
-              <th scope="row">
-                <code>{field.name}</code>
-              </th>
-              <td>
-                <code>{field.type}</code>
-              </td>
-              <td>{field.required ? "Yes" : "No"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function ApiSection() {
-  return (
-    <section id="api" className="docs-section" aria-labelledby="api-title">
-      <div className="docs-section-heading">
-        <div>
-          <p className="eyebrow">Executable contracts</p>
-          <h2 id="api-title">API</h2>
-          <p>
-            {documentation.api.operations.length} operations from the generated
-            OpenAPI {documentation.api.version} contract.
-          </p>
-        </div>
-        <a href={openapiUrl}>OpenAPI 3.1 JSON ↗</a>
-      </div>
-      <p>
-        Contracts and route metadata come from the{" "}
-        <a
-          href={`${source}apps/api/src/features/approval-requests/contracts.ts`}
-        >
-          API source
-        </a>
-        . Expected HTTP statuses are listed per operation; the public error
-        registry below owns stable error codes. Authorization details are in the{" "}
-        <a href={`${source}docs/domains/approval-request.md`}>
-          domain specification
-        </a>
-        .
-      </p>
-      <nav aria-label="API operations" className="docs-chip-nav">
-        {documentation.api.operations.map((operation) => (
-          <a key={operation.operationId} href={`#${operation.operationId}`}>
-            {operation.operationId}
-          </a>
-        ))}
-      </nav>
-      {documentation.api.operations.map((operation) => (
-        <article
-          id={operation.operationId}
-          key={operation.operationId}
-          className="docs-card"
-        >
-          <div className="docs-operation-heading">
-            <span className="docs-method">{operation.method}</span>
-            <code>{operation.path}</code>
-          </div>
-          <h3>{operation.operationId}</h3>
-          <p>
-            <strong>Authentication:</strong> {operation.authentication}
-          </p>
-          {operation.parameters.length > 0 && (
-            <>
-              <h4>Parameters</h4>
-              <div className="docs-table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th scope="col">Name</th>
-                      <th scope="col">Location</th>
-                      <th scope="col">Type and constraints</th>
-                      <th scope="col">Required</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {operation.parameters.map((parameter) => (
-                      <tr key={`${parameter.in}-${parameter.name}`}>
-                        <th scope="row">
-                          <code>{parameter.name}</code>
-                        </th>
-                        <td>{parameter.in}</td>
-                        <td>
-                          <code>{parameter.type}</code>
-                        </td>
-                        <td>{parameter.required ? "Yes" : "No"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-          {operation.request && (
-            <>
-              <h4>JSON request body</h4>
-              <FieldTable fields={operation.request.fields} />
-            </>
-          )}
-          <h4>Responses</h4>
-          <p className="docs-statuses">
-            {operation.responses.map((response) => (
-              <span key={response.status}>{response.status}</span>
-            ))}
-          </p>
-          {operation.responses
-            .filter(
-              (response) =>
-                response.status.startsWith("2") && response.fields.length > 0,
-            )
-            .map((response) => (
-              <div key={response.status}>
-                <h4>{response.status} JSON fields</h4>
-                <FieldTable fields={response.fields} />
-              </div>
-            ))}
-          <a href="#api-title" className="docs-back">
-            Back to API ↑
-          </a>
-        </article>
-      ))}
-      <article id="errors" className="docs-card">
-        <div className="docs-section-heading">
-          <h3>Stable public errors</h3>
-          <a href={errorsUrl}>AI-readable error registry ↗</a>
-        </div>
-        <p>
-          These codes are registered by the API. An operation's status list does
-          not imply every code at that status is possible for that operation.
-        </p>
-        <div className="docs-table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Code</th>
-                <th scope="col">HTTP</th>
-                <th scope="col">Category</th>
-                <th scope="col">Retryable</th>
-                <th scope="col">Public message</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documentation.api.errors.map((error) => (
-                <tr key={error.Code}>
-                  <th scope="row">
-                    <code>{error.Code}</code>
-                  </th>
-                  <td>{error["HTTP status"]}</td>
-                  <td>{error.Category}</td>
-                  <td>{error.Retryable}</td>
-                  <td>{error["Public message"]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <h4>Error envelope fields</h4>
-        <FieldTable
-          fields={
-            documentation.api.operations
-              .flatMap((operation) => operation.responses)
-              .find((response) => response.status === "400")?.fields ?? []
-          }
-        />
-      </article>
-    </section>
-  );
-}
-
-function DatabaseSection() {
-  return (
-    <section
-      id="database"
-      className="docs-section"
-      aria-labelledby="database-title"
-    >
-      <div className="docs-section-heading">
-        <div>
-          <p className="eyebrow">Migrated PostgreSQL</p>
-          <h2 id="database-title">Database &amp; data dictionary</h2>
-        </div>
-        <a href={databaseUrl}>AI-readable database reference ↗</a>
-      </div>
-      <p>
-        Physical structure comes from a migrated database; meaning comes from{" "}
-        <a href={`${source}apps/api/prisma/schema-metadata.json`}>
-          schema-adjacent metadata
-        </a>
-        . Review the{" "}
-        <a href={`${source}docs/database/schema-documentation.md`}>
-          schema documentation policy
-        </a>{" "}
-        for ownership and generation rules.
-      </p>
-      {documentation.database.tables.map((table) => (
-        <article key={table.name} className="docs-card">
-          <h3>
-            <code>{table.name}</code>
-          </h3>
-          <p>{table.description}</p>
-          <dl className="docs-facts">
-            <div>
-              <dt>Owner</dt>
-              <dd>{table.owner}</dd>
-            </div>
-            <div>
-              <dt>Classification</dt>
-              <dd>{table.classification}</dd>
-            </div>
-            <div>
-              <dt>Lifecycle</dt>
-              <dd>{table.lifecycle}</dd>
-            </div>
-          </dl>
-          <h4>Columns</h4>
-          <div className="docs-table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Column</th>
-                  <th scope="col">PostgreSQL type</th>
-                  <th scope="col">Null / default</th>
-                  <th scope="col">Meaning</th>
-                  <th scope="col">Classification</th>
-                  <th scope="col">Unit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {table.columns.map((column) => (
-                  <tr key={column.Column}>
-                    <th scope="row">
-                      <code>{column.Column}</code>
-                    </th>
-                    <td>
-                      <code>{column["PostgreSQL type"]}</code>
-                    </td>
-                    <td>
-                      {column.Nullable === "yes" ? (
-                        <>Nullable. {column["Null meaning"]}</>
-                      ) : (
-                        "Required"
-                      )}
-                      <br />
-                      Default: {column.Default}
-                    </td>
-                    <td>{column.Meaning}</td>
-                    <td>{column.Classification}</td>
-                    <td>{column.Unit}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <h4>Constraints and indexes</h4>
-          <div className="docs-table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Object</th>
-                  <th scope="col">Purpose</th>
-                  <th scope="col">Physical definition</th>
-                </tr>
-              </thead>
-              <tbody>
-                {table.constraints.map((constraint) => (
-                  <tr key={constraint.Object}>
-                    <th scope="row">
-                      <code>{constraint.Object}</code>
-                    </th>
-                    <td>{constraint.Purpose}</td>
-                    <td>
-                      <code>{constraint["Physical definition"]}</code>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </article>
-      ))}
-      <article className="docs-card">
-        <h3>Database enums</h3>
-        <div className="docs-table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Enum</th>
-                <th scope="col">Values</th>
-                <th scope="col">Meaning</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documentation.database.enums.map((item) => (
-                <tr key={item.Enum}>
-                  <th scope="row">
-                    <code>{item.Enum}</code>
-                  </th>
-                  <td>{item.Values}</td>
-                  <td>{item.Meaning}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </article>
-    </section>
-  );
-}
-
-function Example({ id }: { id: string }) {
-  const [message, setMessage] = useState("");
-  switch (id) {
-    case "access-token":
-      return (
-        <div className="docs-preview">
-          <AccessTokenForm
-            showLocalIdentity={false}
-            onConnect={() =>
-              setMessage(
-                "Demonstration value discarded; no connection was made.",
-              )
-            }
-          />
-          {message && <p role="status">{message}</p>}
-        </div>
-      );
-    case "version-conflict":
-      return (
-        <div className="docs-preview">
-          <ErrorNotice
-            error={
-              new ApiFailure(
-                409,
-                "RESOURCE_VERSION_CONFLICT",
-                "example",
-                "Changed",
-              )
-            }
-            onReload={() =>
-              setMessage("Demonstration reload selected; no request was made.")
-            }
-          />
-          {message && <p role="status">{message}</p>}
-        </div>
-      );
-    default:
-      return null;
+import {
+  useEffect,
+  useCallback,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import type { Heading } from "./documentation/types.js";
+import {
+  byId,
+  manifest,
+  sections,
+  labels,
+  folderLabel,
+} from "./documentation/catalog-data.js";
+import { DocLink } from "./documentation/navigation.js";
+import { Detail } from "./documentation/reference-pages.js";
+import { Catalog, Overview } from "./documentation/catalog.js";
+import { SearchPage } from "./documentation/search-page.js";
+import "./documentation.css";
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
   }
 }
 
-function ComponentsSection() {
-  return (
-    <section
-      id="components"
-      className="docs-section"
-      aria-labelledby="components-title"
-    >
-      <div className="docs-section-heading">
-        <div>
-          <p className="eyebrow">Actual web source</p>
-          <h2 id="components-title">Frontend components</h2>
-        </div>
-        <a href={componentsUrl}>AI-readable component reference ↗</a>
-      </div>
-      <p>
-        These entries come from{" "}
-        <a href={`${source}apps/web/src/components.tsx`}>exported components</a>{" "}
-        and{" "}
-        <a href={`${source}apps/web/src/components.docs.json`}>
-          component-owned metadata
-        </a>
-        . Examples render the real components with synthetic, non-secret inputs.
-      </p>
-      {documentation.components.map((component) => (
-        <article className="docs-card" key={component.name}>
-          <h3>{component.name}</h3>
-          <p>{component.summary}</p>
-          <h4>Props</h4>
-          <div className="docs-table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Prop</th>
-                  <th scope="col">Type</th>
-                  <th scope="col">Meaning</th>
-                </tr>
-              </thead>
-              <tbody>
-                {component.props.map((prop) => (
-                  <tr key={prop.name}>
-                    <th scope="row">
-                      <code>{prop.name}</code>
-                    </th>
-                    <td>
-                      <code>{prop.type}</code>
-                    </td>
-                    <td>{prop.meaning}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <h4>States</h4>
-          <ul>
-            {component.states.map((state) => (
-              <li key={state}>{state}</li>
-            ))}
-          </ul>
-          <p>
-            <strong>Accessibility:</strong> {component.accessibility}
-          </p>
-          <p>
-            <strong>Usage:</strong> {component.usage}
-          </p>
-          <h4>Live examples</h4>
-          {component.examples.map((example) => (
-            <div key={example.id}>
-              <h5>{example.label}</h5>
-              <p>{example.description}</p>
-              <Example id={example.id} />
-            </div>
-          ))}
-        </article>
-      ))}
-    </section>
-  );
-}
-
 export function DocumentationPage() {
+  const location = useRouterState({ select: (state) => state.location });
+  const navigate = useNavigate();
+  const id = safeDecode(location.pathname.replace(/^\/docs\/?/, "")).replace(
+    /\/$/,
+    "",
+  );
+  const search = location.search as {
+    q?: string;
+    scope?: string;
+    group?: string;
+    page?: number;
+  };
+  const entry = byId.get(id);
+  const section = sections.find((item) => item.id === id);
+  const isCatalog =
+    !entry && manifest.entries.some((item) => item.id.startsWith(`${id}/`));
+  const title = !id
+    ? "Orion documentation"
+    : id === "search"
+      ? "Search documentation"
+      : (entry?.title ??
+        section?.title ??
+        (isCatalog ? folderLabel(id.split("/").at(-1)!) : "Page not found"));
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [loadedOutline, setLoadedOutline] = useState<{
+    id: string;
+    headings: Heading[];
+  }>({ id: "", headings: [] });
+  const onHeadings = useCallback(
+    (pageId: string, headings: Heading[]) =>
+      setLoadedOutline({ id: pageId, headings }),
+    [],
+  );
+  const detailHeadings =
+    loadedOutline.id === id ? loadedOutline.headings : (entry?.headings ?? []);
+  const titleId =
+    detailHeadings.find((item) => item.level === 1)?.id ?? "docs-page-title";
   const heading = useRef<HTMLHeadingElement>(null);
+  const content = useRef<HTMLElement>(null);
+  const crumbs = id
+    .split("/")
+    .filter(Boolean)
+    .map((part, index, parts) => ({
+      id: parts.slice(0, index + 1).join("/"),
+      label:
+        index === parts.length - 1
+          ? title
+          : (sections.find((s) => s.id === part)?.title ?? folderLabel(part)),
+    }));
   useEffect(() => {
-    const previousTitle = document.title;
-    document.title = "Living Documentation · Orion";
-    heading.current?.focus();
-    return () => {
-      document.title = previousTitle;
+    document.title = `${title} · Orion`;
+    heading.current?.focus({ preventScroll: true });
+    if (!location.hash) window.scrollTo(0, 0);
+  }, [id, title, search.q, search.page, location.hash]);
+  useEffect(() => {
+    if (!location.hash) return;
+    const focusAnchor = () => {
+      const target = document.getElementById(safeDecode(location.hash));
+      if (!target) return false;
+      target.scrollIntoView();
+      target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+      return true;
     };
-  }, []);
+    if (focusAnchor()) return;
+    const observer = new MutationObserver(() => {
+      if (focusAnchor()) observer.disconnect();
+    });
+    if (content.current)
+      observer.observe(content.current, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [id, location.hash, titleId]);
+  function internalLinks(event: MouseEvent<HTMLElement>) {
+    if (
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.defaultPrevented
+    )
+      return;
+    const anchor = (event.target as HTMLElement).closest<HTMLAnchorElement>(
+      ".docs-markdown a",
+    );
+    if (!anchor || anchor.target || anchor.hasAttribute("download")) return;
+    const url = new URL(anchor.href);
+    if (
+      url.origin === window.location.origin &&
+      url.pathname.startsWith("/docs/")
+    ) {
+      event.preventDefault();
+      void navigate({
+        to: "/docs/$",
+        params: { _splat: safeDecode(url.pathname.slice(6)) },
+        hash: safeDecode(url.hash.slice(1)),
+        search: {},
+      });
+    }
+  }
+  const defaultHeadings: Record<string, Heading[]> = {
+    api: ["Parameters", "Request", "Responses", "Explorer"]
+      .filter((text) => text !== "Request" || entry)
+      .map((text) => ({
+        id: text.toLowerCase(),
+        text: text === "Explorer" ? "Try this operation" : text,
+        level: 2,
+      })),
+    database: [
+      { id: "columns", text: "Columns", level: 2 },
+      { id: "constraints", text: "Constraints and indexes", level: 2 },
+    ],
+    component: [
+      { id: "props", text: "Props", level: 2 },
+      { id: "usage", text: "Usage and accessibility", level: 2 },
+      { id: "examples", text: "Live examples", level: 2 },
+    ],
+  };
+  const outline =
+    entry?.kind === "repository"
+      ? detailHeadings.filter((h) => h.level === 2 || h.level === 3)
+      : entry
+        ? entry.headings.length
+          ? entry.headings
+          : (defaultHeadings[entry.kind] ?? [])
+        : [];
   return (
-    <div className="docs-layout">
-      <aside className="docs-sidebar">
-        <p className="eyebrow">Living documentation</p>
-        <nav aria-label="Documentation sections">
-          <a href="#api">API</a>
-          <a href="#errors">Public errors</a>
-          <a href="#database">Database &amp; dictionary</a>
-          <a href="#components">Components</a>
-        </nav>
-        <div className="docs-sidebar-links">
-          <a href={`${source}docs/domains/approval-request.md`}>
-            Business specification ↗
-          </a>
-          <a href={`${source}docs/architecture/living-documentation.md`}>
-            Documentation architecture ↗
-          </a>
+    <div className="docs-workspace">
+      <a className="docs-skip" href={`#${titleId}`}>
+        Skip to documentation
+      </a>
+      <aside className={`docs-rail ${mobileOpen ? "is-open" : ""}`}>
+        <div className="docs-rail-brand">
+          <span aria-hidden="true">✳</span> ORION <small>Documentation</small>
+        </div>
+        <button
+          className="docs-menu-toggle"
+          aria-expanded={mobileOpen}
+          aria-controls="docs-navigation"
+          onClick={() => setMobileOpen(!mobileOpen)}
+        >
+          Browse documentation <span aria-hidden="true">⌄</span>
+        </button>
+        <div id="docs-navigation" className="docs-rail-body">
+          <nav
+            aria-label="Documentation sections"
+            onClick={() => setMobileOpen(false)}
+          >
+            <DocLink current={!id}>Overview</DocLink>
+            <p className="docs-nav-label">Reference</p>
+            {sections.slice(0, 3).map((s) => (
+              <DocLink id={s.id} key={s.id} current={id === s.id}>
+                {s.title}
+              </DocLink>
+            ))}
+            <p className="docs-nav-label">Project knowledge</p>
+            <DocLink id="repository" current={id === "repository"}>
+              Repository docs
+            </DocLink>
+            {[
+              "architecture",
+              "api",
+              "database",
+              "domains",
+              "security",
+              "reliability",
+              "adr",
+              "runbooks",
+            ].map((category) => (
+              <DocLink
+                key={category}
+                id={`repository/docs/${category}`}
+                current={id.startsWith(`repository/docs/${category}`)}
+              >
+                {category === "adr"
+                  ? "Decisions (ADRs)"
+                  : category === "api"
+                    ? "API policies"
+                    : category === "database"
+                      ? "Database policies"
+                      : category.charAt(0).toUpperCase() + category.slice(1)}
+              </DocLink>
+            ))}
+          </nav>
+          <div className="docs-rail-footer">
+            <DocLink id="repository/docs/contributing">
+              Contributing guide
+            </DocLink>
+            <p>Built from repository sources.</p>
+          </div>
         </div>
       </aside>
-      <div className="docs-content">
-        <div className="page-heading">
-          <div>
-            <p className="eyebrow">Current repository · generated facts</p>
-            <h1 ref={heading} tabIndex={-1}>
-              Orion living documentation
-            </h1>
-            <p>
-              Explore the API contract, migrated data model, and components used
-              by the reference workflow.
-            </p>
-          </div>
+      <div className="docs-body">
+        <div className="docs-topbar">
+          <form
+            role="search"
+            key={`${search.q ?? ""}-${search.scope ?? ""}`}
+            onSubmit={(event) => {
+              event.preventDefault();
+              const values = new FormData(event.currentTarget);
+              void navigate({
+                to: "/docs/$",
+                params: { _splat: "search" },
+                search: {
+                  q:
+                    typeof values.get("q") === "string"
+                      ? (values.get("q") as string)
+                      : "",
+                  scope:
+                    typeof values.get("scope") === "string"
+                      ? (values.get("scope") as string)
+                      : "",
+                },
+              });
+            }}
+          >
+            <label className="sr-only" htmlFor="docs-search">
+              Search documentation
+            </label>
+            <input
+              id="docs-search"
+              name="q"
+              type="search"
+              placeholder="Search documentation…"
+              defaultValue={search.q ?? ""}
+              maxLength={200}
+            />
+            <label className="sr-only" htmlFor="docs-search-scope">
+              Search category
+            </label>
+            <select
+              id="docs-search-scope"
+              name="scope"
+              defaultValue={search.scope ?? ""}
+            >
+              <option value="">All documentation</option>
+              {Object.entries(labels).map(([kind, label]) => (
+                <option key={kind} value={kind}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <button type="submit">Search</button>
+          </form>
+          <Link
+            to="/"
+            search={{ scope: "mine" }}
+            className="docs-workflow-link"
+          >
+            Reference workflow ↗
+          </Link>
         </div>
-        <ApiSection />
-        <DatabaseSection />
-        <ComponentsSection />
+        <div className="docs-page-grid">
+          <article
+            className="docs-article"
+            ref={content}
+            onClick={internalLinks}
+          >
+            <nav aria-label="Breadcrumbs" className="docs-breadcrumbs">
+              <DocLink>Documentation</DocLink>
+              {crumbs.map((crumb, i) => (
+                <span key={crumb.id}>
+                  <span aria-hidden="true"> / </span>
+                  {i === crumbs.length - 1 ? (
+                    <span aria-current="page">{crumb.label}</span>
+                  ) : (
+                    <DocLink id={crumb.id}>{crumb.label}</DocLink>
+                  )}
+                </span>
+              ))}
+            </nav>
+            <header className="docs-page-header">
+              <p className="docs-kicker">
+                {entry
+                  ? labels[entry.kind]
+                  : !id
+                    ? "The engineering knowledge base"
+                    : "Explore Orion"}
+              </p>
+              <h1 ref={heading} id={titleId} tabIndex={-1}>
+                {title}
+              </h1>
+              {entry && (
+                <p className="docs-source">
+                  Source: <code>{entry.source}</code>
+                </p>
+              )}
+            </header>
+            {outline.length > 0 && (
+              <details className="docs-inline-outline">
+                <summary>On this page</summary>
+                <nav aria-label="On this page">
+                  {outline.map((h) => (
+                    <a key={h.id} href={`#${h.id}`}>
+                      {h.text}
+                    </a>
+                  ))}
+                </nav>
+              </details>
+            )}
+            {!id ? (
+              <Overview />
+            ) : id === "search" ? (
+              <SearchPage
+                key={`${search.q}-${search.scope}`}
+                query={search.q ?? ""}
+                scope={search.scope ?? ""}
+              />
+            ) : entry ? (
+              <Detail key={entry.id} entry={entry} onHeadings={onHeadings} />
+            ) : isCatalog ? (
+              <Catalog
+                key={id}
+                id={id}
+                page={search.page ?? 1}
+                group={search.group ?? ""}
+              />
+            ) : (
+              <p>
+                This documentation page does not exist.{" "}
+                <DocLink>Return to the overview</DocLink> or use search.
+              </p>
+            )}
+            <footer className="docs-page-footer">
+              Orion · Living documentation{" "}
+              <span>Canonical sources. Connected context.</span>
+            </footer>
+          </article>
+          {outline.length > 0 && (
+            <aside className="docs-outline">
+              <p className="docs-nav-label">On this page</p>
+              <nav aria-label="On this page">
+                {outline.map((h) => (
+                  <a
+                    key={h.id}
+                    href={`#${h.id}`}
+                    className={h.level === 3 ? "subheading" : ""}
+                  >
+                    {h.text}
+                  </a>
+                ))}
+              </nav>
+            </aside>
+          )}
+        </div>
       </div>
     </div>
   );

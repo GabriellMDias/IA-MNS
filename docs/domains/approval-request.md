@@ -1,8 +1,8 @@
 # Approval Request: Reference Feature
 
-[Documentation index](../README.md) · [Implementation conventions](approval-request-implementation.md) · [Implementation plan](../implementation-plan.md#phase-3) · [Owner decisions](../human-actions.md#h-04)
+[Documentation index](../README.md) · [Implementation conventions](approval-request-implementation.md) · [API reference](../generated/api/openapi.json)
 
-This is the canonical business specification for Orion’s Approval Request reference feature. It records the project owner's Phase 3 decision. The Phase 5 API and durable schema and Phase 6 web interface now implement it; concrete identity-provider provisioning remains future work. Architectural and security policies still govern its evolution.
+This is the canonical business specification for Orion’s Approval Request reference feature, implemented by the API, durable PostgreSQL schema, and web interface. It preserves the approved actors, access model, and state rules. Concrete identity-provider provisioning remains conditional; architectural and security policies govern further evolution.
 
 ## Purpose and actors
 
@@ -21,7 +21,7 @@ The following is the feature's authorization policy. Owner checks use the reques
 | Edit draft, submit, cancel | The request owner only, subject to the state rules below. |
 | Approve, reject | A principal with review capability who is **not** the request owner, subject to the state and rejection-reason rules below. |
 
-Authorization and domain validity are both required. A principal cannot gain a forbidden action because the request happens to be in a valid state, nor gain an invalid transition because they own the request or have review capability. The implementation must avoid leaking unauthorized request details; exact response semantics belong to later API design.
+Authorization and domain validity are both required. A principal cannot gain a forbidden action because the request happens to be in a valid state, nor gain an invalid transition because they own the request or have review capability. The implementation must avoid leaking unauthorized request details; the [implemented failure mappings](approval-request-implementation.md#api-failures-and-canonical-metadata) define the response semantics.
 
 ## Use cases and invariants
 
@@ -59,7 +59,7 @@ All other state-changing combinations are invalid. In particular, an edit or sub
 | --- | --- |
 | Requested item does not exist | Report that the request was not found; do not create or change one implicitly. |
 | Action is invalid for the current state or the state is terminal | Reject the action and preserve the current state. |
-| Reject has no usable reason | Reject the action and leave the request `SUBMITTED`. Exact reason format and limits are left to later contract design. |
+| Reject has no usable reason | Reject the action and leave the request `SUBMITTED`. The [current contract](approval-request-implementation.md#current-contract) defines the reason format and bounds. |
 | A stale edit or transition loses a race to another write | Report a conflict and preserve the winning write; do not silently overwrite it. |
 | A duplicate or competing action arrives | Preserve one consistent result and report a safe replay or conflict as appropriate; do not apply a second inconsistent outcome. |
 
@@ -67,7 +67,7 @@ Authentication failure, insufficient review capability, non-ownership for owner 
 
 ## Data ownership, classification, and lifecycle
 
-Approval Request owns its creator identity, request state, and, when rejected, the rejection reason as business data. The creator identity establishes ownership and must remain associated with the request. Feature-level identifier, clock, schema, and transaction conventions are in the [implementation design](approval-request-implementation.md); the Phase 5 editable fields and limits are in its [current contract section](approval-request-implementation.md#current-phase-5-contract) and the executable TypeBox contracts. Access follows the policy above; there is no tenant scope.
+Approval Request owns its creator identity, request state, and, when rejected, the rejection reason as business data. The creator identity establishes ownership and must remain associated with the request. Feature-level identifier, clock, schema, and transaction conventions are in the [implementation design](approval-request-implementation.md); the editable fields and limits are in its [current contract section](approval-request-implementation.md#current-contract) and the executable TypeBox contracts. Access follows the policy above; there is no tenant scope.
 
 The owner classifies the intended feature data as ordinary **internal application data**. No secrets, credentials, financial, medical, or other specially sensitive data are intentionally part of this feature. Treat request content and rejection reasons as untrusted input and apply the [data-classification policy](../security/data-classification.md); this classification does not authorize public disclosure or unrestricted telemetry capture.
 
@@ -75,7 +75,7 @@ The lifecycle is creation as `DRAFT`, possible edit and submission, then a termi
 
 ## Side-effect boundary
 
-Creating or changing a request affects its durable internal business data once persistence is implemented. The reference feature has no external side effects or integrations by default: it does not require notifications, webhooks, messaging, external audit delivery, or a payment-like effect. Any later integration or authoritative audit requirement needs a separately recorded decision and corresponding consistency design under [delivery and side effects](../architecture/delivery-and-side-effects.md).
+Creating or changing a request affects its durable internal PostgreSQL business data. The reference feature has no external side effects or integrations by default: it does not require notifications, webhooks, messaging, external audit delivery, or a payment-like effect. Any later integration or authoritative audit requirement needs a separately recorded decision and corresponding consistency design under [delivery and side effects](../architecture/delivery-and-side-effects.md).
 
 ## Acceptance scenarios
 

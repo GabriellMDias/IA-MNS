@@ -33,6 +33,7 @@ Lifecycle: Created in DRAFT; retained through terminal state. No automatic delet
 | `approval_requests_description_nonblank` | `CHECK (((description IS NULL) OR ((description)::text ~ '[^[:space:]]'::text)))` | Optional description cannot be whitespace only. |
 | `approval_requests_fingerprint_sha256` | `CHECK (((intent_fingerprint)::text ~ '^[a-f0-9]{64}$'::text))` | Fingerprint is exactly lowercase SHA-256 hex. |
 | `approval_requests_idempotency_key_nonblank` | `CHECK (((idempotency_key)::text ~ '^[A-Za-z0-9._~-]+$'::text))` | Creation keys must use the documented opaque ASCII key alphabet and cannot be blank. |
+| `approval_requests_pkey` | `PRIMARY KEY (id)` | Enforces the immutable unique request identity used by persistence and the public API. |
 | `approval_requests_rejection_reason_state` | `CHECK (((status = 'REJECTED'::"ApprovalRequestStatus") = ((rejection_reason IS NOT NULL) AND ((rejection_reason)::text ~ '[^[:space:]]'::text))))` | Requires one nonblank reason exactly for a rejected request. |
 | `approval_requests_title_nonblank` | `CHECK (((title)::text ~ '[^[:space:]]'::text))` | Rejects blank titles even if a caller bypasses the API. |
 | `approval_requests_version_positive` | `CHECK ((version > 0))` | Rejects invalid concurrency versions. |
