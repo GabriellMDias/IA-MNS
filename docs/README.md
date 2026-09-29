@@ -15,11 +15,13 @@ Choose the route relevant to the change, then use the policy's headings and sour
 
 | Task | Authoritative policy |
 | --- | --- |
-| Execute or track implementation phases | [Living implementation plan](implementation-plan.md) |
+| Execute or track implementation phases | [Living implementation plan](implementation-plan.md); in a derived project, `docs/project/implementation-plan.md` |
+| Start a project from Orion, check its provenance, or upgrade its Orion baseline | [Project derivation](project-derivation.md) |
+| Change agent instruction files or tool compatibility adapters | [Agent instructions](architecture/agent-instructions.md) |
 | Reproduce development setup, local execution, and the validation gate | [Development setup](setup.md) |
 | Run the living API/data/component portal and understand its architecture | [Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md) |
 | Review accepted reference feature and portal capabilities, evidence, and limitations | [Foundation acceptance](foundation-acceptance.md) |
-| Resolve owner decisions, external access, or other human prerequisites | [Human-action checklist](human-actions.md) |
+| Resolve owner decisions, external access, or other human prerequisites | [Human-action checklist](human-actions.md); in a derived project, `docs/project/human-actions.md` |
 | Understand the reference feature's business rules and acceptance scenarios | [Approval Request](domains/approval-request.md) |
 | Implement the reference feature's persistence, concurrency, access, and list contracts | [Approval Request implementation conventions](domains/approval-request-implementation.md) |
 | Evaluate architectural tradeoffs or exceptions | [Principles](architecture/principles.md) |
@@ -86,6 +88,6 @@ Choose the route relevant to the change, then use the policy's headings and sour
 - [ADR index](adr/README.md): significant decisions and their rationale; status belongs to each ADR.
 - [ADR authoring](adr/authoring.md) and [template](adr/template.md): proposals, acceptance, historical integrity, and supersession.
 - [Contributing](contributing.md): change workflow, documentation ownership, canonical sources, maintenance, and review.
-- [Global agent instructions](../AGENTS.md): invariants, command availability, and conditional routes.
+- [Global agent instructions](../AGENTS.md): invariants, command availability, and conditional routes for every contributor and agent; [agent instructions](architecture/agent-instructions.md) owns tool compatibility.
 
 Current policies describe current architectural expectations. ADRs preserve decision history; [setup](setup.md) and [release evolution](database/release-evolution.md) describe real procedures. Generated references exist for the current API, configuration, errors, database, and web components. The portal renders these sources in the existing web application. No production runbook exists without a selected environment.

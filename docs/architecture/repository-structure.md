@@ -15,11 +15,14 @@ These locations exist:
 | `apps/web/` | React/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md). |
 | `packages/sdk/` | Public API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md). |
 | `docs/` | Current policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md). |
-| `tooling/validate/` | Repository documentation, environment-example, and release-history checks. |
+| `tooling/validate/` | Repository documentation, agent-instruction, environment-example, and release-history checks. |
 | `tooling/documentation/` | Portal dataset and component-reference generation. |
+| `tooling/project/` | Project initialization, provenance, and Orion upgrade commands and their templates; see [project derivation](../project-derivation.md). |
+| `.orion/` | [`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance. |
+| `.gemini/` | Gemini CLI discovery adapter only; see [agent instructions](agent-instructions.md). |
 | `.github/` | GitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings. |
 
-There is no `infra/`, mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.
+`docs/project/` exists only in projects derived from Orion, where it holds the project-owned plan and human actions. There is no `infra/`, mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.
 
 Keep the root small: application-specific implementation belongs to its application; runtime sharing belongs to a meaningful package; repository automation belongs under `tooling/`. Introduce `infra/` only for real declarative deployment/operational infrastructure, never ordinary business logic. Infrastructure may consume application artifacts and configuration requirements; runtime code must not import infrastructure definitions.
 
@@ -69,7 +72,7 @@ Generated code and references must be distinguishable from authored files, repro
 
 Read root [AGENTS.md](../../AGENTS.md), then each applicable nested file before editing an area. Nested instructions add local conventions, important files, commands, or prohibited patterns; they do not remove global requirements or copy repository-wide policy. Current scopes include [API](../../apps/api/AGENTS.md), [web](../../apps/web/AGENTS.md), [SDK](../../packages/sdk/AGENTS.md), [documentation](../AGENTS.md), [ADRs](../adr/AGENTS.md), and [runbooks](../runbooks/AGENTS.md).
 
-Add a local instruction file only when the area needs additional guidance. Keep commands near the owner and link canonical policy so agents receive useful context without independently maintained copies.
+Every tool reads the same files; [agent instructions](agent-instructions.md) owns tool compatibility and forbids instruction copies. Add a local instruction file only when the area needs additional guidance. Keep commands near the owner and link canonical policy so agents receive useful context without independently maintained copies.
 
 ## Enforcement
 

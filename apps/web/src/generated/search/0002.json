@@ -4,6 +4,15 @@
     "title": "ADR-0005: Select PostgreSQL as the Primary Database",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "AI access to application data",
+    "anchor": "ai-access-to-application-data",
+    "text": "AI access to application data\nThe presence of PostgreSQL or pgvector does not authorize AI systems to access the database directly without application controls.\nThe preferred model for structured business data is:\nAI agent\n    ↓\nauthorized application tool\n    ↓\napplication layer\n    ↓\nauthorization and business rules\n    ↓\npersistence layer\n    ↓\nPostgreSQL\n\nFor semantic retrieval:\nAI agent\n    ↓\nauthorized retrieval capability\n    ↓\napplication layer\n    ↓\nvector search\n    ↓\nPostgreSQL + pgvector\n\nAI systems should not receive unrestricted arbitrary SQL access to production databases by default.\nApplication-level authorization, tenant isolation, data classification, auditing, and business invariants remain authoritative.\nThe broader AI integration architecture, including model providers, tool calling, prompt-injection controls, retrieval architecture, embeddings, and AI-specific authorization, will be defined separately when concrete implementation requirements exist.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Database versioning",
     "anchor": "database-versioning",
     "text": "Database versioning\nThe exact PostgreSQL version will be selected and pinned by deployment and repository tooling rather than by this ADR.\nProduction environments should use supported PostgreSQL releases appropriate for the selected deployment platform.\nRoutine supported PostgreSQL upgrades do not require a new ADR when they preserve the architectural decision established here.\n"
@@ -1006,14 +1015,5 @@
     "heading": "React logic tests",
     "anchor": "react-logic-tests",
     "text": "React logic tests\nFrontend logic that does not require browser behavior should run through Vitest in Node.js.\nExamples include:\nformatters;\nstate transformations;\nparsing;\nquery-key factories;\ndeterministic helpers;\nbusiness-independent UI calculations.\nA browser must not be started merely because the code belongs to the web package.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Browser component and feature testing",
-    "anchor": "browser-component-and-feature-testing",
-    "text": "Browser component and feature testing\nWhen correctness depends on actual browser behavior, Orion will use **Vitest Browser Mode**.\nThe default browser provider will be **Playwright**.\nThe preferred execution model is:\nVitest\n    ↓\nBrowser Mode\n    ↓\nPlaywright provider\n    ↓\nreal browser\n\nBrowser-mode tests are appropriate for behavior involving concerns such as:\nreal DOM APIs;\nbrowser event behavior;\nfocus management;\nkeyboard interaction;\npointer interaction;\nlayout-dependent logic;\nbrowser-native controls;\ncomponent integration;\naccessibility-relevant interaction behavior.\nA simulated DOM implementation such as jsdom will not be Orion's default environment for tests whose purpose is browser fidelity.\nSimulated DOM environments may still be used in a scoped context when their reduced startup cost materially benefits a test and the missing browser behavior is irrelevant.\n"
   }
 ]

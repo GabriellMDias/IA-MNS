@@ -14,6 +14,7 @@ import { documentationPaths } from "./markdown.mjs";
 const run = promisify(execFile);
 const generatedRoot = "apps/web/src/generated";
 const fixedSources = [
+  ".orion/project.json",
   "docs/generated/api/openapi.json",
   "docs/generated/api/errors.md",
   "docs/generated/database/approval-requests.md",

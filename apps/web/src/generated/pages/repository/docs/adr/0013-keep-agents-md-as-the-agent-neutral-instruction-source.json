@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md",
+  "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+  "html": "<p><strong>Status:</strong> accepted</p>\n<p><strong>Date:</strong> 2026-09-29</p>\n<h2 id=\"context\">Context</h2>\n<p>Orion is built and maintained by humans together with AI coding agents. Its foundation was developed with OpenAI Codex, and its instructions and tracking documents named Codex as the actor responsible for maintaining the plan and human actions. Orion must remain usable with other agents, including Claude Code and Gemini CLI, without becoming coupled to one model, vendor, or harness.</p>\n<p>Each tool has its own discovery convention. Duplicating repository rules into <code>CLAUDE.md</code>, <code>GEMINI.md</code>, or similar files would create competing authorities that drift apart, contradicting the single-canonical-source principle in <a href=\"/docs/repository/docs/contributing#authored-meaning-and-generated-facts\">contributing</a>. The owner directed that <code>AGENTS.md</code> remain canonical, that tool-specific files be added only as thin compatibility layers, and that tool behavior be verified against current documentation rather than assumed.</p>\n<p>Verification on 2026-09-29 established that Codex reads <code>AGENTS.md</code> natively from the project root down to its working directory, with a 32 KiB default combined limit; that Claude Code 2.1.277 and later reads <code>AGENTS.md</code> natively, including nested files on demand, unless a <code>CLAUDE.md</code> is present; and that Gemini CLI 0.61.0 reads <code>GEMINI.md</code> by default but loads the <code>AGENTS.md</code> hierarchy when <code>context.fileName</code> names it. <a href=\"/docs/repository/docs/architecture/agent-instructions\">Agent instructions</a> records the detailed, reverifiable behavior.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>The root <code>AGENTS.md</code> and its nested <code>AGENTS.md</code> files are Orion's only repository instruction source for every contributor and agent. Normative repository text assigns obligations to the responsibility, such as a contributor or an authorized coding agent, and names a specific tool only to describe that tool's behavior.</p>\n<p>A tool that cannot discover <code>AGENTS.md</code> receives a minimal committed discovery adapter that points it at <code>AGENTS.md</code> and contains no instructions. Currently only Gemini CLI needs one: <code>.gemini/settings.json</code> sets <code>context.fileName</code> to <code>[&quot;AGENTS.md&quot;]</code>. Orion commits no <code>CLAUDE.md</code>, <code>GEMINI.md</code>, or other instruction copy.</p>\n<p>Portability constraints are enforced mechanically where practical: validation rejects competing instruction files, restricts the Gemini adapter to discovery, and keeps each root-to-directory instruction chain within the 32 KiB limit that all verified tools load completely. The root instructions require reading applicable nested files before editing because not every tool loads them automatically.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p><code>AGENTS.md</code> is supported natively or through configuration by all three verified tools, so one hierarchy can serve them without copies. Native discovery is preferred to import-based shims: a <code>CLAUDE.md</code> containing <code>@AGENTS.md</code> would work, but it is unnecessary on current Claude Code and would suppress direct <code>AGENTS.md</code> discovery by default. Gemini offers no native <code>AGENTS.md</code> default, and its supported project setting is the smallest configuration that loads the canonical hierarchy.</p>\n<p>Mechanical checks make the policy durable as tools and contributors change. Executable validation, not prompting, remains the authority for architecture and behavior.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"vendor-specific-instruction-files\">Vendor-specific instruction files</h3>\n<p>Maintaining <code>CLAUDE.md</code> and <code>GEMINI.md</code> beside <code>AGENTS.md</code> would give each tool its preferred file, but the copies would drift and create ambiguity about which rule is authoritative.</p>\n<h3 id=\"import-or-symlink-shims-for-every-tool\">Import or symlink shims for every tool</h3>\n<p><code>@AGENTS.md</code> imports or symlinked files keep one source, but they add files that current tools do not need. Symlinks are unreliable in Windows checkouts, and a committed <code>CLAUDE.md</code> changes Claude Code's default discovery. They remain options only for a tool that requires them.</p>\n<h3 id=\"a-tool-neutral-instruction-format-generated-into-vendor-files\">A tool-neutral instruction format generated into vendor files</h3>\n<p>Generating vendor files from another source would add tooling and generated artifacts without a benefit over the widely supported <code>AGENTS.md</code> convention.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>One instruction hierarchy serves humans and all verified agents.</li>\n<li>Agent-specific wording no longer implies that only one tool may maintain the plan or human actions.</li>\n<li>Validation detects accidental instruction copies and oversized instruction chains.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Tool behavior changes over time, so the compatibility table must be reverified before changing adapters or relying on a tool.</li>\n<li>Gemini CLI applies the project setting only in a trusted workspace, and user or organization settings outside the repository can still change what any tool loads.</li>\n<li>Instructions must stay concise enough for the smallest verified combined limit.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>Contributors using an older Claude Code version or a local <code>CLAUDE.local.md</code> must update or configure their client to read <code>AGENTS.md</code>; the repository does not add a workaround file.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/architecture/agent-instructions\">Agent instructions and tool compatibility</a></li>\n<li><a href=\"/docs/repository/docs/architecture/repository-structure#local-agent-instructions\">Repository structure: local agent instructions</a></li>\n<li><a href=\"/docs/repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement\">ADR-0003: repository validation and architecture enforcement</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0013-keep-agentsmd-as-the-agent-neutral-instruction-source",
+      "text": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "vendor-specific-instruction-files",
+      "text": "Vendor-specific instruction files",
+      "level": 3
+    },
+    {
+      "id": "import-or-symlink-shims-for-every-tool",
+      "text": "Import or symlink shims for every tool",
+      "level": 3
+    },
+    {
+      "id": "a-tool-neutral-instruction-format-generated-into-vendor-files",
+      "text": "A tool-neutral instruction format generated into vendor files",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

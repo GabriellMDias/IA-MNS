@@ -4,9 +4,11 @@
 
 ## Purpose and current baseline
 
-This is Orion's living execution plan. It tracks implementation progress; it does not replace current architectural policy or accepted ADRs. Preserve accepted decisions, rationale, exceptions, and technology responsibilities.
+This is Orion's living execution plan. It tracks implementation progress of the Orion foundation repository; it does not replace current architectural policy or accepted ADRs. Preserve accepted decisions, rationale, exceptions, and technology responsibilities.
 
-Orion now contains documentation, a pnpm workspace, local validation tooling and CI, plus the Approval Request API, PostgreSQL persistence, generated OpenAPI/client, and web reference workflow. `pnpm validate` runs the checks listed in [validation](validation.md). A concrete identity provider and production deployment remain conditional future work. The phase tables below retain stable task IDs, current deliverables, and conditional obligations. Git preserves implementation chronology.
+In a project derived from Orion, this plan is inherited foundation history: its statuses and evidence describe the Orion repository, not the project. The project's current plan is `docs/project/implementation-plan.md`, created by [project derivation](project-derivation.md).
+
+Orion now contains documentation, a pnpm workspace, local validation tooling and CI, plus the Approval Request API, PostgreSQL persistence, generated OpenAPI/client, web reference workflow, and project-derivation tooling. `pnpm validate` runs the checks listed in [validation](validation.md). A concrete identity provider and production deployment remain conditional future work. The phase tables below retain stable task IDs, current deliverables, and conditional obligations. Git preserves implementation chronology.
 
 The foundation includes a complete reference feature—persistence, domain/application behavior, API contracts, generated client, web UI, tests, and telemetry—and [living documentation](architecture/living-documentation.md) for its API, database/data dictionary, and frontend components. Human navigation must coexist with AI-readable canonical and generated artifacts. Phases 9-11 are complete; use the acceptance report for evidence and the current maintenance table for active work. Deployment-specific operation is conditional Phase 12. A particular business product and production environment have not been defined.
 
@@ -35,7 +37,19 @@ Completed maintenance: comprehensive documentation review (2026-09-26–27). Dep
 
 The documentation review's [implementation concerns](foundation-acceptance.md#implementation-concerns-identified-during-review) were subsequently addressed in the final foundation audit. New database object kinds still need deliberate generator support before adoption; deployed operational choices remain conditional Phase 12 work. No human action is needed for the current foundation audit.
 
-Codex must maintain this document and the [human-action checklist](human-actions.md) throughout implementation, within the user's authorized scope.
+Agent portability and project derivation (2026-09-29): Orion's instructions become agent-neutral, and real projects can be derived from Orion with recorded provenance and reviewable upgrades. Deployment-specific Phase 12 remains excluded and unstarted.
+
+| Task | Scope | Status | Evidence / dependency |
+| --- | --- | --- | --- |
+| AP1 | Verify how current Codex, Claude Code, and Gemini CLI discover repository instructions; generalize agent-specific normative wording. | completed | [Verified behavior](architecture/agent-instructions.md#tool-specific-compatibility). Codex-specific obligations in this plan and the [checklist](human-actions.md#maintaining-this-checklist) now apply to any contributor or agent; no other normative agent-specific wording was found. |
+| AP2 | Keep `AGENTS.md` canonical, add only necessary thin adapters, and enforce the rule. | completed | [ADR-0013](adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md), [`.gemini/settings.json`](../.gemini/settings.json), `pnpm agents:check` and `pnpm agents:test`. No `CLAUDE.md` or `GEMINI.md` is needed. |
+| PD1 | Decide the derivation model and machine-readable provenance record. | completed | [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) and [`.orion/project.json`](../.orion/project.json); portal source links derive from the manifest. |
+| PD2 | Implement guarded project initialization: protected upstream, project identity, project-owned plan and human actions, and the Approval Request disposition. | completed | [Project derivation](project-derivation.md#start-a-new-project), `tooling/project/`, and `pnpm orion:test` against disposable local Git repositories. |
+| PD3 | Implement provenance inspection, upstream configuration, baseline recording, and validation for reviewable upgrades. | completed | [Upgrade workflow](project-derivation.md#upgrade-to-a-newer-orion-revision); `pnpm orion:check` runs in `pnpm validate`. |
+| PD4 | Exercise initialization from a pristine clone and validate both Orion and the derived checkout. | in progress | Evidence belongs in the [acceptance report](foundation-acceptance.md#agent-portability-and-project-derivation). |
+| PD5 | Submit the change for review and verify the required remote CI gate. | pending | A pull request against `main`; remote CI must report its own result. |
+
+Every contributor or coding agent performing implementation work must maintain this document and the [human-action checklist](human-actions.md) throughout implementation, within the user's authorized scope.
 
 1. Before implementation, inspect actual repository state, the relevant phase, its prerequisites, governing policy, and linked human actions. Do not treat a planned capability or unchecked action as available.
 2. Mark a task `in progress` when work actually starts. Update statuses when evidence, scope, dependencies, or blockers change, and before each handoff or completion report.

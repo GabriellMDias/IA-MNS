@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "foundation",
+  "name": "Orion",
+  "repository": {
+    "url": "https://github.com/GabriellMDias/Orion",
+    "defaultBranch": "main"
+  }
+}

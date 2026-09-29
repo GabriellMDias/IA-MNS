@@ -33,10 +33,11 @@ Completion requires, as applicable: correct implementation, respected boundaries
 | Structural reference | Generated from canonical schemas, contracts, or metadata |
 | Domain meaning | Near the owning domain; `docs/domains/` when cross-file explanation is needed |
 | Application/package-specific knowledge | Near the owning application or package |
-| Execution status and outstanding work | [Implementation plan](implementation-plan.md) |
-| Decisions or access requiring a human | [Human actions](human-actions.md) |
+| Execution status and outstanding work | [Implementation plan](implementation-plan.md); `docs/project/implementation-plan.md` in a derived project |
+| Decisions or access requiring a human | [Human actions](human-actions.md); `docs/project/human-actions.md` in a derived project |
+| Repository identity and Orion provenance | [`.orion/project.json`](../.orion/project.json), under [project derivation](project-derivation.md) |
 
-The maintainer of the owning code or policy is responsible for keeping its documentation current in the same change. This is responsibility by repository boundary, not an invented team or approval hierarchy. Indexes route readers; they do not own copies of another document's rules. Root `AGENTS.md` owns global invariants and task routes; nested instructions add only distinct local obligations. Application/package READMEs explain local responsibility and usage, with links to shared setup and policy.
+The maintainer of the owning code or policy is responsible for keeping its documentation current in the same change. This is responsibility by repository boundary, not an invented team or approval hierarchy. Indexes route readers; they do not own copies of another document's rules. Root `AGENTS.md` owns global invariants and task routes; nested instructions add only distinct local obligations. They apply to every contributor and agent; tool-specific files may only adapt discovery under [agent instructions](architecture/agent-instructions.md). Application/package READMEs explain local responsibility and usage, with links to shared setup and policy.
 
 Prefer the narrowest authoritative location. Do not create empty documentation directories, speculative runbooks, or placeholder applications to match an illustrative tree. `docs/domains/` and `docs/generated/` should appear only when real content exists. Technology-specific documentation is appropriate after the technology exists or has been selected.
 

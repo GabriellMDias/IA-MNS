@@ -19,6 +19,7 @@ import {
   documentationPaths,
   renderDocument,
   rewriteLink,
+  sourceBaseFrom,
 } from "./markdown.mjs";
 
 const root = path.resolve(
@@ -27,6 +28,7 @@ const root = path.resolve(
 );
 const sources = await readSources(root);
 const run = promisify(execFile);
+const sourceBase = "https://example.test/acme/ledger/blob/main/";
 
 async function temporaryDirectory(t) {
   const directory = await mkdtemp(
@@ -89,6 +91,7 @@ test("Markdown links and duplicate heading anchors remain local and deterministi
     "docs/a.md",
     "# Guide\n\n## Safe `code`\n\n[Home](../README.md) [Docs](.)\n\n## Safe `code`\n\n[Anchor](#safe-code-1)\n",
     available,
+    sourceBase,
   );
   assert.deepEqual(
     rendered.headings.map((heading) => heading.id),
@@ -99,17 +102,62 @@ test("Markdown links and duplicate heading anchors remain local and deterministi
   assert.match(rendered.html, /href="\/docs\/repository\/docs\/a#safe-code-1"/);
   assert.doesNotMatch(rendered.html, /<h1/);
   assert.equal(
-    rewriteLink("generated/api/openapi.json", "docs/README.md", available),
+    rewriteLink(
+      "generated/api/openapi.json",
+      "docs/README.md",
+      available,
+      sourceBase,
+    ),
     "/docs/api#artifacts",
   );
   assert.throws(
-    () => rewriteLink("absent.md", "docs/a.md", available),
+    () => rewriteLink("absent.md", "docs/a.md", available, sourceBase),
     /absent from portal/,
   );
   assert.throws(
-    () => rewriteLink("../../outside", "docs/a.md", available),
+    () => rewriteLink("../../outside", "docs/a.md", available, sourceBase),
     /escapes repository/,
   );
+});
+
+test("source-only links open the repository recorded in the project manifest", async () => {
+  const available = new Set(["docs/a.md"]);
+  assert.equal(
+    rewriteLink(
+      "../apps/api/src/app.ts#L1",
+      "docs/a.md",
+      available,
+      sourceBase,
+    ),
+    "https://example.test/acme/ledger/blob/main/apps/api/src/app.ts#L1",
+  );
+  assert.equal(
+    sourceBaseFrom(sources.get(".orion/project.json")),
+    "https://github.com/GabriellMDias/Orion/blob/main/",
+  );
+  for (const manifest of [
+    "{",
+    JSON.stringify({
+      repository: { url: "http://example.test/a/b", defaultBranch: "main" },
+    }),
+    JSON.stringify({
+      repository: { url: "https://example.test/a/b", defaultBranch: "../x" },
+    }),
+  ])
+    assert.throws(() => sourceBaseFrom(manifest), /Invalid/);
+  const derived = new Map(sources);
+  derived.set(
+    ".orion/project.json",
+    JSON.stringify({
+      repository: {
+        url: "https://example.test/acme/ledger",
+        defaultBranch: "main",
+      },
+    }),
+  );
+  const outputs = [...(await buildDocumentation(derived)).values()].join("\n");
+  assert.match(outputs, /https:\/\/example\.test\/acme\/ledger\/blob\/main\//);
+  assert.doesNotMatch(outputs, /github\.com\/GabriellMDias\/Orion\/blob/);
 });
 
 test("catalog summaries omit navigation and Markdown link syntax", () => {
@@ -118,6 +166,7 @@ test("catalog summaries omit navigation and Markdown link syntax", () => {
     "docs/a.md",
     "# Title\n\n[Home](b.md) · [Related](b.md)\n\n**Status:** accepted\n\nRead the [canonical policy](b.md) for the requirements and rationale governing this implementation.\n",
     available,
+    sourceBase,
   );
   assert.equal(
     rendered.summary,
@@ -131,6 +180,7 @@ test("Markdown cannot execute raw HTML, unsafe URLs, or automatic image requests
     "docs/a.md",
     "# Title\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\n![Diagram](https://example.test/tracker.png)\n",
     available,
+    sourceBase,
   );
   assert.doesNotMatch(rendered.html, /<script|<img/);
   assert.match(rendered.html, /&lt;script&gt;/);
@@ -143,7 +193,12 @@ test("Markdown cannot execute raw HTML, unsafe URLs, or automatic image requests
   ])
     assert.throws(
       () =>
-        renderDocument("docs/a.md", `# Title\n\n[Unsafe](${url})\n`, available),
+        renderDocument(
+          "docs/a.md",
+          `# Title\n\n[Unsafe](${url})\n`,
+          available,
+          sourceBase,
+        ),
       /Unsafe documentation URL/,
     );
 });

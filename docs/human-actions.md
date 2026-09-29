@@ -4,13 +4,15 @@
 
 ## Purpose and current state
 
-This checklist records implementation prerequisites that require a project-owner decision, human-controlled account action, unavailable privilege, or securely supplied external configuration. Codex must maintain it throughout implementation and must never silently skip work because human intervention is needed.
+This checklist records implementation prerequisites of the Orion foundation repository that require a project-owner decision, human-controlled account action, unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.
+
+The actions below were requested and verified for `GabriellMDias/Orion`. In a project derived from Orion, this checklist is inherited foundation history: completed items such as H-01 to H-03 do not establish Renovate, branch protection, or security settings for the project's repository. The project's own checklist is `docs/project/human-actions.md`, created by [project derivation](project-derivation.md) with pending equivalents.
 
 Phases 1-11 and the original development foundation are complete. The Approval Request owner decisions are recorded in H-04 and H-05; the API, database, generated SDK, web workflow, [configuration schema](../apps/api/src/config.ts), [local setup](setup.md), and [Living Documentation Portal](architecture/living-documentation.md) are implemented. The owner completed the current portal's manual browser acceptance in [H-12](#h-12); automated validation is recorded separately. Phase 12 remains unstarted. A selected identity provider or production environment is not required for the foundation. Conditional items become necessary only when their stated trigger applies; the [generated configuration reference](generated/configuration/api.md) records current API variable names.
 
-## How Codex maintains this checklist
+## Maintaining this checklist
 
-1. Inspect existing decisions, access, tools, configuration, and prior authorization before requesting human intervention. Complete authorized automation and all useful preparation first. Do not ask a human to repeat work Codex can already perform safely within scope.
+1. Inspect existing decisions, access, tools, configuration, and prior authorization before requesting human intervention. Complete authorized automation and all useful preparation first. Do not ask a human to repeat work an agent or contributor can already perform safely within scope.
 2. Keep one stable ID per coherent action. As providers, environments, or owners become concrete, split broad anticipated items into independently verifiable actions and update the plan's links. Add newly discovered actions immediately; this initial list is not exhaustive.
 3. Every action must retain its stable ID, checkbox, owner, status, applicability, dependency, and evidence. Active or conditional requests also need the exact action, reason, non-secret configuration names, and verification method. Completed actions may summarize the fulfilled request and link its canonical result. Use `pending`, `in progress`, `completed`, `blocked`, or `changed` consistently with the [plan](implementation-plan.md#maintaining-this-plan).
 4. Before asking the user, provide a concrete request: the exact setting or decision, prepared configuration or options where appropriate, why automation cannot finish it, affected task IDs, and how completion will be checked. Do not ask for approval again when existing authorization covers the action.
@@ -23,7 +25,7 @@ Phases 1-11 and the original development foundation are complete. The Approval R
 
 - Record configuration names, required scopes, environment, purpose, non-secret resource identifiers, and secure destination. Never record passwords, tokens, API keys, connection strings containing credentials, private keys, or complete environment dumps here, in the plan, in chat, or in tracked example files.
 - When a schema exists, replace each relevant `not defined yet` entry with the exact implemented configuration keys or `.env` names and a link to the schema/reference. Do this before requesting a value; do not invent variable names in advance.
-- Humans should place secrets directly into the selected protected secret store or an explicitly documented ignored local file, where appropriate. Codex should verify presence and authorized behavior without printing secret contents. Public client identifiers must be distinguished from server-only credentials.
+- Humans should place secrets directly into the selected protected secret store or an explicitly documented ignored local file, where appropriate. Agents and contributors should verify presence and authorized behavior without printing secret contents. Public client identifiers must be distinguished from server-only credentials.
 - Use synthetic local/test data and ephemeral credentials where possible. Production secrets must not be prerequisites for ordinary development or CI.
 - Prefer delegated, short-lived identity over raw long-lived credentials where supported. Existing [production-access policy](security/production-access.md) continues to govern privileged actions; a checkbox is not blanket authorization.
 
@@ -147,7 +149,7 @@ External settings below were verified on the stated dates. They are evidence of 
 
 **Status:** changed (conditional on distribution). **Owner:** project owner, with legal input when needed. **Dependency:** P12.8, or earlier distribution/publication requiring a license.
 
-**Trigger and request:** Choose the repository/product license, copyright holder, distribution model, and resulting dependency-license restrictions. Codex must not choose legal/distribution policy by assumption. No environment variables or credentials are needed.
+**Trigger and request:** Choose the repository/product license, copyright holder, distribution model, and resulting dependency-license restrictions. Agents must not choose legal/distribution policy by assumption. No environment variables or credentials are needed.
 
 **Verification:** Match the owner's decision to license and publication metadata. Add license checks only for a concrete policy; there is no global dependency-license allowlist/denylist by default.
 

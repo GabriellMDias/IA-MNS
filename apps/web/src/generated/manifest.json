@@ -232,7 +232,7 @@
       "title": "Repository Instructions",
       "group": "Agent instructions",
       "source": "AGENTS.md",
-      "summary": "The repository is the primary source of truth. Keep implementation, schemas, contracts, tests, documentation, and generated artifacts consistent. Do not invent undocumented…",
+      "summary": "These instructions apply to every human contributor and AI coding agent, whatever tool is used. AGENTS.md files are the only repository instruction source; tool-specific files…",
       "headings": [],
       "file": "pages/repository/AGENTS.json"
     },
@@ -397,6 +397,26 @@
       "file": "pages/repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.json"
     },
     {
+      "id": "repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source",
+      "kind": "repository",
+      "title": "ADR-0013: Keep AGENTS.md as the Agent-Neutral Instruction Source",
+      "group": "Decisions",
+      "source": "docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md",
+      "summary": "Orion is built and maintained by humans together with AI coding agents. Its foundation was developed with OpenAI Codex, and its instructions and tracking documents named Codex…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.json"
+    },
+    {
+      "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
+      "kind": "repository",
+      "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
+      "group": "Decisions",
+      "source": "docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md",
+      "summary": "Orion's purpose is to be a reusable foundation for real projects. Each real project must be an independent repository with its own origin, pull requests, CI history, human…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -475,6 +495,16 @@
       "summary": "This policy owns consumer-facing API evolution. Prefer compatible evolution; create a new API version only when a meaningful incompatibility cannot reasonably be handled within…",
       "headings": [],
       "file": "pages/repository/docs/api/versioning.json"
+    },
+    {
+      "id": "repository/docs/architecture/agent-instructions",
+      "kind": "repository",
+      "title": "Agent Instructions and Tool Compatibility",
+      "group": "Architecture",
+      "source": "docs/architecture/agent-instructions.md",
+      "summary": "This page owns how repository instructions reach human contributors and AI coding agents. ADR-0013 records the decision. Orion is not coupled to a particular model, agent…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/agent-instructions.json"
     },
     {
       "id": "repository/docs/architecture/application-boundaries",
@@ -582,7 +612,7 @@
       "title": "Technology Decision Map",
       "group": "Architecture",
       "source": "docs/architecture/technology-decisions.md",
-      "summary": "This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. All twelve records…",
+      "summary": "This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. All fourteen records…",
       "headings": [],
       "file": "pages/repository/docs/architecture/technology-decisions.json"
     },
@@ -742,7 +772,7 @@
       "title": "Human Actions for Implementation",
       "group": "Project guides",
       "source": "docs/human-actions.md",
-      "summary": "This checklist records implementation prerequisites that require a project-owner decision, human-controlled account action, unavailable privilege, or securely supplied external…",
+      "summary": "This checklist records implementation prerequisites of the Orion foundation repository that require a project-owner decision, human-controlled account action, unavailable…",
       "headings": [],
       "file": "pages/repository/docs/human-actions.json"
     },
@@ -752,9 +782,19 @@
       "title": "Orion Implementation Plan",
       "group": "Project guides",
       "source": "docs/implementation-plan.md",
-      "summary": "This is Orion's living execution plan. It tracks implementation progress; it does not replace current architectural policy or accepted ADRs. Preserve accepted decisions,…",
+      "summary": "This is Orion's living execution plan. It tracks implementation progress of the Orion foundation repository; it does not replace current architectural policy or accepted ADRs.…",
       "headings": [],
       "file": "pages/repository/docs/implementation-plan.json"
+    },
+    {
+      "id": "repository/docs/project-derivation",
+      "kind": "repository",
+      "title": "Project Derivation and Orion Upgrades",
+      "group": "Project guides",
+      "source": "docs/project-derivation.md",
+      "summary": "This guide owns how a real project is started from Orion, how its provenance is recorded and checked, and how it adopts newer Orion revisions. ADR-0014 records the decision and…",
+      "headings": [],
+      "file": "pages/repository/docs/project-derivation.json"
     },
     {
       "id": "repository/docs/README",
@@ -1012,18 +1052,18 @@
       { "file": "search/0000.json", "count": 16, "kinds": ["api"] },
       {
         "file": "search/0001.json",
-        "count": 93,
+        "count": 92,
         "kinds": ["api", "component", "database", "repository"]
       },
       { "file": "search/0002.json", "count": 113, "kinds": ["repository"] },
       { "file": "search/0003.json", "count": 127, "kinds": ["repository"] },
       { "file": "search/0004.json", "count": 122, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 124, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 90, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 88, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 34, "kinds": ["repository"] }
+      { "file": "search/0005.json", "count": 134, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 82, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 93, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 104, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 72, "kinds": ["repository"] }
     ],
-    "count": 913
+    "count": 955
   }
 }

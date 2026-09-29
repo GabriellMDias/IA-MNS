@@ -4,6 +4,8 @@
 
 This report assesses the Approval Request reference feature against Phase 9 and the completed living-documentation foundation against Phase 11. It does not certify a production deployment, select an identity provider, create historical release obligations, or replace the governing policies and ADRs.
 
+The evidence below was produced for the Orion foundation repository at the recorded dates, commits, and pull requests. In a project derived from Orion, this report is inherited foundation history: it documents the inherited implementation's provenance, but the project must reproduce validation, CI, and external settings in its own repository. See [project derivation](project-derivation.md).
+
 ## Reference feature evidence map
 
 | Concern | Canonical owner and executable evidence |
@@ -116,3 +118,11 @@ These results verify that documentation-only review's local checkout. They are r
 | Standalone API prose | Canonical route metadata now supplies operation descriptions in generated OpenAPI and the portal. The domain specification remains the authority for full business policy. |
 
 The audit resolved the actionable local gaps above. Conditional deployment requirements remain in [Phase 12](implementation-plan.md#phase-12), not in this foundation acceptance.
+
+## Agent portability and project derivation
+
+The 2026-09-29 change makes Orion's instructions agent-neutral and adds the [project derivation](project-derivation.md) workflow under [ADR-0013](adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) and [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md). [AP1–AP2 and PD1–PD5](implementation-plan.md#maintaining-this-plan) own task status.
+
+| Verification | 2026-09-29 result |
+| --- | --- |
+| Agent instruction discovery | Pending. |

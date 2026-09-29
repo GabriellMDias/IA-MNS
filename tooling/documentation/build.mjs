@@ -1,6 +1,11 @@
 import prettier from "prettier";
 import { Buffer } from "node:buffer";
-import { documentGroup, documentId, renderDocument } from "./markdown.mjs";
+import {
+  documentGroup,
+  documentId,
+  renderDocument,
+  sourceBaseFrom,
+} from "./markdown.mjs";
 
 const fail = (message) => {
   throw new Error(`Living documentation: ${message}`);
@@ -133,6 +138,7 @@ export async function buildDocumentation(sources) {
     return sources.get(name).replaceAll("\r\n", "\n");
   };
   const outputs = new Map();
+  const sourceBase = sourceBaseFrom(await read(".orion/project.json"));
   const openapiText = await read("docs/generated/api/openapi.json");
   const openapi = JSON.parse(openapiText);
   if (!openapi.openapi?.startsWith("3.1.")) fail("expected OpenAPI 3.1");
@@ -454,6 +460,7 @@ export async function buildDocumentation(sources) {
       source,
       text.replaceAll("\r\n", "\n"),
       available,
+      sourceBase,
     );
     const { title, headings, html, sections, summary } = rendered;
     await addEntry(
