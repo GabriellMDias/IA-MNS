@@ -11,7 +11,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { URL, fileURLToPath } from "node:url";
 import test from "node:test";
 import { buildDocumentation } from "./build.mjs";
 import { readSources, synchronizeOutputs } from "./files.mjs";
@@ -19,6 +19,7 @@ import {
   documentationPaths,
   renderDocument,
   rewriteLink,
+  sourceBaseFrom,
 } from "./markdown.mjs";
 
 const root = path.resolve(
@@ -27,6 +28,7 @@ const root = path.resolve(
 );
 const sources = await readSources(root);
 const run = promisify(execFile);
+const sourceBase = "https://example.test/acme/ledger/blob/main/";
 
 async function temporaryDirectory(t) {
   const directory = await mkdtemp(
@@ -89,6 +91,7 @@ test("Markdown links and duplicate heading anchors remain local and deterministi
     "docs/a.md",
     "# Guide\n\n## Safe `code`\n\n[Home](../README.md) [Docs](.)\n\n## Safe `code`\n\n[Anchor](#safe-code-1)\n",
     available,
+    sourceBase,
   );
   assert.deepEqual(
     rendered.headings.map((heading) => heading.id),
@@ -99,17 +102,103 @@ test("Markdown links and duplicate heading anchors remain local and deterministi
   assert.match(rendered.html, /href="\/docs\/repository\/docs\/a#safe-code-1"/);
   assert.doesNotMatch(rendered.html, /<h1/);
   assert.equal(
-    rewriteLink("generated/api/openapi.json", "docs/README.md", available),
+    rewriteLink(
+      "generated/api/openapi.json",
+      "docs/README.md",
+      available,
+      sourceBase,
+    ),
     "/docs/api#artifacts",
   );
   assert.throws(
-    () => rewriteLink("absent.md", "docs/a.md", available),
+    () => rewriteLink("absent.md", "docs/a.md", available, sourceBase),
     /absent from portal/,
   );
   assert.throws(
-    () => rewriteLink("../../outside", "docs/a.md", available),
+    () => rewriteLink("../../outside", "docs/a.md", available, sourceBase),
     /escapes repository/,
   );
+});
+
+test("source-only links open the repository recorded in the project manifest", async () => {
+  const available = new Set(["docs/a.md"]);
+  assert.equal(
+    rewriteLink(
+      "../apps/api/src/app.ts#L1",
+      "docs/a.md",
+      available,
+      sourceBase,
+    ),
+    "https://example.test/acme/ledger/blob/main/apps/api/src/app.ts#L1",
+  );
+  // The checkout is Orion or a derived project; links follow its manifest.
+  const { repository } = JSON.parse(sources.get(".orion/project.json"));
+  const ownBase = `${repository.url}/blob/${repository.defaultBranch}/`;
+  assert.equal(sourceBaseFrom(sources.get(".orion/project.json")), ownBase);
+  // An explicit non-default port is part of the recorded repository identity.
+  assert.equal(
+    sourceBaseFrom(
+      JSON.stringify({
+        repository: {
+          url: "https://git.example.test:8443/acme/ledger",
+          defaultBranch: "main",
+        },
+      }),
+    ),
+    "https://git.example.test:8443/acme/ledger/blob/main/",
+  );
+  for (const manifest of [
+    "{",
+    JSON.stringify({
+      repository: { url: "http://example.test/a/b", defaultBranch: "main" },
+    }),
+    JSON.stringify({
+      repository: { url: "https://example.test/a/b", defaultBranch: "../x" },
+    }),
+  ])
+    assert.throws(() => sourceBaseFrom(manifest), /Invalid/);
+  // Parse every generated source link and compare its repository identity
+  // exactly, rather than searching output text for URL fragments.
+  const sourceLinks = (outputs) => {
+    const links = [];
+    for (const [name, value] of outputs) {
+      if (!name.startsWith("apps/web/src/generated/pages/repository/"))
+        continue;
+      for (const [, href] of JSON.parse(value).html.matchAll(
+        / href="([^"]+)"/g,
+      )) {
+        if (!/^https?:\/\//.test(href)) continue;
+        const url = new URL(href.replaceAll("&amp;", "&"));
+        const [owner, repo, kind, branch] = url.pathname.split("/").slice(1);
+        if (kind === "blob")
+          links.push({ repository: `${url.origin}/${owner}/${repo}`, branch });
+      }
+    }
+    return links;
+  };
+  const current = sourceLinks(await buildDocumentation(sources));
+  assert.ok(current.length > 0);
+  for (const link of current)
+    assert.deepEqual(link, {
+      repository: repository.url,
+      branch: repository.defaultBranch,
+    });
+
+  const derivedRepository = "https://example.test/orion-derived-fixture/ledger";
+  assert.notEqual(derivedRepository, repository.url);
+  const derived = new Map(sources);
+  derived.set(
+    ".orion/project.json",
+    JSON.stringify({
+      repository: { url: derivedRepository, defaultBranch: "main" },
+    }),
+  );
+  const retargeted = sourceLinks(await buildDocumentation(derived));
+  // The same source links now open the derived repository, and none keeps
+  // the repository of the checkout that generated the committed portal.
+  assert.equal(retargeted.length, current.length);
+  for (const link of retargeted)
+    assert.deepEqual(link, { repository: derivedRepository, branch: "main" });
 });
 
 test("catalog summaries omit navigation and Markdown link syntax", () => {
@@ -118,6 +207,7 @@ test("catalog summaries omit navigation and Markdown link syntax", () => {
     "docs/a.md",
     "# Title\n\n[Home](b.md) · [Related](b.md)\n\n**Status:** accepted\n\nRead the [canonical policy](b.md) for the requirements and rationale governing this implementation.\n",
     available,
+    sourceBase,
   );
   assert.equal(
     rendered.summary,
@@ -131,6 +221,7 @@ test("Markdown cannot execute raw HTML, unsafe URLs, or automatic image requests
     "docs/a.md",
     "# Title\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\n![Diagram](https://example.test/tracker.png)\n",
     available,
+    sourceBase,
   );
   assert.doesNotMatch(rendered.html, /<script|<img/);
   assert.match(rendered.html, /&lt;script&gt;/);
@@ -143,7 +234,12 @@ test("Markdown cannot execute raw HTML, unsafe URLs, or automatic image requests
   ])
     assert.throws(
       () =>
-        renderDocument("docs/a.md", `# Title\n\n[Unsafe](${url})\n`, available),
+        renderDocument(
+          "docs/a.md",
+          `# Title\n\n[Unsafe](${url})\n`,
+          available,
+          sourceBase,
+        ),
       /Unsafe documentation URL/,
     );
 });

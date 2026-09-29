@@ -1,5 +1,7 @@
 # Repository Instructions
 
+These instructions apply to every human contributor and AI coding agent, whatever tool is used. `AGENTS.md` files are the only repository instruction source; tool-specific files may only help a tool discover them ([agent instructions](docs/architecture/agent-instructions.md)).
+
 ## Global invariants
 
 - The repository is the primary source of truth. Keep implementation, schemas, contracts, tests, documentation, and generated artifacts consistent. Do not invent undocumented behavior or treat planned directories and capabilities as implemented.
@@ -9,15 +11,15 @@
 - Keep one canonical source where practical. Change sources and regenerate derived artifacts instead of hand-editing generated references. Reviewed SQL migrations follow their separate authorship and release rules.
 - Update tests and affected documentation when behavior changes. Never weaken validation, typing, tests, security, or observability merely to make a change pass. Verify at the appropriate boundary and report remaining errors or unavailable checks honestly.
 - Treat external input as untrusted. Preserve secure defaults and server-side enforcement. Never commit or log secrets, expose internal stack traces to end users, or disable controls for convenience. Expected failures must be explicit and unexpected failures observable.
-- For implementation work, follow and maintain the [living plan](docs/implementation-plan.md) and [human-action checklist](docs/human-actions.md). Update affected task/phase statuses, evidence, and dependencies as work progresses and before handoff; record and surface human blockers instead of silently skipping them. Neither document authorizes work beyond the current task.
+- For implementation work, follow and maintain this repository's current plan and human-action checklist. In the Orion foundation repository, these are the [living plan](docs/implementation-plan.md) and [human-action checklist](docs/human-actions.md). In a project derived from Orion (`.orion/project.json` has `"kind": "project"`), they are `docs/project/implementation-plan.md` and `docs/project/human-actions.md`; Orion's files are then inherited foundation history, not current project work. Update affected task/phase statuses, evidence, and dependencies as work progresses and before handoff; record and surface human blockers instead of silently skipping them. Neither document authorizes work beyond the current task.
 
 ## Commands and current state
 
-The pnpm workspace, local validation tooling, CI configuration, Approval Request API/PostgreSQL feature, generated OpenAPI/SDK, `apps/web` reference workflow, and Living Documentation Portal exist. A concrete authentication provider has not been selected. Use Node.js 24.13.0 and pnpm 11.25.0; run `pnpm install --frozen-lockfile` to install dependencies and `pnpm validate` before considering substantial work complete. Use [setup](docs/setup.md) for local environment loading and startup. Run individual checks through the scripts in `package.json`. See [validation availability and responsibilities](docs/validation.md) and [CI status](docs/architecture/continuous-integration.md); do not claim a remote check or future capability has run without evidence.
+The pnpm workspace, local validation tooling, CI configuration, Approval Request API/PostgreSQL reference feature, generated OpenAPI/SDK, `apps/web` reference workflow, Living Documentation Portal, and project-derivation commands exist. A concrete authentication provider has not been selected. Use Node.js 24.13.0 and pnpm 11.25.0; run `pnpm install --frozen-lockfile` to install dependencies and `pnpm validate` before considering substantial work complete. Use [setup](docs/setup.md) for local environment loading and startup. Run individual checks through the scripts in `package.json`. See [validation availability and responsibilities](docs/validation.md) and [CI status](docs/architecture/continuous-integration.md); do not claim a remote check or future capability has run without evidence.
 
 ## Conditional reading routes
 
-Read the policies and ADRs relevant to the change; use their task links to reach the applicable sections. Do not load the entire documentation tree by default. Before editing a directory, inspect any applicable nested `AGENTS.md`; closer instructions add local requirements without removing global invariants.
+Read the policies and ADRs relevant to the change; use their task links to reach the applicable sections. Do not load the entire documentation tree by default. Before editing a directory, read every applicable nested `AGENTS.md` even if your tool did not load it automatically; closer instructions add local requirements without removing global invariants.
 
 | Change | Start here |
 | --- | --- |
@@ -31,5 +33,7 @@ Read the policies and ADRs relevant to the change; use their task links to reach
 | Telemetry or failure handling | [Observability](docs/reliability/observability.md), [error handling](docs/architecture/error-handling.md), [redaction](docs/security/telemetry-redaction.md) |
 | Sensitive data, identity, permissions, production, or incidents | [Security routes](docs/README.md#security-and-operations) |
 | ADRs or operational procedures | [ADR authoring](docs/adr/authoring.md), [runbook authoring](docs/runbooks/authoring.md) |
+| Agent tooling or instruction files | [Agent instructions](docs/architecture/agent-instructions.md) |
+| Project identity, Orion provenance, or Orion upgrades | [Project derivation](docs/project-derivation.md) |
 
 Before editing migration history, verify release status; uncertain history is immutable until verified. A runbook does not grant production authority. Finish by reviewing the diff for unintended changes and applying the [completion criteria](docs/contributing.md#change-workflow).

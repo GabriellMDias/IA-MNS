@@ -10,6 +10,7 @@ This is the canonical local setup and execution path. Tests use disposable Postg
 | Exercise the full reference feature manually | Frozen dependency install and a reachable container runtime | [Approval Requests](#manually-exercise-approval-requests) |
 | Run health-only API development | Frozen dependency install, generated Prisma client, and local configuration | [Configuration](#load-local-configuration) |
 | Run the complete validation gate | All clean-checkout prerequisites, including containers and test browsers | [Prepare a clean checkout](#prepare-a-clean-checkout), then [validate](#validate-regenerate-and-build) |
+| Start a new project from Orion or upgrade a project's Orion baseline | A fresh full clone and frozen dependency install | [Project derivation](project-derivation.md) |
 
 ## Prepare a clean checkout
 

@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md) · [Implementation conventions](approval-request-implementation.md) · [API reference](../generated/api/openapi.json)
 
-This is the canonical business specification for Orion’s Approval Request reference feature, implemented by the API, durable PostgreSQL schema, and web interface. It preserves the approved actors, access model, and state rules. Concrete identity-provider provisioning remains conditional; architectural and security policies govern further evolution.
+This is the canonical business specification for Orion’s Approval Request reference feature, implemented by the API, durable PostgreSQL schema, and web interface. It preserves the approved actors, access model, and state rules. Concrete identity-provider provisioning remains conditional; architectural and security policies govern further evolution. In a project derived from Orion, this feature is not a product requirement unless the project records it as adopted; see [reference implementation handling](../project-derivation.md#approval-request-reference-implementation).
 
 ## Purpose and actors
 

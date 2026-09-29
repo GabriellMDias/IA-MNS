@@ -10,7 +10,7 @@ The dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=
 
 The [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. [H-01](../human-actions.md#h-01) owns app activation/Dashboard evidence; [H-02](../human-actions.md#h-02) owns effective branch-protection evidence.
 
-Committed workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.
+Committed workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Effective settings belong to each repository: a project derived from Orion inherits this configuration but none of Orion's activation evidence, and tracks its own settings in its [project human actions](../project-derivation.md#foundation-owned-and-project-owned-files). Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.
 
 ## Read for this change
 

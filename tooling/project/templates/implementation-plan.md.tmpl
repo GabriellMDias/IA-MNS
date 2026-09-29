@@ -1,0 +1,32 @@
+# {{NAME}} Implementation Plan
+
+[Project human actions](human-actions.md) · [Project derivation](../project-derivation.md) · [Validation](../validation.md) · [Documentation index](../README.md)
+
+## Purpose and baseline
+
+This is {{NAME}}'s living execution plan and the current plan for this repository. It tracks product and repository work; the [README](../../README.md), current policies, and [accepted ADRs](../adr/README.md) still govern implementation.
+
+{{NAME}} was initialized on {{DATE}} from {{FOUNDATION_NAME}} commit `{{BASELINE}}` of {{FOUNDATION_URL}}. The [project manifest](../../.orion/project.json) records that immutable initialization commit and the {{FOUNDATION_NAME}} baseline currently integrated.
+
+The inherited [{{FOUNDATION_NAME}} foundation plan](../implementation-plan.md) records how {{FOUNDATION_NAME}} itself was built: its completed phases, maintenance tasks, and conditional Phase 12 describe the {{FOUNDATION_NAME}} repository at their recorded evidence. They are not tasks of this project, and their completed statuses do not certify this repository. The same applies to the [{{FOUNDATION_NAME}} human-action checklist](../human-actions.md) and [foundation acceptance report](../foundation-acceptance.md). Do not edit those foundation files to track {{NAME}}; they continue to receive {{FOUNDATION_NAME}} upgrades.
+
+## Maintaining this plan
+
+Apply the [maintenance rules and status vocabulary](../implementation-plan.md#maintaining-this-plan) of the {{FOUNDATION_NAME}} plan to this plan and to the [project human actions](human-actions.md). Allocate stable task IDs as `PJ-NN`; never reuse or renumber them. Record evidence produced for this repository—local validation, this repository's CI runs, and this repository's external settings—rather than {{FOUNDATION_NAME}}'s.
+
+## Inherited foundation
+
+{{NAME}} inherits {{FOUNDATION_NAME}}'s architecture, policies, accepted ADRs, validation gate, generated references, Living Documentation Portal, and developer workflow at the recorded baseline. They are usable immediately, but a result recorded in {{FOUNDATION_NAME}}'s evidence is not a result for this repository until it passes in this checkout and in this repository's CI.
+
+The `@orion/*` package scope, `ORION_*` configuration names, `orion_*` token claims, and the `Orion required gate` CI check name are the foundation namespace, not the product brand. Keeping them avoids rename conflicts in every {{FOUNDATION_NAME}} upgrade; rename them only through a deliberate decision under PJ-05.
+
+## Current work
+
+| Task | Scope | Status | Evidence / dependency |
+| --- | --- | --- | --- |
+| PJ-01 | Verify the initialized checkout: `pnpm install --frozen-lockfile` and `pnpm validate` pass locally. | pending | Record the date, commit, and result. |
+| PJ-02 | Publish the default branch to this project's `origin` and verify that this repository's required CI gate runs and passes. | pending | [PH-01](human-actions.md#ph-01), [PH-02](human-actions.md#ph-02). |
+| PJ-03 | Define the product scope, actors, first capabilities, and acceptance criteria; replace the README introduction. | pending | [PH-05](human-actions.md#ph-05). |
+| PJ-04 | Decide the inherited Approval Request reference implementation: keep it as a non-product reference, adopt it as product behavior, or remove it coherently. Resolve before the first durable release. | pending | [PH-06](human-actions.md#ph-06); [reference implementation handling](../project-derivation.md#approval-request-reference-implementation). |
+| PJ-05 | Decide product naming and user-visible branding beyond the project manifest, including whether any foundation namespace should change. | pending | Product decision; initialization renames nothing. |
+| PJ-06 | Establish deployment-specific operation when real product and environment requirements exist, using the policies behind {{FOUNDATION_NAME}}'s [Phase 12](../implementation-plan.md#phase-12). | pending | Conditional; add project human actions when triggered. |

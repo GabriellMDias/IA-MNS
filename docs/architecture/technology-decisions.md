@@ -1,6 +1,6 @@
 # Technology Decision Map
 
-This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. All twelve records currently state `accepted`; workspace tooling, the API/PostgreSQL feature, generated SDK, web workflow, and documentation portal exist. Consult [validation availability](../validation.md) before running commands.
+This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. All fourteen records currently state `accepted`; workspace tooling, the API/PostgreSQL feature, generated SDK, web workflow, documentation portal, and project-derivation tooling exist. Consult [validation availability](../validation.md) before running commands.
 
 ## Selected directions
 
@@ -18,6 +18,8 @@ This is a navigation summary, not an independent technology specification. Each 
 | [ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) | OpenTelemetry traces/metrics, Pino logs, W3C Trace Context, OTLP | Collector preferred when justified, not mandatory; no global backend/vendor or baseline browser instrumentation. | [Policy](../reliability/observability.md) |
 | [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) | GitHub Actions and Renovate; available GitHub security capabilities | Same validation as local development; immutable action pins; automerge off initially; CI does not select CD. | [Policy](continuous-integration.md) |
 | [ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) | Locally verified JWT bearer access tokens for the first API | Provider-independent issuer/audience/JWKS verification and stable Orion principal mapping; no concrete provider selected. | [Policy](../security/authentication.md) |
+| [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) | `AGENTS.md` hierarchy as the only agent instruction source | Tool-specific files are thin discovery adapters only; currently a Gemini CLI setting. | [Policy](agent-instructions.md) |
+| [ADR-0014](../adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) | Projects derived from Orion by Git ancestry with `.orion/project.json` provenance | Fetch-only `orion-upstream`, reviewed upgrade merges, immutable commits instead of a release scheme. | [Policy](../project-derivation.md) |
 
 ## Deliberately unresolved or conditional choices
 

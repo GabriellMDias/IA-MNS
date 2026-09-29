@@ -2,7 +2,28 @@ import path from "node:path";
 import MarkdownIt from "markdown-it";
 import GithubSlugger from "github-slugger";
 
-const sourceBase = "https://github.com/GabriellMDias/Orion/blob/main/";
+// Source-only links open the repository recorded in .orion/project.json, so a
+// project derived from Orion links to its own repository rather than Orion's.
+export function sourceBaseFrom(manifestText) {
+  let manifest;
+  try {
+    manifest = JSON.parse(manifestText);
+  } catch {
+    throw new Error("Invalid .orion/project.json");
+  }
+  const { url, defaultBranch } = manifest?.repository ?? {};
+  if (
+    typeof url !== "string" ||
+    !/^https:\/\/[A-Za-z0-9.-]+(?::[1-9]\d{0,4})?(?:\/[A-Za-z0-9._-]+)+$/.test(
+      url,
+    ) ||
+    typeof defaultBranch !== "string" ||
+    !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$/.test(defaultBranch) ||
+    defaultBranch.split("/").includes("..")
+  )
+    throw new Error("Invalid repository in .orion/project.json");
+  return `${url}/blob/${defaultBranch.split("/").map(encodeURIComponent).join("/")}/`;
+}
 export const documentId = (source) => `repository/${source.slice(0, -3)}`;
 export const headingText = (children) =>
   children
@@ -48,7 +69,7 @@ export function documentGroup(source) {
   return "Project guides";
 }
 
-export function rewriteLink(href, source, available) {
+export function rewriteLink(href, source, available, sourceBase) {
   if (/^(?:https?:|mailto:)/i.test(href)) return href;
   if (/^[a-z][a-z\d+.-]*:/i.test(href) || href.startsWith("//"))
     throw new Error(`Unsafe documentation URL in ${source}: ${href}`);
@@ -88,7 +109,7 @@ export function rewriteLink(href, source, available) {
   return `${sourceBase}${target.split("/").map(encodeURIComponent).join("/")}${suffix}`;
 }
 
-export function renderDocument(source, text, available) {
+export function renderDocument(source, text, available, sourceBase) {
   const markdown = new MarkdownIt({ html: false, linkify: false });
   const safeLink = markdown.validateLink.bind(markdown);
   markdown.validateLink = (url) => {
@@ -162,6 +183,7 @@ export function renderDocument(source, text, available) {
           child.attrGet("href") ?? "",
           source,
           available,
+          sourceBase,
         );
         child.attrSet("href", href);
         if (href.startsWith("https:") || href.startsWith("http:"))
@@ -175,7 +197,12 @@ export function renderDocument(source, text, available) {
   // Images are explicit links, never automatic third-party network requests.
   markdown.renderer.rules.image = (imageTokens, index) => {
     const token = imageTokens[index];
-    const href = rewriteLink(token.attrGet("src") ?? "", source, available);
+    const href = rewriteLink(
+      token.attrGet("src") ?? "",
+      source,
+      available,
+      sourceBase,
+    );
     const escape = markdown.utils.escapeHtml;
     return `<a href="${escape(href)}" rel="noreferrer noopener">${escape(token.content || "View image")}</a>`;
   };

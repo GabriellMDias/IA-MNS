@@ -1,0 +1,86 @@
+# {{NAME}} Human Actions
+
+[Project plan](implementation-plan.md) · [Project derivation](../project-derivation.md) · [Secrets policy](../security/secrets-management.md)
+
+## Purpose and current state
+
+This checklist records {{NAME}}'s prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external configuration. Apply the {{FOUNDATION_NAME}} checklist's [maintenance rules](../human-actions.md#maintaining-this-checklist), [safe configuration handoff](../human-actions.md#safe-configuration-handoff), and [action template](../human-actions.md#new-action-template) here. Allocate stable IDs as `PH-NN`; never reuse or renumber them.
+
+The [{{FOUNDATION_NAME}} checklist](../human-actions.md) records actions for the {{FOUNDATION_NAME}} foundation repository ({{FOUNDATION_URL}}). Its completed items—including Renovate installation, branch protection, and GitHub security controls—were verified for that repository only and are not complete for {{NAME}} ({{PROJECT_URL}}). Its conditional items describe triggers that can also arise here, such as an identity provider, durable releases, deployment, or licensing; when one does, add a project action below instead of editing the {{FOUNDATION_NAME}} checklist.
+
+## PH-01
+
+- [ ] **Create {{NAME}}'s repository and publish the initialized default branch.**
+
+**Status:** pending. **Owner:** project owner or repository administrator.
+**Dependency / trigger:** [PJ-02](implementation-plan.md#current-work); required before this repository has its own pull requests, CI runs, or settings.
+**Request and reason:** Create an empty repository at {{PROJECT_URL}} without a generated README, license, or ignore file, then run `git push -u origin main`. Initialization configured `origin` locally but never creates remote repositories or pushes.
+**Configuration:** none. Do not embed credentials in remote URLs.
+**Verification:** `git ls-remote origin main` returns the local `main` commit, and `pnpm orion:check` passes in a fresh clone.
+**Evidence / blocker:** Not started.
+
+## PH-02
+
+- [ ] **Require pull requests and the CI gate on this repository's default branch, and keep merge commits available.**
+
+**Status:** pending. **Owner:** repository administrator.
+**Dependency / trigger:** PH-01; [PJ-02](implementation-plan.md#current-work).
+**Request and reason:** Protect `main`: require pull requests and the inherited `Orion required gate` status check, block force pushes and deletion, and review bypass actors. Keep merge commits allowed and do not require linear history on `main`, because {{FOUNDATION_NAME}} upgrade pull requests must be merged with a merge commit to preserve upstream ancestry ([upgrade workflow](../project-derivation.md#upgrade-to-a-newer-orion-revision)); other pull requests may use any enabled method. Branch protection and merge settings are repository administration that local automation cannot perform; {{FOUNDATION_NAME}}'s evidence does not apply here.
+**Configuration:** none beyond the repository ruleset and merge settings.
+**Verification:** Read the effective rules for `main` and confirm the required check name matches [CI](../../.github/workflows/ci.yml) and that no linear-history requirement applies; confirm merge commits are allowed in the repository's pull-request settings; a successful required-gate run appears on a pull request.
+**Evidence / blocker:** Not started.
+
+## PH-03
+
+- [ ] **Enable Renovate for this repository.**
+
+**Status:** pending. **Owner:** repository administrator.
+**Dependency / trigger:** PH-01.
+**Request and reason:** Grant the Renovate GitHub App access to {{PROJECT_URL}} so the inherited [configuration](../../renovate.json) runs. App installation is an account action.
+**Configuration:** none; no personal token is required.
+**Verification:** Renovate opens this repository's Dependency Dashboard reflecting the committed dependencies and schedule.
+**Evidence / blocker:** Not started.
+
+## PH-04
+
+- [ ] **Enable and verify applicable GitHub security controls.**
+
+**Status:** pending. **Owner:** repository administrator.
+**Dependency / trigger:** PH-01.
+**Request and reason:** Enable available code scanning, secret scanning and push protection, dependency graph, and vulnerability alerts, and set the Actions variable `DEPENDENCY_REVIEW_ENABLED=true` so the inherited dependency-review job runs. Record entitlement limits for this repository's visibility and plan.
+**Configuration:** Actions variable `DEPENDENCY_REVIEW_ENABLED` (non-secret).
+**Verification:** Inspect effective security settings and a pull-request run in which dependency review executed and the aggregate gate passed.
+**Evidence / blocker:** Not started.
+
+## PH-05
+
+- [ ] **Define the product scope and acceptance criteria.**
+
+**Status:** pending. **Owner:** project owner.
+**Dependency / trigger:** [PJ-03](implementation-plan.md#current-work); required before product features are implemented.
+**Request and reason:** Describe the product, actors, first capabilities, data classification, identity and authorization needs, and acceptance scenarios. Agents must not invent product requirements.
+**Configuration:** none.
+**Verification:** Requirements are recorded in the repository and linked from the project plan.
+**Evidence / blocker:** Not started.
+
+## PH-06
+
+- [ ] **Decide the Approval Request reference implementation's disposition.**
+
+**Status:** pending. **Owner:** project owner.
+**Dependency / trigger:** [PJ-04](implementation-plan.md#current-work); must be decided before the first durable release.
+**Request and reason:** Choose whether {{NAME}} keeps Approval Request as a non-product reference, adopts it as product behavior, or removes it. This is a product decision; see [reference implementation handling](../project-derivation.md#approval-request-reference-implementation).
+**Configuration:** `referenceImplementations.approvalRequest` in [.orion/project.json](../../.orion/project.json) records the result.
+**Verification:** `pnpm orion:check` and `pnpm validate` pass with the recorded disposition.
+**Evidence / blocker:** Not started; initialization recorded `reference`.
+
+## PH-07
+
+- [ ] **Determine licensing before distribution requires it.**
+
+**Status:** pending (conditional on distribution). **Owner:** project owner, with legal input when needed.
+**Dependency / trigger:** Publication or distribution of {{NAME}}.
+**Request and reason:** Choose the license, copyright holder, and distribution model. Agents must not choose legal policy by assumption. {{FOUNDATION_NAME}}'s own license status does not decide this.
+**Configuration:** none.
+**Verification:** License files and publication metadata match the recorded decision.
+**Evidence / blocker:** No license selected.

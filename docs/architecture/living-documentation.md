@@ -17,7 +17,7 @@ The Living Documentation portal is Orion's local, searchable interface to reposi
 
 The shell provides section navigation, breadcrumbs, responsive navigation, search, per-page outlines, focused route changes, and recoverable missing/loading/error states. Collections show at most 24 folders and document entries combined per page, with folder counts computed in one pass. Page IDs derive from repository paths, stable operation IDs, table names, or component names; titles can evolve without changing those IDs. A file move changes its path-based route and requires updating references. Repository hierarchy is derived rather than maintained in a second navigation inventory.
 
-All Markdown under `docs/`, and repository `README.md`/`AGENTS.md` files, are included. Relative links between those documents and their heading anchors stay in the local portal. OpenAPI links lead to the local API artifact section. Links to code and other source-only files may open GitHub; normal documentation reading does not require GitHub. Existing Markdown/JSON artifacts remain directly available to AI agents and repository readers.
+All Markdown under `docs/`, and repository `README.md`/`AGENTS.md` files, are included. Relative links between those documents and their heading anchors stay in the local portal. OpenAPI links lead to the local API artifact section. Links to code and other source-only files may open the repository host at the `repository` recorded in [`.orion/project.json`](../../.orion/project.json), so a derived project links to its own repository; normal documentation reading does not require the host. Existing Markdown/JSON artifacts remain directly available to AI agents and repository readers.
 
 ## Sources and representations
 
