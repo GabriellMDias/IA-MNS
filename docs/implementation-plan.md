@@ -14,7 +14,7 @@ The [README](../README.md), [principles](architecture/principles.md), [technolog
 
 ## Maintaining this plan
 
-Current authorized maintenance: finish the final foundation audit and verify its complete tree from a clean checkout. The owner reported H-12 manual browser acceptance complete on 2026-09-29; the automated validation gate is recorded independently. Deployment-specific Phase 12 remains excluded.
+The final foundation audit is complete locally, including a full clean-checkout gate. The owner reported H-12 manual browser acceptance complete on 2026-09-29; automated validation is recorded independently in the [acceptance report](foundation-acceptance.md#final-foundation-audit). A submitted PR must satisfy its own required CI gate before merge. Deployment-specific Phase 12 remains excluded.
 
 | Task | Scope | Status | Evidence / dependency |
 | --- | --- | --- | --- |
@@ -23,7 +23,7 @@ Current authorized maintenance: finish the final foundation audit and verify its
 | L3 | Verify generation, security, clean setup, non-browser checks and available CI evidence. | completed | [Current review evidence](foundation-acceptance.md#living-documentation-portal-review): reproducible generation, installation, build, and security checks passed; the 2026-09-29 local full gate also passed. Remote CI requires its own evidence. |
 | L4 | Verify final browser navigation, responsive layout, accessibility, previews and API exploration. | completed | Owner reported manual browser acceptance complete on 2026-09-29 under [H-12](human-actions.md#h-12). This is human-observed acceptance; automated suite evidence is tracked separately. |
 
-Final foundation audit (2026-09-29): architecture, backend, persistence, frontend, generated references, security, developer workflow, documentation, and CI have been reviewed and actionable local gaps closed. The [acceptance report](foundation-acceptance.md#final-foundation-audit) records fixes and full-gate/clean-checkout evidence; the remaining step is final branch and CI verification.
+Final foundation audit (2026-09-29): architecture, backend, persistence, frontend, generated references, security, developer workflow, documentation, and CI have been reviewed and actionable local gaps closed. The [acceptance report](foundation-acceptance.md#final-foundation-audit) records the fixes, full local gate, and clean-checkout evidence. PR/remote CI is verified separately before integration.
 
 Completed maintenance: comprehensive documentation review (2026-09-26–27). Deployment-specific Phase 12 remains excluded and unstarted.
 
