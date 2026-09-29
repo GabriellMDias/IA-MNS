@@ -14,7 +14,7 @@ The canonical `GabriellMDias/Orion` repository is the upstream development found
 | Immutable starting point | `foundation.initializedFromCommit`: the published Orion commit the project was initialized from; never changes |
 | Current foundation | `foundation.baselineCommit`: the newest Orion commit integrated and validated through a reviewed merge |
 | Canonical upstream | Local remote `orion-upstream`: fetch-only (its push URL is disabled), fetches no tags, and is tracked by no local branch |
-| Product repository | Local remote `origin`, recorded as `repository.url` |
+| Product repository | Recorded as `repository.url`; each clone's `origin` is that repository or a fork or mirror of it, never the foundation ([remote rules](#remote-rules)) |
 
 In the Orion repository the manifest has `"kind": "foundation"` and only describes Orion. A derived project's manifest has `"kind": "project"` and additionally records its foundation ancestry and the [Approval Request disposition](#approval-request-reference-implementation). The Living Documentation Portal links source files to the manifest's repository.
 
@@ -84,7 +84,9 @@ pnpm orion:status
 
 It prints the project identity, the initialization and recorded baseline commits, whether `orion-upstream` is configured and fetch-only, and, after `git fetch orion-upstream`, how many upstream commits follow the baseline and whether integrated commits are not yet recorded. It does not fetch or change anything.
 
-`pnpm orion:check` runs in `pnpm validate`. For a project, it validates the manifest, requires the project plan and human actions, requires both recorded commits to exist with the initialization commit an ancestor of the baseline and the baseline an ancestor of `HEAD`, and checks the Approval Request disposition. It needs full history; CI already uses `fetch-depth: 0`.
+`pnpm orion:check` runs in `pnpm validate`. For a project, it validates the manifest, requires the project plan and human actions, requires both recorded commits to exist with the initialization commit an ancestor of the baseline and the baseline an ancestor of `HEAD`, and checks the Approval Request disposition. It needs full history; CI already uses `fetch-depth: 0`. It also applies the [remote rules](#remote-rules) to whichever of these remotes the clone has.
+
+### Remote rules
 
 Git remotes are local configuration, so other clones of the project do not receive `orion-upstream`. Configure it in any clone with:
 
@@ -93,7 +95,14 @@ pnpm orion:upstream
 git fetch orion-upstream
 ```
 
-It adds the remote from the manifest when absent, refuses a remote or `origin` that identifies another repository, disables pushing to it, disables its tags, and removes any local branch's upstream tracking of it.
+| Remote | Rule | Enforced by |
+| --- | --- | --- |
+| `origin` | Must not identify the Orion foundation through its fetch or push URL, so product work never has the foundation as its normal push target. It need not equal the project's `repository.url`: contributors may work through a fork or mirror. | `pnpm orion:upstream` refuses; `pnpm orion:check` fails |
+| `orion-upstream`, when present | Its fetch URL must identify the foundation repository recorded in the manifest. | `pnpm orion:upstream` refuses; `pnpm orion:check` fails |
+| `orion-upstream`, when present | Its only push URL must be the disabled `orion-upstream-is-fetch-only`. | `pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream` |
+| `orion-upstream`, when absent | Valid; a normal clone has no foundation remote until a developer configures it. | — |
+
+`pnpm orion:upstream` adds `orion-upstream` from the manifest when absent, replaces every push URL of it with the disabled one, disables its tags, and removes any local branch's upstream tracking of it. It is safe to rerun.
 
 ## Upgrade to a newer Orion revision
 
@@ -104,7 +113,7 @@ An upgrade is a normal reviewable engineering change on a branch. Nothing is app
 3. Resolve conflicts according to the [ownership table](#foundation-owned-and-project-owned-files). Resolve generated references and portal data by rerunning their generators after the canonical sources are merged. Review semantic interactions with product code even where Git reports no conflict.
 4. Run `pnpm install --frozen-lockfile` if the lockfile changed, the relevant generators, and `pnpm validate`. Commit the merge.
 5. Run `pnpm orion:record-baseline <commit>`. It refuses unless the worktree is clean, the commit is on `orion-upstream/main`, descends from the recorded baseline, and is already an ancestor of `HEAD`. Commit the manifest change, rerun `pnpm validate`, and open the pull request against the project's `main`.
-6. Merge the pull request with a merge commit. Squash or rebase merges discard Orion's commit identities, and `pnpm orion:check` then fails because the recorded baseline is not an ancestor of `HEAD`.
+6. Merge the pull request with a merge commit. Squash or rebase merges discard Orion's commit identities, and `pnpm orion:check` then fails because the recorded baseline is not an ancestor of `HEAD`. The project repository must therefore keep merge commits enabled (project human action PH-02). This applies only to Orion upgrade pull requests; other pull requests may use whichever merge methods the project prefers.
 
 If the project's default branch requires pull requests, as PH-02 establishes, the merge and baseline update reach `main` together through that pull request. Record the upgrade and any project-specific follow-up in the project plan.
 

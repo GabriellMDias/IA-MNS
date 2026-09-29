@@ -77,6 +77,21 @@ function configuredRemoteUrl(root: string, remote: string, key = "url") {
   }
 }
 
+// Every configured value; a remote may list several fetch or push URLs.
+function configuredRemoteValues(
+  root: string,
+  remote: string,
+  key: "url" | "pushurl",
+): string[] {
+  try {
+    return git(root, ["config", "--get-all", `remote.${remote}.${key}`])
+      .split("\n")
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 function isRepository(url: string | undefined, identity: string): boolean {
   if (!url) return false;
   try {
@@ -138,7 +153,13 @@ export function renderProjectFiles(
 }
 
 function protectUpstream(root: string): void {
-  git(root, ["remote", "set-url", "--push", upstreamRemote, fetchOnlyPushUrl]);
+  // Replace every push URL; `git remote set-url --push` changes only one.
+  git(root, [
+    "config",
+    "--replace-all",
+    `remote.${upstreamRemote}.pushurl`,
+    fetchOnlyPushUrl,
+  ]);
   git(root, ["config", `remote.${upstreamRemote}.tagOpt`, "--no-tags"]);
   // A branch tracking the foundation would let `git pull` merge unreviewed
   // upstream work and `git push` target the canonical repository.
@@ -368,22 +389,59 @@ export function initializeProject(
   return { applied: true, manifest, actions };
 }
 
+// origin may be the project repository, a fork, or a mirror, but never the
+// foundation: that would make the foundation the normal push target.
+function originTargetsFoundation(root: string, manifest: ProjectManifest) {
+  return [
+    ...configuredRemoteValues(root, "origin", "url"),
+    ...configuredRemoteValues(root, "origin", "pushurl"),
+  ].some((url) => isRepository(url, manifest.foundation.repository.url));
+}
+
+function originFoundationError(manifest: ProjectManifest): string {
+  return `origin identifies the ${manifest.foundation.name} foundation repository ${manifest.foundation.repository.url}, so product work would push there; point origin at ${manifest.repository.url} or a fork or mirror of it (git remote set-url origin <url>), then run pnpm orion:upstream`;
+}
+
+/**
+ * Local remote configuration that could send product work to the foundation
+ * or fetch a different foundation. An absent orion-upstream is valid.
+ */
+export function remoteSafetyErrors(
+  root: string,
+  manifest: ProjectManifest,
+): string[] {
+  const identity = manifest.foundation.repository.url;
+  const errors: string[] = [];
+  if (originTargetsFoundation(root, manifest))
+    errors.push(originFoundationError(manifest));
+  const fetchUrls = configuredRemoteValues(root, upstreamRemote, "url");
+  if (fetchUrls.length === 0) return errors;
+  if (!fetchUrls.every((url) => isRepository(url, identity)))
+    errors.push(
+      `${upstreamRemote} fetches ${fetchUrls.join(", ")}, not the recorded foundation ${identity}; run git remote set-url ${upstreamRemote} ${identity}, then pnpm orion:upstream`,
+    );
+  const pushUrls = configuredRemoteValues(root, upstreamRemote, "pushurl");
+  if (pushUrls.length !== 1 || pushUrls[0] !== fetchOnlyPushUrl)
+    errors.push(
+      `${upstreamRemote} is pushable; run pnpm orion:upstream to restore its fetch-only protection`,
+    );
+  return errors;
+}
+
 /** Configure the fetch-only foundation remote in any clone of a project. */
 export function configureUpstream(root: string): string[] {
   const manifest = requireProject(readManifest(root));
   const identity = manifest.foundation.repository.url;
-  if (isRepository(configuredRemoteUrl(root, "origin"), identity))
-    throw new DerivationError(
-      `origin points at the ${manifest.foundation.name} foundation repository; point origin at ${manifest.repository.url} first`,
-    );
-  const existing = configuredRemoteUrl(root, upstreamRemote);
+  if (originTargetsFoundation(root, manifest))
+    throw new DerivationError(originFoundationError(manifest));
+  const existing = configuredRemoteValues(root, upstreamRemote, "url");
   const actions: string[] = [];
-  if (existing === undefined) {
+  if (existing.length === 0) {
     git(root, ["remote", "add", upstreamRemote, identity]);
     actions.push(`Added ${upstreamRemote} ${identity}`);
-  } else if (!isRepository(existing, identity)) {
+  } else if (!existing.every((url) => isRepository(url, identity))) {
     throw new DerivationError(
-      `${upstreamRemote} points at ${existing}, not ${identity}`,
+      `${upstreamRemote} points at ${existing.join(", ")}, not the recorded foundation ${identity}`,
     );
   }
   protectUpstream(root);
@@ -413,7 +471,8 @@ export function projectStatus(root: string): Manifest | ProjectStatus {
     manifest,
     upstreamConfigured: configuredRemoteUrl(root, upstreamRemote) !== undefined,
     pushDisabled:
-      configuredRemoteUrl(root, upstreamRemote, "pushurl") === fetchOnlyPushUrl,
+      configuredRemoteValues(root, upstreamRemote, "pushurl").join("\n") ===
+      fetchOnlyPushUrl,
     upstreamRef,
     baselineIntegrated:
       commitExists(root, baselineCommit) &&
@@ -588,6 +647,7 @@ export function checkProvenance(root: string): {
     errors.push(
       "foundation.baselineCommit is not an ancestor of HEAD; upgrades must be merged with their history (no squash or rebase)",
     );
+  errors.push(...remoteSafetyErrors(root, manifest));
   const disposition: ApprovalRequestDisposition =
     manifest.referenceImplementations.approvalRequest;
   const sourcePresent = existsSync(resolve(root, approvalRequestSourcePath));

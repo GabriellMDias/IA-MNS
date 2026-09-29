@@ -94,6 +94,8 @@ function fixture(options: { releases?: unknown[] } = {}) {
   const productBare = join(remotes, `acme${fixtureCount}`, "ledger.git");
   const canonical = canonicalUrl.replace("/orion/", `/orion${fixtureCount}/`);
   const product = projectUrl.replace(":acme/", `:acme${fixtureCount}/`);
+  const fork = `https://example.test/fork${fixtureCount}/ledger`;
+  const forkBare = join(remotes, `fork${fixtureCount}`, "ledger");
   for (const bare of [canonicalBare, productBare]) {
     mkdirSync(bare, { recursive: true });
     git(bare, "init", "--quiet", "--bare");
@@ -153,6 +155,8 @@ function fixture(options: { releases?: unknown[] } = {}) {
     product,
     canonicalBare,
     productBare,
+    fork,
+    forkBare,
     regenerated,
     init(overrides: Partial<Parameters<typeof initializeProject>[1]> = {}) {
       return initializeProject(work, {
@@ -555,6 +559,8 @@ void test("other clones configure the fetch-only foundation remote from the mani
     (projectStatus(teammate) as ProjectStatus).upstreamConfigured,
     false,
   );
+  // A normal clone has no orion-upstream until a developer configures it.
+  assert.deepEqual(checkProvenance(teammate).errors, []);
   configureUpstream(teammate);
   configureUpstream(teammate);
   assert.equal(
@@ -580,7 +586,115 @@ void test("other clones configure the fetch-only foundation remote from the mani
   git(teammate, "remote", "set-url", "origin", repo.canonical);
   refusal(
     () => configureUpstream(teammate),
-    /origin points at the Orion foundation/,
+    /origin identifies the Orion foundation repository/,
+  );
+});
+
+void test("provenance validation rejects remotes that push to or fetch the wrong foundation", () => {
+  const repo = fixture();
+  repo.init();
+  git(repo.work, "push", "--quiet", "-u", "origin", "main");
+  const errors = () => checkProvenance(repo.work).errors.join("\n");
+  assert.equal(errors(), "");
+
+  const canonicalSsh = repo.canonical.replace(
+    "https://example.test/",
+    "git@example.test:",
+  );
+  for (const url of [repo.canonical, `${canonicalSsh}.git`]) {
+    git(repo.work, "remote", "set-url", "origin", url);
+    assert.match(
+      errors(),
+      /origin identifies the Orion foundation repository .*git remote set-url origin <url>.*pnpm orion:upstream/,
+    );
+  }
+  git(repo.work, "remote", "set-url", "origin", repo.product);
+  git(repo.work, "remote", "set-url", "--push", "origin", repo.canonical);
+  assert.match(errors(), /origin identifies the Orion foundation repository/);
+  git(repo.work, "config", "--unset-all", "remote.origin.pushurl");
+  assert.equal(errors(), "");
+
+  git(
+    repo.work,
+    "remote",
+    "set-url",
+    "orion-upstream",
+    "https://example.test/other/core",
+  );
+  assert.match(
+    errors(),
+    /orion-upstream fetches https:\/\/example\.test\/other\/core, not the recorded foundation/,
+  );
+  git(repo.work, "remote", "set-url", "orion-upstream", repo.canonical);
+  assert.equal(errors(), "");
+
+  const pushable = /orion-upstream is pushable; run pnpm orion:upstream/;
+  git(repo.work, "config", "--unset-all", "remote.orion-upstream.pushurl");
+  assert.match(errors(), pushable);
+  configureUpstream(repo.work);
+  assert.equal(errors(), "");
+  git(
+    repo.work,
+    "remote",
+    "set-url",
+    "--push",
+    "orion-upstream",
+    repo.canonical,
+  );
+  assert.match(errors(), pushable);
+  configureUpstream(repo.work);
+  git(
+    repo.work,
+    "config",
+    "--add",
+    "remote.orion-upstream.pushurl",
+    repo.canonical,
+  );
+  assert.match(errors(), pushable);
+  configureUpstream(repo.work);
+  assert.equal(
+    git(repo.work, "config", "--get-all", "remote.orion-upstream.pushurl"),
+    fetchOnlyPushUrl,
+  );
+  assert.equal(errors(), "");
+  const canonicalMain = git(repo.canonicalBare, "rev-parse", "main");
+  assert.throws(() => git(repo.work, "push", "orion-upstream", "main"));
+  assert.equal(git(repo.canonicalBare, "rev-parse", "main"), canonicalMain);
+});
+
+void test("a contributor working through a project fork remains valid", () => {
+  const repo = fixture();
+  repo.init();
+  git(repo.work, "push", "--quiet", "-u", "origin", "main");
+  // The fork is neither the foundation nor the canonical project repository.
+  git(repo.base, "clone", "--quiet", "--bare", repo.productBare, repo.forkBare);
+  const contributor = join(repo.base, "contributor");
+  git(repo.base, "clone", "--quiet", repo.fork, contributor);
+  assert.equal(
+    git(contributor, "config", "--get", "remote.origin.url"),
+    repo.fork,
+  );
+  assert.deepEqual(checkProvenance(contributor).errors, []);
+
+  configureUpstream(contributor);
+  git(contributor, "fetch", "--quiet", "orion-upstream");
+  assert.deepEqual(checkProvenance(contributor).errors, []);
+  git(contributor, "remote", "add", "project", repo.product);
+  assert.deepEqual(checkProvenance(contributor).errors, []);
+
+  git(contributor, "switch", "--quiet", "-c", "feature");
+  git(
+    contributor,
+    "commit",
+    "--quiet",
+    "--allow-empty",
+    "--message",
+    "product work",
+  );
+  git(contributor, "push", "--quiet", "origin", "feature");
+  assert.equal(
+    git(repo.forkBare, "rev-parse", "feature"),
+    git(contributor, "rev-parse", "HEAD"),
   );
 });
 

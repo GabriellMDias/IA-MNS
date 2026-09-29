@@ -1062,8 +1062,8 @@
       { "file": "search/0006.json", "count": 82, "kinds": ["repository"] },
       { "file": "search/0007.json", "count": 90, "kinds": ["repository"] },
       { "file": "search/0008.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 77, "kinds": ["repository"] }
+      { "file": "search/0009.json", "count": 78, "kinds": ["repository"] }
     ],
-    "count": 956
+    "count": 957
   }
 }

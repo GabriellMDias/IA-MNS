@@ -21,13 +21,13 @@ The [{{FOUNDATION_NAME}} checklist](../human-actions.md) records actions for the
 
 ## PH-02
 
-- [ ] **Require pull requests and the CI gate on this repository's default branch.**
+- [ ] **Require pull requests and the CI gate on this repository's default branch, and keep merge commits available.**
 
 **Status:** pending. **Owner:** repository administrator.
 **Dependency / trigger:** PH-01; [PJ-02](implementation-plan.md#current-work).
-**Request and reason:** Protect `main`: require pull requests and the inherited `Orion required gate` status check, block force pushes and deletion, and review bypass actors. Branch protection is repository administration that local automation cannot perform; {{FOUNDATION_NAME}}'s evidence does not apply here.
-**Configuration:** none beyond the repository ruleset.
-**Verification:** Read the effective rules for `main` and confirm the required check name matches [CI](../../.github/workflows/ci.yml); a successful required-gate run appears on a pull request.
+**Request and reason:** Protect `main`: require pull requests and the inherited `Orion required gate` status check, block force pushes and deletion, and review bypass actors. Keep merge commits allowed and do not require linear history on `main`, because {{FOUNDATION_NAME}} upgrade pull requests must be merged with a merge commit to preserve upstream ancestry ([upgrade workflow](../project-derivation.md#upgrade-to-a-newer-orion-revision)); other pull requests may use any enabled method. Branch protection and merge settings are repository administration that local automation cannot perform; {{FOUNDATION_NAME}}'s evidence does not apply here.
+**Configuration:** none beyond the repository ruleset and merge settings.
+**Verification:** Read the effective rules for `main` and confirm the required check name matches [CI](../../.github/workflows/ci.yml) and that no linear-history requirement applies; confirm merge commits are allowed in the repository's pull-request settings; a successful required-gate run appears on a pull request.
 **Evidence / blocker:** Not started.
 
 ## PH-03
