@@ -207,9 +207,10 @@ void test("repository URLs normalize to a credential-free identity", () => {
     assert.throws(() => normalizeRepositoryUrl(url));
 });
 
-void test("Orion's own manifest is a valid foundation manifest", () => {
+// This checkout is Orion itself or a project derived from it; both must pass.
+void test("this repository's manifest and provenance are valid", () => {
   const manifest = readManifest(repositoryRoot);
-  assert.equal(manifest.kind, "foundation");
+  assert.ok(["foundation", "project"].includes(manifest.kind));
   assert.deepEqual(checkProvenance(repositoryRoot).errors, []);
 });
 
@@ -353,6 +354,15 @@ void test("initialization preserves ancestry, records provenance, and protects t
 
 void test("initialization refuses ambiguous or unsafe starting states", () => {
   const dirty = fixture();
+  refusal(
+    () =>
+      initializeProject(join(dirty.work, "docs"), {
+        name: "Acme Ledger",
+        repository: dirty.product,
+        apply: true,
+      }),
+    /from the repository root/,
+  );
   write(dirty.work, "docs/policy.md", "# Policy\n\nLocal edit.\n");
   refusal(() => dirty.init(), /uncommitted or untracked changes/);
   git(dirty.work, "checkout", "--", "docs/policy.md");

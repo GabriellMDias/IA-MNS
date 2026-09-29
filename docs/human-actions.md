@@ -169,6 +169,20 @@ External settings below were verified on the stated dates. They are evidence of 
 
 **Evidence (2026-09-29):** Direct owner instruction to record completed H-12 acceptance. Existing automated browser suites remain enabled as the normal repository gate. The acceptance does not activate Phase 12 or choose a provider/deployment.
 
+## H-13
+
+- [ ] **Open the agent-portability and project-derivation pull request.**
+
+**Status:** blocked. **Owner:** repository owner. **Dependency:** [PD5](implementation-plan.md#maintaining-this-plan).
+
+**Request and reason:** The branch `feature/agent-portability-and-project-derivation` was pushed to `GabriellMDias/Orion` over the existing SSH access. Opening a pull request requires an authenticated GitHub web or API session; this environment has no GitHub CLI or token, and the agent's browser is not signed in and must not handle credentials. Open a pull request from that branch into `main` titled "Make Orion agent-neutral and add project derivation workflow", describing ADR-0013/ADR-0014 and the [acceptance evidence](foundation-acceptance.md#agent-portability-and-project-derivation). Do not merge before review and a passing required gate.
+
+**Configuration:** none.
+
+**Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; record the run link under PD5.
+
+**Evidence / blocker (2026-09-29):** Branch push succeeded; pull-request creation was unavailable to the agent for the reason above.
+
 ## New action template
 
 Allocate a new stable H-number; do not reuse existing IDs. Link it from the blocked or conditional plan task.

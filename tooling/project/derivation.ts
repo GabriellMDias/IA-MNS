@@ -1,5 +1,11 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -186,10 +192,14 @@ function initializationPreconditions(
       "Run this command inside a Git checkout of Orion",
     );
   }
+  // Git reports the resolved top level; temporary directories are symlinks
+  // on some platforms and Windows paths are case-insensitive.
+  const canonical = (path: string) => {
+    const real = realpathSync.native(path);
+    return process.platform === "win32" ? real.toLowerCase() : real;
+  };
   const samePath = (left: string, right: string) =>
-    process.platform === "win32"
-      ? resolve(left).toLowerCase() === resolve(right).toLowerCase()
-      : resolve(left) === resolve(right);
+    canonical(left) === canonical(right);
   if (!samePath(topLevel, root))
     throw new DerivationError("Run this command from the repository root");
 

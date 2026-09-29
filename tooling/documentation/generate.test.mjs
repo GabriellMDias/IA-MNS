@@ -131,10 +131,10 @@ test("source-only links open the repository recorded in the project manifest", a
     ),
     "https://example.test/acme/ledger/blob/main/apps/api/src/app.ts#L1",
   );
-  assert.equal(
-    sourceBaseFrom(sources.get(".orion/project.json")),
-    "https://github.com/GabriellMDias/Orion/blob/main/",
-  );
+  // The checkout is Orion or a derived project; links follow its manifest.
+  const { repository } = JSON.parse(sources.get(".orion/project.json"));
+  const ownBase = `${repository.url}/blob/${repository.defaultBranch}/`;
+  assert.equal(sourceBaseFrom(sources.get(".orion/project.json")), ownBase);
   for (const manifest of [
     "{",
     JSON.stringify({
@@ -156,8 +156,8 @@ test("source-only links open the repository recorded in the project manifest", a
     }),
   );
   const outputs = [...(await buildDocumentation(derived)).values()].join("\n");
-  assert.match(outputs, /https:\/\/example\.test\/acme\/ledger\/blob\/main\//);
-  assert.doesNotMatch(outputs, /github\.com\/GabriellMDias\/Orion\/blob/);
+  assert.ok(outputs.includes("https://example.test/acme/ledger/blob/main/"));
+  assert.ok(!outputs.includes(ownBase));
 });
 
 test("catalog summaries omit navigation and Markdown link syntax", () => {

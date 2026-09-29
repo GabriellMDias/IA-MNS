@@ -1060,10 +1060,10 @@
       { "file": "search/0004.json", "count": 122, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 134, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 82, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 93, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 104, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 72, "kinds": ["repository"] }
+      { "file": "search/0007.json", "count": 90, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 103, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 77, "kinds": ["repository"] }
     ],
-    "count": 955
+    "count": 956
   }
 }

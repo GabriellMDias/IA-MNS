@@ -47,7 +47,7 @@ Agent portability and project derivation (2026-09-29): Orion's instructions beco
 | PD2 | Implement guarded project initialization: protected upstream, project identity, project-owned plan and human actions, and the Approval Request disposition. | completed | [Project derivation](project-derivation.md#start-a-new-project), `tooling/project/`, and `pnpm orion:test` against disposable local Git repositories. |
 | PD3 | Implement provenance inspection, upstream configuration, baseline recording, and validation for reviewable upgrades. | completed | [Upgrade workflow](project-derivation.md#upgrade-to-a-newer-orion-revision); `pnpm orion:check` runs in `pnpm validate`. |
 | PD4 | Exercise initialization from a pristine clone and validate both Orion and the derived checkout. | in progress | Evidence belongs in the [acceptance report](foundation-acceptance.md#agent-portability-and-project-derivation). |
-| PD5 | Submit the change for review and verify the required remote CI gate. | pending | A pull request against `main`; remote CI must report its own result. |
+| PD5 | Submit the change for review and verify the required remote CI gate. | blocked | The branch is pushed; opening the pull request needs an authenticated GitHub session under [H-13](human-actions.md#h-13). Remote CI must then report its own result. |
 
 Every contributor or coding agent performing implementation work must maintain this document and the [human-action checklist](human-actions.md) throughout implementation, within the user's authorized scope.
 
