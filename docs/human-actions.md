@@ -171,17 +171,17 @@ External settings below were verified on the stated dates. They are evidence of 
 
 ## H-13
 
-- [ ] **Open the agent-portability and project-derivation pull request.**
+- [x] **Open the agent-portability and project-derivation pull request.**
 
-**Status:** blocked. **Owner:** repository owner. **Dependency:** [PD5](implementation-plan.md#maintaining-this-plan).
+**Status:** completed. **Owner:** repository owner. **Dependency:** [PD5](implementation-plan.md#maintaining-this-plan).
 
-**Request and reason:** The branch `feature/agent-portability-and-project-derivation` was pushed to `GabriellMDias/Orion` over the existing SSH access. Opening a pull request requires an authenticated GitHub web or API session; this environment has no GitHub CLI or token, and the agent's browser is not signed in and must not handle credentials. Open a pull request from that branch into `main` titled "Make Orion agent-neutral and add project derivation workflow", describing ADR-0013/ADR-0014 and the [acceptance evidence](foundation-acceptance.md#agent-portability-and-project-derivation). Do not merge before review and a passing required gate.
+**Request and reason:** The agent pushed `feature/agent-portability-and-project-derivation` over the existing SSH access but could not open a pull request: the environment had no GitHub CLI or token, and the agent's browser was not signed in and must not handle credentials. The owner was asked to open the pull request into `main` without merging it before review and a passing required gate.
 
 **Configuration:** none.
 
-**Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; record the run link under PD5.
+**Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; the run link is recorded under PD5.
 
-**Evidence / blocker (2026-09-29):** Branch push succeeded; pull-request creation was unavailable to the agent for the reason above.
+**Evidence (2026-09-29):** The owner opened [PR #15](https://github.com/GabriellMDias/Orion/pull/15) from that branch into `main`. On head `d593d7e` the [`Orion required gate`](https://github.com/GabriellMDias/Orion/actions/runs/36626454325) passed. Review, remaining CI results, and merge are tracked under PD5 rather than this action.
 
 ## New action template
 

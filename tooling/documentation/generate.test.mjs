@@ -11,7 +11,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { URL, fileURLToPath } from "node:url";
 import test from "node:test";
 import { buildDocumentation } from "./build.mjs";
 import { readSources, synchronizeOutputs } from "./files.mjs";
@@ -135,6 +135,18 @@ test("source-only links open the repository recorded in the project manifest", a
   const { repository } = JSON.parse(sources.get(".orion/project.json"));
   const ownBase = `${repository.url}/blob/${repository.defaultBranch}/`;
   assert.equal(sourceBaseFrom(sources.get(".orion/project.json")), ownBase);
+  // An explicit non-default port is part of the recorded repository identity.
+  assert.equal(
+    sourceBaseFrom(
+      JSON.stringify({
+        repository: {
+          url: "https://git.example.test:8443/acme/ledger",
+          defaultBranch: "main",
+        },
+      }),
+    ),
+    "https://git.example.test:8443/acme/ledger/blob/main/",
+  );
   for (const manifest of [
     "{",
     JSON.stringify({
@@ -145,19 +157,48 @@ test("source-only links open the repository recorded in the project manifest", a
     }),
   ])
     assert.throws(() => sourceBaseFrom(manifest), /Invalid/);
+  // Parse every generated source link and compare its repository identity
+  // exactly, rather than searching output text for URL fragments.
+  const sourceLinks = (outputs) => {
+    const links = [];
+    for (const [name, value] of outputs) {
+      if (!name.startsWith("apps/web/src/generated/pages/repository/"))
+        continue;
+      for (const [, href] of JSON.parse(value).html.matchAll(
+        / href="([^"]+)"/g,
+      )) {
+        if (!/^https?:\/\//.test(href)) continue;
+        const url = new URL(href.replaceAll("&amp;", "&"));
+        const [owner, repo, kind, branch] = url.pathname.split("/").slice(1);
+        if (kind === "blob")
+          links.push({ repository: `${url.origin}/${owner}/${repo}`, branch });
+      }
+    }
+    return links;
+  };
+  const current = sourceLinks(await buildDocumentation(sources));
+  assert.ok(current.length > 0);
+  for (const link of current)
+    assert.deepEqual(link, {
+      repository: repository.url,
+      branch: repository.defaultBranch,
+    });
+
+  const derivedRepository = "https://example.test/orion-derived-fixture/ledger";
+  assert.notEqual(derivedRepository, repository.url);
   const derived = new Map(sources);
   derived.set(
     ".orion/project.json",
     JSON.stringify({
-      repository: {
-        url: "https://example.test/acme/ledger",
-        defaultBranch: "main",
-      },
+      repository: { url: derivedRepository, defaultBranch: "main" },
     }),
   );
-  const outputs = [...(await buildDocumentation(derived)).values()].join("\n");
-  assert.ok(outputs.includes("https://example.test/acme/ledger/blob/main/"));
-  assert.ok(!outputs.includes(ownBase));
+  const retargeted = sourceLinks(await buildDocumentation(derived));
+  // The same source links now open the derived repository, and none keeps
+  // the repository of the checkout that generated the committed portal.
+  assert.equal(retargeted.length, current.length);
+  for (const link of retargeted)
+    assert.deepEqual(link, { repository: derivedRepository, branch: "main" });
 });
 
 test("catalog summaries omit navigation and Markdown link syntax", () => {

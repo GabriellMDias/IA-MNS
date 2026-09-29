@@ -161,18 +161,23 @@ function protectUpstream(root: string): void {
     fetchOnlyPushUrl,
   ]);
   git(root, ["config", `remote.${upstreamRemote}.tagOpt`, "--no-tags"]);
-  // A branch tracking the foundation would let `git pull` merge unreviewed
-  // upstream work and `git push` target the canonical repository.
-  const branches = git(root, [
+  for (const branch of branchesTrackingUpstream(root))
+    git(root, ["branch", "--unset-upstream", branch]);
+}
+
+// A local branch tracking the foundation would let an argument-free
+// `git pull` merge upstream work outside the reviewed upgrade workflow.
+function branchesTrackingUpstream(root: string): string[] {
+  return git(root, [
     "for-each-ref",
     "--format=%(refname:short)%09%(upstream:remotename)",
     "refs/heads",
-  ]);
-  for (const line of branches.split("\n").filter(Boolean)) {
-    const [branch, remote] = line.split("\t");
-    if (remote === upstreamRemote)
-      git(root, ["branch", "--unset-upstream", branch]);
-  }
+  ])
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => line.split("\t"))
+    .filter(([, remote]) => remote === upstreamRemote)
+    .map(([branch]) => branch);
 }
 
 export type InitializationOptions = {
@@ -403,8 +408,9 @@ function originFoundationError(manifest: ProjectManifest): string {
 }
 
 /**
- * Local remote configuration that could send product work to the foundation
- * or fetch a different foundation. An absent orion-upstream is valid.
+ * Local remote configuration that could send product work to the foundation,
+ * pull foundation changes outside a reviewed upgrade, or fetch a different
+ * foundation. An absent orion-upstream is valid.
  */
 export function remoteSafetyErrors(
   root: string,
@@ -414,6 +420,11 @@ export function remoteSafetyErrors(
   const errors: string[] = [];
   if (originTargetsFoundation(root, manifest))
     errors.push(originFoundationError(manifest));
+  const tracking = branchesTrackingUpstream(root);
+  if (tracking.length > 0)
+    errors.push(
+      `Local branch(es) ${tracking.join(", ")} track ${upstreamRemote}, so git pull could merge foundation changes outside a reviewed upgrade; run pnpm orion:upstream to remove that tracking`,
+    );
   const fetchUrls = configuredRemoteValues(root, upstreamRemote, "url");
   if (fetchUrls.length === 0) return errors;
   if (!fetchUrls.every((url) => isRepository(url, identity)))

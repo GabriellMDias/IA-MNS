@@ -56,7 +56,7 @@ Initialization refuses, without changing anything, when:
 - the checkout is not the repository root, is shallow, or has uncommitted or untracked changes (ignored files such as `node_modules/` and `.env.local` are allowed);
 - the manifest already describes a project, `docs/project/` exists, or an `orion-upstream` remote exists;
 - `main` is not checked out, `origin` is not the canonical Orion repository, or `HEAD` has commits that are not on `origin/main`;
-- the project name is invalid, the repository URL embeds credentials, or it identifies the Orion repository;
+- the project name is invalid, the repository URL embeds credentials, uses a non-default SSH port (see [repository identities](#remote-rules)), or identifies the Orion repository;
 - the migration release registry records durable releases, which would describe another deployment;
 - Git has no committer identity.
 
@@ -101,8 +101,11 @@ git fetch orion-upstream
 | `orion-upstream`, when present | Its fetch URL must identify the foundation repository recorded in the manifest. | `pnpm orion:upstream` refuses; `pnpm orion:check` fails |
 | `orion-upstream`, when present | Its only push URL must be the disabled `orion-upstream-is-fetch-only`. | `pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream` |
 | `orion-upstream`, when absent | Valid; a normal clone has no foundation remote until a developer configures it. | — |
+| Local branches | No local branch may track `orion-upstream`; an argument-free `git pull` would otherwise merge foundation changes outside a reviewed upgrade. | `pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream` |
 
-`pnpm orion:upstream` adds `orion-upstream` from the manifest when absent, replaces every push URL of it with the disabled one, disables its tags, and removes any local branch's upstream tracking of it. It is safe to rerun.
+`pnpm orion:upstream` adds `orion-upstream` from the manifest when absent, replaces every push URL of it with the disabled one, disables its tags, and removes upstream tracking of it from every local branch. It is safe to rerun.
+
+Repository identities compare as normalized HTTPS URLs, so HTTPS, SSH, and scp-like forms of the same repository match. An explicit non-default HTTPS port is part of the identity: `https://git.example.com:8443/acme/ledger` differs from `https://git.example.com/acme/ledger`, while `:443` is the same endpoint as no port. A non-default SSH port only selects the SSH transport and does not identify the HTTPS endpoint, so such a URL is refused as a project repository and never matches the foundation; supply the repository's HTTPS URL instead.
 
 ## Upgrade to a newer Orion revision
 

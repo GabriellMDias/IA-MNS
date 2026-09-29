@@ -71,10 +71,17 @@ export function validateName(name: unknown, label = "name"): string {
  * Canonical web identity of a Git repository URL. Accepts HTTPS, SSH, and
  * scp-like forms, and refuses embedded credentials so a manifest or log can
  * never carry one.
+ *
+ * A port is never discarded. An explicit non-default HTTPS port is part of
+ * the identity (`https://host:8443/owner/repo`); the URL parser already drops
+ * the default 443. An SSH port only selects the SSH transport and implies
+ * nothing about the HTTPS endpoint, so a non-default SSH port is refused
+ * rather than guessed. The scp-like form cannot express a port.
  */
 export function normalizeRepositoryUrl(input: string): string {
   const value = input.trim();
   let host: string;
+  let port = "";
   let path: string;
   const scpLike = /^[A-Za-z0-9._-]+@([A-Za-z0-9.-]+):(?!\/)(.+)$/.exec(value);
   if (scpLike) {
@@ -94,6 +101,15 @@ export function normalizeRepositoryUrl(input: string): string {
       throw new Error(`Repository URL must not have a query or fragment`);
     host = url.hostname;
     path = decodeURIComponent(url.pathname);
+    if (url.protocol === "https:") {
+      port = url.port;
+      if (port && !(Number(port) >= 1 && Number(port) <= 65535))
+        throw new Error(`Unsupported repository URL port: ${value}`);
+    } else if (url.port && url.port !== "22") {
+      throw new Error(
+        `SSH port ${url.port} does not identify the repository's HTTPS endpoint; use the repository's HTTPS URL: ${value}`,
+      );
+    }
   }
   const segments = path
     .replace(/\.git\/?$/, "")
@@ -107,7 +123,7 @@ export function normalizeRepositoryUrl(input: string): string {
     !/^[A-Za-z0-9.-]+$/.test(host)
   )
     throw new Error(`Unsupported repository URL: ${value}`);
-  return `https://${host.toLowerCase()}/${segments.join("/")}`;
+  return `https://${host.toLowerCase()}${port ? `:${port}` : ""}/${segments.join("/")}`;
 }
 
 export function sameRepository(left: string, right: string): boolean {

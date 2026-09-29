@@ -14,7 +14,9 @@ export function sourceBaseFrom(manifestText) {
   const { url, defaultBranch } = manifest?.repository ?? {};
   if (
     typeof url !== "string" ||
-    !/^https:\/\/[A-Za-z0-9.-]+(?:\/[A-Za-z0-9._-]+)+$/.test(url) ||
+    !/^https:\/\/[A-Za-z0-9.-]+(?::[1-9]\d{0,4})?(?:\/[A-Za-z0-9._-]+)+$/.test(
+      url,
+    ) ||
     typeof defaultBranch !== "string" ||
     !/^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$/.test(defaultBranch) ||
     defaultBranch.split("/").includes("..")

@@ -211,6 +211,76 @@ void test("repository URLs normalize to a credential-free identity", () => {
     assert.throws(() => normalizeRepositoryUrl(url));
 });
 
+void test("explicit ports are preserved or refused, never discarded", () => {
+  const custom = "https://git.example.com:8443/acme/ledger";
+  assert.equal(normalizeRepositoryUrl(`${custom}.git`), custom);
+  assert.equal(normalizeRepositoryUrl(`${custom}/`), custom);
+  // The default HTTPS port is the same endpoint as no port.
+  assert.equal(
+    normalizeRepositoryUrl("https://git.example.com:443/acme/ledger.git"),
+    "https://git.example.com/acme/ledger",
+  );
+  assert.ok(
+    sameRepository(
+      "https://GIT.example.com:443/Acme/Ledger",
+      "https://git.example.com/acme/ledger",
+    ),
+  );
+  for (const [left, right] of [
+    [custom, "https://git.example.com/acme/ledger"],
+    [custom, "https://git.example.com:9443/acme/ledger"],
+    [custom, "git@git.example.com:acme/ledger.git"],
+  ])
+    assert.equal(sameRepository(left, right), false, `${left} vs ${right}`);
+
+  // The default SSH port maps to the HTTPS identity like the scp-like form.
+  assert.equal(
+    normalizeRepositoryUrl("ssh://git@git.example.com:22/acme/ledger.git"),
+    "https://git.example.com/acme/ledger",
+  );
+  assert.throws(
+    () =>
+      normalizeRepositoryUrl("ssh://git@git.example.com:2222/acme/ledger.git"),
+    /SSH port 2222 does not identify the repository's HTTPS endpoint/,
+  );
+  // scp-like syntax has no port; a leading number is a path segment.
+  assert.equal(
+    normalizeRepositoryUrl("git@git.example.com:8443/acme/ledger.git"),
+    "https://git.example.com/8443/acme/ledger",
+  );
+  assert.throws(
+    () =>
+      normalizeRepositoryUrl(
+        "https://user:secret@git.example.com:8443/acme/ledger",
+      ),
+    /credentials/,
+  );
+  assert.throws(() =>
+    normalizeRepositoryUrl("https://git.example.com:0/acme/ledger"),
+  );
+
+  const manifest = {
+    schemaVersion: 1,
+    kind: "foundation",
+    name: "Orion",
+    repository: { url: custom, defaultBranch: "main" },
+  };
+  assert.equal(parseManifest(JSON.stringify(manifest)).repository.url, custom);
+  assert.throws(
+    () =>
+      parseManifest(
+        JSON.stringify({
+          ...manifest,
+          repository: {
+            url: "https://git.example.com:443/acme/ledger",
+            defaultBranch: "main",
+          },
+        }),
+      ),
+    /normalized https repository URL/,
+  );
+});
+
 // This checkout is Orion itself or a project derived from it; both must pass.
 void test("this repository's manifest and provenance are valid", () => {
   const manifest = readManifest(repositoryRoot);
@@ -696,6 +766,128 @@ void test("a contributor working through a project fork remains valid", () => {
     git(repo.forkBare, "rev-parse", "feature"),
     git(contributor, "rev-parse", "HEAD"),
   );
+});
+
+void test("no local branch may track the foundation remote", () => {
+  const repo = fixture();
+  repo.init();
+  git(repo.work, "push", "--quiet", "-u", "origin", "main");
+  git(repo.work, "fetch", "--quiet", "orion-upstream");
+  assert.deepEqual(checkProvenance(repo.work).errors, []);
+
+  // Track the foundation from the checked-out branch and a non-current one.
+  git(repo.work, "branch", "--quiet", "--set-upstream-to=orion-upstream/main");
+  git(repo.work, "branch", "--quiet", "side", "orion-upstream/main");
+  git(
+    repo.work,
+    "branch",
+    "--quiet",
+    "--set-upstream-to=orion-upstream/main",
+    "side",
+  );
+  git(repo.work, "branch", "--quiet", "product", "main");
+  git(
+    repo.work,
+    "branch",
+    "--quiet",
+    "--set-upstream-to=origin/main",
+    "product",
+  );
+  const [error, ...others] = checkProvenance(repo.work).errors;
+  assert.deepEqual(others, []);
+  assert.match(
+    error,
+    /^Local branch\(es\) main, side track orion-upstream, so git pull could merge foundation changes outside a reviewed upgrade; run pnpm orion:upstream/,
+  );
+
+  configureUpstream(repo.work);
+  assert.deepEqual(checkProvenance(repo.work).errors, []);
+  for (const branch of ["main", "side"])
+    assert.throws(() =>
+      git(repo.work, "config", "--get", `branch.${branch}.remote`),
+    );
+  // Tracking of other remotes is untouched, and repair is idempotent.
+  assert.equal(
+    git(repo.work, "config", "--get", "branch.product.remote"),
+    "origin",
+  );
+  configureUpstream(repo.work);
+  assert.deepEqual(checkProvenance(repo.work).errors, []);
+});
+
+void test("explicit ports stay part of repository identity through initialization and remote checks", () => {
+  const repo = fixture();
+  const withPort = (url: string, port: string) =>
+    url.replace("https://example.test/", `https://example.test:${port}/`);
+  const productPath = repo.product
+    .replace(/^git@example\.test:/, "")
+    .replace(/\.git$/, "");
+  const productWithPort = `https://example.test:8443/${productPath}`;
+  assert.equal(
+    repo.init({ apply: false, repository: `${productWithPort}.git` }).manifest
+      .repository.url,
+    productWithPort,
+  );
+  // The foundation's host on another port is a different endpoint, not the
+  // foundation itself, while the explicit default port is the same endpoint.
+  assert.equal(
+    repo.init({ apply: false, repository: withPort(repo.canonical, "8443") })
+      .manifest.repository.url,
+    withPort(repo.canonical, "8443"),
+  );
+  refusal(
+    () =>
+      repo.init({ apply: false, repository: withPort(repo.canonical, "443") }),
+    /must be the new project's repository/,
+  );
+  refusal(
+    () =>
+      repo.init({
+        apply: false,
+        repository: "ssh://git@example.test:2222/acme/ledger.git",
+      }),
+    /SSH port 2222/,
+  );
+
+  repo.init();
+  const errors = () => checkProvenance(repo.work).errors.join("\n");
+  git(
+    repo.work,
+    "remote",
+    "set-url",
+    "origin",
+    withPort(repo.canonical, "8443"),
+  );
+  assert.equal(errors(), "");
+  git(
+    repo.work,
+    "remote",
+    "set-url",
+    "origin",
+    withPort(repo.canonical, "443"),
+  );
+  assert.match(errors(), /origin identifies the Orion foundation repository/);
+  git(repo.work, "remote", "set-url", "origin", repo.product);
+  git(
+    repo.work,
+    "remote",
+    "set-url",
+    "orion-upstream",
+    withPort(repo.canonical, "8443"),
+  );
+  assert.match(
+    errors(),
+    /orion-upstream fetches .*:8443.*, not the recorded foundation/,
+  );
+  refusal(() => configureUpstream(repo.work), /not the recorded foundation/);
+  git(
+    repo.work,
+    "remote",
+    "set-url",
+    "orion-upstream",
+    withPort(repo.canonical, "443"),
+  );
+  assert.equal(errors(), "");
 });
 
 void test("the Approval Request disposition stays coherent with source and releases", () => {
