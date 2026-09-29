@@ -16,6 +16,7 @@ import {
   manifestPath,
   normalizeRepositoryUrl,
   readManifest,
+  mayBeSameRepository,
   sameRepository,
   upstreamRemote,
   validateName,
@@ -92,10 +93,22 @@ function configuredRemoteValues(
   }
 }
 
+// Accepting a URL as a repository requires exact identity.
 function isRepository(url: string | undefined, identity: string): boolean {
   if (!url) return false;
   try {
     return sameRepository(url, identity);
+  } catch {
+    return false;
+  }
+}
+
+// Refusing a URL because it could reach a repository is case-conservative;
+// see mayBeSameRepository.
+function mayBeRepository(url: string | undefined, identity: string): boolean {
+  if (!url) return false;
+  try {
+    return mayBeSameRepository(url, identity);
   } catch {
     return false;
   }
@@ -246,7 +259,7 @@ function initializationPreconditions(
   attempt(() => validateName(options.name, "--name"));
   attempt(() => {
     projectUrl = normalizeRepositoryUrl(options.repository);
-    if (sameRepository(projectUrl, manifest.repository.url))
+    if (mayBeSameRepository(projectUrl, manifest.repository.url))
       throw new Error(
         `--repository must be the new project's repository, not ${manifest.repository.url}`,
       );
@@ -268,10 +281,19 @@ function initializationPreconditions(
   const branch = manifest.repository.defaultBranch;
   if (git(root, ["branch", "--show-current"]) !== branch)
     problems.push(`Check out the ${branch} branch before initialization`);
-  const origin = configuredRemoteUrl(root, "origin");
-  if (!isRepository(origin, manifest.repository.url))
+  // Renaming origin keeps every URL it lists, so each must be the foundation;
+  // otherwise orion-upstream would start partly pointing elsewhere.
+  const originUrls = configuredRemoteValues(root, "origin", "url");
+  const foreignOriginUrls = originUrls.filter(
+    (url) => !isRepository(url, manifest.repository.url),
+  );
+  if (originUrls.length === 0)
     problems.push(
-      `The origin remote must be the canonical ${manifest.name} repository ${manifest.repository.url}; found ${origin ?? "no origin"}`,
+      `The origin remote must be the canonical ${manifest.name} repository ${manifest.repository.url}; found no origin`,
+    );
+  else if (foreignOriginUrls.length > 0)
+    problems.push(
+      `Every origin URL must identify the canonical ${manifest.name} repository ${manifest.repository.url}; keep only it with git config --replace-all remote.origin.url ${manifest.repository.url}, or use a fresh clone. Found: ${foreignOriginUrls.join(", ")}`,
     );
   const head = git(root, ["rev-parse", "HEAD"]);
   const published = `refs/remotes/origin/${branch}`;
@@ -400,7 +422,7 @@ function originTargetsFoundation(root: string, manifest: ProjectManifest) {
   return [
     ...configuredRemoteValues(root, "origin", "url"),
     ...configuredRemoteValues(root, "origin", "pushurl"),
-  ].some((url) => isRepository(url, manifest.foundation.repository.url));
+  ].some((url) => mayBeRepository(url, manifest.foundation.repository.url));
 }
 
 function originFoundationError(manifest: ProjectManifest): string {
@@ -567,6 +589,33 @@ export function recordBaseline(
     throw new DerivationError(
       "Commit the validated upgrade before recording its baseline",
     );
+  // Provenance may only come from the recorded foundation: verify the remote,
+  // then refresh its branch so refs fetched earlier from another repository
+  // cannot vouch for the candidate.
+  const remoteProblems = remoteSafetyErrors(root, manifest);
+  if (configuredRemoteValues(root, upstreamRemote, "url").length === 0)
+    remoteProblems.push(
+      `${upstreamRemote} is not configured; run pnpm orion:upstream`,
+    );
+  if (remoteProblems.length > 0)
+    throw new DerivationError(
+      `Baseline not recorded; the foundation remote must be verified first:\n- ${remoteProblems.join("\n- ")}`,
+    );
+  const branch = manifest.foundation.repository.defaultBranch;
+  const upstreamRef = `refs/remotes/${upstreamRemote}/${branch}`;
+  try {
+    git(root, [
+      "fetch",
+      "--quiet",
+      "--no-tags",
+      upstreamRemote,
+      `+refs/heads/${branch}:${upstreamRef}`,
+    ]);
+  } catch {
+    throw new DerivationError(
+      `Baseline not recorded; could not fetch ${branch} from ${upstreamRemote} ${manifest.foundation.repository.url}`,
+    );
+  }
   let next: string;
   try {
     next = git(root, ["rev-parse", "--verify", `${revision}^{commit}`]);
@@ -574,7 +623,6 @@ export function recordBaseline(
     throw new DerivationError(`Unknown commit: ${revision}`);
   }
   const previous = manifest.foundation.baselineCommit;
-  const upstreamRef = `refs/remotes/${upstreamRemote}/${manifest.foundation.repository.defaultBranch}`;
   const problems: string[] = [];
   if (!gitSucceeds(root, ["rev-parse", "--verify", "--quiet", upstreamRef]))
     problems.push(

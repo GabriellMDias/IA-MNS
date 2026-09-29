@@ -126,7 +126,23 @@ export function normalizeRepositoryUrl(input: string): string {
   return `https://${host.toLowerCase()}${port ? `:${port}` : ""}/${segments.join("/")}`;
 }
 
+/**
+ * Exact repository identity. Normalization lowercases the host, as URL
+ * semantics do, but path case is significant because self-hosted servers may
+ * treat `acme/Ledger` and `acme/ledger` as different repositories.
+ */
 export function sameRepository(left: string, right: string): boolean {
+  return normalizeRepositoryUrl(left) === normalizeRepositoryUrl(right);
+}
+
+/**
+ * Conservative match for refusals only. Some hosts, such as GitHub, resolve
+ * repository paths case-insensitively, so a URL that differs only in path
+ * case may still reach the repository. Checks that refuse a URL because it
+ * could be the foundation use this; checks that accept a URL as a given
+ * repository use `sameRepository`.
+ */
+export function mayBeSameRepository(left: string, right: string): boolean {
   return (
     normalizeRepositoryUrl(left).toLowerCase() ===
     normalizeRepositoryUrl(right).toLowerCase()
@@ -213,7 +229,7 @@ export function parseManifest(source: string): Manifest {
         `${manifestPath}: foundation.${field} must be a full commit SHA`,
       );
   }
-  if (sameRepository(repository.url, foundationRepository.url))
+  if (mayBeSameRepository(repository.url, foundationRepository.url))
     throw new Error(
       `${manifestPath}: a derived project must not claim the foundation repository as its own`,
     );

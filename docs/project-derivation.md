@@ -55,7 +55,7 @@ Initialization refuses, without changing anything, when:
 
 - the checkout is not the repository root, is shallow, or has uncommitted or untracked changes (ignored files such as `node_modules/` and `.env.local` are allowed);
 - the manifest already describes a project, `docs/project/` exists, or an `orion-upstream` remote exists;
-- `main` is not checked out, `origin` is not the canonical Orion repository, or `HEAD` has commits that are not on `origin/main`;
+- `main` is not checked out, any configured `origin` URL does not identify the canonical Orion repository, or `HEAD` has commits that are not on `origin/main`;
 - the project name is invalid, the repository URL embeds credentials, uses a non-default SSH port (see [repository identities](#remote-rules)), or identifies the Orion repository;
 - the migration release registry records durable releases, which would describe another deployment;
 - Git has no committer identity.
@@ -105,7 +105,7 @@ git fetch orion-upstream
 
 `pnpm orion:upstream` adds `orion-upstream` from the manifest when absent, replaces every push URL of it with the disabled one, disables its tags, and removes upstream tracking of it from every local branch. It is safe to rerun.
 
-Repository identities compare as normalized HTTPS URLs, so HTTPS, SSH, and scp-like forms of the same repository match. An explicit non-default HTTPS port is part of the identity: `https://git.example.com:8443/acme/ledger` differs from `https://git.example.com/acme/ledger`, while `:443` is the same endpoint as no port. A non-default SSH port only selects the SSH transport and does not identify the HTTPS endpoint, so such a URL is refused as a project repository and never matches the foundation; supply the repository's HTTPS URL instead.
+Repository identities compare as normalized HTTPS URLs, so HTTPS, SSH, and scp-like forms of the same repository match. Host names are case-insensitive, but repository path case is significant because self-hosted servers may treat `acme/Ledger` and `acme/ledger` as different repositories: accepting a URL as a given repository, as for `orion-upstream` or the `origin` checked before initialization, requires the exact path. Refusing a URL because it could reach the foundation, as for `origin` or a new project's repository, ignores path case, because hosts such as GitHub resolve differently cased paths to the same repository. An explicit non-default HTTPS port is part of the identity: `https://git.example.com:8443/acme/ledger` differs from `https://git.example.com/acme/ledger`, while `:443` is the same endpoint as no port. A non-default SSH port only selects the SSH transport and does not identify the HTTPS endpoint, so such a URL is refused as a project repository and never matches the foundation; supply the repository's HTTPS URL instead.
 
 ## Upgrade to a newer Orion revision
 
@@ -115,7 +115,7 @@ An upgrade is a normal reviewable engineering change on a branch. Nothing is app
 2. Choose the candidate commit; it must be on `orion-upstream/main`. Create a branch, for example `git switch -c orion-upgrade/<short-commit>`, and run `git merge --no-ff <commit>`.
 3. Resolve conflicts according to the [ownership table](#foundation-owned-and-project-owned-files). Resolve generated references and portal data by rerunning their generators after the canonical sources are merged. Review semantic interactions with product code even where Git reports no conflict.
 4. Run `pnpm install --frozen-lockfile` if the lockfile changed, the relevant generators, and `pnpm validate`. Commit the merge.
-5. Run `pnpm orion:record-baseline <commit>`. It refuses unless the worktree is clean, the commit is on `orion-upstream/main`, descends from the recorded baseline, and is already an ancestor of `HEAD`. Commit the manifest change, rerun `pnpm validate`, and open the pull request against the project's `main`.
+5. Run `pnpm orion:record-baseline <commit>`. It refuses unless the worktree is clean and `orion-upstream` exists and satisfies the [remote rules](#remote-rules). It then fetches `main` from that verified foundation, so refs fetched earlier from another repository cannot vouch for the commit. Finally it requires the commit to be on `orion-upstream/main`, descend from the recorded baseline, and already be an ancestor of `HEAD`. Commit the manifest change, rerun `pnpm validate`, and open the pull request against the project's `main`.
 6. Merge the pull request with a merge commit. Squash or rebase merges discard Orion's commit identities, and `pnpm orion:check` then fails because the recorded baseline is not an ancestor of `HEAD`. The project repository must therefore keep merge commits enabled (project human action PH-02). This applies only to Orion upgrade pull requests; other pull requests may use whichever merge methods the project prefers.
 
 If the project's default branch requires pull requests, as PH-02 establishes, the merge and baseline update reach `main` together through that pull request. Record the upgrade and any project-specific follow-up in the project plan.

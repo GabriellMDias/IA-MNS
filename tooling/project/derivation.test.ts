@@ -9,7 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, posix, resolve, sep } from "node:path";
+import { basename, dirname, join, posix, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
 import GithubSlugger from "github-slugger";
@@ -29,6 +29,7 @@ import {
 } from "./derivation.ts";
 import {
   type ProjectManifest,
+  mayBeSameRepository,
   normalizeRepositoryUrl,
   parseManifest,
   readManifest,
@@ -195,7 +196,7 @@ void test("repository URLs normalize to a credential-free identity", () => {
     assert.equal(normalizeRepositoryUrl(url), "https://github.com/Acme/Ledger");
   assert.ok(
     sameRepository(
-      "git@github.com:gabriellmdias/orion.git",
+      "git@GitHub.com:GabriellMDias/Orion.git",
       "https://github.com/GabriellMDias/Orion",
     ),
   );
@@ -222,7 +223,7 @@ void test("explicit ports are preserved or refused, never discarded", () => {
   );
   assert.ok(
     sameRepository(
-      "https://GIT.example.com:443/Acme/Ledger",
+      "https://GIT.example.com:443/acme/ledger",
       "https://git.example.com/acme/ledger",
     ),
   );
@@ -278,6 +279,79 @@ void test("explicit ports are preserved or refused, never discarded", () => {
         }),
       ),
     /normalized https repository URL/,
+  );
+});
+
+void test("host case is normalized while repository path case is preserved", () => {
+  assert.equal(
+    normalizeRepositoryUrl("https://GIT.Example.COM/Acme/Ledger.git"),
+    "https://git.example.com/Acme/Ledger",
+  );
+  for (const url of [
+    "git@GIT.example:acme/Ledger.git",
+    "ssh://git@Git.Example:22/acme/Ledger.git",
+    "https://git.EXAMPLE:443/acme/Ledger/",
+  ])
+    assert.ok(sameRepository(url, "https://git.example/acme/Ledger"), url);
+  // Case-sensitive servers may host both; exact identity keeps them apart.
+  assert.equal(
+    sameRepository(
+      "https://git.example/acme/Ledger",
+      "https://git.example/acme/ledger",
+    ),
+    false,
+  );
+  // Refusals stay conservative for hosts that ignore path case.
+  assert.ok(
+    mayBeSameRepository(
+      "https://git.example/acme/Ledger",
+      "https://git.example/acme/ledger",
+    ),
+  );
+  for (const [left, right] of [
+    ["https://git.example:8443/acme/ledger", "https://git.example/acme/ledger"],
+    ["https://git.example/acme/ledger", "https://git.example/acme/ledgers"],
+  ]) {
+    assert.equal(sameRepository(left, right), false);
+    assert.equal(mayBeSameRepository(left, right), false);
+  }
+  assert.throws(
+    () => normalizeRepositoryUrl("https://user:secret@GIT.example/acme/Ledger"),
+    /credentials/,
+  );
+  assert.throws(
+    () => normalizeRepositoryUrl("ssh://git@GIT.example:2222/acme/Ledger.git"),
+    /SSH port 2222/,
+  );
+
+  const project = {
+    schemaVersion: 1,
+    kind: "project",
+    name: "Acme Ledger",
+    repository: {
+      url: "https://git.example/acme/Ledger",
+      defaultBranch: "main",
+    },
+    foundation: {
+      name: "Orion",
+      repository: {
+        url: "https://git.example/acme/ledger",
+        defaultBranch: "main",
+      },
+      remote: "orion-upstream",
+      initializedFromCommit: "a".repeat(40),
+      baselineCommit: "a".repeat(40),
+    },
+    referenceImplementations: { approvalRequest: "reference" },
+  };
+  assert.throws(
+    () => parseManifest(JSON.stringify(project)),
+    /must not claim the foundation/,
+  );
+  project.repository.url = "https://git.example/acme/Ledger-app";
+  assert.equal(
+    parseManifest(JSON.stringify(project)).repository.url,
+    project.repository.url,
   );
 });
 
@@ -470,7 +544,10 @@ void test("initialization refuses ambiguous or unsafe starting states", () => {
     "origin",
     "https://example.test/fork/core",
   );
-  refusal(() => dirty.init(), /origin remote must be the canonical/);
+  refusal(
+    () => dirty.init(),
+    /Every origin URL must identify the canonical Orion repository/,
+  );
   git(dirty.work, "remote", "set-url", "origin", dirty.canonical);
 
   git(dirty.work, "commit", "--quiet", "--allow-empty", "--message", "local");
@@ -888,6 +965,137 @@ void test("explicit ports stay part of repository identity through initializatio
     withPort(repo.canonical, "443"),
   );
   assert.equal(errors(), "");
+});
+
+void test("initialization refuses an origin that also lists another repository", () => {
+  const repo = fixture();
+  const other = "https://example.test/other/core";
+  git(repo.work, "config", "--add", "remote.origin.url", other);
+  const head = git(repo.work, "rev-parse", "HEAD");
+  const before = git(repo.work, "config", "--get-all", "remote.origin.url");
+  assert.equal(before, `${repo.canonical}\n${other}`);
+  for (const apply of [false, true])
+    refusal(
+      () => repo.init({ apply }),
+      /Every origin URL must identify the canonical Orion repository .*git config --replace-all remote\.origin\.url .*Found: https:\/\/example\.test\/other\/core/,
+    );
+  // Nothing was mutated: no commit, no files, and remotes as they were.
+  assert.equal(git(repo.work, "rev-parse", "HEAD"), head);
+  assert.equal(
+    git(repo.work, "status", "--porcelain", "--untracked-files=all"),
+    "",
+  );
+  assert.equal(readManifest(repo.work).kind, "foundation");
+  assert.equal(git(repo.work, "remote"), "origin");
+  assert.equal(
+    git(repo.work, "config", "--get-all", "remote.origin.url"),
+    before,
+  );
+  assert.equal(repo.regenerated.length, 0);
+
+  git(
+    repo.work,
+    "config",
+    "--replace-all",
+    "remote.origin.url",
+    repo.canonical,
+  );
+  assert.equal(repo.init({ apply: false }).applied, false);
+});
+
+void test("path case is exact when accepting a remote and conservative when refusing one", () => {
+  const repo = fixture();
+  repo.init();
+  const errors = () => checkProvenance(repo.work).errors.join("\n");
+  const recased = repo.canonical
+    .replace("/orion", "/Orion")
+    .replace("/core", "/Core");
+  assert.notEqual(recased, repo.canonical);
+  git(repo.work, "remote", "set-url", "orion-upstream", recased);
+  assert.match(
+    errors(),
+    /orion-upstream fetches .*\/Core, not the recorded foundation/,
+  );
+  refusal(() => configureUpstream(repo.work), /not the recorded foundation/);
+  git(repo.work, "remote", "set-url", "orion-upstream", repo.canonical);
+  git(repo.work, "remote", "set-url", "origin", recased);
+  assert.match(errors(), /origin identifies the Orion foundation repository/);
+  git(repo.work, "remote", "set-url", "origin", repo.product);
+  assert.equal(errors(), "");
+});
+
+void test("a wrong orion-upstream with plausible ancestry cannot become the baseline", () => {
+  const repo = fixture();
+  repo.init();
+  git(repo.work, "push", "--quiet", "-u", "origin", "main");
+  const baseline = (readManifest(repo.work) as ProjectManifest).foundation
+    .baselineCommit;
+
+  // Another repository that shares Orion's history and adds a descendant.
+  const impostorName = `impostor-${basename(repo.base)}`;
+  const impostorUrl = `https://example.test/${impostorName}/core`;
+  git(
+    repo.base,
+    "clone",
+    "--quiet",
+    "--bare",
+    repo.canonicalBare,
+    join(remotes, impostorName, "core"),
+  );
+  const impostorWork = join(repo.base, "impostor-work");
+  git(repo.base, "clone", "--quiet", impostorUrl, impostorWork);
+  git(
+    impostorWork,
+    "commit",
+    "--quiet",
+    "--allow-empty",
+    "--message",
+    "Not Orion",
+  );
+  git(impostorWork, "push", "--quiet", "origin", "main");
+  const impostor = git(impostorWork, "rev-parse", "HEAD");
+  // git() throws unless the impostor commit really descends from the baseline.
+  git(impostorWork, "merge-base", "--is-ancestor", baseline, impostor);
+
+  git(repo.work, "switch", "--quiet", "-c", "orion-upgrade");
+  git(repo.work, "fetch", "--quiet", impostorUrl, "main");
+  git(repo.work, "merge", "--quiet", "--no-ff", "--no-edit", "FETCH_HEAD");
+  git(repo.work, "remote", "set-url", "orion-upstream", impostorUrl);
+  git(repo.work, "fetch", "--quiet", "orion-upstream");
+  assert.equal(git(repo.work, "rev-parse", "orion-upstream/main"), impostor);
+  refusal(
+    () => recordBaseline(repo.work, impostor),
+    /foundation remote must be verified first:\n- orion-upstream fetches https:\/\/example\.test\/impostor-.*, not the recorded foundation/,
+  );
+
+  // Correcting the URL without refetching leaves stale impostor refs, which
+  // recording refreshes from the verified foundation before trusting them.
+  git(repo.work, "remote", "set-url", "orion-upstream", repo.canonical);
+  assert.equal(git(repo.work, "rev-parse", "orion-upstream/main"), impostor);
+  // The refreshed foundation branch resolves to the real Orion tip, which is
+  // still the recorded baseline, not the impostor commit.
+  refusal(
+    () => recordBaseline(repo.work, "orion-upstream/main"),
+    new RegExp(`${baseline} is already the recorded baseline`),
+  );
+  assert.equal(
+    git(repo.work, "rev-parse", "orion-upstream/main"),
+    git(repo.canonicalBare, "rev-parse", "main"),
+  );
+  refusal(
+    () => recordBaseline(repo.work, impostor),
+    /is not on the canonical Orion main branch/,
+  );
+
+  git(repo.work, "remote", "remove", "orion-upstream");
+  refusal(
+    () => recordBaseline(repo.work, impostor),
+    /orion-upstream is not configured; run pnpm orion:upstream/,
+  );
+  assert.equal(
+    (readManifest(repo.work) as ProjectManifest).foundation.baselineCommit,
+    baseline,
+  );
 });
 
 void test("the Approval Request disposition stays coherent with source and releases", () => {
