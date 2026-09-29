@@ -16,6 +16,7 @@ describe("telemetry export boundary", () => {
         { name: "exception", attributes: { "exception.message": "secret" } },
       ],
       links: [{ attributes: { token: "secret" } }],
+      status: { code: 2, message: "do-not-export" },
       spanContext: () => ({ traceId: "11111111111111111111111111111111" }),
     } as unknown as ReadableSpan;
     const safe = sanitizeSpan(span);
@@ -26,7 +27,31 @@ describe("telemetry export boundary", () => {
     });
     expect(safe.events).toEqual([]);
     expect(safe.links).toEqual([]);
+    expect(safe.status).toEqual({ code: 2 });
     expect(safe.spanContext().traceId).toBe("11111111111111111111111111111111");
     expect(JSON.stringify(safe)).not.toContain("do-not-export");
+  });
+
+  it("retains only a safe database span identity and status code", () => {
+    const span = {
+      name: "prisma:query SELECT secret FROM approval_requests",
+      instrumentationScope: { name: "prisma" },
+      status: { code: 2, message: "database secret" },
+      attributes: {
+        "db.statement": "SELECT secret",
+        "db.query.parameter.0": "secret",
+      },
+      events: [
+        { name: "exception", attributes: { "exception.message": "secret" } },
+      ],
+      links: [],
+      spanContext: () => ({ traceId: "11111111111111111111111111111111" }),
+    } as unknown as ReadableSpan;
+    const safe = sanitizeSpan(span);
+    expect(safe.name).toBe("db.operation");
+    expect(safe.status).toEqual({ code: 2 });
+    expect(safe.attributes).toEqual({});
+    expect(safe.events).toEqual([]);
+    expect(JSON.stringify(safe)).not.toContain("secret");
   });
 });

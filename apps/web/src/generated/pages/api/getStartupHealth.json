@@ -1,0 +1,94 @@
+{
+  "kind": "api",
+  "operationId": "getStartupHealth",
+  "summary": "",
+  "description": "Report whether the process has completed startup initialization.",
+  "security": [],
+  "components": {},
+  "method": "GET",
+  "path": "/health/startup",
+  "tags": ["Health"],
+  "authentication": "None declared",
+  "parameters": [],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "ok" },
+                  { "type": "string", "const": "unavailable" }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "anyOf": [
+              { "type": "string", "const": "ok" },
+              { "type": "string", "const": "unavailable" }
+            ]
+          }
+        }
+      },
+      "fields": [
+        {
+          "name": "status",
+          "type": "\"ok\" | \"unavailable\"",
+          "required": true
+        }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "ok" },
+                  { "type": "string", "const": "unavailable" }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "anyOf": [
+              { "type": "string", "const": "ok" },
+              { "type": "string", "const": "unavailable" }
+            ]
+          }
+        }
+      },
+      "fields": [
+        {
+          "name": "status",
+          "type": "\"ok\" | \"unavailable\"",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

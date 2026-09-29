@@ -305,26 +305,26 @@ Introducing NestJS or another application framework for a specialized future app
 
 ## References
 
-Related ADR: `ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime`
+Related ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)
 
-Related ADR: `ADR-0002: Select pnpm for Package and Workspace Management`
+Related ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)
 
-Related ADR: `ADR-0003: Establish Repository Validation and Architecture Enforcement`
+Related ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/application-boundaries.md`
+Related policy: [application boundaries](../architecture/application-boundaries.md)
 
-Related policy: `docs/architecture/dependency-rules.md`
+Related policy: [dependency rules](../architecture/dependency-rules.md)
 
-Related policy: `docs/architecture/error-handling.md`
+Related policy: [error handling](../architecture/error-handling.md)
 
-Related policy: `docs/architecture/configuration.md`
+Related policy: [configuration](../architecture/configuration.md)
 
-Related policy: `docs/reliability/logging.md`
+Related policy: [logging](../reliability/logging.md)
 
-Related policy: `docs/reliability/observability.md`
+Related policy: [observability](../reliability/observability.md)
 
-Related policy: `docs/security/telemetry-redaction.md`
+Related policy: [telemetry redaction](../security/telemetry-redaction.md)
 
-Related policy: `docs/api/principles.md`
+Related policy: [principles](../api/principles.md)

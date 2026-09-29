@@ -1,0 +1,31 @@
+{
+  "kind": "component",
+  "name": "AccessTokenForm",
+  "summary": "Collects an already-issued bearer token and passes it to the in-memory credential boundary.",
+  "props": [
+    {
+      "name": "onConnect",
+      "type": "(token: string) => void",
+      "meaning": "Receives the trimmed token on form submission; the component clears its input."
+    },
+    {
+      "name": "showLocalIdentity",
+      "type": "boolean (optional)",
+      "meaning": "Shows development-only local identity controls when available; defaults to true and is disabled in documentation previews."
+    }
+  ],
+  "states": [
+    "Empty input",
+    "Entered token",
+    "Optional local synthetic identity controls in development"
+  ],
+  "accessibility": "Labels the password input, uses a submit button, and supports keyboard submission. The local identity buttons have descriptive names when available.",
+  "usage": "Use only at the authentication boundary. Keep the token in memory; never persist it or include it in a URL.",
+  "examples": [
+    {
+      "id": "access-token",
+      "label": "Empty token form",
+      "description": "Enter only a non-secret demonstration value here; the preview discards submitted values."
+    }
+  ]
+}

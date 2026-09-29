@@ -9,6 +9,7 @@ export const serverConfigSchema = Type.Object(
       Type.Literal("test"),
       Type.Literal("production"),
     ]),
+    releaseId: Type.String({ pattern: "^[A-Za-z0-9._-]{1,128}$" }),
     host: Type.String({ minLength: 1 }),
     port: Type.Integer({ minimum: 0, maximum: 65535 }),
     logLevel: Type.Union([
@@ -33,6 +34,18 @@ export const serverConfigSchema = Type.Object(
 export type ServerConfig = Readonly<Static<typeof serverConfigSchema>>;
 export type ClientConfig = Readonly<Record<string, never>>;
 
+type ConfigMetadata = {
+  key: keyof ServerConfig;
+  name: string;
+  type: string;
+  required: boolean;
+  default: string;
+  visibility: "server";
+  classification: "PUBLIC" | "INTERNAL" | "RESTRICTED";
+  secret: boolean;
+  purpose: string;
+};
+
 export const configReference = Object.freeze([
   {
     key: "environment",
@@ -41,7 +54,21 @@ export const configReference = Object.freeze([
     required: true,
     default: "",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Runtime environment.",
+  },
+  {
+    key: "releaseId",
+    name: "ORION_RELEASE_ID",
+    type: "artifact identifier, 1..128 ASCII letters/digits/._-",
+    required: false,
+    default: "local",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Actual artifact revision for correlated logs and traces; local for unversioned development.",
   },
   {
     key: "host",
@@ -50,6 +77,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "127.0.0.1",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Listen address; loopback by default.",
   },
   {
@@ -59,6 +88,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "3000",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Listen port; zero selects an ephemeral port.",
   },
   {
@@ -68,6 +99,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "info",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Structured log threshold.",
   },
   {
@@ -77,6 +110,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "5000",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Total graceful shutdown deadline.",
   },
   {
@@ -86,6 +121,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Optional OTLP HTTP collector base URL.",
   },
   {
@@ -95,6 +132,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "1",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Trace sampling probability.",
   },
   {
@@ -104,6 +143,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "",
     visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
     purpose:
       "Runtime database credential; required to activate Approval Request routes.",
   },
@@ -114,6 +155,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose:
       "Expected access-token issuer; configure with audience and JWKS URL.",
   },
@@ -124,6 +167,8 @@ export const configReference = Object.freeze([
     required: false,
     default: "",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Expected API access-token audience.",
   },
   {
@@ -133,9 +178,11 @@ export const configReference = Object.freeze([
     required: false,
     default: "",
     visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
     purpose: "Trusted issuer public-key endpoint.",
   },
-] as const);
+] as const satisfies readonly ConfigMetadata[]);
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
   if (value === undefined) return fallback;
@@ -148,6 +195,7 @@ export function parseServerConfig(
 ): ServerConfig {
   const candidate = {
     environment: env.ORION_ENV,
+    releaseId: env.ORION_RELEASE_ID ?? "local",
     host: env.ORION_API_HOST ?? "127.0.0.1",
     port: numberFromEnv(env.ORION_API_PORT, 3000),
     logLevel: env.ORION_LOG_LEVEL ?? "info",
@@ -249,7 +297,7 @@ export function parseServerConfig(
   return Object.freeze(candidate);
 }
 
-// No browser-consumable API configuration exists in Phase 5. This projection
+// No browser-consumable API configuration exists. This projection
 // prevents server settings from leaking into a future client configuration.
 export function clientConfigFrom(config: ServerConfig): ClientConfig {
   void config;

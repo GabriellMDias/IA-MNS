@@ -182,16 +182,16 @@ Replacing pnpm as the package or workspace manager would be an architectural cha
 
 ## References
 
-Related ADR: `ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime`
+Related ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/repository-structure.md`
+Related policy: [repository structure](../architecture/repository-structure.md)
 
-Related policy: `docs/architecture/dependency-rules.md`
+Related policy: [dependency rules](../architecture/dependency-rules.md)
 
-Related policy: `docs/architecture/testing-strategy.md`
+Related policy: [testing strategy](../architecture/testing-strategy.md)
 
-Related policy: `docs/architecture/versioning-and-compatibility.md`
+Related policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)
 
 External reference: pnpm documentation — workspaces, workspace protocol, catalogs, dependency management, and build-script controls.

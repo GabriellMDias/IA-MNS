@@ -57,6 +57,7 @@
         }
       },
       "objects": {
+        "approval_requests_pkey": "Enforces the immutable unique request identity used by persistence and the public API.",
         "approval_requests_creator_key_unique": "Prevents two requests for one owner and creation intent key, including racing inserts.",
         "approval_requests_mine_page_idx": "Supports authorized owner pagination by creation time and ID.",
         "approval_requests_review_page_idx": "Supports submitted reviewable pagination before applying the non-owner predicate.",

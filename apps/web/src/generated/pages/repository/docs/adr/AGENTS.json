@@ -1,0 +1,9 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/AGENTS.md",
+  "title": "ADR Instructions",
+  "html": "<ul>\n<li>Consult the <a href=\"/docs/repository/docs/adr/README\">decision index</a> and <a href=\"/docs/repository/docs/adr/authoring\">authoring policy</a> before creating or changing an ADR.</li>\n<li>Start new proposals with the <a href=\"/docs/repository/docs/adr/template\">template</a> and <code>proposed</code> status. Acceptance is distinct from implementation completion.</li>\n<li>Preserve accepted rationale, decisions, dates, and stable identifiers. Architectural changes require a new decision and explicit supersession, not rewritten history.</li>\n<li>Retain meaningful alternatives, negative consequences, constraints, and evidence. Do not invent evaluations to fill the template.</li>\n<li>Update current policy and reciprocal supersession references when an accepted architectural change requires them.</li>\n</ul>\n",
+  "headings": [
+    { "id": "adr-instructions", "text": "ADR Instructions", "level": 1 }
+  ]
+}

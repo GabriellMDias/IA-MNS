@@ -34,4 +34,41 @@ export default defineConfig(
       },
     },
   },
+  {
+    files: [
+      "apps/web/src/**/*.{ts,tsx}",
+      "apps/mobile/src/**/*.{ts,tsx}",
+      "apps/desktop/src/**/*.{ts,tsx}",
+      "packages/sdk/src/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["node:*"],
+              message:
+                "Browser runtime and SDK cannot import Node.js built-ins.",
+            },
+            {
+              group: [
+                "@prisma/*",
+                "prisma",
+                "pg",
+                "fastify",
+                "@fastify/*",
+                "pino",
+                "@opentelemetry/sdk*",
+                "@opentelemetry/exporter*",
+                "@opentelemetry/instrumentation*",
+              ],
+              message:
+                "Browser runtime and SDK cannot import server infrastructure libraries.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

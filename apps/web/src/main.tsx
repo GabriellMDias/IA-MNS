@@ -6,6 +6,7 @@ import {
   createRoute,
   createRouter,
   Link,
+  lazyRouteComponent,
   Outlet,
   RouterProvider,
   useNavigate,
@@ -16,7 +17,6 @@ import { CredentialProvider, useCredential } from "./auth.js";
 import { approvalApi, type ApprovalRequest, type Scope } from "./api.js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccessTokenForm, ErrorNotice } from "./components.js";
-import { DocumentationPage } from "./documentation.js";
 import "./styles.css";
 
 const queryClient = new QueryClient({
@@ -29,7 +29,9 @@ const queryClient = new QueryClient({
 function Shell() {
   const { token, setToken } = useCredential();
   const isDocumentation = useRouterState({
-    select: (state) => state.location.pathname === "/docs",
+    select: (state) =>
+      state.location.pathname === "/docs" ||
+      state.location.pathname.startsWith("/docs/"),
   });
   function connect(value: string) {
     queryClient.clear();
@@ -44,7 +46,12 @@ function Shell() {
       <header className="site-header">
         <div className="site-header-inner">
           <Link to="/" search={{ scope: "mine" }} className="brand">
-            ORION<span> / APPROVAL REQUESTS</span>
+            ORION
+            <span>
+              {isDocumentation
+                ? " / ENGINEERING FOUNDATION"
+                : " / APPROVAL REQUESTS"}
+            </span>
           </Link>
           <span className="header-note">
             {isDocumentation ? "Living documentation" : "Reference workflow"}
@@ -54,7 +61,11 @@ function Shell() {
           </Link>
         </div>
       </header>
-      <main className="main-content">
+      <main
+        className={
+          isDocumentation ? "main-content documentation-main" : "main-content"
+        }
+      >
         {isDocumentation ? (
           <Outlet />
         ) : !token ? (
@@ -96,17 +107,39 @@ const listRoute = createRoute({
 const detailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/requests/$id",
-  component: DetailPage,
+  component: DetailRoute,
 });
+const documentationSearch = (
+  search: Record<string, unknown>,
+): { q?: string; scope?: string; group?: string; page?: number } => ({
+  ...(typeof search.q === "string" ? { q: search.q.slice(0, 200) } : {}),
+  ...(typeof search.scope === "string" ? { scope: search.scope } : {}),
+  ...(typeof search.group === "string" ? { group: search.group } : {}),
+  ...(Number.isSafeInteger(Number(search.page)) && Number(search.page) > 1
+    ? { page: Math.min(Number(search.page), 100000) }
+    : {}),
+});
+const documentationComponent = lazyRouteComponent(
+  () => import("./documentation.js"),
+  "DocumentationPage",
+);
 const documentationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/docs",
-  component: DocumentationPage,
+  component: documentationComponent,
+  validateSearch: documentationSearch,
+});
+const documentationDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/docs/$",
+  component: documentationComponent,
+  validateSearch: documentationSearch,
 });
 const routeTree = rootRoute.addChildren([
   listRoute,
   detailRoute,
   documentationRoute,
+  documentationDetailRoute,
 ]);
 const router = createRouter({ routeTree, defaultPreload: "intent" });
 declare module "@tanstack/react-router" {
@@ -116,7 +149,8 @@ declare module "@tanstack/react-router" {
 }
 
 function ListPage() {
-  const { token } = useCredential();
+  const { token, isCurrentSession } = useCredential();
+  const isActiveView = useActiveView();
   const search = listRoute.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -140,10 +174,12 @@ function ListPage() {
         key.current,
       ),
     onSuccess: async (item) => {
+      if (!isCurrentSession() || !isActiveView()) return;
       key.current = crypto.randomUUID();
       setTitle("");
       setDescription("");
       await qc.invalidateQueries({ queryKey: ["approval", "list"] });
+      if (!isCurrentSession() || !isActiveView()) return;
       await navigate({ to: "/requests/$id", params: { id: item.id } });
     },
   });
@@ -273,9 +309,25 @@ function ListPage() {
 }
 
 type Action = "submit" | "approve" | "cancel" | "reject" | "edit";
-function DetailPage() {
-  const { token } = useCredential();
+function useActiveView() {
+  const active = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+  return () => active.current;
+}
+
+function DetailRoute() {
   const { id } = detailRoute.useParams();
+  return <DetailPage key={id} id={id} />;
+}
+
+function DetailPage({ id }: { id: string }) {
+  const { token, isCurrentSession } = useCredential();
+  const isActiveView = useActiveView();
   const qc = useQueryClient();
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState("");
@@ -315,12 +367,16 @@ function DetailPage() {
       }
     },
     onSuccess: async (updated) => {
+      if (!isCurrentSession() || !isActiveView()) return;
       qc.setQueryData(["approval", "detail", id], updated);
       await qc.invalidateQueries({ queryKey: ["approval", "list"] });
+      if (!isCurrentSession() || !isActiveView()) return;
       setReason("");
       setMessage("Request updated.");
     },
-    onError: () => setMessage(""),
+    onError: () => {
+      if (isCurrentSession() && isActiveView()) setMessage("");
+    },
   });
   function act(
     action: Action,

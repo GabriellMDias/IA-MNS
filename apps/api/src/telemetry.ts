@@ -18,6 +18,7 @@ import {
   type SpanExporter,
 } from "@opentelemetry/sdk-trace-base";
 import { FastifyOtelInstrumentation } from "@fastify/otel";
+import { PrismaInstrumentation } from "@prisma/instrumentation";
 import type { Logger } from "pino";
 import type { ServerConfig } from "./config.js";
 
@@ -35,7 +36,11 @@ export function sanitizeSpan(span: ReadableSpan): ReadableSpan {
   // Keep the ReadableSpan methods on its prototype; OTLP serialization calls
   // spanContext() and duration(), which object spread would discard.
   return Object.assign(Object.create(span) as ReadableSpan, {
-    name: "http.request",
+    name:
+      span.instrumentationScope?.name === "prisma"
+        ? "db.operation"
+        : "http.request",
+    status: { code: span.status.code },
     attributes: Object.fromEntries(
       Object.entries(span.attributes).filter(([key]) =>
         allowedSpanAttributes.has(key),
@@ -104,6 +109,7 @@ export function initializeTelemetry(
     resource: resourceFromAttributes({
       "service.name": "orion-api",
       "deployment.environment.name": config.environment,
+      "service.version": config.releaseId,
     }),
     textMapPropagator: new W3CTraceContextPropagator(),
     sampler: new TraceIdRatioBasedSampler(config.traceSampleRatio),
@@ -157,6 +163,7 @@ export function initializeTelemetry(
         },
       }),
       new FastifyOtelInstrumentation({ registerOnInitialization: true }),
+      new PrismaInstrumentation(),
     ],
   });
   sdk.start();

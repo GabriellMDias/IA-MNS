@@ -8,7 +8,7 @@ Create a runbook for a real runtime, dependency, workflow, or recurring incident
 
 Handle one coherent condition or procedure per runbook. Use a descriptive English filename such as `<condition-or-operation>.md`; avoid generic collections of unrelated production problems. Use concrete symptom, service, dependency, error-code, alert, and operation terminology so the procedure is searchable.
 
-Every runbook should have an identifiable owner, even across several systems. The owner maintains commands, links, permissions, safety assumptions, and recovery behavior. An active runbook represents current production operation. A deprecated one should identify its reason and replacement where relevant. Remove obsolete procedures when they no longer provide value; Git preserves history. Add lifecycle complexity only when needed.
+Every runbook should have an identifiable owner, even across several systems. The owner maintains commands, links, permissions, safety assumptions, and recovery behavior. An active runbook represents an implemented operation in its stated environment. A deprecated one should identify its reason and replacement where relevant. Remove obsolete procedures when they no longer provide value; Git preserves history. Add lifecycle complexity only when needed.
 
 ## Required procedure information
 
@@ -70,7 +70,7 @@ Review after architecture, tooling, permissions, dependencies, or incident evide
 
 Repeated deterministic procedures are candidates for scripts, purpose-built tools, and safe automatic recovery. Runbooks can remain orchestration and verification guides. Where safe self-healing exists, alert on failed recovery or recurring instability rather than keeping humans as the primary mechanism.
 
-Future validation may check ownership, metadata, references, local links, known command wrappers, scripts, and supported arguments. Avoid rigid parsing that makes simple procedures difficult to maintain. Runbook files remain canonical if an index is later generated. Do not invent metadata systems before tooling requires them.
+`pnpm docs:check` already checks local links, headings, and reachability. Runbook ownership, command applicability, safety, and recovery semantics still require review. Future focused checks may cover metadata, known command wrappers, scripts, or supported arguments; avoid rigid parsing that makes simple procedures difficult to maintain. Runbook files remain canonical if an index is later generated.
 
 ## Creation and follow-up
 

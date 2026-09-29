@@ -1,0 +1,32 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/template.md",
+  "title": "ADR-NNNN: Decision Title",
+  "html": "<p><strong>Status:</strong> proposed\n<strong>Date:</strong> YYYY-MM-DD</p>\n<h2 id=\"context\">Context</h2>\n<p>Describe the architectural problem or constraint that requires a decision.</p>\n<p>Include only the context necessary to understand:</p>\n<ul>\n<li>why a decision is needed;</li>\n<li>which systems or boundaries are affected;</li>\n<li>which constraints materially influence the choice;</li>\n<li>which assumptions matter.</li>\n</ul>\n<p>Avoid turning this section into a complete implementation design.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>State the architectural decision clearly.</p>\n<p>This section should make it possible to understand the chosen direction without inferring it from the alternatives or rationale.</p>\n<p>Example form:</p>\n<pre><code class=\"language-text\">Orion will ...\n</code></pre>\n<h2 id=\"rationale\">Rationale</h2>\n<p>Explain why this option was selected.</p>\n<p>Focus on the tradeoffs, constraints, and evidence that materially influenced the decision.</p>\n<p>Do not list only advantages.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"alternative-a\">Alternative A</h3>\n<p>Briefly describe the alternative and why it was not selected.</p>\n<h3 id=\"alternative-b\">Alternative B</h3>\n<p>Briefly describe the alternative and why it was not selected.</p>\n<p>Remove unused alternative sections rather than inventing alternatives.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Describe meaningful benefits.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Describe accepted costs, limitations, or additional responsibilities.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>Describe important deployment, compatibility, data, security, or migration consequences when applicable.</li>\n</ul>\n<p>Remove this subsection when there is no meaningful operational or migration impact.</p>\n<h2 id=\"references\">References</h2>\n<p>Include only useful references.</p>\n<p>Link relevant <a href=\"/docs/repository/docs/README\">current policies</a>, <a href=\"/docs/repository/docs/adr/README\">related ADRs</a>, design documents, and evidence. Use actual relative Markdown links to existing records; remove unused references.</p>\n<p>If this ADR supersedes another accepted ADR, update that ADR to reference this one as its replacement.</p>\n",
+  "headings": [
+    {
+      "id": "adr-nnnn-decision-title",
+      "text": "ADR-NNNN: Decision Title",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    { "id": "alternative-a", "text": "Alternative A", "level": 3 },
+    { "id": "alternative-b", "text": "Alternative B", "level": 3 },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

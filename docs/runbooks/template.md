@@ -1,122 +1,53 @@
 # Runbook: Procedure Title
 
-**Owner:**
-**Status:** active
+**Owner:** actual responsible owner
+**Status:** active only after the procedure exists and is verified
+**Environment / applicability:**
 **Related alerts:**
 **Required access:**
 
-See [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [telemetry redaction](../security/telemetry-redaction.md). The procedure must reflect current operational reality and verified commands.
+Follow [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md). Replace prompts with current, verified details; this template is not an executable procedure or an authorization grant.
 
 ## Purpose
 
-Describe the operational condition or task this runbook handles.
-
-State clearly when this procedure should be used.
+State the one operational condition or task handled by this procedure.
 
 ## Trigger / Symptoms
 
-Use this runbook when one or more of the following are observed:
-
-- Describe a relevant alert, symptom, error, or operational condition.
-
-Do not use this runbook when:
-
-- Describe important non-applicability conditions when needed.
+Identify observable alerts, errors, or symptoms that activate the procedure, and cases where it must not be used.
 
 ## Impact
 
-Describe the expected operational impact.
-
-Examples may include:
-
-- requests failing;
-- writes unavailable;
-- jobs delayed;
-- one capability degraded;
-- potential data or security risk.
+Describe affected capabilities, scope, urgency, and data/security risk, including any known limit on impact.
 
 ## Preconditions
 
-Before continuing:
-
-1. Confirm the target environment.
-2. Confirm that the observed condition matches this runbook.
-3. Confirm that the required access is available.
-4. Verify any procedure-specific safety preconditions.
-
-Add additional preconditions as required.
+1. Verify the target environment and observed condition.
+2. Verify required access and authorization for the planned actions.
+3. Verify procedure-specific safety conditions and current state.
 
 ## Diagnosis
 
-Perform the lowest-risk diagnostic steps first.
-
-1. Inspect the relevant metrics, alerts, logs, traces, or error reports.
-2. Confirm the affected scope.
-3. Identify whether a recent deployment, migration, configuration change, or dependency failure is relevant.
-4. Continue only when the evidence supports this procedure.
-
-Document concrete provider-specific queries or commands here only after the corresponding tooling exists.
+Order low-risk inspection before mutation: relevant metrics, alerts, logs, traces, errors, and bounded read-only checks. Establish affected scope and whether deployment, migration, configuration, or dependency changes contributed. Include expected results and evidence-based branches. Add provider commands only when tooling exists; continue only while evidence matches the procedure.
 
 ## Mitigation / Procedure
 
-Follow the steps in order.
+Write ordered, bounded, copyable actions with consequences, expected output, decision points, and temporary-measure removal needs. Before a destructive, irreversible, or high-risk action, explain the exact affected scope and consequences. Stop when observed state differs from the documented scope.
 
-1. Describe the first operational action.
-2. Describe the next action.
-3. Include explicit decision points where behavior depends on observed evidence.
-
-> **Warning:** Add a concrete warning before destructive, irreversible, or high-risk operations. Explain exactly what may be affected.
-
-Do not continue beyond the documented scope when the observed system state differs materially from the runbook.
+State whether actions are safe to repeat and how to inspect an unknown outcome before retrying. For long-running work, specify supported batch size, progress, monitoring, pause/resume, failure recovery, and concurrent-execution limits.
 
 ## Verification
 
-Verify the intended outcome explicitly.
-
-Confirm relevant signals such as:
-
-- service health;
-- error rate;
-- latency;
-- queue progress;
-- data integrity;
-- authorization state;
-- credential revocation;
-- expected application behavior.
-
-Do not consider the procedure complete solely because a command returned successfully.
+Prove the intended service, security, or data state through relevant health, errors, latency, progress, integrity, authorization, revocation, or application behavior. A successful command or cleared alert alone is insufficient. Name any justified post-recovery observation period and signals.
 
 ## Rollback / Recovery
 
-Describe how to reverse the operation when rollback is safe.
-
-If rollback is not safe or possible, describe the required forward-recovery path.
-
-Remove this section only when it genuinely does not apply.
+Describe safe reversal and its compatibility prerequisites, or the actual forward-recovery path when rollback is unsafe/impossible. Identify irreversible effects. Remove this section only when it does not apply.
 
 ## Escalation
 
-Stop and escalate when:
-
-- observed evidence does not match the documented condition;
-- the affected scope is larger than expected;
-- required access is unavailable;
-- destructive impact cannot be bounded;
-- data corruption or security compromise is suspected;
-- recovery does not behave as documented;
-- postconditions cannot be verified.
-
-Identify the appropriate owner or escalation target once the real organizational structure exists.
+Stop when evidence does not match, scope exceeds bounds, access/preconditions cannot be verified, destructive impact is unknown, corruption/compromise is suspected, recovery fails, or postconditions cannot be verified. Preserve safe evidence and identify the real escalation owner when one exists.
 
 ## Follow-Up
 
-After recovery, consider whether the incident requires:
-
-- a permanent corrective change;
-- a regression test;
-- an alert change;
-- improved observability;
-- automation;
-- a runbook update;
-- an ADR;
-- a post-incident review.
+Record needed permanent correction, regression tests, alert/observability changes, automation, temporary-measure removal, runbook update, ADR, or post-incident review. Give follow-up work an owner; keep incident history outside this current procedure.

@@ -1,0 +1,9 @@
+{
+  "kind": "repository",
+  "source": "docs/runbooks/AGENTS.md",
+  "title": "Runbook Instructions",
+  "html": "<ul>\n<li>Consult the <a href=\"/docs/repository/docs/runbooks/README\">index</a>, <a href=\"/docs/repository/docs/runbooks/authoring\">authoring policy</a>, and <a href=\"/docs/repository/docs/runbooks/template\">template</a>.</li>\n<li>Document real operational conditions only. Do not invent provider commands, organizational roles, or runnable procedures before they exist.</li>\n<li>Include applicability, required access, verifiable preconditions, bounded actions, postcondition verification, and stop/escalation conditions.</li>\n<li>Follow <a href=\"/docs/repository/docs/security/production-access\">production-access policy</a>. A runbook grants no additional authority; verify delegated authorization before privileged or destructive actions.</li>\n<li>Preserve recovery and unknown-outcome semantics. Do not equate command success with recovery or retry an uncertain state-changing operation blindly.</li>\n</ul>\n",
+  "headings": [
+    { "id": "runbook-instructions", "text": "Runbook Instructions", "level": 1 }
+  ]
+}

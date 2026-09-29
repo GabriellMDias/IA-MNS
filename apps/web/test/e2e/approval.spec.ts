@@ -117,3 +117,98 @@ test("a stale browser mutation reports conflict and preserves the newer database
   await page.getByRole("button", { name: "Reload current request" }).click();
   await expect(page.getByText("SUBMITTED", { exact: true })).toBeVisible();
 });
+
+test("a late creation response cannot navigate a replacement credential session", async ({
+  page,
+}) => {
+  let releaseResponse!: () => void;
+  const released = new Promise<void>((resolve) => {
+    releaseResponse = resolve;
+  });
+  let responseReady!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    responseReady = resolve;
+  });
+  await page.route("**/api/approval-requests", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const response = await route.fetch();
+    responseReady();
+    await released;
+    await route.fulfill({ response });
+  });
+  await page.goto(webUrl());
+  await connect(page, process.env.ORION_E2E_OWNER_TOKEN!);
+  await page.getByRole("textbox", { name: "Title" }).fill("Delayed creation");
+  await page.getByRole("button", { name: "Create draft" }).click();
+  await ready;
+  await page.getByRole("button", { name: "Disconnect" }).click();
+  await connect(page, process.env.ORION_E2E_REVIEWER_TOKEN!);
+  const completed = page.waitForResponse(
+    (response) => response.request().method() === "POST",
+  );
+  releaseResponse();
+  await completed;
+  // Flush the completed response's React updates before checking the new view.
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  await expect(page).toHaveURL(new RegExp(`^${webUrl()}/(?:\\?.*)?$`));
+  await expect(
+    page.getByRole("heading", { name: "Approval requests" }),
+  ).toBeVisible();
+});
+
+test("a late draft response cannot restore former-session data to the cache", async ({
+  page,
+}) => {
+  await page.goto(webUrl());
+  await connect(page, process.env.ORION_E2E_OWNER_TOKEN!);
+  await page
+    .getByRole("textbox", { name: "Title" })
+    .fill("Delayed private draft");
+  await page.getByRole("button", { name: "Create draft" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Delayed private draft" }),
+  ).toBeVisible();
+
+  let releaseResponse!: () => void;
+  const released = new Promise<void>((resolve) => {
+    releaseResponse = resolve;
+  });
+  let responseReady!: () => void;
+  const ready = new Promise<void>((resolve) => {
+    responseReady = resolve;
+  });
+  await page.route("**/api/approval-requests/*/draft", async (route) => {
+    const response = await route.fetch();
+    responseReady();
+    await released;
+    await route.fulfill({ response });
+  });
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("Former session data");
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await ready;
+  await page.getByRole("button", { name: "Disconnect" }).click();
+  await connect(page, process.env.ORION_E2E_REVIEWER_TOKEN!);
+  await expect(page.getByRole("alert")).toContainText("not found");
+  const completed = page.waitForResponse(
+    (response) => response.request().method() === "PUT",
+  );
+  releaseResponse();
+  await completed;
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
+  await expect(page.getByRole("alert")).toContainText("not found");
+  await expect(
+    page.getByText("Former session data", { exact: true }),
+  ).toHaveCount(0);
+});

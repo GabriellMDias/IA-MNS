@@ -1,0 +1,13 @@
+{
+  "kind": "repository",
+  "source": "apps/api/AGENTS.md",
+  "title": "API-local Instructions",
+  "html": "<p>Read <a href=\"/docs/repository/apps/api/README\">the runtime guide</a> for source locations and local commands, and <a href=\"/docs/repository/docs/domains/approval-request-implementation\">feature conventions</a> before changing Approval Request behavior. Global repository instructions still apply.</p>\n<ul>\n<li>Preserve <code>src/main.ts</code> ordering: parse configuration, initialize Pino/OpenTelemetry, then dynamically load Fastify and compose <code>src/app.ts</code> before listening. Instrumented infrastructure depends on this order.</li>\n<li>Keep <code>src/config.ts</code> as the runtime environment parser. Change schemas and reference metadata together; client-eligible values must pass explicitly through <code>clientConfigFrom</code>.</li>\n<li>Keep TypeBox wire schemas/routes at the Fastify boundary. Domain rules and application operations remain independent of Fastify and Prisma; the adapter owns PostgreSQL and conditional writes.</li>\n<li>Keep Prisma schema, reviewed SQL, and semantic metadata coherent under <a href=\"/docs/repository/docs/database/migrations\">migration</a> and <a href=\"/docs/repository/docs/database/schema-documentation\">schema-documentation</a> policies. The Prisma CLI alone receives <code>ORION_MIGRATION_DATABASE_URL</code>; runtime uses <code>ORION_DATABASE_URL</code>.</li>\n<li>Generate the ignored Prisma client with root <code>pnpm db:generate</code>. For tracked references, follow the <a href=\"/docs/repository/docs/architecture/backend-execution-and-generated-artifacts\">artifact workflow</a>; root <code>pnpm references:check</code> includes fresh migrated PostgreSQL and SDK drift checks.</li>\n<li>Use allowlisted diagnostics under <a href=\"/docs/repository/docs/security/telemetry-redaction\">redaction policy</a>. Do not attach request bodies, raw URLs, headers, configuration objects, or arbitrary exception messages to logs/spans. Expected failures are explicit; unexpected failures have one authoritative diagnostic event.</li>\n<li>Run focused API <code>test</code>, <code>typecheck</code>, and <code>build</code> scripts as applicable, then root <code>pnpm validate</code> before substantial-work handoff. Report unavailable checks honestly.</li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "api-local-instructions",
+      "text": "API-local Instructions",
+      "level": 1
+    }
+  ]
+}

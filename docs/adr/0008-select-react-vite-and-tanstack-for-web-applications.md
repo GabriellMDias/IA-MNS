@@ -561,27 +561,27 @@ Routine compatible upgrades of React, React Compiler, Vite, TanStack Router, or 
 
 ## References
 
-Related ADR: `ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime`
+Related ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)
 
-Related ADR: `ADR-0002: Select pnpm for Package and Workspace Management`
+Related ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)
 
-Related ADR: `ADR-0003: Establish Repository Validation and Architecture Enforcement`
+Related ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)
 
-Related ADR: `ADR-0004: Select Fastify as the Backend HTTP Framework`
+Related ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)
 
-Related ADR: `ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy`
+Related ADR: [ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/application-boundaries.md`
+Related policy: [application boundaries](../architecture/application-boundaries.md)
 
-Related policy: `docs/architecture/dependency-rules.md`
+Related policy: [dependency rules](../architecture/dependency-rules.md)
 
-Related policy: `docs/architecture/testing-strategy.md`
+Related policy: [testing strategy](../architecture/testing-strategy.md)
 
-Related policy: `docs/api/principles.md`
+Related policy: [principles](../api/principles.md)
 
-Related policy: `docs/api/versioning.md`
+Related policy: [versioning](../api/versioning.md)
 
 External reference: React documentation.
 

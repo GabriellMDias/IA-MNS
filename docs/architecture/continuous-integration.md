@@ -1,16 +1,16 @@
 # Continuous Integration
 
-This page routes CI work to the accepted policy in [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md). It introduces no new architectural decision. See [validation availability](../validation.md) for implemented local commands and the status below for remote enforcement.
+This page owns the map from repository CI configuration to the accepted policy in [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md). See [validation availability](../validation.md) for local commands. Effective remote settings and completed-run evidence have a separate owner in [human actions](../human-actions.md).
 
 ## Current implementation and activation
 
-The repository workflow at `.github/workflows/ci.yml` validates pull requests to `main`, pushes to `main`, merge-queue commits, and manual dispatches. It reads Node.js and pnpm versions from repository files, installs from the frozen lockfile, installs Playwright Chromium and its system libraries for browser tests, and runs `pnpm validate`. The stable branch-protection check name is **Orion required gate**. Its job fails if validation fails or does not finish successfully. Superseded pull-request runs are cancelled; primary-branch runs are not. No diagnostic artifacts are uploaded yet, so there is no artifact retention period to configure. Future uploads must specify bounded retention and contain no secrets or sensitive data.
+The [repository workflow](../../.github/workflows/ci.yml) validates pull requests to `main`, pushes to `main`, merge-queue commits, and manual dispatches. It uses repository-pinned Node.js/pnpm and frozen installation, installs Playwright Chromium/system libraries, and runs `pnpm validate` on GitHub-hosted Ubuntu. It fetches Git history and supplies the base commit for release-history validation. The stable branch-protection check name is **Orion required gate**; it fails if validation fails or does not finish successfully. Superseded pull-request runs are cancelled; primary-branch runs are not. No diagnostic artifacts are uploaded. Future uploads need bounded retention and must exclude secrets/sensitive data.
 
-The dependency-review job runs on pull requests and blocks newly introduced high or critical vulnerabilities when the repository variable `DEPENDENCY_REVIEW_ENABLED` is `true`. That variable is currently set to `true`. [PR #3 CI run #6](https://github.com/GabriellMDias/Orion/actions/runs/36009789640) executed Dependency Review with `fail-on-severity: high`, found no newly introduced high-or-higher vulnerable packages, and passed the aggregate gate. The aggregate gate treats an enabled but failed or skipped review as a failure. [H-03](../human-actions.md#h-03) records the verified settings and run.
+The dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=true` and blocks newly introduced high/critical vulnerabilities. The aggregate gate treats an enabled review that fails or skips as a failure. [H-03](../human-actions.md#h-03) records dated evidence and how to reverify the variable, security settings, and actual review execution.
 
-The root `renovate.json` selects Renovate's recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, visible majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Renovate vulnerability-remediation pull requests are not held to the routine schedule. The app's activation and Dashboard are verified in [H-01](../human-actions.md#h-01). The active `Protect main` ruleset and required aggregate check are verified in [H-02](../human-actions.md#h-02).
+The [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. [H-01](../human-actions.md#h-01) owns app activation/Dashboard evidence; [H-02](../human-actions.md#h-02) owns effective branch-protection evidence.
 
-GitHub currently reports Orion as public. The active `Protect main` ruleset requires pull requests and `Orion required gate`, blocks deletion and force pushes, and has no bypass actors. Dependency graph and vulnerability alerts are active; CodeQL default setup is configured, secret scanning and push protection are enabled, and `DEPENDENCY_REVIEW_ENABLED=true`. H-03 and Phase 2 are complete; see the [living plan](../implementation-plan.md#phase-2) for acceptance evidence.
+Committed workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.
 
 ## Read for this change
 
@@ -27,7 +27,7 @@ GitHub currently reports Orion as public. The active `Protect main` ruleset requ
 
 ## Policy boundaries
 
-GitHub Actions uses the same repository validation capabilities as local development. GitHub-hosted Linux is the initial runner, with repository-pinned versions and frozen lockfile installation. A stable aggregate gate protects the primary branch. Validation must not silently fix tracked sources.
+GitHub Actions uses the same repository validation capabilities as local development. GitHub-hosted Linux is the initial runner, with repository-pinned versions and frozen lockfile installation. The primary branch must require the stable aggregate gate; effective activation is verified separately as described above. Validation must not silently fix tracked sources.
 
 Renovate owns version-update automation, with routine weekly grouping and automerge disabled initially. Dependabot vulnerability alerts are a separate capability, not a second version-update system. GitHub security features retain the availability and entitlement qualifications in the ADR; paid security features are not a mandatory architectural dependency.
 

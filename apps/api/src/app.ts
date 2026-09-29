@@ -9,10 +9,12 @@ import type { ApprovalRequestService } from "./features/approval-requests/servic
 import type { AccessTokenVerifier } from "./features/approval-requests/authentication.js";
 import { healthOperations } from "./health-contracts.js";
 import { currentTraceId } from "./request-context.js";
+import { AuthenticationUnavailableError } from "./features/approval-requests/authentication.js";
+import { errorDiagnostics } from "./error-diagnostics.js";
 
 class SafeLogController extends LogController {
   constructor() {
-    super({ disableRequestLogging: true });
+    super({ disableRequestLogging: true, requestIdLogLabel: "request_id" });
   }
 }
 
@@ -47,11 +49,16 @@ export function createApp(
   });
 
   app.addHook("onResponse", async (request, reply) => {
+    if (
+      reply.statusCode < 400 &&
+      healthOperations.some(
+        (operation) => operation.url === request.routeOptions.url,
+      )
+    )
+      return;
     // Never log URL, headers, bodies, or arbitrary errors here.
     request.log.info(
       {
-        requestId: request.id,
-        traceId: currentTraceId(),
         statusCode: reply.statusCode,
       },
       "http_request",
@@ -66,38 +73,40 @@ export function createApp(
       error !== null &&
       "statusCode" in error &&
       error.statusCode === 429;
-    const code: ErrorCode = rateLimited
-      ? "RATE_LIMITED"
-      : validation
-        ? "VALIDATION_FAILED"
-        : "INTERNAL_ERROR";
+    const authenticationUnavailable =
+      error instanceof AuthenticationUnavailableError;
+    const code: ErrorCode = authenticationUnavailable
+      ? "SERVICE_UNAVAILABLE"
+      : rateLimited
+        ? "RATE_LIMITED"
+        : validation
+          ? "VALIDATION_FAILED"
+          : "INTERNAL_ERROR";
     const errorId =
-      code === "INTERNAL_ERROR" ? `err_${randomUUID()}` : undefined;
+      code === "INTERNAL_ERROR" || authenticationUnavailable
+        ? `err_${randomUUID()}`
+        : undefined;
     if (errorId) {
-      // One authoritative diagnostic; arbitrary exception messages/stacks may contain secrets.
-      const safeErrorType =
-        error instanceof Error &&
-        [
-          "Error",
-          "TypeError",
-          "RangeError",
-          "SyntaxError",
-          "ReferenceError",
-        ].includes(error.name)
-          ? error.name
-          : "UnhandledError";
       request.log.error(
         {
-          requestId: request.id,
-          traceId: currentTraceId(),
           errorId,
-          errorType: safeErrorType,
+          diagnostic: errorDiagnostics(error),
         },
-        "unhandled_request_error",
+        authenticationUnavailable
+          ? "authentication_unavailable"
+          : "unhandled_request_error",
       );
     }
     reply
-      .code(rateLimited ? 429 : validation ? 400 : 500)
+      .code(
+        authenticationUnavailable
+          ? 503
+          : rateLimited
+            ? 429
+            : validation
+              ? 400
+              : 500,
+      )
       .send(publicError(code, request.id, currentTraceId(), errorId));
   });
 

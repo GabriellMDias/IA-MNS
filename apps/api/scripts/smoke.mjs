@@ -133,7 +133,8 @@ try {
     if (
       !records.some(
         (record) =>
-          record.requestId === requestId && record.traceId === traceIds[index],
+          record.request_id === requestId &&
+          record.trace_id === traceIds[index],
       )
     )
       throw new Error(`Missing correlated log for ${requestId}`);

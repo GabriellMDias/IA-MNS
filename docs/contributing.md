@@ -33,6 +33,10 @@ Completion requires, as applicable: correct implementation, respected boundaries
 | Structural reference | Generated from canonical schemas, contracts, or metadata |
 | Domain meaning | Near the owning domain; `docs/domains/` when cross-file explanation is needed |
 | Application/package-specific knowledge | Near the owning application or package |
+| Execution status and outstanding work | [Implementation plan](implementation-plan.md) |
+| Decisions or access requiring a human | [Human actions](human-actions.md) |
+
+The maintainer of the owning code or policy is responsible for keeping its documentation current in the same change. This is responsibility by repository boundary, not an invented team or approval hierarchy. Indexes route readers; they do not own copies of another document's rules. Root `AGENTS.md` owns global invariants and task routes; nested instructions add only distinct local obligations. Application/package READMEs explain local responsibility and usage, with links to shared setup and policy.
 
 Prefer the narrowest authoritative location. Do not create empty documentation directories, speculative runbooks, or placeholder applications to match an illustrative tree. `docs/domains/` and `docs/generated/` should appear only when real content exists. Technology-specific documentation is appropriate after the technology exists or has been selected.
 
@@ -64,4 +68,12 @@ Use English for repository artifacts, including comments, API/database descripti
 
 Before adding a document, identify its question, owner, canonical source, audience, discovery route, and maintenance needs. Prefer an existing owner or machine-readable source when appropriate. Before completing a change, check whether it requires an ADR, supersession, generated-reference regeneration, or updates to affected consumers and policies.
 
-Review documentation in proportion to its importance: architecture, security, database lifecycle, API compatibility, and production-operation changes deserve particular scrutiny. Optimize for accuracy, clarity, discoverability, and durability rather than volume. Link and metadata checks should become mechanically enforced when tooling exists; those checks do not prove semantic correctness.
+Review documentation in proportion to its importance: architecture, security, database lifecycle, API compatibility, and production-operation changes deserve particular scrutiny. Optimize for accuracy, clarity, discoverability, and durability rather than volume. `pnpm docs:check` already enforces local links, anchors, reachability, and ADR metadata; it does not prove semantic correctness.
+
+### Writing focused guidance
+
+- Start with the document's responsibility and route to its canonical source or implementation. State requirements, current implementation limits, and conditional choices separately. A policy requirement is not proof that code enforces it.
+- Use descriptive headings for independently useful questions. Explain each rule once, with its rationale or exception nearby; avoid repeating it in principles, checklists, summaries, and AI-specific restatements.
+- Keep task indexes shallow: the task route should lead to the policy owner and then to relevant source/tests. Add a section link when a page covers several independent concerns; do not require the entire documentation tree for ordinary work.
+- Keep current guides free of phase-by-phase narration, obsolete counts, and old implementation states. Retain concise dated evidence where it establishes acceptance or external access; detailed history belongs in Git. Accepted ADR rationale is intentionally historical and remains protected.
+- When consolidating or moving content, compare the old requirements, exceptions, rationale, and conditional obligations with their new destinations. Update inbound links and discovery routes, and review semantic preservation as well as the structural checks. Do not remove a safeguard merely because its mechanism is not implemented.

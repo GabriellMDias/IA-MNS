@@ -78,6 +78,7 @@ export async function generateOpenApi(): Promise<string> {
     }
     const descriptor: Record<string, unknown> = {
       operationId: operation.operationId,
+      description: operation.description,
       tags: ["expectedErrors" in operation ? "Approval Requests" : "Health"],
       ...("expectedErrors" in operation
         ? { security: [{ bearerAuth: [] }] }

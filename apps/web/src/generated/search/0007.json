@@ -1,0 +1,794 @@
+[
+  {
+    "id": "repository/docs/human-actions",
+    "title": "Human Actions for Implementation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "New action template",
+    "anchor": "new-action-template",
+    "text": "New action template\nAllocate a new stable H-number; do not reuse existing IDs. Link it from the blocked or conditional plan task.\n## H-NN\n\n- [ ] **Concrete human action.**\n\n**Status:** pending. **Owner:** actual person or responsible role.\n**Dependency / trigger:** Linked task; whether it blocks current work.\n**Request and reason:** Exact need, completed preparation, and why authorized automation cannot finish it.\n**Configuration:** Exact non-secret names, minimum scopes and secure destination; never secret values. Use \"none\" if no configuration is needed.\n**Verification:** Observable checks required before completion.\n**Evidence / blocker:** Dated safe evidence, outstanding limit, or changed applicability.\n\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Orion Implementation Plan",
+    "anchor": "orion-implementation-plan",
+    "text": "Orion Implementation Plan\n[Documentation index](README.md) · [Human-action checklist](human-actions.md) · [Validation availability](validation.md)\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Purpose and current baseline",
+    "anchor": "purpose-and-current-baseline",
+    "text": "Purpose and current baseline\nThis is Orion's living execution plan. It tracks implementation progress; it does not replace current architectural policy or accepted ADRs. Preserve accepted decisions, rationale, exceptions, and technology responsibilities.\nOrion now contains documentation, a pnpm workspace, local validation tooling and CI, plus the Approval Request API, PostgreSQL persistence, generated OpenAPI/client, and web reference workflow. `pnpm validate` runs the checks listed in [validation](validation.md). A concrete identity provider and production deployment remain conditional future work. The phase tables below retain stable task IDs, current deliverables, and conditional obligations. Git preserves implementation chronology.\nThe foundation includes a complete reference feature—persistence, domain/application behavior, API contracts, generated client, web UI, tests, and telemetry—and [living documentation](architecture/living-documentation.md) for its API, database/data dictionary, and frontend components. Human navigation must coexist with AI-readable canonical and generated artifacts. Phases 9-11 are complete; use the acceptance report for evidence and the current maintenance table for active work. Deployment-specific operation is conditional Phase 12. A particular business product and production environment have not been defined.\nThe [README](../README.md), [principles](architecture/principles.md), [technology map](architecture/technology-decisions.md), and [accepted ADRs](adr/README.md) govern implementation. Later accepted decisions resolve older deferred wording; genuine conflicts must be surfaced rather than silently bypassed. The sequence below is an execution plan, not a new architectural decision.\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Maintaining this plan",
+    "anchor": "maintaining-this-plan",
+    "text": "Maintaining this plan\nThe final foundation audit is complete locally, including a full clean-checkout gate. The owner reported H-12 manual browser acceptance complete on 2026-09-29; automated validation is recorded independently in the [acceptance report](foundation-acceptance.md#final-foundation-audit). A submitted PR must satisfy its own required CI gate before merge. Deployment-specific Phase 12 remains excluded.\nTask\nScope\nStatus\nEvidence / dependency\nL1\nReview portal architecture and implement local document catalog, detail pages, hierarchy, and search.\ncompleted\n[Portal architecture](architecture/living-documentation.md): generated local Markdown, hierarchical collections, lazy detail assets and scoped worker search within the existing React/Vite app.\nL2\nImprove API, data dictionary, component experience and safe interactive route exploration.\ncompleted\nGenerated contract/schema detail pages, local component examples and an explicit, bounded same-origin API explorer; browser acceptance is tracked separately in L4.\nL3\nVerify generation, security, clean setup, non-browser checks and available CI evidence.\ncompleted\n[Current review evidence](foundation-acceptance.md#living-documentation-portal-review): reproducible generation, installation, build, and security checks passed; the 2026-09-29 local full gate also passed. Remote CI requires its own evidence.\nL4\nVerify final browser navigation, responsive layout, accessibility, previews and API exploration.\ncompleted\nOwner reported manual browser acceptance complete on 2026-09-29 under [H-12](human-actions.md#h-12). This is human-observed acceptance; automated suite evidence is tracked separately.\nFinal foundation audit (2026-09-29): architecture, backend, persistence, frontend, generated references, security, developer workflow, documentation, and CI have been reviewed and actionable local gaps closed. The [acceptance report](foundation-acceptance.md#final-foundation-audit) records the fixes, full local gate, and clean-checkout evidence. PR/remote CI is verified separately before integration.\nCompleted maintenance: comprehensive documentation review (2026-09-26–27). Deployment-specific Phase 12 remains excluded and unstarted.\nTask\nScope\nStatus\nEvidence / dependency\nD1\nReview every file under `docs/`, every repository `AGENTS.md`, and every repository `README.md`.\ncompleted\nAll 79 scoped files reviewed, including generated references and all seven instruction files and seven READMEs. [Review evidence](foundation-acceptance.md#documentation-maintenance-review).\nD2\nImprove navigation, ownership, clarity, current truth, and context efficiency while preserving requirements and accepted decisions.\ncompleted\n66 Markdown files improved; canonical task/source routes and focused policies replace repeated guidance and stale history. Generated sources/output and accepted ADR substance remain intact.\nD3\nVerify semantic preservation, links, full validation, and the final diff; reconcile human actions.\ncompleted\nFrozen install, `pnpm validate`, final documentation/reference checks, and diff review passed. Semantic cross-review completed; all 12 ADR bodies and 85 original task IDs/statuses preserved. No human action required.\nThe documentation review's [implementation concerns](foundation-acceptance.md#implementation-concerns-identified-during-review) were subsequently addressed in the final foundation audit. New database object kinds still need deliberate generator support before adoption; deployed operational choices remain conditional Phase 12 work. No human action is needed for the current foundation audit.\nCodex must maintain this document and the [human-action checklist](human-actions.md) throughout implementation, within the user's authorized scope.\nBefore implementation, inspect actual repository state, the relevant phase, its prerequisites, governing policy, and linked human actions. Do not treat a planned capability or unchecked action as available.\nMark a task `in progress` when work actually starts. Update statuses when evidence, scope, dependencies, or blockers change, and before each handoff or completion report.\nRecord task-level progress in the tables below. Add finer tasks with stable IDs when needed; do not hide unfinished subtasks inside a completed row.\nRecord concise evidence in active task rows or the phase's `Current evidence` section: implementation paths, validation commands/results, review references, or a linked decision. Keep task-specific exceptions and unavailable or failing checks linked to the affected task. Do not store secret values or sensitive output.\nA phase becomes `completed` only when its tasks, deliverables, applicable acceptance criteria, and required human actions are satisfied with evidence. A partial implementation or unavailable required check is not completion.\nWhen human intervention is necessary, add or update an action with an ID, exact need, dependency, safe input instructions, and verification method. Link it from the affected task, mark that task `blocked`, and tell the user what is needed. Continue independent authorized work where possible.\nA future prerequisite is `pending`, not automatically `blocked`. A phase may remain `in progress` while some tasks are blocked; use phase status `blocked` when no meaningful remaining work can proceed. Keep task-level blockers visible either way.\nWhen scope or sequencing changes, use `changed`, explain why and what replaces the work, and link supporting decisions. Then give active replacement work its own status. Keep a concise record below; Git preserves detailed history. Do not delete unresolved obligations to make the plan look complete.\nUpdate command availability, current documentation, generated artifacts, and the checklist in the same coherent change where applicable. Do not change ADR status merely to record implementation progress.\nStatus\nMeaning\n`pending`\nNot started; includes conditional work whose trigger has not occurred.\n`in progress`\nWork has started and is incomplete.\n`completed`\nApplicable deliverables and acceptance criteria are satisfied with evidence.\n`blocked`\nThe identified work cannot proceed without a recorded dependency, decision, access, or correction.\n`changed`\nScope, applicability, or sequencing was explicitly revised; reason and replacement/disposition are recorded.\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Constraints throughout implementation",
+    "anchor": "constraints-throughout-implementation",
+    "text": "Constraints throughout implementation\nRetain the accepted stack and its version/upgrade qualifications: TypeScript/ESM, Node.js LTS, pnpm, Fastify, PostgreSQL, Prisma 7, TypeBox, generated OpenAPI, openapi-typescript/openapi-fetch, React/Vite/TanStack, the accepted testing stack, OpenTelemetry/Pino, GitHub Actions, and Renovate. Exact compatible versions belong in tooling; incompatibilities require explicit resolution rather than silent substitution.\nAdd dependencies, directories, packages, and validation capabilities only when they serve real implemented responsibilities. Illustrative trees are not a scaffold checklist.\nDeliver tests, security controls, telemetry, and documentation with the behavior they protect. Later hardening phases extend that baseline rather than excuse omissions.\nPreserve domain/application independence from transport and persistence implementation; share code only for shared meaning.\nKeep generated artifacts reproducible and subordinate to canonical sources. Reviewed SQL migrations retain their separate release-history rules.\nKeep root `AGENTS.md` concise. Add local instructions only for implemented areas with distinct needs.\nRequire non-mutating `pnpm validate` for substantial changes, using the same capabilities locally and in CI. Never represent absent tests or generators as passing checks.\nEach phase leaves a coherent usable state. Split phases into small changes that preserve the checks and capabilities already delivered.\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase status",
+    "anchor": "phase-status",
+    "text": "Phase status\nThis table owns phase-level status; the tables within each phase own task-level status. Human-action IDs link to the separate checklist, which owns their details and completion evidence.\nPhase\nObjective\nStatus\nDependencies\nCurrent evidence or blocker\n[1](#phase-1)\nReproducible workspace and local validation\ncompleted\nNone\nSee [current evidence](#phase-1).\n[2](#phase-2)\nCI and dependency security\ncompleted\n1\nSee [current evidence](#phase-2).\n[3](#phase-3)\nReference feature and immediate decisions\ncompleted\n1-2; discovery may begin earlier\nSee [current evidence](#phase-3).\n[4](#phase-4)\nObservable API runtime\ncompleted\n1-3\nSee [current evidence](#phase-4).\n[5](#phase-5)\nSecure persistence-backed API feature\ncompleted\n3-4 and CI\nSee [current evidence](#phase-5).\n[6](#phase-6)\nGenerated client and complete web workflow\ncompleted\n5\nSee [current evidence](#phase-6).\n[7](#phase-7)\nFailure recovery, concurrency, and data lifecycle\ncompleted\n5-6\nSee [current evidence](#phase-7).\n[8](#phase-8)\nSafe evolution and reproducible artifacts\ncompleted\n5-7; actual baselines where applicable\nSee [current evidence](#phase-8).\n[9](#phase-9)\nReference vertical-slice acceptance and contributor handoff\ncompleted\n1-8\nSee [current evidence](#phase-9).\n[10](#phase-10)\nDocumentation architecture, simplification, and developer setup\ncompleted\n9\nSee [current evidence](#phase-10).\n[11](#phase-11)\nLiving Documentation Portal\ncompleted\n10\nSee [current evidence](#phase-11).\n[12](#phase-12)\nDeployment-specific operationalization\npending\n11 and concrete deployment requirements\nConditional; no deployment selected.\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 1",
+    "anchor": "phase-1",
+    "text": "Phase 1\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Reproducible workspace and local validation",
+    "anchor": "reproducible-workspace-and-local-validation",
+    "text": "Reproducible workspace and local validation\n**Scope:** Turn the documentation foundation into a working, verifiable development environment.\n**Current evidence:** [Workspace manifests](../package.json), [setup](setup.md), and [validation](validation.md) own current commands and prerequisites.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP1.1\nEstablish pnpm workspace configuration, a committed shared lockfile, mechanically pinned Node.js/pnpm versions, and compatible tool versions.\ncompleted\nP1.2\nConfigure strict TypeScript and ESM for actual repository tooling.\ncompleted\nP1.3\nImplement Prettier checks, ESLint Flat Config with typescript-eslint, `tsc`, and dependency-cruiser.\ncompleted\nP1.4\nIntroduce `pnpm validate` with independently runnable checks; keep formatting and automatic fixes separate.\ncompleted\nP1.5\nAdd documentation link/anchor validation and useful checks for existing ADR metadata.\ncompleted\nP1.6\nEnforce applicable dependency rules and expand them as applications and packages appear.\ncompleted\nP1.7\nDocument installation, prerequisites, real commands, and actionable diagnostics; update availability statements.\ncompleted\n**Dependencies:** None. Request host administration only if inspection demonstrates it is needed; see [H-06](human-actions.md#h-06).\n**Validation/acceptance criteria:**\nA clean checkout can install from the frozen lockfile and execute all implemented checks.\nValidation leaves tracked source files unchanged.\nRepresentative formatting, type, link, and dependency violations fail with useful diagnostics.\nFirst-party package dependencies resolve explicitly through `workspace:` where applicable.\nDocumentation distinguishes available checks from future capabilities.\n**Governing sources:** [Validation](validation.md), [dependency rules](architecture/dependency-rules.md), ADRs 0001-0003 in the [ADR index](adr/README.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 2",
+    "anchor": "phase-2",
+    "text": "Phase 2\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "CI and dependency security",
+    "anchor": "ci-and-dependency-security",
+    "text": "CI and dependency security\n**Scope:** Make repository validation an enforceable delivery gate.\n**Current evidence:** [CI workflow](../.github/workflows/ci.yml), [Renovate configuration](../renovate.json), and [CI policy](architecture/continuous-integration.md) define current behavior. Dated platform verification belongs to [H-01](human-actions.md#h-01), [H-02](human-actions.md#h-02), and [H-03](human-actions.md#h-03).\nTask\nCurrent deliverable or conditional disposition\nStatus\nP2.1\nAdd GitHub Actions validation for pull requests, the primary branch, and manual execution.\ncompleted\nP2.2\nConsume repository-pinned toolchain versions, frozen installation, and repository commands rather than CI-only correctness logic.\ncompleted\nP2.3\nExpose a stable aggregate required check that fails when required work fails or does not complete.\ncompleted\nP2.4\nPin external actions to immutable SHAs, minimize permissions, and isolate untrusted PR execution from privileged credentials.\ncompleted\nP2.5\nConfigure Renovate with its dashboard, weekly routine updates, coherent groups, visible major upgrades, and automerge disabled initially; do not delay security remediation to the routine window.\ncompleted\nP2.6\nConfigure and verify branch protection and supported GitHub security capabilities; record entitlement limitations.\ncompleted\nP2.7\nBound diagnostic artifact retention and cancel superseded PR runs where appropriate.\ncompleted\n**Dependencies:** Phase 1. External administration is tracked separately from repository changes.\n**Validation/acceptance criteria:**\nThe same revision passes equivalent local and CI validation.\nA failing required job cannot produce a successful aggregate gate.\nCache misses remain reproducible.\nPR validation requires no production credentials.\nDependency review blocks newly introduced high/critical vulnerabilities where available, subject to reviewed exceptions.\nExternal settings are verified; workflow files alone do not count as branch protection.\n**Governing source:** [ADR-0011](adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 3",
+    "anchor": "phase-3",
+    "text": "Phase 3\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Define the reference feature and immediate implementation details",
+    "anchor": "define-the-reference-feature-and-immediate-implementation-details",
+    "text": "Define the reference feature and immediate implementation details\n**Scope:** Establish concrete behavior before creating business models or security assumptions.\n**Current evidence:** [Business rules](domains/approval-request.md), [implementation conventions](domains/approval-request-implementation.md), and [execution/artifact conventions](architecture/backend-execution-and-generated-artifacts.md) record the H-04/H-05 decisions and accepted implementation boundaries.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP3.1\nSelect the reference feature with the project owner; orders/payments in existing examples are not product requirements.\ncompleted\nP3.2\nDefine actors, use cases, ownership, invariants, state transitions, expected failures, side effects, and acceptance scenarios.\ncompleted\nP3.3\nSpecify data classifications/lifecycle and determine required authentication, authorization, tenancy, audit history, and integrations.\ncompleted\nP3.4\nResolve feature placement, identifiers, timestamps, transaction ownership, schema metadata, API errors, and pagination where applicable.\ncompleted\nP3.5\nDecide backend development/build execution and generated-artifact storage conventions.\ncompleted\nP3.6\nRecord significant new architectural choices through the ADR process; keep ordinary conventions near their owners.\ncompleted\n**Dependencies:** Phases 1-2; requirements discovery may begin earlier. Owner inputs do not block independent foundation tooling work.\n**Validation/acceptance criteria:**\nEvery planned business behavior traces to a stated requirement.\nProtected and anonymous operations are explicitly distinguished.\nRequired security choices are resolved before protected operations are exposed.\nNo invented tenancy, permissions model, retention duration, authentication provider, or deployment target.\nThe feature can be delivered incrementally without speculative infrastructure.\n**Governing sources:** [Principles](architecture/principles.md), [authentication](security/authentication.md), [authorization](security/authorization.md), [classification](security/data-classification.md), [retention](security/data-retention.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 4",
+    "anchor": "phase-4",
+    "text": "Phase 4\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Observable API runtime",
+    "anchor": "observable-api-runtime",
+    "text": "Observable API runtime\n**Scope:** Establish a runnable backend with correct lifecycle and boundary behavior.\n**Current evidence:** [API guide](../apps/api/README.md), API configuration/lifecycle/telemetry tests, and [process smoke](../apps/api/scripts/smoke.mjs) cover bootstrap, health, redaction, correlation, bounded shutdown, and exporter failure.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP4.1\nCreate `apps/api` with an explicit composition root and Fastify transport boundary.\ncompleted\nP4.2\nImplement TypeBox bootstrap configuration with explicit parsing, validation, safe defaults, immutable typed values, and centralized environment access.\ncompleted\nP4.3\nSeparate server-only configuration from client-eligible values.\ncompleted\nP4.4\nInitialize Pino/OpenTelemetry before instrumented infrastructure, with preferred Fastify instrumentation, W3C propagation, and configurable OTLP export.\ncompleted\nP4.5\nImplement centralized redaction and request/log/trace correlation.\ncompleted\nP4.6\nEstablish the public error envelope and a small canonical registry for errors actually used.\ncompleted\nP4.7\nImplement distinct startup, liveness, readiness, and bounded shutdown behavior.\ncompleted\nP4.8\nAdd configuration, HTTP-boundary, error, lifecycle, and telemetry tests.\ncompleted\n**Dependencies:** Phases 1-3. [H-07](human-actions.md#h-07) applies only if a selected external integration actually requires provisioning; local telemetry verification must not depend on a purchased vendor.\n**Validation/acceptance criteria:**\nInvalid required configuration fails before accepting work.\nHealth responses disclose no secrets or internal diagnostics.\nShutdown stops accepting work and attempts bounded cleanup/telemetry flushing.\nUnexpected errors produce safe public responses and one authoritative diagnostic capture.\nCorrelation remains isolated between concurrent requests.\nTelemetry export failure does not normally fail business operations.\nFastify request injection exercises real validation and serialization.\n**Governing sources:** [Configuration](architecture/configuration.md), [error contract](api/error-contract.md), [health checks](reliability/health-checks.md), [ADR-0010](adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 5",
+    "anchor": "phase-5",
+    "text": "Phase 5\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "First secure, persistence-backed API feature",
+    "anchor": "first-secure-persistence-backed-api-feature",
+    "text": "First secure, persistence-backed API feature\n**Scope:** Deliver the first useful backend capability across its complete server-side path.\n**Current evidence:** [Reference evidence map](foundation-acceptance.md#reference-feature-evidence-map) links implemented domain, persistence, HTTP, JWT authorization, rate limiting, metadata and real PostgreSQL tests. [ADR-0012](adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) governs identity verification; H-07 remains conditional.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP5.1\nImplement selected domain rules and application operations in cohesive feature boundaries.\ncompleted\nP5.2\nIntroduce PostgreSQL/Prisma 7 for actual durable data, reviewed migrations, constraints, explicit transactions, and persistence adapters.\ncompleted\nP5.3\nSeparate runtime and migration credentials.\ncompleted\nP5.4\nImplement required identity verification and authorization before exposing protected operations; test with synthetic identities.\ncompleted\nP5.5\nDefine TypeBox requests/responses, unique stable operation IDs, expected errors, and deliberate transport mappings.\ncompleted\nP5.6\nGenerate OpenAPI 3.1.x from executable contracts and route metadata.\ncompleted\nP5.7\nDocument every application-owned table/column, including ownership, relevant classification, units, null semantics, and lifecycle.\ncompleted\nP5.8\nGenerate physical database reference from migrated PostgreSQL, accounting for custom SQL.\ncompleted\nP5.9\nAdd Vitest unit and integration tests using Testcontainers, real PostgreSQL, committed migrations, and Fastify injection.\ncompleted\n**Dependencies:** Phases 3-4 and continuing CI enforcement.\n**Validation/acceptance criteria:**\nCommitted migrations reproducibly create a fresh database.\nThe feature works through HTTP and persists correctly.\nInvalid requests, domain rejection, missing resources, and conflicts have explicit semantics.\nRequired authorization allow/deny paths pass, including resource/tenant isolation where applicable.\nConstraints and concurrent writes protect intended invariants.\nPrisma/Fastify types do not leak into domain behavior or public contracts.\nMissing schema descriptions and stale generated references fail validation.\n**Governing sources:** [Database policy](database/principles.md), [schema documentation](database/schema-documentation.md), [transactions](database/transactions-and-concurrency.md), [API policy](api/principles.md), ADRs 0005-0007 and 0009 in the [ADR index](adr/README.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 6",
+    "anchor": "phase-6",
+    "text": "Phase 6\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Generated client and complete web reference workflow",
+    "anchor": "generated-client-and-complete-web-reference-workflow",
+    "text": "Generated client and complete web reference workflow\n**Scope:** Complete the reference feature through a real browser experience.\n**Current evidence:** [SDK guide](../packages/sdk/README.md), [web guide](../apps/web/README.md), component tests, and [browser journeys](../apps/web/test/e2e/approval.spec.ts) cover the actual API/database workflow and client boundaries. No concrete provider login flow is implemented.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP6.1\nGenerate client types from OpenAPI with openapi-typescript and compose the thin openapi-fetch client.\ncompleted\nP6.2\nPreserve structured errors and unknown safe error codes without importing backend implementation.\ncompleted\nP6.3\nCreate `apps/web` with React 19.x, Vite 8.x, React Compiler where compatible, TanStack Router, and TanStack Query.\ncompleted\nP6.4\nAssign server state to Query, navigation/shareable state to Router, and interaction state to React.\ncompleted\nP6.5\nImplement loading, empty, success, validation, denied, conflict, and failure states for the reference workflow.\ncompleted\nP6.6\nIntegrate the selected authentication flow when required.\ncompleted\nP6.7\nAddress keyboard interaction, focus, accessibility, and client-safe configuration.\ncompleted\nP6.8\nAdd real-browser component/feature tests and critical full-stack Playwright journeys.\ncompleted\n**Dependencies:** Phase 5.\n**Validation/acceptance criteria:**\nChromium completes the critical journey through the actual API and PostgreSQL.\nRefresh/navigation preserve URL-owned state.\nMutations update or invalidate cached state correctly.\nUI visibility is never the only authorization control.\nBrowser bundles contain no server-only dependencies or secrets.\nClient contracts regenerate without manual changes.\nBrowser-dependent tests use real browser behavior; pure logic stays in cheaper Node tests.\n**Governing sources:** [ADR-0007](adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md), [ADR-0008](adr/0008-select-react-vite-and-tanstack-for-web-applications.md), [testing strategy](architecture/testing-strategy.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 7",
+    "anchor": "phase-7",
+    "text": "Phase 7\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Failure recovery, concurrency, and data lifecycle",
+    "anchor": "failure-recovery-concurrency-and-data-lifecycle",
+    "text": "Failure recovery, concurrency, and data lifecycle\n**Scope:** Prove the completed feature behaves safely under realistic failures. This extends controls already delivered, rather than deferring basic correctness.\n**Current evidence:** [Failure tests](../apps/api/test/approval-failure.test.ts), [restart smoke](../apps/api/scripts/feature-smoke.ts), and [retry ownership](domains/approval-request-implementation.md#failure-recovery-and-retry-ownership) cover unknown outcomes, replay, rollback, conflicts and safe diagnostics. Conditional tasks retain their dispositions below.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP7.1\nExercise concurrent operations, stale updates, duplicate submissions, timeouts, dependency failures, and process interruption.\ncompleted\nP7.2\nDefine retry ownership/limits and unknown-outcome handling; add durable idempotency only where semantics require it.\ncompleted\nP7.3\nImplement required retention/deletion behavior, including existing derived copies and partial-failure recovery. Not applicable to the approved reference feature: [H-04](human-actions.md#h-04) defines no automatic deletion or retention duration, and no persisted derived copy exists. Production retention/disposal policy remains conditional under [H-09](human-actions.md#h-09); no deletion workflow can be specified without that requirement.\nchanged\nP7.4\nImplement dedicated audit persistence if authoritative business audit history is required. Not applicable: [H-04](human-actions.md#h-04) explicitly defines no authoritative business-audit persistence requirement. Operational diagnostics are not an audit trail.\nchanged\nP7.5\nReview automatic instrumentation, redaction, bounded metrics, and expected/unexpected failure classification.\ncompleted\nP7.6\nAdd outbox/inbox, reconciliation, compensation, or workers only if the feature has corresponding durable delivery requirements. Not applicable: [H-04](human-actions.md#h-04) defines no external effect or integration; no delivery pipeline, external atomicity claim, or compensating action exists.\nchanged\n**Dependencies:** Phases 5-6. External prerequisites go through [H-07](human-actions.md#h-07) only when activated by actual requirements.\n**Validation/acceptance criteria:**\nDuplicate/concurrent requests cannot create prohibited effects.\nRetries cannot silently multiply across layers.\nTimeouts are not treated as proof that an operation did nothing.\nAtomic operations roll back correctly; external effects are not falsely described as transactionally reversible.\nApplicable deletion workflows are repeatable and observable; partial completion is not reported as success.\nRedaction tests cover logs, traces, errors, and diagnostic artifacts.\nNo unsupported exactly-once guarantees.\n**Governing sources:** [Delivery and side effects](architecture/delivery-and-side-effects.md), [transactions](database/transactions-and-concurrency.md), [retention](security/data-retention.md), [redaction](security/telemetry-redaction.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 8",
+    "anchor": "phase-8",
+    "text": "Phase 8\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Safe evolution and reproducible artifacts",
+    "anchor": "safe-evolution-and-reproducible-artifacts",
+    "text": "Safe evolution and reproducible artifacts\n**Scope:** Demonstrate that Orion can evolve safely beyond its initial implementation.\n**Current evidence:** [Release registry](../apps/api/prisma/release-history.json), [guard and fixture tests](../tooling/validate/release-history.test.ts), and [evolution procedure](database/release-evolution.md) protect durable history and reproducible references. An empty registry does not prove there is no unlisted persistent environment.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP8.1\nEstablish durable migration release-status detection before the first persistent release.\ncompleted\nP8.2\nProtect released migration history while preserving safe refinement of unreleased history.\ncompleted\nP8.3\nTest fresh installation and upgrades from actual supported released baselines once they exist. Fresh migrations pass `pnpm references:check`, migrated-PostgreSQL tests, and the emitted-process smoke. Historical upgrade tests are not applicable yet: no actual released baseline or supported old/new combination is evidenced. [H-08](human-actions.md#h-08) will activate them; no synthetic baseline was created.\nchanged\nP8.4\nIntroduce released API baselines and compatibility checks when independently evolving consumers require them. Conditional: no independently released API/consumer or supported historical contract is evidenced. Current OpenAPI/SDK regeneration remains checked; [H-08](human-actions.md#h-08) activates a real baseline when needed.\nchanged\nP8.5\nReview structural/semantic compatibility of errors, authorization, ordering, pagination, defaults, and side effects.\ncompleted\nP8.6\nVerify generators/builds from clean canonical inputs; document safe application rollback versus database forward recovery.\ncompleted\nP8.7\nDefine removal conditions for real temporary compatibility paths. Conditional: no temporary compatibility shim, deprecated endpoint, dual-write, or retained old payload exists. [Evolution workflow](database/release-evolution.md#review-api-and-temporary-compatibility) states what a future real path must record before removal.\nchanged\n**Dependencies:** Phases 5-7; historical checks require genuine baselines. Record conditional tasks as changed with a justified deferral when no released boundary exists, rather than falsely completed.\n**Validation/acceptance criteria:**\nReleased migration edits are detected when a released baseline exists.\nSupported upgrades preserve required data and application compatibility.\nBreaking contracts are detected where mechanically expressible and receive semantic review.\nRegeneration reveals drift without silently fixing tracked files during validation.\nOld/new compatibility tests cover actual supported combinations.\nUnreleased work is not burdened with unnecessary permanent versioning.\n**Governing sources:** [Migrations](database/migrations.md), [compatibility](architecture/versioning-and-compatibility.md), [API versioning](api/versioning.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 9",
+    "anchor": "phase-9",
+    "text": "Phase 9\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Reference vertical-slice acceptance and contributor handoff",
+    "anchor": "reference-vertical-slice-acceptance-and-contributor-handoff",
+    "text": "Reference vertical-slice acceptance and contributor handoff\n**Scope:** Accept the implemented reference vertical slice and its contributor handoff against the Phase 9 criteria.\n**Current evidence:** [Reference acceptance](foundation-acceptance.md#phase-9-acceptance-checks) owns acceptance evidence and limitations; the [source map](foundation-acceptance.md#reference-feature-evidence-map) is the route to reusable implementation patterns.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP9.1\nExercise clean-environment onboarding: install, configure, initialize data, run apps, validate, regenerate, and build.\ncompleted\nP9.2\nVerify the reference feature demonstrates established patterns without becoming a generic framework.\ncompleted\nP9.3\nReview public APIs, ownership, dependency enforcement, and local documentation.\ncompleted\nP9.4\nKeep root instructions concise and add scoped instructions only for distinct implemented obligations.\ncompleted\nP9.5\nComplete navigation among feature behavior, contracts, schema, errors, tests, telemetry, and real procedures.\ncompleted\nP9.6\nReconcile implementation availability and stale references without changing architectural decisions.\ncompleted\nP9.7\nReview remaining gaps against applicable policies and produce an evidence-backed acceptance report.\ncompleted\n**Dependencies:** Phases 1-8, including applicable external prerequisites. Conditional future work is not automatically required for foundation acceptance.\n**Validation/acceptance criteria:**\nA contributor reproduces the complete workflow using repository instructions.\nFull `pnpm validate` passes locally and through the required CI gate.\nGenerated artifacts are current; builds/tests are reproducible.\nArchitectural violations, important denial paths, and sensitive-data leaks have appropriate mechanical protection.\nRequired Phase 9 reference-vertical-slice capabilities are implemented and conditional capabilities explicitly identified; portal acceptance is tracked separately in completed Phase 11.\nNo speculative package, mandatory external vendor, or undocumented setup step is needed.\n**Governing sources:** [Contributing](contributing.md), [principles](architecture/principles.md), [repository structure](architecture/repository-structure.md), [runbook authoring](runbooks/authoring.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 10",
+    "anchor": "phase-10",
+    "text": "Phase 10\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Documentation architecture, simplification, and developer setup",
+    "anchor": "documentation-architecture-simplification-and-developer-setup",
+    "text": "Documentation architecture, simplification, and developer setup\n**Scope:** Make current requirements and setup easy to find and reason about, and define the canonical-to-generated documentation flow before building the portal.\n**Current evidence:** [Setup](setup.md) owns environment loading, regeneration, and the disposable `pnpm dev:approval` workflow; `.env.example` is schema-checked. [Living-documentation architecture](architecture/living-documentation.md) owns canonical-to-generated responsibilities.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP10.1\nAudit the full documentation tree for current scope, navigation, stale wording, duplicate onboarding, and overly verbose policy. Preserve normative meaning and accepted ADR rationale.\ncompleted\nP10.2\nEstablish one canonical `docs/setup.md` and a safe `.env.example` checked against configuration schema/reference metadata; document actual API/web/migration loading boundaries.\ncompleted\nP10.3\nSimplify and reconnect policy and index pages where this reduces local context without hiding ownership, constraints, or conditional requirements.\ncompleted\nP10.4\nSpecify living-documentation ownership, generation, navigation, safety, freshness, and acceptance for API, data dictionary, and components.\ncompleted\nP10.5\nAlign plan, human actions, and validation with the intended foundation scope; run the full applicable gate and review the final documentation diff.\ncompleted\n**Dependencies:** Phase 9 reference vertical slice and current canonical/generated sources. No external owner action or deployed environment is required.\n**Validation/acceptance criteria:**\nA new contributor can find setup, current policies, generated API/data references, and the portal boundary from the README and task index.\nSetup commands load configuration as documented; `.env.example` contains no credentials and fails validation on drift from the API configuration reference.\nDocumentation links/anchors and normative requirements remain intact; accepted ADR decisions and rationale are unchanged.\n`pnpm validate` passes locally and in the Phase 10 PR; the existing portal remains consistent with its canonical sources.\n**Governing sources:** [Contributing](contributing.md), [configuration](architecture/configuration.md), [schema documentation](database/schema-documentation.md), [API principles](api/principles.md), and [living documentation](architecture/living-documentation.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 11",
+    "anchor": "phase-11",
+    "text": "Phase 11\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Living Documentation Portal",
+    "anchor": "living-documentation-portal",
+    "text": "Living Documentation Portal\n**Scope:** Deliver the human-facing, navigable living documentation required by Orion's foundation while retaining reproducible AI-readable artifacts.\n**Current evidence:** [Foundation acceptance](foundation-acceptance.md#phase-11-foundation-acceptance) owns portal source, generation, clean-checkout preview, browser and CI evidence. Foundation completion does not activate Phase 12.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP11.1\nChoose the smallest coherent portal/component-documentation implementation within existing application/package boundaries; record a new ADR only if the ADR policy requires one.\ncompleted\nP11.2\nRender the current TypeBox/OpenAPI operations, schemas, authentication, and stable public errors from canonical/generated API sources.\ncompleted\nP11.3\nRender the migrated PostgreSQL structure and schema-adjacent data dictionary, including ownership, classification, null semantics, lifecycle, and constraints as recorded.\ncompleted\nP11.4\nAdd component-owned examples/metadata and a generated AI-readable component reference for real web components; show states, accessibility, and usage in the human interface.\ncompleted\nP11.5\nProvide clear navigation and links among API, data, components, domain policy, and canonical artifacts; make the portal reachable from the README and docs index.\ncompleted\nP11.6\nAdd deterministic generation/freshness, missing-metadata, link, and sensitive-content checks to the shared local/CI validation path; document regeneration commands.\ncompleted\nP11.7\nExercise a clean setup, portal build/serve, browser navigation and representative pages, accessibility at the relevant UI boundary, generated-artifact drift failures, and the full gate; report acceptance evidence.\ncompleted\n**Dependencies:** Phase 10 and the implemented API, database, and web reference feature. A concrete identity provider or production deployment is not required to document current behavior.\n**Validation/acceptance criteria:**\nHumans can navigate the API, database/data dictionary, and frontend components in a working local interface, with links to their canonical and AI-readable sources.\nNo page invents business semantics or exposes real secrets/data; API and database pages reflect current generated artifacts, and component pages reflect actual source/examples.\nGenerated representations are reproducible from documented inputs, and `pnpm validate`/CI fail on stale output or missing required metadata.\nClean-checkout setup, portal build/serve, representative browser flows, and full validation pass with evidence. The foundation is complete only after these criteria pass.\n**Governing sources:** [Living documentation](architecture/living-documentation.md), [API principles](api/principles.md), [schema documentation](database/schema-documentation.md), [contributing](contributing.md), and [validation](validation.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Phase 12",
+    "anchor": "phase-12",
+    "text": "Phase 12\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Deployment-specific operationalization",
+    "anchor": "deployment-specific-operationalization",
+    "text": "Deployment-specific operationalization\n**Objective:** Make an Orion application operable in a selected real environment. **Not started.** This phase is conditional on concrete requirements and authorized scope; the documentation review does not activate it.\nTask\nMain work\nStatus\nEvidence / dependency\nP12.1\nEstablish hosting, release model, supported consumers, workload, service/recovery objectives, and operational owners.\npending\n[H-09](human-actions.md#h-09).\nP12.2\nSelect deployment-specific secrets, identity, database hosting, telemetry storage, and access mechanisms.\npending\n[H-09](human-actions.md#h-09), [H-10](human-actions.md#h-10).\nP12.3\nIntroduce deployment definitions/CD after requirements exist; configure migrations, rollout order, readiness/draining, release identity, and recovery.\npending\n[H-10](human-actions.md#h-10) for unavailable external administration.\nP12.4\nEstablish backups, retention, deletion-after-restore handling, and access separation.\npending\n[H-09](human-actions.md#h-09), [H-10](human-actions.md#h-10).\nP12.5\nAdd dashboards and actionable alerts grounded in real service objectives or operational limits.\npending\n[H-09](human-actions.md#h-09), [H-10](human-actions.md#h-10).\nP12.6\nCreate real runbooks for implemented failures, deployment/migration recovery, credential exposure, and restore.\npending\nNot started.\nP12.7\nExercise staging deployment, restore, credential rotation, failure response, and the critical user journey.\npending\nEnvironment/access prerequisites from [H-10](human-actions.md#h-10).\nP12.8\nResolve licensing before distribution where necessary; no license has been selected.\npending\n[H-11](human-actions.md#h-11).\n**Expected deliverables:** Environment-specific infrastructure, release procedures/automation, access configuration, dashboards/alerts, exercised runbooks, and release evidence.\n**Dependencies:** The completed development foundation through Phase 11 plus explicit product, deployment, and organizational requirements. A future deployment is not a prerequisite for foundation completion.\n**Validation/acceptance criteria:**\nThe exact release artifact passes validation and deployment smoke tests.\nDeployment/migration identities follow least privilege; supported privileged automation prefers short-lived identity.\nBackup restoration proves service/data recovery, including relevant deletions and revocations.\nAlerts have owners, justified thresholds, safe context, and actionable responses.\nTested procedures identify access, preconditions, verification, and stop conditions.\nApplication/data evidence proves recovery, not merely successful commands or cleared alerts.\nProduction readiness does not depend on unresolved operational requirements.\n**Usable state:** An operational application in its selected environment, with evidence supporting its actual release and recovery requirements.\n**Governing sources:** [Production access](security/production-access.md), [secrets](security/secrets-management.md), [retention](security/data-retention.md), [alerting](reliability/alerting.md), [incident response](security/incident-response.md), [runbook authoring](runbooks/authoring.md).\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Conditional capabilities",
+    "anchor": "conditional-capabilities",
+    "text": "Conditional capabilities\nThis plan does not automatically add mobile/desktop apps, microservices, queues, caches, search infrastructure, pgvector, object storage, SSR, a global state library, browser telemetry, an observability vendor, or advanced monorepo orchestration. Each enters only when a real requirement activates its documented policy. Testcontainers does not select an application deployment platform.\nAI-first engineering does not require a product AI runtime. If AI application capabilities are introduced, they must use authorized application boundaries and explicit delegation. Add tasks and human actions for actual provider requirements at that time.\n"
+  },
+  {
+    "id": "repository/docs/implementation-plan",
+    "title": "Orion Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Progress and plan changes",
+    "anchor": "progress-and-plan-changes",
+    "text": "Progress and plan changes\nCurrent task statuses and conditional dispositions above own progress. Git preserves detailed editing history; the [acceptance report](foundation-acceptance.md) retains durable acceptance evidence. Do not remove unresolved tasks or activation conditions when consolidating completed work.\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Documentation Task Index",
+    "anchor": "documentation-task-index",
+    "text": "Documentation Task Index\nChoose the route relevant to the change, then use the policy's headings and source links for focused reading. Related policies apply when the change crosses their boundaries. The repository has the Approval Request server, PostgreSQL persistence, generated SDK, and web workflow. [Selected technologies](architecture/technology-decisions.md) are not proof of [implemented commands](validation.md).\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Find the smallest useful context",
+    "anchor": "find-the-smallest-useful-context",
+    "text": "Find the smallest useful context\nRead the root and applicable nested `AGENTS.md`, then select the task route below. Read related policies only when the change crosses their boundaries.\nFollow the owner to its canonical source and relevant tests. For an implemented example, start at the [reference feature map](foundation-acceptance.md#reference-feature-evidence-map). For commands, use [setup](setup.md) and [validation](validation.md).\nConsult the [technology map](architecture/technology-decisions.md) and governing ADR for an architectural choice or rationale. Accepted ADRs preserve decision-time context; their future-tense examples are not current command inventories.\nIf implementation and policy disagree, record the discrepancy and resolve it within the task's scope. Do not infer that a requirement is implemented or weaken it to match a gap.\n[Contributing](contributing.md#documentation-ownership) owns documentation responsibilities. The [plan](implementation-plan.md) owns execution status; [human actions](human-actions.md) owns actual owner/access prerequisites. Neither activates conditional deployment work.\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Architecture and implementation",
+    "anchor": "architecture-and-implementation",
+    "text": "Architecture and implementation\nTask\nAuthoritative policy\nExecute or track implementation phases\n[Living implementation plan](implementation-plan.md)\nReproduce development setup, local execution, and the validation gate\n[Development setup](setup.md)\nRun the living API/data/component portal and understand its architecture\n[Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md)\nReview accepted reference feature and portal capabilities, evidence, and limitations\n[Foundation acceptance](foundation-acceptance.md)\nResolve owner decisions, external access, or other human prerequisites\n[Human-action checklist](human-actions.md)\nUnderstand the reference feature's business rules and acceptance scenarios\n[Approval Request](domains/approval-request.md)\nImplement the reference feature's persistence, concurrency, access, and list contracts\n[Approval Request implementation conventions](domains/approval-request-implementation.md)\nEvaluate architectural tradeoffs or exceptions\n[Principles](architecture/principles.md)\nFind selected technology decisions\n[Technology decisions](architecture/technology-decisions.md)\nPlace code or create an application/package\n[Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md)\nAdd imports or shared dependencies\n[Dependency rules](architecture/dependency-rules.md)\nModel failures and translate boundaries\n[Error handling](architecture/error-handling.md)\nAdd configuration\n[Configuration](architecture/configuration.md)\nChoose test coverage and execution layers\n[Testing strategy](architecture/testing-strategy.md), [validation availability](validation.md)\nChange independently deployed or persisted contracts\n[Versioning and compatibility](architecture/versioning-and-compatibility.md)\nHandle delivery, retries, and external side effects\n[Delivery and side effects](architecture/delivery-and-side-effects.md)\nImplement CI or dependency automation\n[Continuous integration](architecture/continuous-integration.md)\nChange backend execution or regenerate derived references\n[Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md)\nRun or extend the current API feature\n[API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json)\nRun or extend the web workflow or generated SDK\n[Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts)\nChange the SDK public surface or generated types\n[SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md)\nTrace the reference feature through business rules, contracts, data, errors, tests, and telemetry\n[Foundation acceptance map](foundation-acceptance.md#reference-feature-evidence-map)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "APIs and data",
+    "anchor": "apis-and-data",
+    "text": "APIs and data\nTask\nAuthoritative policy\nDesign an operation or generate a client\n[API principles](api/principles.md)\nExpose an error\n[API error contract](api/error-contract.md)\nEvolve, deprecate, or retire an API contract\n[API versioning](api/versioning.md)\nModel persistent data and ownership\n[Database principles](database/principles.md)\nChange durable schema or migration history\n[Migrations](database/migrations.md)\nEstablish release status, test upgrades, or plan application/database recovery\n[Release and evolution workflow](database/release-evolution.md)\nDocument or generate database reference\n[Schema documentation](database/schema-documentation.md)\nInspect the migrated Approval Request schema\n[Generated database reference](generated/database/approval-requests.md)\nFind the current machine-readable API contract and public errors\n[OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md)\nInspect API configuration names, types, defaults, and visibility\n[Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md)\nFind the generated frontend component reference\n[Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json)\nProtect atomicity or concurrent writes\n[Transactions and concurrency](database/transactions-and-concurrency.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Reliability",
+    "anchor": "reliability",
+    "text": "Reliability\nTask\nAuthoritative policy\nSelect or integrate diagnostic signals\n[Observability](reliability/observability.md)\nAdd structured events\n[Logging](reliability/logging.md)\nInstrument causal execution and propagation\n[Tracing](reliability/tracing.md)\nAdd measurements and bounded dimensions\n[Metrics](reliability/metrics.md)\nCapture and group unexpected failures\n[Error reporting](reliability/error-reporting.md)\nChange startup, liveness, readiness, or shutdown\n[Health checks](reliability/health-checks.md)\nCreate actionable alerts\n[Alerting](reliability/alerting.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Security and operations",
+    "anchor": "security-and-operations",
+    "text": "Security and operations\nTask\nAuthoritative policy\nClassify, expose, copy, or export data\n[Data classification](security/data-classification.md)\nCapture telemetry fields or payloads\n[Telemetry redaction](security/telemetry-redaction.md)\nIntroduce, deliver, rotate, or revoke credentials\n[Secrets management](security/secrets-management.md)\nVerify identity or manage authentication state\n[Authentication](security/authentication.md)\nEnforce capabilities and tenant/resource isolation\n[Authorization](security/authorization.md)\nAccess production or perform privileged actions\n[Production access](security/production-access.md)\nRetain, delete, restore, or propagate deletion\n[Data retention](security/data-retention.md)\nContain an incident and verify recovery\n[Incident response](security/incident-response.md)\nFollow or author an operational procedure\n[Runbook index](runbooks/README.md), [authoring](runbooks/authoring.md), [template](runbooks/template.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Decisions and documentation",
+    "anchor": "decisions-and-documentation",
+    "text": "Decisions and documentation\n[ADR index](adr/README.md): significant decisions and their rationale; status belongs to each ADR.\n[ADR authoring](adr/authoring.md) and [template](adr/template.md): proposals, acceptance, historical integrity, and supersession.\n[Contributing](contributing.md): change workflow, documentation ownership, canonical sources, maintenance, and review.\n[Global agent instructions](../AGENTS.md): invariants, command availability, and conditional routes.\nCurrent policies describe current architectural expectations. ADRs preserve decision history; [setup](setup.md) and [release evolution](database/release-evolution.md) describe real procedures. Generated references exist for the current API, configuration, errors, database, and web components. The portal renders these sources in the existing web application. No production runbook exists without a selected environment.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alerting",
+    "anchor": "alerting",
+    "text": "Alerting\nThis policy owns actionable alert conditions, severity, ownership, notification, and rule maintenance. [Metrics](metrics.md) owns measurement semantics; [incident response](../security/incident-response.md) owns incidents; [runbooks](../runbooks/README.md) own executable procedures. Alerts direct human or automated attention to a condition requiring action, rather than notifying merely because a signal exists.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current scope",
+    "anchor": "current-scope",
+    "text": "Current scope\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) leaves the observability backend and deployment alerting infrastructure application-specific. Orion has runtime telemetry and health checks, but no deployed alert rules, paging provider, on-call schedule, service objectives, or alert-as-code validation. This policy establishes constraints for introducing them; it does not authorize or start deployment work.\nProvider, severity taxonomy, channels/escalation, SLO tooling and burn-rate thresholds, ownership metadata, maintenance windows, and rollback integration must follow actual team structure, topology, service expectations, and operational tooling. Significant architectural choices require an ADR. Do not invent deployment thresholds or missing capabilities to fill documentation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alert severity and response",
+    "anchor": "alert-severity-and-response",
+    "text": "Alert severity and response\nUse a small consistent severity model whose levels determine response time, channel, and escalation. Severity reflects impact and urgency, not alarming wording or one HTTP error. The following is conceptual guidance, not a selected severity taxonomy or response-time commitment.\nImpact\nAppropriate response\nMajor outage, data integrity/security risk, critical workflow unavailable, widespread failure without recovery\nMay require immediate paging.\nSubstantial degradation, increasing failure rate, important dependency failure, or backlog threatening objectives\nPrompt action; page only when it cannot safely wait.\nLimited degradation with workaround or actionable capacity trend\nBusiness-hours notification or owned work item may fit.\nNoncritical trend, deprecation use, or an isolated automatically recovered instance\nDashboard/periodic review; avoid competing with urgent alerts.\nPaging is for a reliable condition requiring action before the next normal working period, with an authorized recipient who can mitigate it. Safe automatic recovery may eliminate the need to page. Critical unacknowledged alerts need an escalation path; broadcasting to everyone is not ownership. Email suits slower risks; critical incidents must not rely only on easily missed chat notifications.\nProduction and non-production must be distinguishable. Staging may notify development/release owners; local development should not generate operational alerts, and ordinary test failures should fail CI rather than page production responders.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Symptom-based alerting",
+    "anchor": "symptom-based-alerting",
+    "text": "Symptom-based alerting\nPrefer evidence of user/service impact: valid requests failing, latency objectives violated, work missing deadlines, or a critical operation unavailable. Cause metrics support investigation. Preventive cause alerts are appropriate when a known risk, meaningful response window, and effective action can prevent impact, such as full storage, expiring certificates, recovery-threatening replication lag, or an undrainable queue.\nAn alert must answer what action follows. If none is required, use a dashboard, metric, log, periodic review, or ticket as appropriate. Before adding a signal, inspect existing symptom alerts for the same incident. Do not page separately on every error, restart, unready replica, retry, short circuit-breaker transition, or arbitrary resource percentage.\nPrefer safe, understood, verifiable automatic recovery; notify when it fails, repeats excessively, threatens capacity/redundancy, or leaves meaningful impact. Unique/stateful instances and data-risk failures may justify instance-level alerts even when stateless replicated services use service-level aggregation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alert ownership and context",
+    "anchor": "alert-ownership-and-context",
+    "text": "Alert ownership and context\nEvery alert must identify an owner able and authorized to act. Ownership can follow service, domain, application, or infrastructure responsibility. Shared dependency failures need coordinated response across infrastructure and affected application owners, not independent competing investigations.\nUse stable semantic names describing the condition; keep volatile thresholds in configuration. Names, ownership, severity, service, environment, and signal type should be machine-readable where tooling supports it. Do not group alerts primarily by arbitrary message text or use high-cardinality personal data in queries.\nA concise notification should explain impact, duration, current value versus threshold/objective, release when relevant, owner, and first investigation step. Link directly to useful dashboards/runbooks and safe trace/error references where available. Investigators should be able to connect the condition to affected service/release, metrics, error groups, traces, and recovery guidance.\nNotifications must contain only safe operational context. Chat/paging access may be broader than production telemetry: keep detailed evidence in authorized systems, and never include credentials, raw payloads, personal data, or restricted identifiers. Follow [telemetry redaction](../security/telemetry-redaction.md) and [production access](../security/production-access.md), including for AI investigation.\nAcknowledgement assigns response ownership; it does not resolve the condition. Alert resolution means the triggering condition cleared, not that the root cause is permanently fixed or the incident is closed. [Incident response](../security/incident-response.md) determines proportional coordination and closure based on impact, duration, data/security risk, and involved owners. Incidents may arise without an automated alert, and not every alert becomes an incident.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Thresholds, windows, and missing data",
+    "anchor": "thresholds-windows-and-missing-data",
+    "text": "Thresholds, windows, and missing data\nThresholds require evidence: real service expectations/SLOs, capacity/safe limits, deadlines, known operational requirements, or an appropriate historical baseline. Never invent arbitrary availability percentages or round resource thresholds. Dynamic/anomaly rules add false-positive risk; use them when simpler rules cannot express the condition effectively.\nPersistence windows, hysteresis, and aggregation can reduce flapping. Choose duration from time-to-impact; corruption, all replicas unavailable, or security breach indicators may require immediate action. Slow risks should allow useful remediation lead time. A pending period is a deliberate delay, not a universal requirement. Recovery thresholds/notifications should represent actual improvement.\nDefine missing-data semantics explicitly: no traffic, dead service, failed exporter, and renamed metric are different states. Absence must not silently equal healthy zero. Observability pipeline impairment can justify an alert when diagnostic capability is materially lost; avoid one page per backend hiccup. Telemetry failure should not normally break business operations, but prolonged blindness can require intervention.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "SLO-based alerting",
+    "anchor": "slo-based-alerting",
+    "text": "SLO-based alerting\nWhen meaningful SLOs exist, prefer user-impact measurements from accurate SLIs. Define eligible/successful requests or events and distinguish technical failures from expected client/business outcomes. An incorrect denominator makes the alert misleading.\nAn error budget is the permitted failure allowance over the objective window. Burn rate describes consumption relative to the rate that would exhaust that allowance over the window: a rate of one follows that planned rate. Fast burn over short windows may require paging; slower sustained burn may justify less urgent work. Short and longer confirmation windows can reduce transient false positives. Select formulas, thresholds, windows, and slow-burn coverage only against actual objectives and validate behavior.\nInfrastructure alerts can coexist with SLO alerts when they detect distinct preventive risks. A service objective should not be fabricated to justify an existing metric threshold.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Choosing the signal",
+    "anchor": "choosing-the-signal",
+    "text": "Choosing the signal\nSurface\nDecision rule\nError rate\nUse a meaningful denominator and enough traffic. Low-volume services may need minimum counts, longer windows, or absolute failure conditions. Expected business declines are not availability failures.\nLatency\nPrefer distributions or objective thresholds to averages alone; tail percentiles such as p99 can be unstable at low volume.\nQueue\nCombine age, arrival/processing throughput, drain capacity, deadlines, and backlog. Depth alone does not establish impact. Dead letters matter when important work has exhausted recovery; one malformed noncritical item may not page.\nDependency\nMeasure Orion's observed impact; a provider status page is supporting context. Coordinate shared-provider incidents.\nDatabase\nConsider sustained latency, deadlock surges, unavailability, recovery-threatening lag, or pool saturation causing waits/timeouts/failures. Do not alert on every slow-query fingerprint prematurely.\nCPU/memory\nUse demonstrated saturation, latency, lost headroom, unexpected growth, eviction/restart, or known failure limits. High healthy utilization alone is insufficient.\nStorage, certificates, expiring secrets\nGive enough preventive lead time. Prefer automated renewal/rotation where safe rather than relying only on notifications.\nBackups/restore\nDistinguish one retryable attempt from recovery objectives at risk. Successful backup creation does not establish recoverability; restore verification can have separate signals.\nMigration\nProduction failure must immediately become visible to deployment systems. Human paging depends on release state, impact, and safe recovery.\nReadiness/liveness\nAssess ready capacity, redundancy, duration, traffic, and restart loops. A healthy pool should usually recover one stateless replica automatically.\nError tracker\nNew actionable issues, regressions, fatal crashes, or frequency changes may matter. Unsupported client-extension noise does not deserve the same response as a critical backend workflow failure.\nSecurity/audit\nSecurity-specific detection/escalation follows incident policy. Recording a privileged action does not automatically require notification; suspicious or policy-significant conditions may.\nQuota/cost\nFor quotas consider consumption, growth, and time until reset. Reliable trends can support preventive work; budget notifications are not automatically reliability incidents.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Deduplication, maintenance, and deployment",
+    "anchor": "deduplication-maintenance-and-deployment",
+    "text": "Deduplication, maintenance, and deployment\nAggregate identical replica failures into the service condition. A primary symptom can page while related dependency signals remain supporting context. Parent-condition suppression must not hide unrelated independent failures.\nMaintenance suppression must be explicit, owned, scoped, and time-bounded. Do not permanently mute alerts or disable all alerting during every deployment; releases are when regressions often appear. Suppress only known expected behavior for its actual window, and correlate alerts with recent deployment/release annotations where practical.\nCanary comparison and automated rollback remain deployment capabilities, not foundation defaults. Any automation needs high-confidence signals, clear rollback safety, bounded execution, and auditability. Never attach noisy alerts to destructive automated actions. Canary error/latency/critical-success comparisons must follow an actual release policy.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Rule lifecycle and noisy alert review",
+    "anchor": "rule-lifecycle-and-noisy-alert-review",
+    "text": "Rule lifecycle and noisy alert review\nPrefer version-controlled, reviewed, reproducible rules where tooling supports them. Provider-side manual rules may be acceptable during early experimentation; long-term critical detection should be reproducible from repository-controlled configuration. Review critical changes like production code.\nValidate query syntax, metric/label existence, expressions, metadata, and runbook links with available tools. Critical rules need meaningful healthy/unhealthy/recovery evidence through query fixtures, rule tests, or safe staging simulation. Document unavailable checks rather than claiming verification.\nHigh-severity alerts should have useful runbooks when practical. Prioritize recurring high-impact gaps. A runbook should identify actual signals/queries, common causes, safe mitigation, verification, and escalation rather than merely saying \"check logs\". Follow [runbook authoring](../runbooks/authoring.md); a runbook does not grant operational authority.\nTreat chronic noise as a defect. Review signal, threshold, duration, flapping, expected behavior, ownership, automatic recovery, duplicate coverage, severity/channel, and whether automation or a root-cause fix removes recurring manual work. Raising thresholds, permanent muting, or deletion without understanding the signal is not a fix. Before removing an established alert, identify its original purpose, replacement coverage, and dependent runbooks.\nAs operational needs grow, assess pages per incident, false positives, alerts with no action, acknowledgement time, and repeated noise. Measurements should guide improvements rather than create another alert stream.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "New alert checklist",
+    "anchor": "new-alert-checklist",
+    "text": "New alert checklist\nBefore creating or changing an alert, establish:\nThe condition, actual impact/risk, required action, urgency, and authorized owner.\nA stable reliable signal, meaningful denominator/missing-data semantics, justified threshold, persistence/recovery behavior, and representative tests.\nWhether safe recovery, an existing symptom alert, aggregation, or a work item better addresses the condition.\nSafe concise context, correct environment/channel/escalation, and useful investigation/runbook links.\nFor paging: why action cannot wait, whether the recipient can mitigate it, and how duplicate pages and unacknowledged incidents are handled.\nFor SLO/resource alerts: real objective/eligible population or safe capacity/deadline, expected impact, and sufficient lead time for the response.\nAn alert is not ready if its impact, action, ownership, or threshold justification cannot be explained. Available repository checks are listed in [validation](../validation.md); deployment-specific alert tooling remains conditional.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Error Reporting",
+    "anchor": "error-reporting",
+    "text": "Error Reporting\nThis policy owns unexpected-failure capture, diagnostic context, grouping, and issue triage. [Error handling](../architecture/error-handling.md) owns application failure semantics; the [public error contract](../api/error-contract.md) owns responses. Error tracking complements logs, traces, and metrics; it is neither an audit ledger nor a business analytics store.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation and accepted direction",
+    "anchor": "current-implementation-and-accepted-direction",
+    "text": "Current implementation and accepted direction\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) establishes central error handling, Pino logs, and OpenTelemetry correlation as the foundation. A dedicated error-reporting provider is optional and deployment-specific. No global tracker, provider SDK, source-map upload pipeline, browser crash integration, or issue-routing service is implemented. These capabilities must follow real application needs; do not add a generic provider abstraction without an application responsibility.\nThe API [error boundary](../../apps/api/src/app.ts) reports one `unhandled_request_error` with a stable error ID and [bounded safe diagnostics](../../apps/api/src/error-diagnostics.ts), then returns a safe [`INTERNAL_ERROR` envelope](../../apps/api/src/errors.ts). Only allowlisted error types/codes and repository-owned frame locations are retained; raw messages, arbitrary stacks, and cause objects are excluded. Authentication infrastructure failure receives a safe 503 and `authentication_unavailable` diagnostic. [Startup](../../apps/api/src/main.ts) catches configuration, initialization, connection, and listen failures, attempts bounded cleanup, and emits a fixed safe fallback record if the logger does not yet exist. [Observability](observability.md) owns current correlation and release context.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Expected vs unexpected",
+    "anchor": "expected-vs-unexpected",
+    "text": "Expected vs unexpected\nClassification is semantic, not determined by an exception type or HTTP status.\nFailure\nReporting treatment\nModeled validation, invalid credentials, permission denial, not-found, rate limit, domain rejection, or optimistic concurrency conflict\nNormal error contract; useful aggregate metrics, safe operational/security logs, and required audit events. Do not create tracker issues by default.\nMissing required internal state, broken invariant, programming defect, unexpected provider shape, or authentication subsystem crash\nUnexpected: surface safe diagnostic evidence at the owning boundary.\nProvider business decline\nExpected provider/domain outcome; distinguish it from provider availability failure.\nDependency outage or exhausted retries\nOperational failure; report the logical failed operation where appropriate, not an issue per retry.\nTransient failure/deadlock recovered by retry\nPrefer attempt/outcome metrics, traces, and bounded warnings. Repeated or unrecoverable failures must remain visible.\nClient offline state, cancelled navigation, unsupported extension, or external script failure\nClassify against product behavior and ownership; use deliberate noise filters rather than treating every event as an application defect.\nA specific security or operational requirement may justify capturing an otherwise expected outcome; document the reason and bounded scope. Sampling does not replace correct classification.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Report once",
+    "anchor": "report-once",
+    "text": "Report once\nEach execution model needs an authoritative final boundary: HTTP handler, job runner, consumer wrapper, scheduler, CLI entry point, or client error boundary. Capture an unexpected failure once there. Intermediate layers may translate, wrap, enrich, and preserve cause without duplicate capture. If a catch intentionally consumes an unexpected failure, that layer owns reporting or another explicit way to surface it. Never silently lose it.\nPrefer the actual exception or an equivalent safe structured representation over a generic string. Preserve meaningful type, internal-safe message, stack, cause chain, stable code, and diagnostic metadata where supported and permitted. Sanitization must precede export; preserving a cause never authorizes recursively serializing arbitrary exception attachments. SDK/ORM/database errors can contain credentials, request/response bodies, query values, or connection details.\nFatal startup/process failures should produce a safe diagnostic where possible even if the tracker cannot initialize. Uncaught failures that leave process state unsafe require safe termination; capture does not make continued execution safe. Fatal and short-lived processes may need a bounded best-effort flush, never indefinite shutdown waiting. Follow [lifecycle and error handling](../architecture/error-handling.md).\nClient error boundaries, when introduced, should capture unexpected rendering/runtime errors, show safe fallback UI, and preserve useful correlation. Recovery must be intentional and must not conceal persistent broken state. Framework boundaries do not capture every browser rejection, resource failure, native crash, or hang; choose platform-specific coverage only where required.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Public vs internal error",
+    "anchor": "public-vs-internal-error",
+    "text": "Public vs internal error\nKeep public messages/codes separate from internal diagnostic evidence. Internal stacks and provider details must not leak through responses. An opaque `errorId` can connect a support reference to an occurrence, logs, and trace; it never grants telemetry access. Support staff and AI investigators need the same authorization as any other production investigator.\nCapture the producing service/application, environment, deployed release, and semantic operation. Release identity must identify the actual artifact, remain correlatable after rollback, and not be confused with API, SDK, or database version. Production and non-production must be distinguishable. Meaningful tracker regression analysis requires release metadata.\nInclude active trace/span and request correlation where available, preferably through infrastructure rather than manual copying. Follow [logging's correlation convention](logging.md#current-implementation-and-contract); public API field names are a separate contract. Request IDs remain useful when tracing is sampled. Background work can add safe job/event identity, type/consumer, and attempt, never the entire payload. Stable error codes and bounded semantic categories may help investigation; arbitrary messages are not error codes.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Context and capture safety",
+    "anchor": "context-and-capture-safety",
+    "text": "Context and capture safety\n[Telemetry redaction](../security/telemetry-redaction.md) and [data classification](../security/data-classification.md) govern every field, including automatic SDK capture. Use minimum explicit safe projections. If context cannot be sanitized confidently, drop it. Never intentionally send `RESTRICTED` data; provider-side filters are defense in depth.\nIndexed tags must be stable, bounded, and safe, such as service/environment/operation/code/provider. High-cardinality request, trace, user, resource, and job IDs belong in permitted non-indexed context when provider indexing costs warrant it. Context still needs size/nesting limits and a diagnostic purpose.\nPrefer opaque actor/tenant IDs to names, email, phone, or tenant metadata. Extra personal data requires an explicit approved need. Anonymous session IDs require safe semantics and bounded retention. Device/OS/app/locale metadata should be minimized; unnecessary IP collection and precise geolocation should be disabled/minimized. Do not indiscriminately collect desktop paths, usernames, or machine names.\nDo not attach complete requests, responses, user/domain/ORM objects, configuration, provider payloads, user content, or application state. Automatic request capture must omit bodies, authorization, cookies, and query values by default; response-body capture is disabled by default. Environment capture is disabled: only explicitly allowlisted safe configuration metadata may be attached.\nNever construct exception messages containing credentials or connection strings. Keep dynamic IDs out of message text where a safe separate field provides the same diagnostic value and better grouping.\nBreadcrumb buffers must be bounded and represent recent safe navigation, interaction categories, dependency calls, or state transitions. Review automatic console/network/DOM capture before use. Prefer method, normalized route, status, and duration; exclude typed content, payloads, credentials, sensitive query strings, and unnecessary resource IDs.\nAttachments are disabled or used only with particular caution; never upload arbitrary diagnostics automatically. Screenshots require explicit classification, consent, access, and redaction rules. Session replay requires privacy/security review and is not a default. Automatic stack-frame local-variable capture is disabled unless a safe mechanism is proven.\nProduction tracker access follows [least privilege](../security/production-access.md), including vendor support access. [Retention and deletion](../security/data-retention.md) apply to providers storing personal data. A suspected telemetry leak follows [incident response](../security/incident-response.md): contain collection, determine affected events/providers, rotate exposed secrets where applicable, remove accessible leaked data where possible, fix the source, and add regression protection.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Grouping and fingerprint checklist",
+    "anchor": "grouping-and-fingerprint-checklist",
+    "text": "Grouping and fingerprint checklist\nGroup occurrences by the underlying defect. Prefer provider defaults until evidence shows over-grouping of different causes or under-grouping of one defect. Ordinary deployments/line shifts should not unnecessarily split one issue. Dynamic identifiers, generated paths, and arbitrary provider messages can make grouping unstable.\nBefore adding a custom fingerprint, identify the defect, occurrences that belong together, failures that must remain separate, and how behavior will be validated. Values must be stable, bounded, semantic, and non-sensitive: category, operation, stable provider code, or exception class may fit. Request/user/resource IDs, email, and raw messages must not be fingerprint inputs. Give material custom grouping logic an owner and tests; avoid manual fingerprints on every error.\nDeliberate filters can remove known non-actionable extension/environment/cancellation noise. Prefer stable evidence over fragile message substrings. Significant ignore rules need a reason, owner, scope, and reviewability; do not broadly ignore an exception class without understanding other failures it represents. Earlier filtering reduces privacy risk/cost but must not hide important defects.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Source map checklist",
+    "anchor": "source-map-checklist",
+    "text": "Source map checklist\nBuild transformations must not make required production diagnostics unusable. When source maps, native symbols, or mapping files are needed:\nGenerate them reproducibly and associate them with the exact deployed artifact, release/build, and platform. Incorrect maps are misleading.\nDefine trusted storage/upload and access explicitly. Do not accidentally publish application source because a tracker needs it.\nMake upload/missing-artifact failures visible in release validation when diagnostics depend on them.\nVerify useful stack resolution against the actual artifact; include bounded shutdown/flush behavior for short-lived crash reporting where applicable.\nNative crash/hang/ANR and mobile/desktop symbolication pipelines remain conditional on selected platforms. Introducing them does not permit unrestricted device or environment capture.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Volume and provider failure",
+    "anchor": "volume-and-provider-failure",
+    "text": "Volume and provider failure\nBound buffers, event sizes, export waits, CPU/memory/network use, and provider quotas. A failure storm must not amplify the application outage. Rate limiting, local/collector deduplication, or sampling can preserve issue existence, representative context, and frequency estimates where possible; give critical or rare failures higher retention priority. Understand provider event, attachment, indexing, and retention limits and degrade safely when reached.\nCapture should normally be buffered, bounded, and non-blocking. An unavailable exporter must not normally fail business operations. Emit bounded fallback logs/metrics for capture loss or export failure without recursively reporting the tracker's own failure through itself. Development may use an isolated integration but must not trigger production incidents; ordinary test exceptions belong in CI, with test exporters or isolated environments for integration verification.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Ownership, triage, and review",
+    "anchor": "ownership-triage-and-review",
+    "text": "Ownership, triage, and review\nImportant error groups should have an identifiable application/domain/integration owner. Routing can use reliable source/service/operation metadata; avoid brittle incidental stack-frame rules or complexity unsupported by team structure. Prioritize impact, affected operations, data integrity/security, release correlation, reproducibility, criticality, frequency, and regression status. A single corruption or boundary failure can be critical; high occurrence count or HTTP status alone does not determine severity.\nResolved tracker status is not proof of a fix. Preserve release-aware regression detection where supported, add a regression test for confirmed bugs whenever practical, and connect important issues to corrections, tests, incidents, and runbooks. Durable architectural/incident conclusions belong in the repository, not only external issue comments. Recurring high-impact failures warrant investigation/recovery guidance.\n[Alerting](alerting.md) owns notification policy: actionable new issues, regressions, volume changes, fatal crashes, or critical workflow failures may notify; do not alert on every captured occurrence. Metrics express rates, traces causal execution, logs operational evidence, and trackers grouped defects. Audit records must not depend on tracker sampling, retention, or grouping.\nBefore adding capture, verify semantic classification, authoritative boundary, duplicate risk, preserved safe cause, release/environment/correlation, minimal classified context, grouping/volume, owner, and test strategy. Verify safety with synthetic failures/secrets and isolated capture. Do not claim provider, source-map, or deployment checks exist until implemented; available checks are listed in [validation](../validation.md).\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Health Checks",
+    "anchor": "health-checks",
+    "text": "Health Checks\nThis policy owns startup, liveness, readiness, and diagnostic-health semantics. Probes answer narrow operational questions; [metrics](metrics.md), [alerts](alerting.md), synthetic monitoring, and full diagnostics serve different purposes. The application owns dependency criticality; shared mechanisms or an orchestrator must not infer it automatically.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current API contract",
+    "anchor": "current-api-contract",
+    "text": "Current API contract\nThe implemented [health contracts](../../apps/api/src/health-contracts.ts), [handlers](../../apps/api/src/app.ts), and [lifecycle](../../apps/api/src/lifecycle.ts) define three endpoints with `200`/`503` and minimal `{ \"status\": \"ok\" | \"unavailable\" }` responses:\nEndpoint\nCurrent behavior\n`/health/startup`\nUnavailable while lifecycle is `starting`; successful after leaving that phase\n`/health/live`\nSuccessful until lifecycle reaches `stopped`; does not query PostgreSQL\n`/health/ready`\nSuccessful only in `ready`, plus the feature's database check when configured; dependency failure or a 500 ms wait deadline makes it unavailable\n[Bootstrap](../../apps/api/src/main.ts) validates configuration, checks configured database connectivity, listens, then marks ready. Shutdown begins drain before closing HTTP and resources. Ordinary requests during draining/stopped receive a safe unavailable response. The readiness wait deadline does not itself cancel the underlying database operation. The current handler verifies connectivity, not full schema compatibility or every business capability.\nHealth paths/status/schema are implemented contracts, not deferred choices. Orchestrator probe frequency/thresholds, deployed routing, diagnostics authorization, uptime/synthetic monitors, and recovery objectives remain deployment-specific. Global response logging/instrumentation currently includes health traffic; the noise guidance below is an intended improvement, not existing exclusion behavior.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Liveness",
+    "anchor": "liveness",
+    "text": "Liveness\nLiveness asks whether the process can make progress and whether restarting has a reasonable chance of repair. Prefer cheap process-local evidence such as irrecoverable state or inability to serve the handler. A remote database, cache, broker, identity, or provider outage normally does not justify restarting otherwise healthy replicas. Dependency-coupled liveness can amplify shared outages, startup load, and loss of evidence.\nUse runtime/platform controls where adequate instead of fragile custom memory/disk/event-loop thresholds without evidence. High load or memory pressure is not automatically death; rate limiting/backpressure may remain safe. Serverless/client runtimes need appropriate initialization/reachability behavior, not forced container-style endpoints.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Readiness",
+    "anchor": "readiness",
+    "text": "Readiness\nReadiness asks whether this runtime can safely accept its expected work now. Failure normally removes new traffic/job claiming without terminating the process. Consider required initialization/configuration, truly critical dependencies/resources, and draining. A process can be live and unready while a dependency recovers.\nClassify dependencies by actual application responsibility. Optional email/analytics/cache failure may permit degraded operation; a broker can be critical for a worker without being critical to a read API. A nominally optional cache can become critical if fallback overloads the database, so use tested behavior. Do not map every circuit breaker, dependency outage, or individual module to whole-process unready automatically.\nDefine “degraded” explicitly if used. Independent read/write capabilities may justify scoped routing, separate runtimes, or bounded degraded responses when real requirements demand it; do not create dozens of probes preemptively. Health aggregation for a dashboard is not orchestration health authority. Readiness is minimum work-acceptance evidence, not complete correctness, SLO compliance, or a customer-specific domain validation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Startup check and shutdown",
+    "anchor": "startup-check-and-shutdown",
+    "text": "Startup check and shutdown\nStartup distinguishes legitimate initialization time from failure. Bound initialization and fail visibly when it cannot finish. Invalid required configuration generally needs fast failure, while recoverable dependency outages may allow a process to wait/recover if designed to do so. Permanently bad credentials must become observable configuration defects rather than indefinite restart loops. Validate expensive deterministic configuration/schema compatibility at an appropriate boundary rather than repeating full inspection per probe.\nA runtime known to be incompatible with its database schema must not serve unsafe work; the current API connectivity probe does not establish that guarantee. Readiness must precede deployment success, not process creation alone.\nOn shutdown/maintenance, become unready, stop new work, drain in-flight operations within the allowed window, then terminate. A draining process can remain live. Workers must stop claiming and follow their queue's safe completion/release semantics. Do not use liveness failure simply to take an instance out of traffic. Deployment rollback/failure decisions must follow actual release policy and compatibility.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Probe safety and dependency cost",
+    "anchor": "probe-safety-and-dependency-cost",
+    "text": "Probe safety and dependency cost\nChecks must be read-only, cheap, deterministic, and bounded. Never create/delete business records, send messages/email, charge payments, or mutate providers as a routine probe. Avoid data-dependent/random sample rows, full scans/joins, migration replay, schema diffs, all-system tests, and full integrity validation. Cheap connectivity/constant queries should use runtime credentials where practical so an administrator's success does not hide runtime permission failure.\nDo not poll every third party on every probe. Provider checks can consume quotas, cost, and availability; observed error/latency/circuit state may be better evidence. Readiness can remain valid when the service safely queues, retries later, degrades, or returns bounded dependency failures. Long integrity checks belong to separate monitoring unless a discovered defect makes work unsafe.\nEach dependency wait needs a short timeout, with total latency comfortably inside the caller's budget. Parallel independent checks can help but must remain resource-bounded. Account for replica count × frequency, concurrent checks, lingering work after wait deadlines, and recovery thundering herds. Probe cost should not scale with user/table/history size. Define success/failure thresholds or hysteresis only when needed to balance responsiveness and flapping; cached health introduces explicit staleness/recovery delay.\nKeep health handlers simple and responsive during partial degradation. Basic transport/security/correlation middleware may apply; avoid expensive business orchestration or authorization where unnecessary. If saturation prevents safe new work, readiness needs a deliberate decision coordinated with timeouts/retries/backpressure, not a generic restart rule.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Output, monitoring, and security",
+    "anchor": "output-monitoring-and-security",
+    "text": "Output, monitoring, and security\nMachine probes need deterministic minimal state and matching transport status. Detailed diagnostics are a separate authorized surface with stable logical dependency names, not raw hostnames/IPs, configuration, topology, credentials, stack traces, or exceptions. An unauthenticated minimal probe must not become an account/tenant/session inspection endpoint. Network isolation can support probe access but never authorizes a public diagnostic dump.\nProbe response schemas and behavior are compatibility contracts for load balancers, orchestrators, deployers, and monitors. Coordinate changes with consumers. Public correlation IDs are optional and must remain safe. Prefer state-transition evidence over a log/error issue per poll; suppress/sample routine successes and avoid repeated warnings during known outages. Trace health sparingly and use underlying dependency signals where possible.\nProbe failures alone do not determine incident urgency: assess duration, replicas, traffic, error rate, and actual capability. One failed replica may recover automatically; all unready replicas can indicate a shared dependency or bad release. Uptime checks answer external DNS/TLS/routing/reachability; synthetic transactions use isolated data and separate safety controls to test real workflows. Neither replaces readiness.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Health check testing and review",
+    "anchor": "health-check-testing-and-review",
+    "text": "Health check testing and review\nTest actual startup, required-dependency failure, optional degradation where supported, liveness independence, invalid configuration, bounded wait, drain/new-work rejection, safe response shape, and critical recovery transitions. Complex caching/hysteresis needs transition coverage. Do not use production business records as probe fixtures.\nBefore changing a check, identify consumer/owner, exact question, expected recovery action, dependency criticality, safe work during outage, runtime identity, full-scale cost, timeout/cancellation semantics, response security, compatibility, and tests. Add a real runbook only for known repeatable failures. Consult [validation](../validation.md) and the runtime README for available checks; hosting integrations remain out of scope until selected.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Logging",
+    "anchor": "logging",
+    "text": "Logging\nThis policy owns structured operational log events, levels, correlation, and reporting boundaries. [Observability](observability.md) explains signal selection; [redaction](../security/telemetry-redaction.md) owns what may be captured. Logs are diagnostic evidence, not an authoritative audit ledger, business database, analytics warehouse, or substitute for metrics/traces/error reporting.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation and contract",
+    "anchor": "current-implementation-and-contract",
+    "text": "Current implementation and contract\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects Pino production JSON logs and centralized `request_id`, `trace_id`, `span_id` correlation, with `trace_flags` when useful. Local pretty output is permitted. Public API field naming remains a separate contract.\nThe API [logger](../../apps/api/src/logging.ts) emits JSON with service, environment, release identifier, redaction, and active `trace_id`/`span_id` where available. Fastify supplies `request_id` in request-scoped logs. The [request/error boundary](../../apps/api/src/app.ts) reports safe status and diagnostics without request bodies or URLs, and suppresses successful health-request logs. Existing underscore-separated messages such as `http_request` are current event names; the examples below explain semantics, not replacement names to adopt silently.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Event and field design",
+    "anchor": "event-and-field-design",
+    "text": "Event and field design\nUse stable semantic event names plus explicit fields, optionally with a concise English message. Names should survive ordinary refactoring rather than describe private methods. Existing event names, fields, units, and meanings consumed by alerts/dashboards/runbooks are operational contracts; do not rename them casually. Human sentence text is not a query contract. Prefer standard conventions where suitable and avoid several spellings for one concept.\nCommon context includes producer, environment, release when available, operation, bounded result, explicit duration unit, and relevant request/trace/span/error/job/event IDs. Actor and resource owner must not share an ambiguous field meaning. Do not redefine reserved platform fields. Logs can support justified high-cardinality IDs better than metrics, but classification, search/index cost, and access still apply.\nCross-cutting infrastructure owns logger creation, serialization, redaction, context, and transport; application owners choose useful event meaning/fields. Inject a logger or use safe scoped runtime context/child loggers rather than unrestricted mutable globals. Enrich shared fields centrally where practical. Context from one request/job must never reach another, including pooled or asynchronous execution. Typed critical-event helpers may help but do not require a custom type for every trivial log.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Logging levels",
+    "anchor": "logging-levels",
+    "text": "Logging levels\nPino level\nMeaning\n`trace`\nRare detailed diagnostics; disabled in normal production, safe even if enabled\n`debug`\nInvestigation detail too verbose for routine production; normal diagnosability must not depend on it\n`info`\nMeaningful normal operation/lifecycle, not every successful function call\n`warn`\nUnexpected degradation, retry, fallback, or deprecated use worth investigation if frequent\n`error`\nUnexpected failed operation or terminal failure needing investigation\n`fatal`\nProcess cannot continue safely; termination is normally expected\nSeverity follows operational meaning, not HTTP status, exception existence, monetary value, or business importance. Expected validation, missing resources, invalid credentials, permission denials, normal duplicate delivery, and business rejections do not automatically warrant warnings/errors. They can contribute to aggregate or security signals where justified. Avoid level inflation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Reporting boundaries",
+    "anchor": "reporting-boundaries",
+    "text": "Reporting boundaries\nReport an unexpected failure once at an explicit authoritative boundary, with safe context and correlation. Intermediate layers may enrich/translate/rethrow without logging identical failure again. Adapter and caller must agree who reports; a dedicated error tracker does not require duplicate stacks at every layer. Follow [error reporting](error-reporting.md) and [error handling](../architecture/error-handling.md).\nUseful boundaries include request completion, job lifecycle/outcome, significant dependency interactions, process startup/shutdown, and the unexpected-error handler. Completion logs usually provide more value than separate request-start logs; justify both before doubling volume. Expected client errors should not generate stacks. Important jobs/messages need stable identity, type/consumer, attempt, duration, outcome, and safe retry/terminal-failure evidence; never log whole payloads.\nCapture safe dependency name/operation/duration/result/reason where useful, keeping provider codes distinct from Orion public codes. Database diagnostics favor normalized operations, latency, and conflict categories, not rows. [Migration logs](../database/migrations.md) should identify migration/release/environment and start/completion/duration/result without secrets. Lifecycle logs should make readiness, shutdown, drain, and startup failure understandable.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Safe content and volume",
+    "anchor": "safe-content-and-volume",
+    "text": "Safe content and volume\nEmit explicit allowlisted projections, not entire requests/responses, ORM/domain objects, collections, configuration, environments, SQL parameters, or exception payloads. Do not embed sensitive runtime values in arbitrary interpolated messages. Credentials are prohibited even in debug/development modes; protected headers/query strings, filenames, IP/device/location/user content, and provider data require the [redaction policy](../security/telemetry-redaction.md). Trusted internal stacks require safe authoritative handling and must not be returned publicly.\nBound event size, field lengths, collection summaries, nesting, and line structure. Truncation is not secret removal; hashing is not automatic anonymization. Avoid uncontrolled multiline messages and arbitrary console output in runtime application code now that a canonical logger exists; tooling scripts can have different output requirements. Remove temporary debugging output before completion.\nSuccessful health checks and frequent polling should generally be suppressed, reduced, or sampled; failures/state changes may matter. High-volume success logs require demonstrated value. Do not blindly sample errors, security, migration, or rare events where complete visibility matters. Deterministic request/trace sampling can preserve correlation when appropriate. Logs must not be the sole source of important numeric metrics when dedicated measurements fit, nor duplicate every trace span or canonical business event.\nDynamic production verbosity, if introduced, must be authorized, bounded in time/scope, auditable where appropriate, and safe. It must not disable redaction, dump payloads/environment, or expose stacks. Temporary incident diagnostics need an owner/removal plan. Collection, storage, indexing, retention, and sampling remain deployment concerns; do not make an unavailable backend a business dependency.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Testing and review",
+    "anchor": "testing-and-review",
+    "text": "Testing and review\nTest redaction, correlation/isolation, security-sensitive logging, and meaningful operational event contracts using captured/in-memory output rather than requiring a production vendor. Use synthetic secrets and assert absence as well as safe evidence presence. Do not test every ordinary message or wording edit. Quiet successful tests should surface relevant captured diagnostics when failures occur.\nBefore adding an event/field, identify its operational question, owner, stable meaning, level, required fields/classification, units/vocabulary, volume/bounds, existing equivalent signal, duplicate-report risk, automatic context opportunity, and tests. When evidence is missing, choose the smallest useful log, span, metric, error context, or runbook change. Future schema/static enforcement should follow real value; current checks are listed in [validation](../validation.md).\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metrics",
+    "anchor": "metrics",
+    "text": "Metrics\nThis policy owns aggregate measurements, units, dimensions, cardinality, and measurement semantics. Use [logs](logging.md), [traces](tracing.md), or [error reports](error-reporting.md) to investigate individual requests/resources. A custom metric must answer a recurring numerical operational question rather than measure every available value.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation",
+    "anchor": "current-implementation",
+    "text": "Current implementation\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects OpenTelemetry metrics and OTLP. The API [telemetry configuration](../../apps/api/src/telemetry.ts) installs a periodic OTLP metric reader when an endpoint is configured and an attribute allowlist for all instruments. No metric reader is configured without that endpoint. HTTP/framework instrumentation supplies the current baseline; these settings do not imply a custom metric registry, production dashboard, SLO, or backend exists.\nNew dimensions must survive the actual allowlist and preserve its security/cardinality guarantees. Inspect existing instrumentation before adding custom HTTP, database, process, messaging, or resource measurements. Prefer authoritative standard/platform metrics over duplicate custom implementations. Backend, retention, resolution, histogram tuning, dashboards, SLOs, and formal budgets remain requirement-driven decisions.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metric types and units",
+    "anchor": "metric-types-and-units",
+    "text": "Metric types and units\nType\nMeaning\nDesign constraints\nCounter\nCumulative events/items, normally increasing\nLet the backend handle process-reset/rate semantics. Persist only if the meaning explicitly requires durable state. Distinguish logical outcomes from attempts.\nGauge\nCurrent/recent value that may rise or fall, such as backlog or active connections\nIdentify its authoritative source and local/global scope. Multiple replicas must not ambiguously report one global value.\nHistogram\nDistribution of durations/sizes\nPrefer to averages or min/max alone, which conceal tail behavior/frequency. Choose buckets and percentiles against real workload ranges.\nLocal summary/quantile instruments require deliberate multi-instance aggregation and cost evaluation; histograms often aggregate more usefully. Units must be explicit and consistent with the selected standard: avoid mixing equivalent durations across ms/seconds without reason or ambiguous byte/count units. Define timing start/end and whether a duration includes queue wait, retries, or user-visible completion.\nUse primitive counts/distributions and let the backend derive rates, ratios, percentages, and rolling windows where it can do so correctly. Do not implement competing application aggregation or custom temporality. Metrics are observational; business correctness must not depend on their delivery.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Dimensions and cardinality",
+    "anchor": "dimensions-and-cardinality",
+    "text": "Dimensions and cardinality\nNames describe stable quantities and must not contain runtime identifiers. Dimensions need bounded vocabularies and a concrete grouping/filtering question. Estimate worst-case series multiplication, not just label count: five methods × twenty routes × six statuses can produce six hundred series before another dimension is added. Bound label count, possible values, and total series where relevant; formal budgets should follow scale.\nDo not use user/resource/request/trace/error/job IDs, email, IP, raw URLs, SQL statements, or arbitrary error/exception messages as metric labels. Use route templates, bounded operations/providers/job types, result/status categories, and justified bounded error codes. Query values are not default dimensions. Tenant-specific analysis needs a separate explicit bounded justification; do not assume current tenant count remains small. Normalize client versions according to a support model when needed, and evaluate release-label retention/cardinality before broad use.\nA bounded field can still be sensitive, and a numeric value such as an account balance is not automatically operational telemetry. Apply [classification](../security/data-classification.md) before cardinality and [redaction](../security/telemetry-redaction.md) to all values/labels; restricted values and personal-data lookup do not belong in metrics. Prefer designs that cannot identify a person from a series. Do not attach every feature flag or user experiment context to every metric.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Measurement ownership and accuracy",
+    "anchor": "measurement-ownership-and-accuracy",
+    "text": "Measurement ownership and accuracy\nEmit at the authoritative outcome boundary. A metric must measure what its name claims without ambiguous increments or double counting by controller, service, and repository. Distinguish traffic, attempts, logical operations, retries, duplicates, final outcomes, event publication/delivery/processing, and deduplication. A repeated idempotent request can count as traffic without counting a durable business outcome again. Completion counters must not increment before completion is known.\nCounters must remain monotonic for their lifecycle; current state uses a gauge. Prefer bounded attempt classes unless the number of attempts is explicitly small. Safe error categories should distinguish expected business/client rejection from technical failures when reliability analysis depends on that distinction. A `4xx` is not inherently a service failure; an unexpected `5xx` generally is. Specific authentication/denial spikes can still be security or product signals without labeling by actor.\nMetrics should generally observe the full population even when traces are sampled. Do not randomly sample counters unless the mathematics remains explicitly correct. Define semantics of missing, delayed, or dropped measurements: zero events, no series, a dead service, failed collector, and broken query are different states.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Useful coverage",
+    "anchor": "useful-coverage",
+    "text": "Useful coverage\nChoose signals for actual runtime responsibilities; RED (rate/errors/duration), USE (utilization/saturation/errors), and traffic/errors/latency/saturation are heuristics, not mandatory inventories.\nRequests/dependencies: count, latency distribution, bounded outcome, timeout/retry categories, and provider behavior as Orion observes it.\nDatabase/pools: meaningful query/transaction latency/failures/retries, deadlocks, active/idle/waiting connections, acquisition timeouts; never raw SQL labels.\nQueues/workers: throughput, depth, oldest-message age, execution duration, retries, in-flight work, terminal failure, and dead-letter growth. Depth alone says little without capacity and age.\nCache/storage: justified hit/miss/error counts, durations, and bytes. Derive ratios from counts rather than separate incompatible calculations.\nRuntime/deployment/migrations: use existing process/platform instruments; deploy/rollback signals may come from CI, and significant backfills may need processed/failed/remaining/batch-duration evidence.\nCritical business workflows: justified operational outcomes can reveal semantic outages, but analytics, experiments, financial reporting, and per-customer values belong to their own systems.\nDo not create a binary health metric if existing underlying signals answer the question better. [Health checks](health-checks.md) own probe semantics.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Dashboards, SLOs, and alerting",
+    "anchor": "dashboards-slos-and-alerting",
+    "text": "Dashboards, SLOs, and alerting\nImportant dashboards need an owner and recurring operational use. Organize around actual service/dependency/workflow topology and show deployment changes where practical. Avoid panels merely because measurements exist.\nAn SLI measures service behavior; an SLO sets a target/window; an SLA is an external/contractual commitment. Define meaningful user requirements before objectives or error budgets. Explicitly state eligible events, success/failure, client-caused exclusions, all-instance coverage, retry denominators, and missing-data behavior. Do not invent “three nines” or arbitrary windows. Error-budget burn alerts require real objectives and belong to [alerting](alerting.md).\nCritical alert/SLO metrics need stable definitions, reliable emission, and stronger compatibility/testing than exploratory measurements. A panel can still render while silently measuring the wrong thing after a semantic change. Names, units, and dimensions are operational contracts: migrate dashboards/alerts before renaming or removal, and never silently change meaning under the same name.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Pipeline, cost, and access",
+    "anchor": "pipeline-cost-and-access",
+    "text": "Pipeline, cost, and access\nMetric export failure must normally not fail business work. Use low-overhead aggregated/batched export, bounded buffers, and no synchronous network call per measurement. Monitor export failures, dropped measurements, saturation, and collector health with bounded non-recursive diagnostics. Cardinality consumes application CPU/memory before backend billing and can breach provider series/ingestion/attribute quotas.\nChoose retention/resolution/downsampling against investigation, capacity, SLO windows, privacy, and cost. Second-level precision or indefinite full-resolution history is not universally useful. Aggregate topology/business-volume signals can remain confidential; [production access](../security/production-access.md) and [retention](../security/data-retention.md) still apply.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metric registry and testing",
+    "anchor": "metric-registry-and-testing",
+    "text": "Metric registry and testing\nDocument important custom metric name, type, unit, exact meaning/emission point, owner, required dimensions/allowed values, cardinality expectations, consumers, and removal condition. Reuse instrumentation metadata; introduce a separate machine-readable registry only if it adds value. Remove unused metrics deliberately and keep consumer references current.\nTest critical cardinality, units, single authoritative increments, outcomes/retries, safe labels, and SLI eligibility where practical using test readers/exporters. Isolate state so tests are order-independent. Do not unit-test every automatic runtime metric or require a production provider. Local collection may be optional while instrumentation paths remain exercised.\nBefore adding a metric/dimension, identify user/operational question, existing standard signal, type/unit, authority, allowed values/worst-case multiplication, sensitivity, consumer compatibility, evidence tests, and lifecycle. If the question concerns one specific record, use another signal. Check [validation](../validation.md) for actual enforcement; future naming/cardinality/schema checks are not existing guarantees.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Observability",
+    "anchor": "observability",
+    "text": "Observability\nThis policy owns the observability model and signal ownership. Production-relevant behavior must be explainable from structured, safe, correlated evidence. Use this page to choose the right signal; detailed requirements live with its owner rather than being repeated across policies.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation and accepted direction",
+    "anchor": "current-implementation-and-accepted-direction",
+    "text": "Current implementation and accepted direction\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects server-side OpenTelemetry traces/metrics, W3C Trace Context, OTLP, and Pino JSON logs. A Collector is preferred when deployment complexity justifies it; direct compatible OTLP export remains valid. No global backend/vendor is selected. The OpenTelemetry Logs SDK and browser instrumentation are not initial defaults, and a dedicated error-reporting provider is optional.\nThe API [initializes telemetry before Fastify/application composition](../../apps/api/src/main.ts), with [Pino redaction](../../apps/api/src/logging.ts), [HTTP instrumentation and allowlisted OTLP export](../../apps/api/src/telemetry.ts), and [health/error boundaries](../../apps/api/src/app.ts). See the [runtime guide](../../apps/api/README.md) and [validation inventory](../validation.md) for current configuration and evidence.\nThe current API logs centralized `request_id`, `trace_id`, and `span_id` where available, carries a configured release identifier, and initializes HTTP, Fastify, and Prisma instrumentation before application composition. Successful health responses are suppressed from request logs. Trace export removes arbitrary attributes, event details, URLs, SQL text, and status messages; it does not provide full database diagnostics. A production Collector, backend, dashboards, alert owners/thresholds, retention durations, and service objectives remain deployment-specific; policy presence is not evidence they exist.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Observability signals",
+    "anchor": "observability-signals",
+    "text": "Observability signals\nQuestion\nOwner\nScope\nWhat happened to a particular operation?\n[Logging](logging.md)\nDiscrete semantic events with safe structured context\nWhere did time/failure propagate?\n[Tracing](tracing.md)\nCausal spans, links, dependency timing, context propagation\nHow often, how slow, how saturated?\n[Metrics](metrics.md)\nAggregate numerical behavior and trends with bounded dimensions\nWhich unexpected failures recur?\n[Error reporting](error-reporting.md)\nAuthoritative failure capture, classification, grouping, and correlation\nCan the process run or receive work?\n[Health checks](health-checks.md)\nStartup, liveness, readiness, dependency diagnostics\nDoes a responder need to act?\n[Alerting](alerting.md)\nActionable conditions, ownership, routing, and investigation context\nWhat data can be collected?\n[Telemetry redaction](../security/telemetry-redaction.md)\nClassification, allowlists, sanitization, and leakage handling\nOperational telemetry is not authoritative business audit history, domain events, or an analytics warehouse. Those have distinct ownership and integrity, persistence, delivery, authorization, and retention guarantees. Do not duplicate every span as a log or report one exception independently at every layer.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Telemetry correlation",
+    "anchor": "telemetry-correlation",
+    "text": "Telemetry correlation\nPreserve request/trace correlation across supported boundaries where practical. A request ID identifies an application-boundary request; a trace ID identifies causal execution; a span ID identifies work within that trace; an error ID identifies a failure report. Jobs, events, and workflows have their own stable identities for retries, deduplication, and replay; do not substitute one ID for another merely because both are unique.\nSupport references must be safe opaque values. Anonymous workflows must remain diagnosable without fake users. Actor/tenant/resource identifiers may appear only when justified and classified; clear/update user context when identity changes. Context must not leak between requests, jobs, or tenants.\nUse consistent service/application and environment identities. Deployed release/source revision and operational changes should be correlatable when that release process exists, including after rollback. Logs, spans, errors, and selected metrics should use consistent semantic operation names and established standard conventions where appropriate; never use high-cardinality correlation IDs as routine metric dimensions.\n"
+  }
+]

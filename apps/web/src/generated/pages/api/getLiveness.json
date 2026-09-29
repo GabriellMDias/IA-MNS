@@ -1,0 +1,94 @@
+{
+  "kind": "api",
+  "operationId": "getLiveness",
+  "summary": "",
+  "description": "Report whether the process is alive without testing downstream dependencies.",
+  "security": [],
+  "components": {},
+  "method": "GET",
+  "path": "/health/live",
+  "tags": ["Health"],
+  "authentication": "None declared",
+  "parameters": [],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "ok" },
+                  { "type": "string", "const": "unavailable" }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "anyOf": [
+              { "type": "string", "const": "ok" },
+              { "type": "string", "const": "unavailable" }
+            ]
+          }
+        }
+      },
+      "fields": [
+        {
+          "name": "status",
+          "type": "\"ok\" | \"unavailable\"",
+          "required": true
+        }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "ok" },
+                  { "type": "string", "const": "unavailable" }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "anyOf": [
+              { "type": "string", "const": "ok" },
+              { "type": "string", "const": "unavailable" }
+            ]
+          }
+        }
+      },
+      "fields": [
+        {
+          "name": "status",
+          "type": "\"ok\" | \"unavailable\"",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

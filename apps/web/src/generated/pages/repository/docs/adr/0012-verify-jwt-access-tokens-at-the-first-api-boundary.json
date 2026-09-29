@@ -1,0 +1,40 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md",
+  "title": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+  "html": "<p><strong>Status:</strong> accepted</p>\n<p><strong>Date:</strong> 2026-09-24</p>\n<h2 id=\"context\">Context</h2>\n<p>The Approval Request feature requires every operation to authenticate a human before applying ownership and review-capability rules. H-05 selected a provider-independent OIDC/OAuth 2.0 bearer access-token boundary and deferred a concrete identity provider, password/session systems, and provider-specific refresh and revocation behavior. Phase 5 must verify tokens in a running API and in synthetic tests without provisioning an external service.</p>\n<p>The existing <a href=\"/docs/repository/docs/security/authentication\">authentication policy</a> left the token format and cryptographic mechanism to an explicit decision. This choice affects security and issuer interoperability beyond a local helper implementation.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>For the first Orion API, accept signed JWT bearer <strong>access tokens</strong> with <code>typ</code> of <code>at+jwt</code>, verified locally using the configured trusted issuer's JWKS. Require an exact issuer and API audience, a non-expired token, an issued-at time, a subject, a stable Orion application-principal UUID claim, and an issuer-validated human actor claim. Accept RS256 or ES256 signatures. Map an issuer-validated <code>approval:review</code> scope to the application capability; no unverified client-supplied identity or capability reaches the domain/application layer.</p>\n<p>Keep issuer, audience, JWKS endpoint, and runtime database URL in validated server-only configuration. The stable Orion principal ID is a provider-independent application contract: a later provider integration must preserve that ID across provider changes. No concrete provider, login/session store, introspection service, token issuance, or provider-specific revocation strategy is selected here. A later requirement for opaque tokens or a different trust mechanism needs a separate decision and compatibility review.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>Local signature verification makes the boundary executable and testable with synthetic keys without depending on an external account or network call per business request. Explicit issuer/audience checks and an application-owned principal identifier keep authorization independent of provider-native claim types. A narrow algorithm allowlist and trusted JWKS reduce ambiguity in accepted credentials.</p>\n<p>This accepts a JWT-shaped issuer contract for the first API. It does not establish JWT as a universal Orion credential format or decide browser login behavior.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"opaque-token-introspection\">Opaque-token introspection</h3>\n<p>Introspection could support provider-side active-token checks but would require selecting and provisioning an external issuer/introspection service for Phase 5, contrary to the current provider deferral and offline synthetic-test requirement. It remains available if future revocation or provider constraints justify it.</p>\n<h3 id=\"api-owned-session-or-password-store\">API-owned session or password store</h3>\n<p>This would add credential and lifecycle responsibilities that H-05 explicitly excludes from the API.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Authentication can be exercised with signed synthetic tokens and a local JWKS endpoint; authorization tests need no real accounts.</li>\n<li>Application and domain operations receive only a stable principal ID and capability set.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>A future issuer must supply the required JWT profile, stable Orion principal mapping, human actor assertion, and review scope. Provider compatibility must be checked before production integration.</li>\n<li>Local signature verification does not by itself provide immediate provider-side token revocation. Provider-specific revocation and session behavior remain deferred; short token lifetimes and operational controls must be assessed with a chosen provider.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>Deployments using the Approval Request feature must supply separate runtime database credentials and trusted token issuer/audience/JWKS settings. Keys may rotate through JWKS. Provider provisioning, issuer claims, and secure configuration are tracked under <a href=\"/docs/repository/docs/human-actions#h-07\">H-07</a> only when a real provider is selected.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/domains/approval-request#identity-and-authorization-boundary\">Approval Request identity decision</a></li>\n<li><a href=\"/docs/repository/docs/security/authentication\">Authentication policy</a></li>\n<li><a href=\"/docs/repository/docs/security/authorization\">Authorization policy</a></li>\n<li><a href=\"/docs/repository/docs/domains/approval-request-implementation\">Approval Request implementation conventions</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0012-verify-jwt-access-tokens-at-the-first-api-boundary",
+      "text": "ADR-0012: Verify JWT Access Tokens at the First API Boundary",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "opaque-token-introspection",
+      "text": "Opaque-token introspection",
+      "level": 3
+    },
+    {
+      "id": "api-owned-session-or-password-store",
+      "text": "API-owned session or password store",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

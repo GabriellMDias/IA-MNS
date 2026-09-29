@@ -750,27 +750,27 @@ Replacing the primary test runner, database integration strategy, or browser E2E
 
 ## References
 
-Related ADR: `ADR-0002: Select pnpm for Package and Workspace Management`
+Related ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)
 
-Related ADR: `ADR-0003: Establish Repository Validation and Architecture Enforcement`
+Related ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)
 
-Related ADR: `ADR-0004: Select Fastify as the Backend HTTP Framework`
+Related ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)
 
-Related ADR: `ADR-0005: Select PostgreSQL as the Primary Database`
+Related ADR: [ADR-0005: Select PostgreSQL as the Primary Database](0005-select-postgresql-as-the-primary-database.md)
 
-Related ADR: `ADR-0006: Select Prisma ORM for Database Access and Migrations`
+Related ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)
 
-Related ADR: `ADR-0008: Select React, Vite, and TanStack for Web Applications`
+Related ADR: [ADR-0008: Select React, Vite, and TanStack for Web Applications](0008-select-react-vite-and-tanstack-for-web-applications.md)
 
-Related policy: `docs/architecture/testing-strategy.md`
+Related policy: [testing strategy](../architecture/testing-strategy.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/application-boundaries.md`
+Related policy: [application boundaries](../architecture/application-boundaries.md)
 
-Related policy: `docs/database/migrations.md`
+Related policy: [migrations](../database/migrations.md)
 
-Related policy: `docs/database/transactions-and-concurrency.md`
+Related policy: [transactions and concurrency](../database/transactions-and-concurrency.md)
 
 External reference: Vitest documentation.
 

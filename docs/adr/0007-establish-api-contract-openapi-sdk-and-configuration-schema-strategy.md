@@ -675,29 +675,29 @@ Replacing TypeBox as Orion's canonical contract schema system, replacing OpenAPI
 
 ## References
 
-Related ADR: `ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime`
+Related ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)
 
-Related ADR: `ADR-0003: Establish Repository Validation and Architecture Enforcement`
+Related ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)
 
-Related ADR: `ADR-0004: Select Fastify as the Backend HTTP Framework`
+Related ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/application-boundaries.md`
+Related policy: [application boundaries](../architecture/application-boundaries.md)
 
-Related policy: `docs/architecture/dependency-rules.md`
+Related policy: [dependency rules](../architecture/dependency-rules.md)
 
-Related policy: `docs/architecture/configuration.md`
+Related policy: [configuration](../architecture/configuration.md)
 
-Related policy: `docs/api/principles.md`
+Related policy: [principles](../api/principles.md)
 
-Related policy: `docs/api/error-contract.md`
+Related policy: [error contract](../api/error-contract.md)
 
-Related policy: `docs/api/versioning.md`
+Related policy: [versioning](../api/versioning.md)
 
-Related policy: `docs/security/data-classification.md`
+Related policy: [data classification](../security/data-classification.md)
 
-Related policy: `docs/security/secrets-management.md`
+Related policy: [secrets management](../security/secrets-management.md)
 
 External reference: TypeBox documentation.
 

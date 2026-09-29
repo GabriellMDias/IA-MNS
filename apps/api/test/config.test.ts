@@ -27,6 +27,7 @@ describe("API configuration boundary", () => {
     });
     expect(config).toMatchObject({
       environment: "test",
+      releaseId: "local",
       host: "127.0.0.1",
       port: 0,
       traceSampleRatio: 0.25,
@@ -43,6 +44,7 @@ describe("API configuration boundary", () => {
     { ORION_ENV: "test", ORION_API_PORT: "-1" },
     { ORION_ENV: "test", ORION_SHUTDOWN_TIMEOUT_MS: "0" },
     { ORION_ENV: "test", ORION_TRACE_SAMPLE_RATIO: "2" },
+    { ORION_ENV: "test", ORION_RELEASE_ID: "candidate with spaces" },
     {
       ORION_ENV: "test",
       ORION_OTLP_ENDPOINT: "https://user:secret@example.test",
@@ -50,5 +52,22 @@ describe("API configuration boundary", () => {
     { ORION_ENV: "test", ORION_OTLP_ENDPOINT: "file:///tmp/collector" },
   ])("rejects unsafe or malformed configuration %#", (env) => {
     expect(() => parseServerConfig(env)).toThrow("Invalid API configuration");
+  });
+
+  it("classifies every setting and keeps the database credential restricted", () => {
+    expect(
+      configReference.every((item) => typeof item.secret === "boolean"),
+    ).toBe(true);
+    expect(
+      configReference.find((item) => item.name === "ORION_DATABASE_URL"),
+    ).toMatchObject({
+      classification: "RESTRICTED",
+      secret: true,
+      visibility: "server",
+    });
+    expect(
+      parseServerConfig({ ORION_ENV: "test", ORION_RELEASE_ID: "build.42" })
+        .releaseId,
+    ).toBe("build.42");
   });
 });

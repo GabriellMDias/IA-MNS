@@ -401,20 +401,20 @@ Replacing one of the primary validation mechanisms with a materially different v
 
 ## References
 
-Related ADR: `ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime`
+Related ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)
 
-Related ADR: `ADR-0002: Select pnpm for Package and Workspace Management`
+Related ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)
 
-Related policy: `docs/architecture/principles.md`
+Related policy: [principles](../architecture/principles.md)
 
-Related policy: `docs/architecture/repository-structure.md`
+Related policy: [repository structure](../architecture/repository-structure.md)
 
-Related policy: `docs/architecture/application-boundaries.md`
+Related policy: [application boundaries](../architecture/application-boundaries.md)
 
-Related policy: `docs/architecture/dependency-rules.md`
+Related policy: [dependency rules](../architecture/dependency-rules.md)
 
-Related policy: `docs/architecture/testing-strategy.md`
+Related policy: [testing strategy](../architecture/testing-strategy.md)
 
-Related policy: `docs/architecture/configuration.md`
+Related policy: [configuration](../architecture/configuration.md)
 
-Related policy: `docs/architecture/versioning-and-compatibility.md`
+Related policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)

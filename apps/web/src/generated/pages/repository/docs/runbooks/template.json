@@ -1,0 +1,27 @@
+{
+  "kind": "repository",
+  "source": "docs/runbooks/template.md",
+  "title": "Runbook: Procedure Title",
+  "html": "<p><strong>Owner:</strong> actual responsible owner\n<strong>Status:</strong> active only after the procedure exists and is verified\n<strong>Environment / applicability:</strong>\n<strong>Related alerts:</strong>\n<strong>Required access:</strong></p>\n<p>Follow <a href=\"/docs/repository/docs/runbooks/authoring\">authoring policy</a>, <a href=\"/docs/repository/docs/security/production-access\">production access</a>, <a href=\"/docs/repository/docs/security/incident-response\">incident response</a>, and <a href=\"/docs/repository/docs/security/telemetry-redaction\">redaction</a>. Replace prompts with current, verified details; this template is not an executable procedure or an authorization grant.</p>\n<h2 id=\"purpose\">Purpose</h2>\n<p>State the one operational condition or task handled by this procedure.</p>\n<h2 id=\"trigger--symptoms\">Trigger / Symptoms</h2>\n<p>Identify observable alerts, errors, or symptoms that activate the procedure, and cases where it must not be used.</p>\n<h2 id=\"impact\">Impact</h2>\n<p>Describe affected capabilities, scope, urgency, and data/security risk, including any known limit on impact.</p>\n<h2 id=\"preconditions\">Preconditions</h2>\n<ol>\n<li>Verify the target environment and observed condition.</li>\n<li>Verify required access and authorization for the planned actions.</li>\n<li>Verify procedure-specific safety conditions and current state.</li>\n</ol>\n<h2 id=\"diagnosis\">Diagnosis</h2>\n<p>Order low-risk inspection before mutation: relevant metrics, alerts, logs, traces, errors, and bounded read-only checks. Establish affected scope and whether deployment, migration, configuration, or dependency changes contributed. Include expected results and evidence-based branches. Add provider commands only when tooling exists; continue only while evidence matches the procedure.</p>\n<h2 id=\"mitigation--procedure\">Mitigation / Procedure</h2>\n<p>Write ordered, bounded, copyable actions with consequences, expected output, decision points, and temporary-measure removal needs. Before a destructive, irreversible, or high-risk action, explain the exact affected scope and consequences. Stop when observed state differs from the documented scope.</p>\n<p>State whether actions are safe to repeat and how to inspect an unknown outcome before retrying. For long-running work, specify supported batch size, progress, monitoring, pause/resume, failure recovery, and concurrent-execution limits.</p>\n<h2 id=\"verification\">Verification</h2>\n<p>Prove the intended service, security, or data state through relevant health, errors, latency, progress, integrity, authorization, revocation, or application behavior. A successful command or cleared alert alone is insufficient. Name any justified post-recovery observation period and signals.</p>\n<h2 id=\"rollback--recovery\">Rollback / Recovery</h2>\n<p>Describe safe reversal and its compatibility prerequisites, or the actual forward-recovery path when rollback is unsafe/impossible. Identify irreversible effects. Remove this section only when it does not apply.</p>\n<h2 id=\"escalation\">Escalation</h2>\n<p>Stop when evidence does not match, scope exceeds bounds, access/preconditions cannot be verified, destructive impact is unknown, corruption/compromise is suspected, recovery fails, or postconditions cannot be verified. Preserve safe evidence and identify the real escalation owner when one exists.</p>\n<h2 id=\"follow-up\">Follow-Up</h2>\n<p>Record needed permanent correction, regression tests, alert/observability changes, automation, temporary-measure removal, runbook update, ADR, or post-incident review. Give follow-up work an owner; keep incident history outside this current procedure.</p>\n",
+  "headings": [
+    {
+      "id": "runbook-procedure-title",
+      "text": "Runbook: Procedure Title",
+      "level": 1
+    },
+    { "id": "purpose", "text": "Purpose", "level": 2 },
+    { "id": "trigger--symptoms", "text": "Trigger / Symptoms", "level": 2 },
+    { "id": "impact", "text": "Impact", "level": 2 },
+    { "id": "preconditions", "text": "Preconditions", "level": 2 },
+    { "id": "diagnosis", "text": "Diagnosis", "level": 2 },
+    {
+      "id": "mitigation--procedure",
+      "text": "Mitigation / Procedure",
+      "level": 2
+    },
+    { "id": "verification", "text": "Verification", "level": 2 },
+    { "id": "rollback--recovery", "text": "Rollback / Recovery", "level": 2 },
+    { "id": "escalation", "text": "Escalation", "level": 2 },
+    { "id": "follow-up", "text": "Follow-Up", "level": 2 }
+  ]
+}

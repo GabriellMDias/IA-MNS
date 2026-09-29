@@ -59,6 +59,56 @@ export async function generateDatabaseReference(url: string): Promise<string> {
   const client = new pg.Client({ connectionString: url });
   await client.connect();
   try {
+    // New object kinds must extend this reference deliberately. Silently omitting
+    // their behavior would let a green drift check claim incomplete coverage.
+    const unsupported = (
+      await client.query<{ kind: string; name: string }>(`
+      SELECT 'schema' AS kind, nspname AS name FROM pg_namespace
+      WHERE nspname <> 'public' AND nspname <> 'information_schema' AND left(nspname, 3) <> 'pg_'
+      UNION ALL
+      SELECT 'relation', c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relkind NOT IN ('r','i')
+      UNION ALL
+      SELECT 'trigger', t.tgname FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND NOT t.tgisinternal
+      UNION ALL
+      SELECT 'row-level security', c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND (c.relrowsecurity OR c.relforcerowsecurity)
+      UNION ALL
+      SELECT 'row-level security policy', p.polname FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'
+      UNION ALL
+      SELECT 'table inheritance', c.relname FROM pg_inherits i JOIN pg_class c ON c.oid=i.inhrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'
+      UNION ALL
+      SELECT 'rule', r.rulename FROM pg_rewrite r JOIN pg_class c ON c.oid=r.ev_class
+      JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND r.rulename <> '_RETURN'
+      UNION ALL
+      SELECT 'routine', p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+      WHERE n.nspname='public' AND NOT EXISTS (
+        SELECT 1 FROM pg_depend d WHERE d.classid='pg_proc'::regclass AND d.objid=p.oid AND d.deptype='e')
+      UNION ALL
+      SELECT 'generated column', c.relname || '.' || a.attname FROM pg_attribute a
+      JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND a.attgenerated <> '' AND NOT a.attisdropped
+      UNION ALL
+      SELECT 'type', t.typname FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+      LEFT JOIN pg_class c ON c.oid=t.typrelid
+      WHERE n.nspname='public' AND t.typelem=0 AND (t.typtype NOT IN ('e','c') OR c.relkind='c')
+      UNION ALL
+      SELECT 'extension', extname FROM pg_extension WHERE extname <> 'plpgsql'
+      ORDER BY kind, name`)
+    ).rows;
+    if (unsupported.length)
+      throw new Error(
+        `Extend database reference coverage before adding: ${unsupported.map((item) => `${item.kind} ${item.name}`).join(", ")}`,
+      );
+    const tables = (
+      await client.query<{ name: string }>(`
+      SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relkind='r' AND c.relname <> '_prisma_migrations'
+      ORDER BY c.relname`)
+    ).rows;
     const columns = (
       await client.query<Column>(`
       SELECT c.relname AS table_name, a.attname AS column_name,
@@ -76,14 +126,17 @@ export async function generateDatabaseReference(url: string): Promise<string> {
       SELECT c.relname AS table_name, x.conname AS name, pg_get_constraintdef(x.oid) AS definition
       FROM pg_constraint x JOIN pg_class c ON c.oid=x.conrelid
       JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE n.nspname='public' AND c.relkind='r' AND c.relname <> '_prisma_migrations' AND x.contype <> 'p'
+      WHERE n.nspname='public' AND c.relkind='r' AND c.relname <> '_prisma_migrations'
       ORDER BY c.relname,x.conname`)
     ).rows;
     const indexes = (
       await client.query<ObjectRow>(`
-      SELECT tablename AS table_name,indexname AS name,indexdef AS definition
-      FROM pg_indexes WHERE schemaname='public' AND tablename <> '_prisma_migrations' AND indexname NOT LIKE '%_pkey'
-      ORDER BY tablename,indexname`)
+      SELECT c.relname AS table_name, i.relname AS name, pg_get_indexdef(i.oid) AS definition
+      FROM pg_index x JOIN pg_class c ON c.oid=x.indrelid JOIN pg_class i ON i.oid=x.indexrelid
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relname <> '_prisma_migrations'
+        AND NOT EXISTS (SELECT 1 FROM pg_constraint k WHERE k.conindid=i.oid)
+      ORDER BY c.relname,i.relname`)
     ).rows;
     const enums = (
       await client.query<EnumRow>(`
@@ -92,7 +145,7 @@ export async function generateDatabaseReference(url: string): Promise<string> {
       WHERE n.nspname='public' GROUP BY t.typname ORDER BY t.typname`)
     ).rows;
     exact(
-      [...new Set(columns.map((row) => row.table_name))],
+      tables.map((row) => row.name),
       Object.keys(metadata.tables),
       "tables",
     );
