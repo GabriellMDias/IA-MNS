@@ -42,4 +42,4 @@ Architecture should be explicit and mechanically enforced where practical. Autho
 
 ## License
 
-No license has been selected yet.
+Orion source is licensed under the [Apache License 2.0](LICENSE).

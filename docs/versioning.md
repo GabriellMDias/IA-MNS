@@ -10,7 +10,7 @@ This policy names stable revisions of the reusable Orion foundation for people c
 - A stable release has one immutable, annotated Git tag named `vMAJOR.MINOR.PATCH`. The tag is the canonical human-readable release identifier and points to the exact Orion commit released. A published tag must never be moved to another commit.
 - A GitHub Release may be created from that tag as descriptive metadata. It should concisely state what the release represents, important foundation changes, compatibility or migration notes when relevant, materially required tool/runtime versions, the exact tagged commit, and useful documentation links. It does not establish provenance.
 
-The first stable release is intended to be `v1.0.0`. This policy prepares that release; the tag and optional GitHub Release are created only after the policy change is reviewed, merged into `main`, and its resulting commit and CI state are verified.
+The first stable release is `v1.0.0`. That tag identifies its historical foundation snapshot; later licensing decisions do not change the tagged commit.
 
 ## Compatibility meaning
 
@@ -36,6 +36,6 @@ The latest stable tag identifies the latest released human-readable version. Lat
 
 ## First release and acceptance sequence
 
-`v1.0.0`, once tagged, represents the completed reusable Orion foundation: agent-neutral repository instructions, Living Documentation, validation/CI/security foundations, the Approval Request reference slice, project derivation with preserved Git ancestry, recorded provenance, and guarded baseline upgrades. It marks the foundation state accepted before the first real GitHub-backed sandbox derivation exercise. It does not certify production deployment, activate Phase 12, select a production identity provider, establish product-specific readiness, or promise conflict-free upgrades. The real GitHub-backed derivation and subsequent upgrade exercise remain acceptance and reverification activities.
+`v1.0.0` represents the completed reusable Orion foundation: agent-neutral repository instructions, Living Documentation, validation/CI/security foundations, the Approval Request reference slice, project derivation with preserved Git ancestry, recorded provenance, and guarded baseline upgrades. It marks the foundation state accepted before the first real GitHub-backed sandbox derivation exercise. It does not certify production deployment, activate Phase 12, select a production identity provider, establish product-specific readiness, or promise conflict-free upgrades. The real GitHub-backed derivation and subsequent upgrade exercise remain acceptance and reverification activities.
 
-After this policy PR is merged: verify the resulting `main` commit and CI, create immutable `v1.0.0` on that commit, optionally publish a concise `Orion v1.0.0` GitHub Release, and perform `Orion-Derivation-Test` from the tagged foundation. Later, make a justified compatible Orion change, release it as `v1.0.1` or `v1.1.0` according to its actual impact, and exercise a real sandbox upgrade between those release points while checking the recorded commit baseline. Do not manufacture a change solely to create the second version.
+For a later compatible Orion change, release `v1.0.1` or `v1.1.0` according to its actual impact, then exercise a real sandbox upgrade between release points while checking the recorded commit baseline. Do not manufacture a change solely to create another version. The current [implementation plan](implementation-plan.md#maintaining-this-plan) tracks release preparation.

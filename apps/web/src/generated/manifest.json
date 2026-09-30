@@ -427,6 +427,16 @@
       "file": "pages/repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags.json"
     },
     {
+      "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+      "kind": "repository",
+      "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+      "group": "Decisions",
+      "source": "docs/adr/0016-license-the-orion-foundation-under-apache-2-0.md",
+      "summary": "Orion is a public reusable development foundation intended for independent projects, including commercial and proprietary products. Its source had no explicit repository…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -1077,14 +1087,14 @@
       },
       { "file": "search/0002.json", "count": 113, "kinds": ["repository"] },
       { "file": "search/0003.json", "count": 127, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 129, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 136, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 136, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 82, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 83, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 90, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 3, "kinds": ["repository"] }
+      { "file": "search/0006.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 81, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 102, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 92, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 5, "kinds": ["repository"] }
     ],
-    "count": 974
+    "count": 985
   }
 }

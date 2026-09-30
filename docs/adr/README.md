@@ -23,3 +23,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) | Keep AGENTS.md as the Agent-Neutral Instruction Source |
 | [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) | Derive Projects from Orion through Git Ancestry with Recorded Provenance |
 | [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md) | Name Stable Orion Foundation Revisions with Semantic Tags |
+| [ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md) | License the Orion Foundation under Apache-2.0 |
