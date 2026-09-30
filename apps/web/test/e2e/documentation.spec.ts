@@ -27,6 +27,38 @@ test("documentation sections isolate details and preserve deep links and browser
   page,
 }) => {
   await openDocument(page, "/docs", "Orion documentation");
+  for (const selector of [".docs-brand-symbol", ".brand img"]) {
+    const mark = page.locator(selector);
+    await expect(mark).toBeVisible();
+    await expect(mark).toHaveJSProperty("complete", true);
+    expect(
+      await mark.evaluate((image: HTMLImageElement) => image.naturalWidth),
+    ).toBeGreaterThan(0);
+  }
+  const favicon = page.locator('link[rel="icon"]');
+  const iconResponse = await page.request.get(
+    new URL((await favicon.getAttribute("href"))!, page.url()).href,
+  );
+  expect(iconResponse.ok()).toBe(true);
+  expect(iconResponse.headers()["content-type"]).toContain("image/svg+xml");
+  const touchIcon = page.locator('link[rel="apple-touch-icon"]');
+  const touchUrl = new URL((await touchIcon.getAttribute("href"))!, page.url())
+    .href;
+  const touchResponse = await page.request.get(touchUrl);
+  expect(touchResponse.ok()).toBe(true);
+  expect(touchResponse.headers()["content-type"]).toContain("image/png");
+  expect(
+    await page.evaluate(async (url) => {
+      const image = new Image();
+      image.src = url;
+      await image.decode();
+      return [image.naturalWidth, image.naturalHeight];
+    }, touchUrl),
+  ).toEqual([180, 180]);
+  await expect(page.locator(".docs-foundation-version")).toBeVisible();
+  await expect(page.locator(".docs-foundation-version")).toContainText(
+    "Orion foundation:",
+  );
   await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
   await sections(page)
     .getByRole("link", { name: "API reference", exact: true })
@@ -194,6 +226,7 @@ test("mobile navigation and real component previews keep synthetic input local",
     "/docs/components/AccessTokenForm",
     "AccessTokenForm",
   );
+  await expect(page.locator(".docs-foundation-version")).toBeVisible();
   await page.getByRole("button", { name: "Browse documentation" }).click();
   await expect(
     sections(page).getByRole("link", { name: "Components", exact: true }),

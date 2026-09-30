@@ -55,9 +55,10 @@
   font-weight: 800;
   letter-spacing: 0.1em;
 }
-.docs-rail-brand > span {
-  color: #127362;
-  font-size: 1.6rem;
+.docs-brand-symbol {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
   vertical-align: middle;
   margin-right: 0.35rem;
 }
@@ -68,6 +69,18 @@
   color: var(--docs-muted);
   letter-spacing: 0;
   margin: 0.3rem 0 0 2rem;
+}
+.docs-foundation-version {
+  display: inline-flex;
+  margin: 0.6rem 0 0 2rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--docs-border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--docs-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 .docs-rail nav {
   display: grid;
@@ -685,7 +698,13 @@
     border-bottom: 1px solid var(--docs-border);
   }
   .docs-rail-brand {
+    padding: 0 0 0.65rem;
+  }
+  .docs-rail-brand small {
     display: none;
+  }
+  .docs-foundation-version {
+    margin: 0 0 0 0.6rem;
   }
   .docs-menu-toggle {
     display: flex;

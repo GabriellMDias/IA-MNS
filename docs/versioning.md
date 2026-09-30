@@ -12,6 +12,20 @@ This policy names stable revisions of the reusable Orion foundation for people c
 
 The first stable release is `v1.0.0`. That tag identifies its historical foundation snapshot; later licensing decisions do not change the tagged commit.
 
+## Where version information belongs
+
+Keep the stable Git tag as the single source of the foundation release number. Do not maintain a current-version field or a `VERSION` file alongside it.
+
+| Location | Responsibility |
+| --- | --- |
+| `/docs` | Display a build-time projection of Git release metadata, with unreleased revisions identified explicitly. Derived projects display their recorded Orion baseline SHA. See [portal metadata](architecture/living-documentation.md#sources-and-representations). |
+| `README.md` and documentation indexes | Link to this policy and the canonical repository's tags rather than store a current release number. Historical examples and release records may name specific versions. |
+| Root and workspace `package.json` files | Describe private workspace packages. Their package versions, where present, do not identify an Orion foundation release; package publication would require its own deliberate policy. |
+| `.orion/project.json` | Record project identity and immutable foundation commit provenance. `schemaVersion` identifies the manifest schema, not a foundation release. No semantic-version field is required. |
+| `ORION_RELEASE_ID` and database release history | Identify executable artifacts for telemetry and protect migration history respectively, under their [configuration](architecture/configuration.md#canonical-configuration-schema) and [database evolution](database/release-evolution.md) policies. Do not automatically assign the Orion foundation version to them. |
+
+After release tags become available in the local checkout, restart Vite or rebuild the web app to refresh the `/docs` label. An existing build retains its embedded metadata; it does not check GitHub for new releases. No manual version bump or synchronization across tracked files is needed.
+
 ## Compatibility meaning
 
 Choose the next version from the intended impact on the foundation contract and supported upgrade model for derived projects, not from diff size or the number of merge conflicts.
@@ -38,4 +52,4 @@ The latest stable tag identifies the latest released human-readable version. Lat
 
 `v1.0.0` represents the completed reusable Orion foundation: agent-neutral repository instructions, Living Documentation, validation/CI/security foundations, the Approval Request reference slice, project derivation with preserved Git ancestry, recorded provenance, and guarded baseline upgrades. It marks the foundation state accepted before the first real GitHub-backed sandbox derivation exercise. It does not certify production deployment, activate Phase 12, select a production identity provider, establish product-specific readiness, or promise conflict-free upgrades. The real GitHub-backed derivation and subsequent upgrade exercise remain acceptance and reverification activities.
 
-For a later compatible Orion change, release `v1.0.1` or `v1.1.0` according to its actual impact, then exercise a real sandbox upgrade between release points while checking the recorded commit baseline. Do not manufacture a change solely to create another version. The current [implementation plan](implementation-plan.md#maintaining-this-plan) tracks release preparation.
+The Apache-2.0 licensing change from PR #18 was merged without creating `v1.0.1`; that version does not exist. After PR #19 is reviewed, passes CI, and is merged, the next planned release is `v1.1.0`. Verify the resulting `main` commit, create the immutable tag on that exact commit, and use `v1.1.0` as the baseline for the real `Orion-Derivation-Test`; a concise GitHub Release may be published from the tag. The existing `v1.0.0` tag remains unchanged and immutable. Do not manufacture a change solely to create another version. The current [implementation plan](implementation-plan.md#maintaining-this-plan) tracks release preparation.

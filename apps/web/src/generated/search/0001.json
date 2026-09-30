@@ -167,6 +167,15 @@
     "title": "Orion Web Reference Workflow",
     "group": "Workspace guides",
     "kind": "repository",
+    "heading": "Visual identity",
+    "anchor": "visual-identity",
+    "text": "Visual identity\nThe [Orion mark](src/assets/orion-mark.svg) is the canonical vector asset: eight identical tapered arms with softened tips around an octagonal aperture, refined from the original documentation asterisk. Its editable geometry, uniform evergreen teal (`#127362`) fill, and transparent background define the symbol directly; no image-generation prompt is needed. Navy (`#142f46`) and light neutral surfaces preserve the existing interface direction. Keep the uppercase ORION wordmark as live text in the interface's existing font.\nThe application header, documentation navigation, and browser favicon consume the SVG directly. Only the Apple touch icon uses a [derived 180×180 PNG](src/assets/orion-touch-icon.png), on a light neutral background. After editing the SVG, run `pnpm --filter @orion/web identity:write` to regenerate that raster through the [export script](scripts/generate-touch-icon.mjs), using the existing Playwright Chromium installation described in [setup](../../docs/setup.md#prepare-a-clean-checkout). Commit both the source and updated raster, then rebuild. Vite fingerprints both assets for production builds. Do not edit the PNG independently or keep the former raster logo alongside the SVG.\nKeep the symbol's proportions, clear space, and a contrasting background. Adjacent ORION text names decorative images for accessibility. Derived products can adopt their own identity independently of recorded Orion provenance.\n"
+  },
+  {
+    "id": "repository/apps/web/README",
+    "title": "Orion Web Reference Workflow",
+    "group": "Workspace guides",
+    "kind": "repository",
     "heading": "Run the workflow",
     "anchor": "run-the-workflow",
     "text": "Run the workflow\nUse the canonical [setup guide](../../docs/setup.md) for installation, environment loading, and prerequisites. `pnpm dev:approval` starts the complete disposable API/database/web workflow and synthetic owner/reviewer identities. For a separately configured API at `127.0.0.1:3000`, run `pnpm --filter @orion/web dev`.\nVite forwards the default `/api` browser path to the local API and removes that prefix. `ORION_WEB_API_TARGET` changes only the development-server target. `VITE_ORION_API_BASE_URL` is the sole browser API setting, defaults to `/api`, and must be a same-origin path. A deployed static build needs an equivalent same-origin route/reverse proxy; this guide does not select deployment infrastructure. Server-only URLs and credentials must not enter browser configuration.\nThe provider-independent interface accepts an already-issued bearer token and holds it only in React memory. Disconnect/refresh clears it; changing it clears cached query data. The local workflow provides short-lived synthetic tokens through its development-only issuer path. This is not a login/session/refresh implementation. A real provider and user-facing acquisition flow remain conditional under [H-07](../../docs/human-actions.md#h-07); never use production credentials in tests. The API still verifies every business request.\n"
@@ -809,14 +818,5 @@
     "heading": "PostgreSQL extensions",
     "anchor": "postgresql-extensions",
     "text": "PostgreSQL extensions\nApplications may enable PostgreSQL extensions when an extension provides a concrete capability required by that application.\nExtensions are not automatically part of the Orion baseline merely because they may be useful in some future system.\nAn application that depends on an extension must treat support for that extension as part of its deployment requirements.\n"
-  },
-  {
-    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
-    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Vector storage and semantic retrieval",
-    "anchor": "vector-storage-and-semantic-retrieval",
-    "text": "Vector storage and semantic retrieval\nWhen an Orion application requires vector embeddings, vector similarity search, or semantic retrieval, **pgvector will be the preferred initial vector-storage and similarity-search approach when the workload can be appropriately served by PostgreSQL**.\n`pgvector` will **not** be enabled by default for applications that do not require vector capabilities.\nThe intended default progression is:\napplication requires semantic/vector retrieval\n    ↓\nevaluate PostgreSQL + pgvector\n    ↓\nuse pgvector when requirements are satisfied\n    ↓\nmeasure real workload\n    ↓\nintroduce specialized vector infrastructure only if justified\n\nA dedicated vector database will not be introduced solely in anticipation of future AI workloads.\nA specialized vector or search system may be selected later when demonstrated requirements involving scale, latency, indexing capabilities, isolation, operational behavior, or other constraints materially justify the additional infrastructure.\n"
   }
 ]

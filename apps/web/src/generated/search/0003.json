@@ -4,6 +4,24 @@
     "title": "ADR-0009: Establish Testing Strategy and Tooling",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Fastify integration testing",
+    "anchor": "fastify-integration-testing",
+    "text": "Fastify integration testing\nBackend HTTP integration tests should use Fastify's request-injection capabilities when the behavior does not require a real external network socket.\nThe preferred integration path is:\ntest\n    ↓\nFastify request injection\n    ↓\nreal route\n    ↓\nreal validation / serialization\n    ↓\nreal application behavior\n    ↓\nreal persistence when required\n\nThis enables realistic HTTP-boundary testing without paying unnecessary TCP and process-management costs.\nA real listening server should be started only when the behavior under test depends on actual network behavior or is part of a full end-to-end environment.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "React logic tests",
+    "anchor": "react-logic-tests",
+    "text": "React logic tests\nFrontend logic that does not require browser behavior should run through Vitest in Node.js.\nExamples include:\nformatters;\nstate transformations;\nparsing;\nquery-key factories;\ndeterministic helpers;\nbusiness-independent UI calculations.\nA browser must not be started merely because the code belongs to the web package.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Browser component and feature testing",
     "anchor": "browser-component-and-feature-testing",
     "text": "Browser component and feature testing\nWhen correctness depends on actual browser behavior, Orion will use **Vitest Browser Mode**.\nThe default browser provider will be **Playwright**.\nThe preferred execution model is:\nVitest\n    ↓\nBrowser Mode\n    ↓\nPlaywright provider\n    ↓\nreal browser\n\nBrowser-mode tests are appropriate for behavior involving concerns such as:\nreal DOM APIs;\nbrowser event behavior;\nfocus management;\nkeyboard interaction;\npointer interaction;\nlayout-dependent logic;\nbrowser-native controls;\ncomponent integration;\naccessibility-relevant interaction behavior.\nA simulated DOM implementation such as jsdom will not be Orion's default environment for tests whose purpose is browser fidelity.\nSimulated DOM environments may still be used in a scoped context when their reduced startup cost materially benefits a test and the missing browser behavior is irrelevant.\n"

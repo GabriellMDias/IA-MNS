@@ -1,8 +1,15 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
+import { readFoundationVersion } from "./scripts/foundation-version.js";
 
 export default defineConfig({
   plugins: [react({ compiler: true })],
+  define: {
+    __ORION_FOUNDATION_VERSION__: JSON.stringify(
+      readFoundationVersion(fileURLToPath(new URL("../..", import.meta.url))),
+    ),
+  },
   build: { assetsInlineLimit: 0 },
   server: {
     proxy: {

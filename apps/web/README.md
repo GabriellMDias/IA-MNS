@@ -14,6 +14,14 @@ This React/Vite application demonstrates the Approval Request workflow through t
 | Exported components and canonical examples | [`src/components.tsx`](src/components.tsx), [`src/components.docs.json`](src/components.docs.json) |
 | Documentation presentation | [`src/documentation.tsx`](src/documentation.tsx) under [portal ownership](../../docs/architecture/living-documentation.md) |
 
+## Visual identity
+
+The [Orion mark](src/assets/orion-mark.svg) is the canonical vector asset: eight identical tapered arms with softened tips around an octagonal aperture, refined from the original documentation asterisk. Its editable geometry, uniform evergreen teal (`#127362`) fill, and transparent background define the symbol directly; no image-generation prompt is needed. Navy (`#142f46`) and light neutral surfaces preserve the existing interface direction. Keep the uppercase ORION wordmark as live text in the interface's existing font.
+
+The application header, documentation navigation, and browser favicon consume the SVG directly. Only the Apple touch icon uses a [derived 180×180 PNG](src/assets/orion-touch-icon.png), on a light neutral background. After editing the SVG, run `pnpm --filter @orion/web identity:write` to regenerate that raster through the [export script](scripts/generate-touch-icon.mjs), using the existing Playwright Chromium installation described in [setup](../../docs/setup.md#prepare-a-clean-checkout). Commit both the source and updated raster, then rebuild. Vite fingerprints both assets for production builds. Do not edit the PNG independently or keep the former raster logo alongside the SVG.
+
+Keep the symbol's proportions, clear space, and a contrasting background. Adjacent ORION text names decorative images for accessibility. Derived products can adopt their own identity independently of recorded Orion provenance.
+
 ## Run the workflow
 
 Use the canonical [setup guide](../../docs/setup.md) for installation, environment loading, and prerequisites. `pnpm dev:approval` starts the complete disposable API/database/web workflow and synthetic owner/reviewer identities. For a separately configured API at `127.0.0.1:3000`, run `pnpm --filter @orion/web dev`.
