@@ -412,9 +412,19 @@
       "title": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
       "group": "Decisions",
       "source": "docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md",
-      "summary": "Orion's purpose is to be a reusable foundation for real projects. Each real project must be an independent repository with its own origin, pull requests, CI history, human…",
+      "summary": "Superseded by: ADR-0015, only for the statement that no release or version scheme exists; the provenance and upgrade decision remains accepted",
       "headings": [],
       "file": "pages/repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.json"
+    },
+    {
+      "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+      "kind": "repository",
+      "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+      "group": "Decisions",
+      "source": "docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags.md",
+      "summary": "ADR-0014 established immutable commit SHAs and ancestry as derived-project provenance and deliberately introduced no release scheme. Before the first real GitHub-backed…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -1017,6 +1027,16 @@
       "file": "pages/repository/docs/validation.json"
     },
     {
+      "id": "repository/docs/versioning",
+      "kind": "repository",
+      "title": "Orion Foundation Versioning",
+      "group": "Project guides",
+      "source": "docs/versioning.md",
+      "summary": "This policy names stable revisions of the reusable Orion foundation for people comparing releases and planning derived-project upgrades. It does not version a derived product,…",
+      "headings": [],
+      "file": "pages/repository/docs/versioning.json"
+    },
+    {
       "id": "repository/packages/sdk/AGENTS",
       "kind": "repository",
       "title": "SDK-local Instructions",
@@ -1057,13 +1077,14 @@
       },
       { "file": "search/0002.json", "count": 113, "kinds": ["repository"] },
       { "file": "search/0003.json", "count": 127, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 122, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 134, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 129, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 136, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 82, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 87, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 83, "kinds": ["repository"] },
       { "file": "search/0008.json", "count": 103, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 81, "kinds": ["repository"] }
+      { "file": "search/0009.json", "count": 90, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 3, "kinds": ["repository"] }
     ],
-    "count": 957
+    "count": 974
   }
 }

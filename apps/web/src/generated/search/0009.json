@@ -1,5 +1,68 @@
 [
   {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Reads, collections, and data exposure",
+    "anchor": "reads-collections-and-data-exposure",
+    "text": "Reads, collections, and data exposure\nReads require authorization as well as writes. Apply it to details, lists, search, counts, aggregates, exports, and protected fields. Knowing a resource ID never proves access. Scope queries to authorized data where practical; do not load broad sensitive datasets and rely on client filtering. Use deliberate response schemas instead of serializing whole entities.\nBulk export or mutation may require stronger capability than operating on one item. Consider inference through counts, suggestions, existence checks, and error differences. Classification informs access requirements: confidential exports may need stronger policy, and restricted data access must be rare and explicit.\nCaches must preserve actor/tenant/permission isolation, including response variations and HTTP/CDN policy. Protected responses must not become publicly cacheable. Field-level policy and trusted permission-introspection tools require their own justified scope and access control.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Freshness, asynchronous work, and integrity",
+    "anchor": "freshness-asynchronous-work-and-integrity",
+    "text": "Freshness, asynchronous work, and integrity\nDefine acceptable permission freshness before caching decisions or putting roles/permissions in tokens. Revocation, membership removal, and role changes must take effect within the required interval; old claims must not remain trusted indefinitely. Sensitive capabilities may require near-immediate revocation, fresh server lookup, stronger/recent authentication, or an explicit hybrid design. Temporary/delegated permissions must expire and fail closed.\nFor user-triggered jobs, specify whether authorization is checked at creation, execution, or both, and what happens if permission changes before execution. Workers acting as system and workers acting on behalf of users have different authority. Event consumers do not automatically inherit producer permissions; actor metadata is not an authorization bypass.\nAuthorization state is security-sensitive and generally at least `CONFIDENTIAL`. Preserve integrity through explicit update contracts, constraints, and transactions where appropriate. Users must not assign themselves privileges beyond their authority. Generic mass assignment must not expose role, permission, membership, or other privileged fields. Prevent both vertical escalation and access to another actor's equivalent resources.\nRole/permission changes require security review, tests, and documentation. Identify persisted assignments and consumers before renaming/removing permissions or expanding roles. A persisted permission rename is a compatibility/data migration, not cosmetic editing. Transactional changes must avoid unintended intermediate access states and preserve required audit evidence.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Errors and audit",
+    "anchor": "errors-and-audit",
+    "text": "Errors and audit\nFollow the [error contract](../api/error-contract.md) and [error-handling policy](../architecture/error-handling.md). Public denials must not expose protected resource, tenant, or policy details. Safe internal reason categories can differ from public API codes. Record only justified actor/resource identifiers and allowlisted metadata, never entire principal/resource objects.\nAudit sensitive assignment changes, administrative actions, exports, impersonation, and security configuration as required. Do not log every successful check by default. Distinguish normal denials from suspicious enumeration, cross-tenant probes, or repeated privileged access attempts; security monitoring should match real requirements. [Redaction](telemetry-redaction.md) and [retention](data-retention.md) apply to diagnostics and audit records.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Authorization testing",
+    "anchor": "authorization-testing",
+    "text": "Authorization testing\nBoth allow and deny paths must be tested. Include applicable anonymous, wrong-owner, wrong-tenant, insufficient-permission, expired-delegation, changed-permission, insufficient-assurance, and privileged-field cases. Test horizontal/vertical escalation, collection filtering, API enforcement despite modified clients, and relevant asynchronous timing. Add regression tests for authorization security bugs; property-based invariants can help when policy complexity justifies them.\nUse reusable synthetic principal helpers and realistic development identities while testing ordinary and denied access. Do not disable authorization globally. Any test/development bypass must be isolated, explicitly tested, and impossible to enable accidentally in production.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "New authorization policy checklist",
+    "anchor": "new-authorization-policy-checklist",
+    "text": "New authorization policy checklist\nFor a new or changed policy, identify:\nProtected operation, owner, actor types, resource, trusted inputs, existing equivalent permissions, and scope.\nOwnership/tenant/state/assurance requirements, role assignment authority, freshness/revocation, delegation, and denied-information exposure.\nConfidential/restricted data impact, required audit evidence, allow/deny tests, and compatibility effects on existing actors and consumers.\nDocument meaning near the policy and derive references from canonical machine-readable definitions where practical. Mechanical enforcement may validate declared protected operations, known permissions, privileged contracts, and tenant scope when tooling supports it; do not claim such coverage before it exists. Repository-wide policy engines, global roles/tenants, registry formats, and AI delegation models remain requirement-driven decisions.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Data Classification",
+    "anchor": "data-classification",
+    "text": "Data Classification\nThis policy owns Orion's sensitivity model and data-handling baseline. [Redaction](telemetry-redaction.md), [retention](data-retention.md), [secrets management](secrets-management.md), and [production access](production-access.md) own their detailed controls. Classification follows data meaning and disclosure risk, not whether a tool can technically access it.\n"
+  },
+  {
+    "id": "repository/docs/security/data-classification",
+    "title": "Data Classification",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Classification levels",
+    "anchor": "classification-levels",
+    "text": "Classification levels\nLevel\nMeaning and examples\nRequired handling\n`PUBLIC`\nIntentionally approved for unrestricted disclosure: published documentation or product content\nMay be shared/indexed/cached; preserve integrity. Absence of secrets does not make data public.\n`INTERNAL`\nNon-public, lower-risk project/operational information\nAvailable to authorized contributors and approved tooling; review before publication.\n`CONFIDENTIAL`\nDisclosure may cause privacy, security, business, or operational harm: personal/private customer data, private content, incident details\nNeed-to-know access, protected transport, appropriate storage encryption, minimized telemetry/copies, and defined retention.\n`RESTRICTED`\nHighest sensitivity: credentials, password hashes, private keys, payment credentials, highly sensitive personal data\nStrict least privilege and purpose-built protection; no intentional inclusion in source control, telemetry, public errors, generated documentation, screenshots/support artifacts, or real-data test fixtures.\nThese are minimum protections. Use the more restrictive reasonable level when semantics or ownership are unclear, particularly for legacy fields, provider payloads, uploads, and free-form metadata. Encryption does not reduce classification.\n"
+  },
+  {
     "id": "repository/docs/security/data-classification",
     "title": "Data Classification",
     "group": "Security",
@@ -666,6 +729,51 @@
     "text": "Living Documentation manual browser checks\nThe owner retained manual browser verification on 2026-09-28 and reported [H-12](human-actions.md#h-12) complete on 2026-09-29. This is human-observed acceptance; the owner did not supply a route-by-route browser/version log. The automated browser suites remain enabled within `pnpm test` and `pnpm validate` and must be reported from actual runs separately. Reuse this checklist after material portal changes.\nStart the [standalone portal](setup.md#living-documentation-portal) for checks 1–6. Repeat deep-link and asset checks against the production build using Vite preview. Start the [disposable Approval Request workflow](setup.md#manually-exercise-approval-requests) for checks 7–9; use its printed web origin and synthetic data only.\n**Collections and local reading:** From `/docs`, visit API, Data dictionary, Components, Repository docs, and Architecture. Follow Repository docs → Project knowledge → Architecture and use breadcrumbs to return. Read `/docs/repository/docs/setup`, a numbered ADR, and the root README/AGENTS pages. Documentation links and heading anchors should remain local; code links may open GitHub. Select each API group and verify the list changes. Collections with more than 24 direct entries should offer working pagination.\n**Deep links and recovery:** Open `/docs/api/createApprovalRequest`, `/docs/database/approval_requests`, and `/docs/repository/docs/setup#prepare-a-clean-checkout` directly. Reload and use Back/Forward; the same page/section should remain reachable. Follow an outline link, then visit `/docs/repository/docs/not-a-real-document`; expect a useful missing-page message and working navigation back to Overview. Repeat direct loading and reload against Vite preview.\n**Search:** Search separately for `destructive integration suites`, `createApprovalRequest`, `creator_id`, and `onReload`. Results should reach the testing policy, API operation, table, and ErrorNotice component respectively, including matching sections where present. Narrow by documentation kind, reload the search URL, and try an unmatched query. Confirm clear empty results and that rapidly replacing a query does not show stale results.\n**Reference completeness and artifacts:** Inspect operation parameters, required fields, authentication, request/response schemas and referenced schemas; inspect table columns, null meaning, lifecycle, constraints and indexes; inspect component props, usage, accessibility and examples. Open the section's OpenAPI/database/component artifact links and confirm they resolve on the local origin with the expected content.\n**Responsive and accessible use:** At desktop width and approximately 390 px, navigate only with Tab, Shift+Tab, Enter and Space. Verify a visible focus indicator, Skip to documentation, usable search and labels, the collapsible Browse documentation menu and On this page outline, logical focus after navigation, and readable errors/status updates. At 200% zoom, check wrapping and access to all controls; wide tables/code may scroll inside their container, but the page should not overflow horizontally. Run an accessibility scan on Overview, API detail, table, component and setup pages, then inspect heading order, contrast, names and status announcements with a screen reader; automated scans alone do not establish accessibility.\n**Synthetic previews and passive privacy:** With browser Network and Storage panels open, enter `non-secret-example` in the AccessTokenForm preview and select Connect; the preview should discard it and explain that result. Exercise the ErrorNotice demonstration reload. Browsing, search and previews must make no API calls or external image/search requests and must not store the input in URLs, local storage or session storage. Network inspection should show selected detail assets on demand and search shards only after searching.\n**Explicit API execution:** On `/docs/api/getReadiness`, confirm no API request occurs before Send request. Send once and expect one same-origin `/api/health/ready` request, HTTP 200, elapsed time and JSON status. On `/docs/api/listApprovalRequests`, enter `synthetic-invalid-token`, send and expect HTTP 401 with the public authentication error. Confirm no credential appears in the URL or browser storage.\n**Authenticated mutation and clearing:** In the disposable app, select Use local owner and obtain only that synthetic helper response's `accessToken` from the browser Network panel; do not save or share it. On `/docs/api/createApprovalRequest`, enter that token, a fresh `idempotency-key`, and `{\"title\":\"Synthetic documentation request\",\"description\":null}`. Sending without acknowledgement must make no request. After acknowledging, invalid JSON must show an error without sending; valid JSON should produce one HTTP 201 response. Confirm the created resource in the local owner workflow. Clear request and response, leave the operation, and reload; token, response and acknowledgement must not persist. Use a fresh key for a new create request.\n**Connection failure and cancellation:** Using the browser's network throttling/offline controls, exercise failed connection, cancellation and the 15-second timeout. Verify bounded, understandable feedback, recovery of Send request, and no late response after cancellation/navigation. For a mutation, the message must preserve the possibility that the server accepted it; inspect state before retrying. Confirm responses render as text and headers expose only the safe allowlist. Restore normal network settings afterwards.\nFor future rechecks, record the tested commit (or branch and working-tree changes if uncommitted), browser/version, viewport, development versus production preview, results and any failing route/control. Do not attach credentials, request headers or sensitive payloads. H-12 is already recorded as completed from the owner's attestation; Phase 12 remains out of scope.\n"
   },
   {
+    "id": "repository/docs/versioning",
+    "title": "Orion Foundation Versioning",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Orion Foundation Versioning",
+    "anchor": "orion-foundation-versioning",
+    "text": "Orion Foundation Versioning\n[Documentation index](README.md) · [Project derivation](project-derivation.md) · [ADR-0015](adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nThis policy names stable revisions of the reusable Orion foundation for people comparing releases and planning derived-project upgrades. It does not version a derived product, API contract, database migration, or deployment independently; those boundaries retain their own policies.\n"
+  },
+  {
+    "id": "repository/docs/versioning",
+    "title": "Orion Foundation Versioning",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Identity and release points",
+    "anchor": "identity-and-release-points",
+    "text": "Identity and release points\nThe immutable Git commit SHA is the exact technical identity of a foundation revision. Derived-project provenance records commits, and validation relies on commit identity and ancestry.\nA stable release has one immutable, annotated Git tag named `vMAJOR.MINOR.PATCH`. The tag is the canonical human-readable release identifier and points to the exact Orion commit released. A published tag must never be moved to another commit.\nA GitHub Release may be created from that tag as descriptive metadata. It should concisely state what the release represents, important foundation changes, compatibility or migration notes when relevant, materially required tool/runtime versions, the exact tagged commit, and useful documentation links. It does not establish provenance.\nThe first stable release is intended to be `v1.0.0`. This policy prepares that release; the tag and optional GitHub Release are created only after the policy change is reviewed, merged into `main`, and its resulting commit and CI state are verified.\n"
+  },
+  {
+    "id": "repository/docs/versioning",
+    "title": "Orion Foundation Versioning",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Compatibility meaning",
+    "anchor": "compatibility-meaning",
+    "text": "Compatibility meaning\nChoose the next version from the intended impact on the foundation contract and supported upgrade model for derived projects, not from diff size or the number of merge conflicts.\nPart\nIncrement when\nExamples\nMAJOR\nOrion intentionally makes the foundation contract or supported upgrade model incompatible, requiring deliberate project migration.\nBreaking provenance/schema changes; removal or incompatible replacement of an established foundation contract; previously valid projects becoming unsupported; incompatible derivation or baseline-upgrade rules.\nMINOR\nOrion adds backward-compatible foundation capability.\nOptional architecture or reference patterns, reusable tooling, agent/tool integrations, validation capabilities, or substantial compatible development-experience improvements.\nPATCH\nOrion makes compatible corrections or hardening without intentionally changing the foundation contract.\nBug and documentation fixes, security hardening, test or validation fixes, and small tooling or development-experience corrections.\nA project may legitimately change shared files. A three-way merge can therefore conflict even between compatible Orion releases; resolve the semantic conflict under review. A Git conflict alone does not make the foundation change MAJOR.\nStable tags are sufficient for Orion now. No pre-release tags or workflow are defined; naming such as `-alpha.1`, `-beta.1`, or `-rc.1` can be specified when an actual pre-release need arises.\n"
+  },
+  {
+    "id": "repository/docs/versioning",
+    "title": "Orion Foundation Versioning",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Derived projects and unreleased commits",
+    "anchor": "derived-projects-and-unreleased-commits",
+    "text": "Derived projects and unreleased commits\nA project may be described as derived from `Orion v1.0.0` when its recorded initialization commit equals that tag's target, or as having a `v1.0.0` foundation baseline when its recorded baseline equals the target. Its [manifest](../.orion/project.json) still stores the corresponding SHA, with no required semantic-version field. Tags neither change the [baseline-recording safety rules](project-derivation.md#upgrade-to-a-newer-orion-revision) nor replace normal Git ancestry, reviewed merge commits, and validation for upgrades.\nTo determine whether a recorded commit has a semantic version, inspect stable tags in the canonical Orion repository and compare their resolved commit SHAs with the recorded SHA (for example, `git rev-list -n 1 v1.0.0` in an Orion clone with the tag). The derived project's `orion-upstream` deliberately does not fetch tags, so use a separate Orion clone or the canonical repository's tag view. A nearby or ancestral tag does not name an untagged baseline.\nThe latest stable tag identifies the latest released human-readable version. Later commits on `main` are unreleased foundation revisions; a project can deliberately use one by its SHA. The next semantic version is assigned only when another release point is tagged. Ordinary merges require no new tag.\n"
+  },
+  {
+    "id": "repository/docs/versioning",
+    "title": "Orion Foundation Versioning",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "First release and acceptance sequence",
+    "anchor": "first-release-and-acceptance-sequence",
+    "text": "First release and acceptance sequence\n`v1.0.0`, once tagged, represents the completed reusable Orion foundation: agent-neutral repository instructions, Living Documentation, validation/CI/security foundations, the Approval Request reference slice, project derivation with preserved Git ancestry, recorded provenance, and guarded baseline upgrades. It marks the foundation state accepted before the first real GitHub-backed sandbox derivation exercise. It does not certify production deployment, activate Phase 12, select a production identity provider, establish product-specific readiness, or promise conflict-free upgrades. The real GitHub-backed derivation and subsequent upgrade exercise remain acceptance and reverification activities.\nAfter this policy PR is merged: verify the resulting `main` commit and CI, create immutable `v1.0.0` on that commit, optionally publish a concise `Orion v1.0.0` GitHub Release, and perform `Orion-Derivation-Test` from the tagged foundation. Later, make a justified compatible Orion change, release it as `v1.0.1` or `v1.1.0` according to its actual impact, and exercise a real sandbox upgrade between those release points while checking the recorded commit baseline. Do not manufacture a change solely to create the second version.\n"
+  },
+  {
     "id": "repository/packages/sdk/AGENTS",
     "title": "SDK-local Instructions",
     "group": "Agent instructions",
@@ -700,32 +808,5 @@
     "heading": "Current state",
     "anchor": "current-state",
     "text": "Current state\nOrion implements the Approval Request reference slice across the API, PostgreSQL, generated SDK, and web application, with a pnpm workspace, CI, and generated API/database/component references. The [Living Documentation Portal](apps/web/README.md#living-documentation-portal) runs locally at `/docs` in the web app. The [acceptance report](docs/foundation-acceptance.md#phase-11-foundation-acceptance) records foundation acceptance; its [review concerns](docs/foundation-acceptance.md#implementation-concerns-identified-during-review) distinguish implementation gaps from conditional future work. A concrete authentication provider and production environment have not been selected. Consult [CI status](docs/architecture/continuous-integration.md) for remote execution and repository-setting availability.\nThis repository is the canonical upstream foundation. Real projects start from a clone of it through [project derivation](docs/project-derivation.md), which records their provenance in [`.orion/project.json`](.orion/project.json) and keeps later Orion upgrades reviewable. The [living plan](docs/implementation-plan.md) and [human actions](docs/human-actions.md) track Orion's own work.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Start here",
-    "anchor": "start-here",
-    "text": "Start here\nTask\nEntry point\nFind the policy for a change\n[Documentation task index](docs/README.md)\nUnderstand contributor and agent obligations\n[Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)\nUnderstand architecture and code placement\n[Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)\nFind a selected technology or its rationale\n[Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)\nDetermine available verification\n[Validation](docs/validation.md)\nReproduce the local workflow\n[Development setup](docs/setup.md)\nExplore local guides, architecture, API routes, data, and components\n[Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data)\nFind implementation examples and acceptance evidence\n[Reference feature source map](docs/foundation-acceptance.md#reference-feature-evidence-map), [foundation acceptance](docs/foundation-acceptance.md)\nFind outstanding work or required owner decisions\nThe plan and human actions linked from [Current state](#current-state)\nStart a project from Orion, inspect provenance, or adopt a newer Orion revision\n[Project derivation](docs/project-derivation.md)\nCreate an operational procedure\n[Runbooks](docs/runbooks/README.md)\nAccepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate. See the [API runtime](apps/api/README.md) and [web workflow](apps/web/README.md) for application-specific behavior.\nDirectory trees in architecture documents describe intended responsibilities, not proof that those directories exist. The physical repository takes precedence over illustrations. English is the canonical repository language; product localization is separate.\nRead the relevant route rather than the whole documentation tree. Current policy explains what applies now; ADRs preserve why significant decisions were made; current generated references derive from executable contracts and schema metadata.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Foundation direction",
-    "anchor": "foundation-direction",
-    "text": "Foundation direction\nOrion organizes applications and cohesive shared capabilities in a monorepo. Logical modularity and local reasoning come before premature distribution. A shared abstraction must have a genuine semantic responsibility.\nThe reference feature connects database, persistence, application/domain behavior, API contract, SDK, UI, tests, telemetry, and documentation as executable architectural guidance. Prefer those proven examples over inventing competing patterns. Deployment-specific operation remains conditional on concrete requirements; Orion's [Phase 12](docs/implementation-plan.md#phase-12) describes that work.\nArchitecture should be explicit and mechanically enforced where practical. Authored documentation preserves meaning and rationale that cannot be generated; derived structural facts should not be maintained as independent copies. See [architectural principles](docs/architecture/principles.md) for decision priorities, exceptions, and the detailed policies behind these goals.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "License",
-    "anchor": "license",
-    "text": "License\nNo license has been selected yet.\n"
   }
 ]

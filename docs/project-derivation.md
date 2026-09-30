@@ -1,6 +1,6 @@
 # Project Derivation and Orion Upgrades
 
-[Repository README](../README.md) · [Development setup](setup.md) · [Validation](validation.md) · [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)
+[Repository README](../README.md) · [Development setup](setup.md) · [Validation](validation.md) · [Foundation versioning](versioning.md) · [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)
 
 This guide owns how a real project is started from Orion, how its provenance is recorded and checked, and how it adopts newer Orion revisions. [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) records the decision and its rationale. The commands exist in every Orion checkout; the canonical Orion repository itself is never initialized as a project.
 
@@ -17,6 +17,8 @@ The canonical `GabriellMDias/Orion` repository is the upstream development found
 | Product repository | Recorded as `repository.url`; each clone's `origin` is that repository or a fork or mirror of it, never the foundation ([remote rules](#remote-rules)) |
 
 In the Orion repository the manifest has `"kind": "foundation"` and only describes Orion. A derived project's manifest has `"kind": "project"` and additionally records its foundation ancestry and the [Approval Request disposition](#approval-request-reference-implementation). The Living Documentation Portal links source files to the manifest's repository.
+
+[Stable semantic tags](versioning.md) make released foundation points easier to identify. A project may be described as derived from `Orion v1.0.0` when its initialization commit matches that tag, while the manifest continues to record the exact commit SHA. The same comparison applies to a recorded baseline; an untagged commit has no semantic version of its own.
 
 The `@orion/*` package scope, `ORION_*` configuration names, `orion_*` token claims, and the `Orion required gate` check name are the foundation namespace, not a product brand. Initialization renames none of them: a global rename would touch most files and make every later upgrade conflict. A project may rename user-visible branding deliberately and accept that upgrade cost.
 
@@ -111,6 +113,8 @@ Repository identities compare as normalized HTTPS URLs, so HTTPS, SSH, and scp-l
 
 An upgrade is a normal reviewable engineering change on a branch. Nothing is applied automatically, and semantic conflicts are resolved by people or agents under review.
 
+Tags help humans choose a known release point but do not change this workflow: fetch and merge commits with normal Git ancestry, then record the integrated commit under the existing safety rules. Ordinary conflicts in project-modified shared files do not by themselves indicate a MAJOR Orion release.
+
 1. Run `git fetch orion-upstream` and `pnpm orion:status`. Review upstream changes with `git log --oneline <baseline>..orion-upstream/main` and `git diff <baseline> orion-upstream/main`, including ADRs, policies, migrations, and tooling.
 2. Choose the candidate commit; it must be on `orion-upstream/main`. Create a branch, for example `git switch -c orion-upgrade/<short-commit>`, and run `git merge --no-ff <commit>`.
 3. Resolve conflicts according to the [ownership table](#foundation-owned-and-project-owned-files). Resolve generated references and portal data by rerunning their generators after the canonical sources are merged. Review semantic interactions with product code even where Git reports no conflict.
@@ -129,4 +133,4 @@ Product work never goes to `orion-upstream`; its push URL is disabled. To improv
 - Provenance proves which Orion commits are ancestors of the project; it does not prove that the project still follows every inherited policy. Validation and review remain the enforcement.
 - `pnpm orion:check` can verify that the recorded baseline is integrated, but only `pnpm orion:status` with a fetched upstream can report newer integrated commits that were not yet recorded.
 - Projects that diverge heavily from foundation files, rename the foundation namespace, or remove the reference implementation should expect more upgrade conflicts in those areas.
-- No release or versioning scheme exists for Orion; the immutable Git commit is the version.
+- The immutable Git commit remains the exact foundation revision and provenance identity. [Foundation versioning](versioning.md) assigns human-readable tags only to deliberate stable release points; commits between tags remain usable by SHA.
