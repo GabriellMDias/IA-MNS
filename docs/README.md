@@ -17,6 +17,7 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | --- | --- |
 | Execute or track implementation phases | [Living implementation plan](implementation-plan.md); in a derived project, `docs/project/implementation-plan.md` |
 | Start a project from Orion, check its provenance, or upgrade its Orion baseline | [Project derivation](project-derivation.md) |
+| Name a stable Orion foundation release or assess derived-project compatibility | [Foundation versioning](versioning.md) |
 | Change agent instruction files or tool compatibility adapters | [Agent instructions](architecture/agent-instructions.md) |
 | Reproduce development setup, local execution, and the validation gate | [Development setup](setup.md) |
 | Run the living API/data/component portal and understand its architecture | [Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md) |

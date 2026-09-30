@@ -1,5 +1,68 @@
 [
   {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Security and operations",
+    "anchor": "security-and-operations",
+    "text": "Security and operations\nTask\nAuthoritative policy\nClassify, expose, copy, or export data\n[Data classification](security/data-classification.md)\nCapture telemetry fields or payloads\n[Telemetry redaction](security/telemetry-redaction.md)\nIntroduce, deliver, rotate, or revoke credentials\n[Secrets management](security/secrets-management.md)\nVerify identity or manage authentication state\n[Authentication](security/authentication.md)\nEnforce capabilities and tenant/resource isolation\n[Authorization](security/authorization.md)\nAccess production or perform privileged actions\n[Production access](security/production-access.md)\nRetain, delete, restore, or propagate deletion\n[Data retention](security/data-retention.md)\nContain an incident and verify recovery\n[Incident response](security/incident-response.md)\nFollow or author an operational procedure\n[Runbook index](runbooks/README.md), [authoring](runbooks/authoring.md), [template](runbooks/template.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Decisions and documentation",
+    "anchor": "decisions-and-documentation",
+    "text": "Decisions and documentation\n[ADR index](adr/README.md): significant decisions and their rationale; status belongs to each ADR.\n[ADR authoring](adr/authoring.md) and [template](adr/template.md): proposals, acceptance, historical integrity, and supersession.\n[Contributing](contributing.md): change workflow, documentation ownership, canonical sources, maintenance, and review.\n[Global agent instructions](../AGENTS.md): invariants, command availability, and conditional routes for every contributor and agent; [agent instructions](architecture/agent-instructions.md) owns tool compatibility.\nCurrent policies describe current architectural expectations. ADRs preserve decision history; [setup](setup.md) and [release evolution](database/release-evolution.md) describe real procedures. Generated references exist for the current API, configuration, errors, database, and web components. The portal renders these sources in the existing web application. No production runbook exists without a selected environment.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alerting",
+    "anchor": "alerting",
+    "text": "Alerting\nThis policy owns actionable alert conditions, severity, ownership, notification, and rule maintenance. [Metrics](metrics.md) owns measurement semantics; [incident response](../security/incident-response.md) owns incidents; [runbooks](../runbooks/README.md) own executable procedures. Alerts direct human or automated attention to a condition requiring action, rather than notifying merely because a signal exists.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current scope",
+    "anchor": "current-scope",
+    "text": "Current scope\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) leaves the observability backend and deployment alerting infrastructure application-specific. Orion has runtime telemetry and health checks, but no deployed alert rules, paging provider, on-call schedule, service objectives, or alert-as-code validation. This policy establishes constraints for introducing them; it does not authorize or start deployment work.\nProvider, severity taxonomy, channels/escalation, SLO tooling and burn-rate thresholds, ownership metadata, maintenance windows, and rollback integration must follow actual team structure, topology, service expectations, and operational tooling. Significant architectural choices require an ADR. Do not invent deployment thresholds or missing capabilities to fill documentation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alert severity and response",
+    "anchor": "alert-severity-and-response",
+    "text": "Alert severity and response\nUse a small consistent severity model whose levels determine response time, channel, and escalation. Severity reflects impact and urgency, not alarming wording or one HTTP error. The following is conceptual guidance, not a selected severity taxonomy or response-time commitment.\nImpact\nAppropriate response\nMajor outage, data integrity/security risk, critical workflow unavailable, widespread failure without recovery\nMay require immediate paging.\nSubstantial degradation, increasing failure rate, important dependency failure, or backlog threatening objectives\nPrompt action; page only when it cannot safely wait.\nLimited degradation with workaround or actionable capacity trend\nBusiness-hours notification or owned work item may fit.\nNoncritical trend, deprecation use, or an isolated automatically recovered instance\nDashboard/periodic review; avoid competing with urgent alerts.\nPaging is for a reliable condition requiring action before the next normal working period, with an authorized recipient who can mitigate it. Safe automatic recovery may eliminate the need to page. Critical unacknowledged alerts need an escalation path; broadcasting to everyone is not ownership. Email suits slower risks; critical incidents must not rely only on easily missed chat notifications.\nProduction and non-production must be distinguishable. Staging may notify development/release owners; local development should not generate operational alerts, and ordinary test failures should fail CI rather than page production responders.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Symptom-based alerting",
+    "anchor": "symptom-based-alerting",
+    "text": "Symptom-based alerting\nPrefer evidence of user/service impact: valid requests failing, latency objectives violated, work missing deadlines, or a critical operation unavailable. Cause metrics support investigation. Preventive cause alerts are appropriate when a known risk, meaningful response window, and effective action can prevent impact, such as full storage, expiring certificates, recovery-threatening replication lag, or an undrainable queue.\nAn alert must answer what action follows. If none is required, use a dashboard, metric, log, periodic review, or ticket as appropriate. Before adding a signal, inspect existing symptom alerts for the same incident. Do not page separately on every error, restart, unready replica, retry, short circuit-breaker transition, or arbitrary resource percentage.\nPrefer safe, understood, verifiable automatic recovery; notify when it fails, repeats excessively, threatens capacity/redundancy, or leaves meaningful impact. Unique/stateful instances and data-risk failures may justify instance-level alerts even when stateless replicated services use service-level aggregation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alert ownership and context",
+    "anchor": "alert-ownership-and-context",
+    "text": "Alert ownership and context\nEvery alert must identify an owner able and authorized to act. Ownership can follow service, domain, application, or infrastructure responsibility. Shared dependency failures need coordinated response across infrastructure and affected application owners, not independent competing investigations.\nUse stable semantic names describing the condition; keep volatile thresholds in configuration. Names, ownership, severity, service, environment, and signal type should be machine-readable where tooling supports it. Do not group alerts primarily by arbitrary message text or use high-cardinality personal data in queries.\nA concise notification should explain impact, duration, current value versus threshold/objective, release when relevant, owner, and first investigation step. Link directly to useful dashboards/runbooks and safe trace/error references where available. Investigators should be able to connect the condition to affected service/release, metrics, error groups, traces, and recovery guidance.\nNotifications must contain only safe operational context. Chat/paging access may be broader than production telemetry: keep detailed evidence in authorized systems, and never include credentials, raw payloads, personal data, or restricted identifiers. Follow [telemetry redaction](../security/telemetry-redaction.md) and [production access](../security/production-access.md), including for AI investigation.\nAcknowledgement assigns response ownership; it does not resolve the condition. Alert resolution means the triggering condition cleared, not that the root cause is permanently fixed or the incident is closed. [Incident response](../security/incident-response.md) determines proportional coordination and closure based on impact, duration, data/security risk, and involved owners. Incidents may arise without an automated alert, and not every alert becomes an incident.\n"
+  },
+  {
     "id": "repository/docs/reliability/alerting",
     "title": "Alerting",
     "group": "Reliability",
@@ -862,68 +925,5 @@
     "heading": "Multi-tenant authorization",
     "anchor": "multi-tenant-authorization",
     "text": "Multi-tenant authorization\nWhen multi-tenancy is introduced, enforce isolation explicitly. Validate requested tenant context against verified membership and target resource scope. Tenant switching is a request, not proof of membership. Matching tenant identifiers may be necessary without being sufficient. Cross-tenant access is denied by default; exceptions need explicit narrow policy.\nTenant-aware queries or database protections can add defense in depth, but they do not replace discoverable application semantics. Document and test row-level security if adopted. Model ownership and relationships explicitly rather than inferring them from unrelated fields. Use role, relationship, or attribute models only where they match domain needs.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Reads, collections, and data exposure",
-    "anchor": "reads-collections-and-data-exposure",
-    "text": "Reads, collections, and data exposure\nReads require authorization as well as writes. Apply it to details, lists, search, counts, aggregates, exports, and protected fields. Knowing a resource ID never proves access. Scope queries to authorized data where practical; do not load broad sensitive datasets and rely on client filtering. Use deliberate response schemas instead of serializing whole entities.\nBulk export or mutation may require stronger capability than operating on one item. Consider inference through counts, suggestions, existence checks, and error differences. Classification informs access requirements: confidential exports may need stronger policy, and restricted data access must be rare and explicit.\nCaches must preserve actor/tenant/permission isolation, including response variations and HTTP/CDN policy. Protected responses must not become publicly cacheable. Field-level policy and trusted permission-introspection tools require their own justified scope and access control.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Freshness, asynchronous work, and integrity",
-    "anchor": "freshness-asynchronous-work-and-integrity",
-    "text": "Freshness, asynchronous work, and integrity\nDefine acceptable permission freshness before caching decisions or putting roles/permissions in tokens. Revocation, membership removal, and role changes must take effect within the required interval; old claims must not remain trusted indefinitely. Sensitive capabilities may require near-immediate revocation, fresh server lookup, stronger/recent authentication, or an explicit hybrid design. Temporary/delegated permissions must expire and fail closed.\nFor user-triggered jobs, specify whether authorization is checked at creation, execution, or both, and what happens if permission changes before execution. Workers acting as system and workers acting on behalf of users have different authority. Event consumers do not automatically inherit producer permissions; actor metadata is not an authorization bypass.\nAuthorization state is security-sensitive and generally at least `CONFIDENTIAL`. Preserve integrity through explicit update contracts, constraints, and transactions where appropriate. Users must not assign themselves privileges beyond their authority. Generic mass assignment must not expose role, permission, membership, or other privileged fields. Prevent both vertical escalation and access to another actor's equivalent resources.\nRole/permission changes require security review, tests, and documentation. Identify persisted assignments and consumers before renaming/removing permissions or expanding roles. A persisted permission rename is a compatibility/data migration, not cosmetic editing. Transactional changes must avoid unintended intermediate access states and preserve required audit evidence.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Errors and audit",
-    "anchor": "errors-and-audit",
-    "text": "Errors and audit\nFollow the [error contract](../api/error-contract.md) and [error-handling policy](../architecture/error-handling.md). Public denials must not expose protected resource, tenant, or policy details. Safe internal reason categories can differ from public API codes. Record only justified actor/resource identifiers and allowlisted metadata, never entire principal/resource objects.\nAudit sensitive assignment changes, administrative actions, exports, impersonation, and security configuration as required. Do not log every successful check by default. Distinguish normal denials from suspicious enumeration, cross-tenant probes, or repeated privileged access attempts; security monitoring should match real requirements. [Redaction](telemetry-redaction.md) and [retention](data-retention.md) apply to diagnostics and audit records.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Authorization testing",
-    "anchor": "authorization-testing",
-    "text": "Authorization testing\nBoth allow and deny paths must be tested. Include applicable anonymous, wrong-owner, wrong-tenant, insufficient-permission, expired-delegation, changed-permission, insufficient-assurance, and privileged-field cases. Test horizontal/vertical escalation, collection filtering, API enforcement despite modified clients, and relevant asynchronous timing. Add regression tests for authorization security bugs; property-based invariants can help when policy complexity justifies them.\nUse reusable synthetic principal helpers and realistic development identities while testing ordinary and denied access. Do not disable authorization globally. Any test/development bypass must be isolated, explicitly tested, and impossible to enable accidentally in production.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "New authorization policy checklist",
-    "anchor": "new-authorization-policy-checklist",
-    "text": "New authorization policy checklist\nFor a new or changed policy, identify:\nProtected operation, owner, actor types, resource, trusted inputs, existing equivalent permissions, and scope.\nOwnership/tenant/state/assurance requirements, role assignment authority, freshness/revocation, delegation, and denied-information exposure.\nConfidential/restricted data impact, required audit evidence, allow/deny tests, and compatibility effects on existing actors and consumers.\nDocument meaning near the policy and derive references from canonical machine-readable definitions where practical. Mechanical enforcement may validate declared protected operations, known permissions, privileged contracts, and tenant scope when tooling supports it; do not claim such coverage before it exists. Repository-wide policy engines, global roles/tenants, registry formats, and AI delegation models remain requirement-driven decisions.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Data Classification",
-    "anchor": "data-classification",
-    "text": "Data Classification\nThis policy owns Orion's sensitivity model and data-handling baseline. [Redaction](telemetry-redaction.md), [retention](data-retention.md), [secrets management](secrets-management.md), and [production access](production-access.md) own their detailed controls. Classification follows data meaning and disclosure risk, not whether a tool can technically access it.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Classification levels",
-    "anchor": "classification-levels",
-    "text": "Classification levels\nLevel\nMeaning and examples\nRequired handling\n`PUBLIC`\nIntentionally approved for unrestricted disclosure: published documentation or product content\nMay be shared/indexed/cached; preserve integrity. Absence of secrets does not make data public.\n`INTERNAL`\nNon-public, lower-risk project/operational information\nAvailable to authorized contributors and approved tooling; review before publication.\n`CONFIDENTIAL`\nDisclosure may cause privacy, security, business, or operational harm: personal/private customer data, private content, incident details\nNeed-to-know access, protected transport, appropriate storage encryption, minimized telemetry/copies, and defined retention.\n`RESTRICTED`\nHighest sensitivity: credentials, password hashes, private keys, payment credentials, highly sensitive personal data\nStrict least privilege and purpose-built protection; no intentional inclusion in source control, telemetry, public errors, generated documentation, screenshots/support artifacts, or real-data test fixtures.\nThese are minimum protections. Use the more restrictive reasonable level when semantics or ownership are unclear, particularly for legacy fields, provider payloads, uploads, and free-form metadata. Encryption does not reduce classification.\n"
   }
 ]

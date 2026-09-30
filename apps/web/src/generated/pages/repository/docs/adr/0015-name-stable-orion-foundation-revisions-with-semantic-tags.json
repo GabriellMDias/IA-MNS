@@ -1,0 +1,40 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags.md",
+  "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-09-29\n<strong>Supersedes:</strong> <a href=\"/docs/repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance\">ADR-0014</a>, only its statement that no release or version scheme exists</p>\n<h2 id=\"context\">Context</h2>\n<p><a href=\"/docs/repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance\">ADR-0014</a> established immutable commit SHAs and ancestry as derived-project provenance and deliberately introduced no release scheme. Before the first real GitHub-backed derivation exercise, people need recognizable stable foundation points and compatibility signals without weakening that technical identity or making every merge a release.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Stable Orion foundation releases use immutable annotated Git tags named <code>vMAJOR.MINOR.PATCH</code>. The tag is a human-readable alias for one commit. MAJOR denotes an intentionally incompatible foundation contract or supported upgrade model; MINOR denotes backward-compatible capability; PATCH denotes compatible correction or hardening. Classification follows contract impact, not diff size or incidental merge conflicts. A GitHub Release may describe a tag but has no provenance role. Pre-release naming is deferred until needed.</p>\n<p>Project manifests continue to record commit SHAs. Derivation, baseline recording, and upgrades continue to rely on commit identity and Git ancestry. This decision changes only ADR-0014's no-release-scheme statement; its provenance and upgrade mechanics remain accepted.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>Commit SHAs provide exact, verifiable identity while stable tags let humans communicate known foundation points. Semantic labels signal expected compatibility for projects that inherit and extend the foundation. Tags avoid a second mutable version store and do not require release automation or changes to project manifests. A stable-only model matches the current need for one first release; pre-release process would add obligations without an acceptance use case.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"continue-with-commit-shas-alone\">Continue with commit SHAs alone</h3>\n<p>This preserves exact identity but makes stable foundation points and compatibility intent difficult to communicate during the first real derivation and later upgrade exercise.</p>\n<h3 id=\"store-a-semantic-version-in-project-provenance\">Store a semantic version in project provenance</h3>\n<p>This duplicates the tag and could be mistaken for proof that the corresponding commit was integrated. The existing SHA and ancestry checks already supply that proof.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Stable foundation points become easy to name without changing derivation mechanics.</li>\n<li>The tag is a single human-readable release identifier; commit identity stays authoritative for provenance.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Maintainers must classify contract impact deliberately and protect published tags from movement.</li>\n<li>Version labels cannot predict merge conflicts caused by project-specific edits to shared files.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>No manifest migration or release tooling is required. The first tag follows review, merge, and CI verification of this policy. Later tags are assigned only at deliberate release points.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/versioning\">Orion foundation versioning</a></li>\n<li><a href=\"/docs/repository/docs/project-derivation\">Project derivation</a></li>\n<li><a href=\"/docs/repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance\">ADR-0014</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+      "text": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "continue-with-commit-shas-alone",
+      "text": "Continue with commit SHAs alone",
+      "level": 3
+    },
+    {
+      "id": "store-a-semantic-version-in-project-provenance",
+      "text": "Store a semantic version in project provenance",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

@@ -249,7 +249,7 @@
     "kind": "repository",
     "heading": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance",
     "anchor": "adr-0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
-    "text": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance\n**Status:** accepted\n**Date:** 2026-09-29\n"
+    "text": "ADR-0014: Derive Projects from Orion through Git Ancestry with Recorded Provenance\n**Status:** accepted\n**Date:** 2026-09-29\n**Superseded by:** [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), only for the statement that no release or version scheme exists; the provenance and upgrade decision remains accepted\n"
   },
   {
     "id": "repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance",
@@ -369,6 +369,114 @@
     "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[Implementation plan](../implementation-plan.md) and [human actions](../human-actions.md)\n[Migration policy](../database/migrations.md) and [release evolution](../database/release-evolution.md)\n[ADR-0011: continuous integration and supply-chain security](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\n"
   },
   {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "anchor": "adr-0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "text": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags\n**Status:** accepted\n**Date:** 2026-09-29\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only its statement that no release or version scheme exists\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) established immutable commit SHAs and ancestry as derived-project provenance and deliberately introduced no release scheme. Before the first real GitHub-backed derivation exercise, people need recognizable stable foundation points and compatibility signals without weakening that technical identity or making every merge a release.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nStable Orion foundation releases use immutable annotated Git tags named `vMAJOR.MINOR.PATCH`. The tag is a human-readable alias for one commit. MAJOR denotes an intentionally incompatible foundation contract or supported upgrade model; MINOR denotes backward-compatible capability; PATCH denotes compatible correction or hardening. Classification follows contract impact, not diff size or incidental merge conflicts. A GitHub Release may describe a tag but has no provenance role. Pre-release naming is deferred until needed.\nProject manifests continue to record commit SHAs. Derivation, baseline recording, and upgrades continue to rely on commit identity and Git ancestry. This decision changes only ADR-0014's no-release-scheme statement; its provenance and upgrade mechanics remain accepted.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nCommit SHAs provide exact, verifiable identity while stable tags let humans communicate known foundation points. Semantic labels signal expected compatibility for projects that inherit and extend the foundation. Tags avoid a second mutable version store and do not require release automation or changes to project manifests. A stable-only model matches the current need for one first release; pre-release process would add obligations without an acceptance use case.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Continue with commit SHAs alone",
+    "anchor": "continue-with-commit-shas-alone",
+    "text": "Continue with commit SHAs alone\nThis preserves exact identity but makes stable foundation points and compatibility intent difficult to communicate during the first real derivation and later upgrade exercise.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Store a semantic version in project provenance",
+    "anchor": "store-a-semantic-version-in-project-provenance",
+    "text": "Store a semantic version in project provenance\nThis duplicates the tag and could be mistaken for proof that the corresponding commit was integrated. The existing SHA and ancestry checks already supply that proof.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nStable foundation points become easy to name without changing derivation mechanics.\nThe tag is a single human-readable release identifier; commit identity stays authoritative for provenance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nMaintainers must classify contract impact deliberately and protect published tags from movement.\nVersion labels cannot predict merge conflicts caused by project-specific edits to shared files.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo manifest migration or release tooling is required. The first tag follows review, merge, and CI verification of this policy. Later tags are assigned only at deliberate release points.\n"
+  },
+  {
+    "id": "repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags",
+    "title": "ADR-0015: Name Stable Orion Foundation Revisions with Semantic Tags",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Orion foundation versioning](../versioning.md)\n[Project derivation](../project-derivation.md)\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -456,7 +564,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1051,50 +1159,5 @@
     "heading": "Centralized Ingestion",
     "anchor": "centralized-ingestion",
     "text": "Centralized Ingestion\nResolve raw configuration near bootstrap/composition, then pass narrow validated inputs to components. Do not scatter direct environment reads, pass every setting to every service, or let shared packages discover application environment implicitly. A library should accept simple parameters unless environment ingestion is its explicit responsibility. Keep provider-specific settings near that integration.\nStable domain invariants should not become deployment switches. Configuration controls intentional operational variability; business records, per-user preferences, and frequently edited business settings often belong in application data. Choose ownership according to meaning, who changes it, and frequency. Share schemas/settings across applications only when their semantics match, and distinguish sharing a schema from sharing an actual value.\nEnvironment identity is not a generic feature flag. Use a small explicit environment model and name actual capabilities/modes when controlling behavior. Necessary production differences, such as diagnostic limits or real provider integration, must be intentional and testable. Avoid platform-specific settings when a useful application concept exists, without inventing portability abstractions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration and Secrets",
-    "anchor": "configuration-and-secrets",
-    "text": "Configuration and Secrets\nThe schema may describe a secret requirement; secret delivery, storage, rotation, and revocation follow [secret policy](../security/secrets-management.md). Secret references may be useful where infrastructure supports them, but resolved values remain restricted in memory. Agents must understand requirements from schemas, safe placeholders, and descriptions without needing real credentials.\nBuild-time values can remain embedded in browser/mobile/desktop artifacts or image layers and are accessible to recipients. Never embed server-only secrets. Client-visible settings must be explicitly safe; environment-variable delivery alone does not make them public. Keep server credentials, private tokens/keys, and privileged internal endpoints out of client artifacts and shared public configuration.\nDo not serialize or log entire configuration objects in startup logs, errors, health endpoints, debug output, or support bundles. Use explicit safe projections, such as whether a dependency is configured. Even nonsecret fields obey [data classification](../security/data-classification.md) and [telemetry redaction](../security/telemetry-redaction.md). Safe configuration summaries/fingerprints may help diagnose drift only when useful and excluding secrets.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Evolution and Operational Changes",
-    "anchor": "evolution-and-operational-changes",
-    "text": "Evolution and Operational Changes\nConfiguration changes can break deployment or rollback even without code changes. For a rename/removal, identify old/new applications, supported rolling/rollback combinations, CI, local examples, deployment scripts, secret stores, and documentation. Introduce replacements, support both temporarily if required, migrate consumers, then remove old usage/configuration/secrets. Do not remove keys while a supported old version still requires them or retain unused keys indefinitely. Follow [compatibility policy](versioning-and-compatibility.md), including coordinated database/configuration transitions.\nA separate configuration schema version is justified only if independently managed configuration needs it; application releases and Git may suffice. Deployment definitions, when introduced, should expose requirements and reject invalid mandatory configuration before activation. Validate secret presence/references without exposing values.\nPrefer static startup configuration initially. Dynamic/remote configuration creates availability, authentication, caching, fallback, consistency, concurrency, rollback, auditability, and test obligations. If introduced, distinguish startup-only, reloadable, and process-immutable values. High-impact changes need risk-appropriate safe audit context (key, actor/system, time), not secret old/new values. Feature flags need explicit rollout/removal criteria unless they are permanent product settings; they are not automatically ordinary environment variables.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Verification and Enforcement",
-    "anchor": "verification-and-enforcement",
-    "text": "Verification and Enforcement\nTests construct explicit configuration and synthetic credentials instead of relying on machine state. Unit tests inject the minimum values; parser tests exercise missing/invalid input, defaults, secret-safe errors, conditional modes, and cross-field behavior. Integration tests exercise the actual ingestion boundary with isolated resources. CI jobs receive only the settings/credentials they require, never unrelated production access.\nClient builds must reject attempts to import or embed server-only/restricted configuration. Implemented checks include API parser tests, generated-reference freshness, `pnpm env:example:check`, and the web [bundle marker check](../../apps/web/scripts/check-bundle.mjs). The example check compares safe placeholders/defaults with API metadata; it does not validate deployed environments. The bundle check detects known server-only markers, not every possible leak. Direct environment access outside approved modules and full secret/classification metadata coverage remain review responsibilities; no dedicated lint rule or deployed-configuration validator currently proves them. These limits do not relax the policy.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "New Configuration Checklist",
-    "anchor": "new-configuration-checklist",
-    "text": "New Configuration Checklist\nBefore adding a setting, establish its concrete variability requirement, owning application, consumers, type/units, required/default behavior, classification/secret/client visibility, environment scope, change/restart behavior, validation, tests, documentation, and compatibility impact. Consider whether the value belongs in application data or can remain fixed. Every option expands the behavior space; keep only justified configuration and update its canonical source and derived representations together.\n"
-  },
-  {
-    "id": "repository/docs/architecture/continuous-integration",
-    "title": "Continuous Integration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Continuous Integration",
-    "anchor": "continuous-integration",
-    "text": "Continuous Integration\nThis page owns the map from repository CI configuration to the accepted policy in [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md). See [validation availability](../validation.md) for local commands. Effective remote settings and completed-run evidence have a separate owner in [human actions](../human-actions.md).\n"
   }
 ]
