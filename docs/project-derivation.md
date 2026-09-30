@@ -20,6 +20,8 @@ In the Orion repository the manifest has `"kind": "foundation"` and only describ
 
 [Stable semantic tags](versioning.md) make released foundation points easier to identify. A project may be described as derived from `Orion v1.0.0` when its initialization commit matches that tag, while the manifest continues to record the exact commit SHA. The same comparison applies to a recorded baseline; an untagged commit has no semantic version of its own.
 
+A derived project inherits [Apache-2.0-licensed Orion source](../LICENSE). The project remains responsible for licensing its independently created product code and for applicable obligations of inherited and third-party material; Orion's license does not choose the project's overall license.
+
 The `@orion/*` package scope, `ORION_*` configuration names, `orion_*` token claims, and the `Orion required gate` check name are the foundation namespace, not a product brand. Initialization renames none of them: a global rename would touch most files and make every later upgrade conflict. A project may rename user-visible branding deliberately and accept that upgrade cost.
 
 ## Foundation-owned and project-owned files

@@ -145,15 +145,15 @@ External settings below were verified on the stated dates. They are evidence of 
 
 ## H-11
 
-- [ ] **Determine licensing before distribution requires the decision.**
+- [ ] **Resolve product-specific distribution licensing when required.**
 
-**Status:** changed (conditional on distribution). **Owner:** project owner, with legal input when needed. **Dependency:** P12.8, or earlier distribution/publication requiring a license.
+**Status:** changed (Orion repository license selected; product distribution remains conditional). **Owner:** project owner, with legal input when needed. **Dependency:** P12.8 or earlier product distribution.
 
-**Trigger and request:** Choose the repository/product license, copyright holder, distribution model, and resulting dependency-license restrictions. Agents must not choose legal/distribution policy by assumption. No environment variables or credentials are needed.
+**Trigger and request:** For a concrete product distribution, choose its overall licensing, copyright notices where supported by ownership evidence, distribution model, and applicable dependency-license obligations. Orion's repository license does not decide these for an independent derived project. Agents must not choose legal/distribution policy by assumption. No environment variables or credentials are needed.
 
-**Verification:** Match the owner's decision to license and publication metadata. Add license checks only for a concrete policy; there is no global dependency-license allowlist/denylist by default.
+**Verification:** Match the product owner's decision to its license and publication metadata. Add license checks only for a concrete policy; there is no global dependency-license allowlist/denylist by default.
 
-**Current evidence:** No license selected; this review requests no distribution. Ordinary internal foundation work is unaffected.
+**Current evidence (2026-09-30):** The Orion owner selected Apache License 2.0 for the foundation repository. The [root license](../LICENSE), [README](../README.md#license), and [ADR-0016](adr/0016-license-the-orion-foundation-under-apache-2-0.md) record that decision. No separate product distribution or licensing decision is made here.
 
 ## H-12
 

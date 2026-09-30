@@ -4,6 +4,42 @@
     "title": "Authorization",
     "group": "Security",
     "kind": "repository",
+    "heading": "Default deny",
+    "anchor": "default-deny",
+    "text": "Default deny\nAuthorization asks whether this actor may perform this operation on this resource in this context. Fail closed when permission cannot be established; security-sensitive ambiguity must not broaden access. Use verified principals and trusted resource state, not client-provided roles, user IDs, ownership, tenant IDs, or capability hints.\nPublic operations must be intentionally public and represent anonymous actors explicitly. Authentication does not grant permission. Resource identifier possession, unpredictable IDs, hidden endpoints, feature flags, and UI visibility are not authorization controls. Feature availability, subscriptions/entitlements, and security authorization have distinct meanings even when all constrain an operation.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Trusted enforcement boundary",
+    "anchor": "trusted-enforcement-boundary",
+    "text": "Trusted enforcement boundary\nEnforce authorization in trusted backend application, worker, or service code before side effects, unless an atomic architecture requires a combined decision. Every entry point to a protected operation must receive equivalent enforcement. Transport checks, authoritative application policy, and database isolation may coexist when their responsibilities differ; do not independently reimplement a rule in several layers or clients.\nClients may hide/disable actions and display safe capability hints for usability. The backend must evaluate each requested operation independently. Distinguish permission from domain validity: an actor may be permitted to cancel a resource whose current state prevents cancellation. Order checks deliberately to avoid revealing protected existence; a safe not-found result may be appropriate instead of a permission denial.\nPass minimal explicit actor, operation, resource, and relevant context into policy evaluation. Prefer predictable decisions without hidden global state or business side effects. Controlled audit/telemetry is acceptable; checking permission must not modify resources, send email, or charge payments. Load policy state explicitly and efficiently, including bulk evaluation where needed to avoid authorization N+1 queries.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Roles, permissions, and privileged actors",
+    "anchor": "roles-permissions-and-privileged-actors",
+    "text": "Roles, permissions, and privileged actors\nPermissions represent stable business capabilities and explicit scope, not button/controller names or undocumented strings. Roles group meaningful responsibilities and must define granted permissions, scope, and who may assign them. Avoid scattered hardcoded role checks, vague global administrator shortcuts, excessive granularity, and deep/cyclic inheritance. A maintainer should be able to explain why access was granted.\nPrefer narrow administrative roles when responsibilities differ. Support access must not automatically grant infrastructure, deployment, database, or secret administration. An unrestricted superuser, if required, needs strict assignment, strong authentication, auditability, limited use, and clear ownership. Impersonation must be explicit, visible, limited, and preserve both real and effective actors in audit evidence. Authorized operation of a system does not automatically authorize reading its raw secrets.\nMachine, CI, integration, and AI actors need scoped capabilities, not implicit trust. Scope by service, environment, and operation where relevant. Test automation must not inherit production deployment or administration permissions. An agent's repository knowledge does not enlarge its delegated authority; repository edits, telemetry, deployment, infrastructure, and production access remain separate capabilities.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Multi-tenant authorization",
+    "anchor": "multi-tenant-authorization",
+    "text": "Multi-tenant authorization\nWhen multi-tenancy is introduced, enforce isolation explicitly. Validate requested tenant context against verified membership and target resource scope. Tenant switching is a request, not proof of membership. Matching tenant identifiers may be necessary without being sufficient. Cross-tenant access is denied by default; exceptions need explicit narrow policy.\nTenant-aware queries or database protections can add defense in depth, but they do not replace discoverable application semantics. Document and test row-level security if adopted. Model ownership and relationships explicitly rather than inferring them from unrelated fields. Use role, relationship, or attribute models only where they match domain needs.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
     "heading": "Reads, collections, and data exposure",
     "anchor": "reads-collections-and-data-exposure",
     "text": "Reads, collections, and data exposure\nReads require authorization as well as writes. Apply it to details, lists, search, counts, aggregates, exports, and protected fields. Knowing a resource ID never proves access. Scope queries to authorized data where practical; do not load broad sensitive datasets and rely on client filtering. Use deliberate response schemas instead of serializing whole entities.\nBulk export or mutation may require stronger capability than operating on one item. Consider inference through counts, suggestions, existence checks, and error differences. Classification informs access requirements: confidential exports may need stronger policy, and restricted data access must be rare and explicit.\nCaches must preserve actor/tenant/permission isolation, including response variations and HTTP/CDN policy. Protected responses must not become publicly cacheable. Field-level policy and trusted permission-introspection tools require their own justified scope and access control.\n"
@@ -744,7 +780,7 @@
     "kind": "repository",
     "heading": "Identity and release points",
     "anchor": "identity-and-release-points",
-    "text": "Identity and release points\nThe immutable Git commit SHA is the exact technical identity of a foundation revision. Derived-project provenance records commits, and validation relies on commit identity and ancestry.\nA stable release has one immutable, annotated Git tag named `vMAJOR.MINOR.PATCH`. The tag is the canonical human-readable release identifier and points to the exact Orion commit released. A published tag must never be moved to another commit.\nA GitHub Release may be created from that tag as descriptive metadata. It should concisely state what the release represents, important foundation changes, compatibility or migration notes when relevant, materially required tool/runtime versions, the exact tagged commit, and useful documentation links. It does not establish provenance.\nThe first stable release is intended to be `v1.0.0`. This policy prepares that release; the tag and optional GitHub Release are created only after the policy change is reviewed, merged into `main`, and its resulting commit and CI state are verified.\n"
+    "text": "Identity and release points\nThe immutable Git commit SHA is the exact technical identity of a foundation revision. Derived-project provenance records commits, and validation relies on commit identity and ancestry.\nA stable release has one immutable, annotated Git tag named `vMAJOR.MINOR.PATCH`. The tag is the canonical human-readable release identifier and points to the exact Orion commit released. A published tag must never be moved to another commit.\nA GitHub Release may be created from that tag as descriptive metadata. It should concisely state what the release represents, important foundation changes, compatibility or migration notes when relevant, materially required tool/runtime versions, the exact tagged commit, and useful documentation links. It does not establish provenance.\nThe first stable release is `v1.0.0`. That tag identifies its historical foundation snapshot; later licensing decisions do not change the tagged commit.\n"
   },
   {
     "id": "repository/docs/versioning",
@@ -771,7 +807,7 @@
     "kind": "repository",
     "heading": "First release and acceptance sequence",
     "anchor": "first-release-and-acceptance-sequence",
-    "text": "First release and acceptance sequence\n`v1.0.0`, once tagged, represents the completed reusable Orion foundation: agent-neutral repository instructions, Living Documentation, validation/CI/security foundations, the Approval Request reference slice, project derivation with preserved Git ancestry, recorded provenance, and guarded baseline upgrades. It marks the foundation state accepted before the first real GitHub-backed sandbox derivation exercise. It does not certify production deployment, activate Phase 12, select a production identity provider, establish product-specific readiness, or promise conflict-free upgrades. The real GitHub-backed derivation and subsequent upgrade exercise remain acceptance and reverification activities.\nAfter this policy PR is merged: verify the resulting `main` commit and CI, create immutable `v1.0.0` on that commit, optionally publish a concise `Orion v1.0.0` GitHub Release, and perform `Orion-Derivation-Test` from the tagged foundation. Later, make a justified compatible Orion change, release it as `v1.0.1` or `v1.1.0` according to its actual impact, and exercise a real sandbox upgrade between those release points while checking the recorded commit baseline. Do not manufacture a change solely to create the second version.\n"
+    "text": "First release and acceptance sequence\n`v1.0.0` represents the completed reusable Orion foundation: agent-neutral repository instructions, Living Documentation, validation/CI/security foundations, the Approval Request reference slice, project derivation with preserved Git ancestry, recorded provenance, and guarded baseline upgrades. It marks the foundation state accepted before the first real GitHub-backed sandbox derivation exercise. It does not certify production deployment, activate Phase 12, select a production identity provider, establish product-specific readiness, or promise conflict-free upgrades. The real GitHub-backed derivation and subsequent upgrade exercise remain acceptance and reverification activities.\nFor a later compatible Orion change, release `v1.0.1` or `v1.1.0` according to its actual impact, then exercise a real sandbox upgrade between release points while checking the recorded commit baseline. Do not manufacture a change solely to create another version. The current [implementation plan](implementation-plan.md#maintaining-this-plan) tracks release preparation.\n"
   },
   {
     "id": "repository/packages/sdk/AGENTS",
@@ -790,23 +826,5 @@
     "heading": "Orion API SDK",
     "anchor": "orion-api-sdk",
     "text": "Orion API SDK\n[API contracts](../../apps/api/src/features/approval-requests/contracts.ts) · [Generated OpenAPI](../../docs/generated/api/openapi.json) · [API policy](../../docs/api/principles.md) · [Web consumer](../../apps/web/README.md)\n`@orion/sdk` is the private workspace client boundary for the API. [`src/index.ts`](src/index.ts) exports `createOrionClient(baseUrl, getAccessToken)`, `OrionClient`, and generated `paths` types. The host provides credentials through the callback; the SDK adds the bearer header without issuing, refreshing, persisting, or logging tokens. It contains no business authorization, persistence, or provider-specific identity model.\nThe API owns executable TypeBox schemas and stable operation IDs. Generated OpenAPI feeds `openapi-typescript`, which produces [`src/generated/api-types.ts`](src/generated/api-types.ts); `openapi-fetch` supplies the thin typed runtime. Never edit generated types or import server implementation models. Compile-time typing does not automatically revalidate successful responses at runtime.\nFrom the repository root, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md): regenerate API OpenAPI first, run `pnpm --filter @orion/sdk generate`, and regenerate affected portal data. `pnpm references:check` verifies API/database/SDK freshness without editing tracked files. Run `pnpm --filter @orion/sdk typecheck` and the full `pnpm validate` gate for the client and web consumer.\nThis package has no independently published compatibility promise. A real independently released consumer activates [API compatibility policy](../../docs/api/versioning.md) and [H-08](../../docs/human-actions.md#h-08); SDK package versions and server contract versions are distinct. Current-source drift checks do not validate a historical released consumer.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Orion",
-    "anchor": "orion",
-    "text": "Orion\nOrion is an AI-first engineering foundation for applications maintained collaboratively by humans and AI agents. The repository connects architecture, contracts, schemas, implementation, tests, and operational knowledge. Its local Living Documentation Portal connects searchable local guides, architecture, and decisions with generated API, database/data-dictionary, and component references and a bounded API explorer. AI-readable canonical sources remain available.\nIts purpose is a reusable engineering environment that remains understandable as applications evolve: explicit boundaries, meaningful shared code, reproducible validation, observable production behavior, and safe database evolution. It is not a collection of unrelated libraries or an attempt to abstract every technology and eliminate all duplication.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Current state",
-    "anchor": "current-state",
-    "text": "Current state\nOrion implements the Approval Request reference slice across the API, PostgreSQL, generated SDK, and web application, with a pnpm workspace, CI, and generated API/database/component references. The [Living Documentation Portal](apps/web/README.md#living-documentation-portal) runs locally at `/docs` in the web app. The [acceptance report](docs/foundation-acceptance.md#phase-11-foundation-acceptance) records foundation acceptance; its [review concerns](docs/foundation-acceptance.md#implementation-concerns-identified-during-review) distinguish implementation gaps from conditional future work. A concrete authentication provider and production environment have not been selected. Consult [CI status](docs/architecture/continuous-integration.md) for remote execution and repository-setting availability.\nThis repository is the canonical upstream foundation. Real projects start from a clone of it through [project derivation](docs/project-derivation.md), which records their provenance in [`.orion/project.json`](.orion/project.json) and keeps later Orion upgrades reviewable. The [living plan](docs/implementation-plan.md) and [human actions](docs/human-actions.md) track Orion's own work.\n"
   }
 ]
