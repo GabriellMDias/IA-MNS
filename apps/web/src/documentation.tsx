@@ -19,6 +19,7 @@ import { Detail } from "./documentation/reference-pages.js";
 import { Catalog, Overview } from "./documentation/catalog.js";
 import { SearchPage } from "./documentation/search-page.js";
 import "./documentation.css";
+import orionMark from "./assets/orion-mark.svg";
 function safeDecode(value: string): string {
   try {
     return decodeURIComponent(value);
@@ -161,7 +162,21 @@ export function DocumentationPage() {
       </a>
       <aside className={`docs-rail ${mobileOpen ? "is-open" : ""}`}>
         <div className="docs-rail-brand">
-          <span aria-hidden="true">✳</span> ORION <small>Documentation</small>
+          <img
+            className="docs-brand-symbol"
+            src={orionMark}
+            alt=""
+            width="28"
+            height="28"
+          />{" "}
+          ORION <small>Documentation</small>
+          <span
+            className="docs-foundation-version"
+            title={__ORION_FOUNDATION_VERSION__.commit ?? undefined}
+          >
+            <span className="sr-only">Orion foundation: </span>
+            {__ORION_FOUNDATION_VERSION__.label}
+          </span>
         </div>
         <button
           className="docs-menu-toggle"

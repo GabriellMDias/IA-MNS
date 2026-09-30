@@ -54,6 +54,16 @@ button:disabled {
   letter-spacing: 0.12em;
   text-decoration: none;
 }
+.brand img {
+  width: 32px;
+  height: 32px;
+  padding: 3px;
+  margin-right: 0.55rem;
+  vertical-align: middle;
+  object-fit: contain;
+  background: #f7f9fa;
+  border-radius: 6px;
+}
 .brand span {
   font-size: 0.67rem;
   font-weight: 500;

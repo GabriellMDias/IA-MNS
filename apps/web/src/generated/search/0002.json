@@ -4,6 +4,15 @@
     "title": "ADR-0005: Select PostgreSQL as the Primary Database",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Vector storage and semantic retrieval",
+    "anchor": "vector-storage-and-semantic-retrieval",
+    "text": "Vector storage and semantic retrieval\nWhen an Orion application requires vector embeddings, vector similarity search, or semantic retrieval, **pgvector will be the preferred initial vector-storage and similarity-search approach when the workload can be appropriately served by PostgreSQL**.\n`pgvector` will **not** be enabled by default for applications that do not require vector capabilities.\nThe intended default progression is:\napplication requires semantic/vector retrieval\n    ↓\nevaluate PostgreSQL + pgvector\n    ↓\nuse pgvector when requirements are satisfied\n    ↓\nmeasure real workload\n    ↓\nintroduce specialized vector infrastructure only if justified\n\nA dedicated vector database will not be introduced solely in anticipation of future AI workloads.\nA specialized vector or search system may be selected later when demonstrated requirements involving scale, latency, indexing capabilities, isolation, operational behavior, or other constraints materially justify the additional infrastructure.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "AI access to application data",
     "anchor": "ai-access-to-application-data",
     "text": "AI access to application data\nThe presence of PostgreSQL or pgvector does not authorize AI systems to access the database directly without application controls.\nThe preferred model for structured business data is:\nAI agent\n    ↓\nauthorized application tool\n    ↓\napplication layer\n    ↓\nauthorization and business rules\n    ↓\npersistence layer\n    ↓\nPostgreSQL\n\nFor semantic retrieval:\nAI agent\n    ↓\nauthorized retrieval capability\n    ↓\napplication layer\n    ↓\nvector search\n    ↓\nPostgreSQL + pgvector\n\nAI systems should not receive unrestricted arbitrary SQL access to production databases by default.\nApplication-level authorization, tenant isolation, data classification, auditing, and business invariants remain authoritative.\nThe broader AI integration architecture, including model providers, tool calling, prompt-injection controls, retrieval architecture, embeddings, and AI-specific authorization, will be defined separately when concrete implementation requirements exist.\n"
@@ -997,23 +1006,5 @@
     "heading": "Test database isolation",
     "anchor": "test-database-isolation",
     "text": "Test database isolation\nTests must not depend on state created by unrelated tests.\nState isolation may be implemented through mechanisms such as:\nindependent databases;\nindependent schemas where appropriate;\ntransaction rollback where semantically safe;\ndeterministic cleanup;\nworker-scoped database instances;\nanother mechanism providing equivalent isolation.\nThis ADR does not mandate one universal database-reset technique.\nThe selected technique must preserve correctness, parallelism, and deterministic execution.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Fastify integration testing",
-    "anchor": "fastify-integration-testing",
-    "text": "Fastify integration testing\nBackend HTTP integration tests should use Fastify's request-injection capabilities when the behavior does not require a real external network socket.\nThe preferred integration path is:\ntest\n    ↓\nFastify request injection\n    ↓\nreal route\n    ↓\nreal validation / serialization\n    ↓\nreal application behavior\n    ↓\nreal persistence when required\n\nThis enables realistic HTTP-boundary testing without paying unnecessary TCP and process-management costs.\nA real listening server should be started only when the behavior under test depends on actual network behavior or is part of a full end-to-end environment.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "React logic tests",
-    "anchor": "react-logic-tests",
-    "text": "React logic tests\nFrontend logic that does not require browser behavior should run through Vitest in Node.js.\nExamples include:\nformatters;\nstate transformations;\nparsing;\nquery-key factories;\ndeterministic helpers;\nbusiness-independent UI calculations.\nA browser must not be started merely because the code belongs to the web package.\n"
   }
 ]

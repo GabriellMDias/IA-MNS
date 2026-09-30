@@ -1,5 +1,32 @@
 [
   {
+    "id": "repository/docs/security/authentication",
+    "title": "Authentication",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "New authentication mechanism checklist",
+    "anchor": "new-authentication-mechanism-checklist",
+    "text": "New authentication mechanism checklist\nBefore introducing or materially changing authentication, document:\nActor, identity proof, trusted verification boundary, principal/claim mapping, and provider dependencies.\nCredential purpose, storage by platform, lifetime, rotation, revocation, logout/global logout, account disablement, and recovery semantics.\nAssurance and abuse risks, collected data, safe errors/telemetry, audit ownership, and tests.\nCompatibility of old/new token claims, session formats, keys, cookies, and clients during migration; temporary coexistence and removal where necessary.\nProvider, recovery, MFA, impersonation, delegation, and session changes warrant security review. Document implementation-specific behavior near its owner, derive structural contracts from schemas where practical, and use an ADR for significant choices. Do not invent a provider, global session architecture, mobile/desktop mechanism, or shared authentication package to fill a documentation gap.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Authorization",
+    "anchor": "authorization",
+    "text": "Authorization\nThis policy owns permission decisions for application actors. [Authentication](authentication.md) establishes trusted identity; [production access](production-access.md) governs operational capabilities. Use the [task index](../README.md) for related API, database, and security policy.\n"
+  },
+  {
+    "id": "repository/docs/security/authorization",
+    "title": "Authorization",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Current implementation and ownership",
+    "anchor": "current-implementation-and-ownership",
+    "text": "Current implementation and ownership\nThe Approval Request feature has a concrete policy in [domain.ts](../../apps/api/src/features/approval-requests/domain.ts), enforced by [application operations](../../apps/api/src/features/approval-requests/service.ts) and scoped database queries. Its [domain documentation](../domains/approval-request.md) explains owner/reviewer behavior. This is not a repository-wide role engine or multi-tenant implementation.\nProtected operations must have an identifiable policy owner. Keep business-security meaning near the owning domain; common infrastructure may provide evaluation, principal types, lookup, denial semantics, and audit hooks without becoming a central switch over all domain rules. Introduce shared abstractions, a permission registry, RBAC, ABAC, ReBAC, or row-level security only when actual requirements justify them. Significant choices need an ADR.\n"
+  },
+  {
     "id": "repository/docs/security/authorization",
     "title": "Authorization",
     "group": "Security",
@@ -787,6 +814,15 @@
     "title": "Orion Foundation Versioning",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Where version information belongs",
+    "anchor": "where-version-information-belongs",
+    "text": "Where version information belongs\nKeep the stable Git tag as the single source of the foundation release number. Do not maintain a current-version field or a `VERSION` file alongside it.\nLocation\nResponsibility\n`/docs`\nDisplay a build-time projection of Git release metadata, with unreleased revisions identified explicitly. Derived projects display their recorded Orion baseline SHA. See [portal metadata](architecture/living-documentation.md#sources-and-representations).\n`README.md` and documentation indexes\nLink to this policy and the canonical repository's tags rather than store a current release number. Historical examples and release records may name specific versions.\nRoot and workspace `package.json` files\nDescribe private workspace packages. Their package versions, where present, do not identify an Orion foundation release; package publication would require its own deliberate policy.\n`.orion/project.json`\nRecord project identity and immutable foundation commit provenance. `schemaVersion` identifies the manifest schema, not a foundation release. No semantic-version field is required.\n`ORION_RELEASE_ID` and database release history\nIdentify executable artifacts for telemetry and protect migration history respectively, under their [configuration](architecture/configuration.md#canonical-configuration-schema) and [database evolution](database/release-evolution.md) policies. Do not automatically assign the Orion foundation version to them.\nAfter release tags become available in the local checkout, restart Vite or rebuild the web app to refresh the `/docs` label. An existing build retains its embedded metadata; it does not check GitHub for new releases. No manual version bump or synchronization across tracked files is needed.\n"
+  },
+  {
+    "id": "repository/docs/versioning",
+    "title": "Orion Foundation Versioning",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Compatibility meaning",
     "anchor": "compatibility-meaning",
     "text": "Compatibility meaning\nChoose the next version from the intended impact on the foundation contract and supported upgrade model for derived projects, not from diff size or the number of merge conflicts.\nPart\nIncrement when\nExamples\nMAJOR\nOrion intentionally makes the foundation contract or supported upgrade model incompatible, requiring deliberate project migration.\nBreaking provenance/schema changes; removal or incompatible replacement of an established foundation contract; previously valid projects becoming unsupported; incompatible derivation or baseline-upgrade rules.\nMINOR\nOrion adds backward-compatible foundation capability.\nOptional architecture or reference patterns, reusable tooling, agent/tool integrations, validation capabilities, or substantial compatible development-experience improvements.\nPATCH\nOrion makes compatible corrections or hardening without intentionally changing the foundation contract.\nBug and documentation fixes, security hardening, test or validation fixes, and small tooling or development-experience corrections.\nA project may legitimately change shared files. A three-way merge can therefore conflict even between compatible Orion releases; resolve the semantic conflict under review. A Git conflict alone does not make the foundation change MAJOR.\nStable tags are sufficient for Orion now. No pre-release tags or workflow are defined; naming such as `-alpha.1`, `-beta.1`, or `-rc.1` can be specified when an actual pre-release need arises.\n"
@@ -799,32 +835,5 @@
     "heading": "Derived projects and unreleased commits",
     "anchor": "derived-projects-and-unreleased-commits",
     "text": "Derived projects and unreleased commits\nA project may be described as derived from `Orion v1.0.0` when its recorded initialization commit equals that tag's target, or as having a `v1.0.0` foundation baseline when its recorded baseline equals the target. Its [manifest](../.orion/project.json) still stores the corresponding SHA, with no required semantic-version field. Tags neither change the [baseline-recording safety rules](project-derivation.md#upgrade-to-a-newer-orion-revision) nor replace normal Git ancestry, reviewed merge commits, and validation for upgrades.\nTo determine whether a recorded commit has a semantic version, inspect stable tags in the canonical Orion repository and compare their resolved commit SHAs with the recorded SHA (for example, `git rev-list -n 1 v1.0.0` in an Orion clone with the tag). The derived project's `orion-upstream` deliberately does not fetch tags, so use a separate Orion clone or the canonical repository's tag view. A nearby or ancestral tag does not name an untagged baseline.\nThe latest stable tag identifies the latest released human-readable version. Later commits on `main` are unreleased foundation revisions; a project can deliberately use one by its SHA. The next semantic version is assigned only when another release point is tagged. Ordinary merges require no new tag.\n"
-  },
-  {
-    "id": "repository/docs/versioning",
-    "title": "Orion Foundation Versioning",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "First release and acceptance sequence",
-    "anchor": "first-release-and-acceptance-sequence",
-    "text": "First release and acceptance sequence\n`v1.0.0` represents the completed reusable Orion foundation: agent-neutral repository instructions, Living Documentation, validation/CI/security foundations, the Approval Request reference slice, project derivation with preserved Git ancestry, recorded provenance, and guarded baseline upgrades. It marks the foundation state accepted before the first real GitHub-backed sandbox derivation exercise. It does not certify production deployment, activate Phase 12, select a production identity provider, establish product-specific readiness, or promise conflict-free upgrades. The real GitHub-backed derivation and subsequent upgrade exercise remain acceptance and reverification activities.\nFor a later compatible Orion change, release `v1.0.1` or `v1.1.0` according to its actual impact, then exercise a real sandbox upgrade between release points while checking the recorded commit baseline. Do not manufacture a change solely to create another version. The current [implementation plan](implementation-plan.md#maintaining-this-plan) tracks release preparation.\n"
-  },
-  {
-    "id": "repository/packages/sdk/AGENTS",
-    "title": "SDK-local Instructions",
-    "group": "Agent instructions",
-    "kind": "repository",
-    "heading": "SDK-local Instructions",
-    "anchor": "sdk-local-instructions",
-    "text": "SDK-local Instructions\nUse [the package guide](README.md) for ownership and generation. Global repository instructions still apply.\n`src/index.ts` is the public surface. Keep the SDK a thin generated-contract consumer; never import API implementation, persistence, or backend business authorization.\nGenerate `src/generated/api-types.ts` from committed OpenAPI after changing the API's executable contracts. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md); never hand-edit generated types or duplicate wire schemas here.\nThe host supplies bearer tokens through `createOrionClient`; do not add token storage, provider-specific identity, or authorization rules.\nPreserve structured errors and safe unknown-code fallback. Consider actual consumer compatibility when changing the client surface or generator; this private workspace package has no independent publication promise.\nRun `pnpm --filter @orion/sdk typecheck` and root `pnpm references:check`, then root `pnpm validate` before substantial-work handoff.\n"
-  },
-  {
-    "id": "repository/packages/sdk/README",
-    "title": "Orion API SDK",
-    "group": "Workspace guides",
-    "kind": "repository",
-    "heading": "Orion API SDK",
-    "anchor": "orion-api-sdk",
-    "text": "Orion API SDK\n[API contracts](../../apps/api/src/features/approval-requests/contracts.ts) · [Generated OpenAPI](../../docs/generated/api/openapi.json) · [API policy](../../docs/api/principles.md) · [Web consumer](../../apps/web/README.md)\n`@orion/sdk` is the private workspace client boundary for the API. [`src/index.ts`](src/index.ts) exports `createOrionClient(baseUrl, getAccessToken)`, `OrionClient`, and generated `paths` types. The host provides credentials through the callback; the SDK adds the bearer header without issuing, refreshing, persisting, or logging tokens. It contains no business authorization, persistence, or provider-specific identity model.\nThe API owns executable TypeBox schemas and stable operation IDs. Generated OpenAPI feeds `openapi-typescript`, which produces [`src/generated/api-types.ts`](src/generated/api-types.ts); `openapi-fetch` supplies the thin typed runtime. Never edit generated types or import server implementation models. Compile-time typing does not automatically revalidate successful responses at runtime.\nFrom the repository root, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md): regenerate API OpenAPI first, run `pnpm --filter @orion/sdk generate`, and regenerate affected portal data. `pnpm references:check` verifies API/database/SDK freshness without editing tracked files. Run `pnpm --filter @orion/sdk typecheck` and the full `pnpm validate` gate for the client and web consumer.\nThis package has no independently published compatibility promise. A real independently released consumer activates [API compatibility policy](../../docs/api/versioning.md) and [H-08](../../docs/human-actions.md#h-08); SDK package versions and server contract versions are distinct. Current-source drift checks do not validate a historical released consumer.\n"
   }
 ]

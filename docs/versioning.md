@@ -12,6 +12,20 @@ This policy names stable revisions of the reusable Orion foundation for people c
 
 The first stable release is `v1.0.0`. That tag identifies its historical foundation snapshot; later licensing decisions do not change the tagged commit.
 
+## Where version information belongs
+
+Keep the stable Git tag as the single source of the foundation release number. Do not maintain a current-version field or a `VERSION` file alongside it.
+
+| Location | Responsibility |
+| --- | --- |
+| `/docs` | Display a build-time projection of Git release metadata, with unreleased revisions identified explicitly. Derived projects display their recorded Orion baseline SHA. See [portal metadata](architecture/living-documentation.md#sources-and-representations). |
+| `README.md` and documentation indexes | Link to this policy and the canonical repository's tags rather than store a current release number. Historical examples and release records may name specific versions. |
+| Root and workspace `package.json` files | Describe private workspace packages. Their package versions, where present, do not identify an Orion foundation release; package publication would require its own deliberate policy. |
+| `.orion/project.json` | Record project identity and immutable foundation commit provenance. `schemaVersion` identifies the manifest schema, not a foundation release. No semantic-version field is required. |
+| `ORION_RELEASE_ID` and database release history | Identify executable artifacts for telemetry and protect migration history respectively, under their [configuration](architecture/configuration.md#canonical-configuration-schema) and [database evolution](database/release-evolution.md) policies. Do not automatically assign the Orion foundation version to them. |
+
+After release tags become available in the local checkout, restart Vite or rebuild the web app to refresh the `/docs` label. An existing build retains its embedded metadata; it does not check GitHub for new releases. No manual version bump or synchronization across tracked files is needed.
+
 ## Compatibility meaning
 
 Choose the next version from the intended impact on the foundation contract and supported upgrade model for derived projects, not from diff size or the number of merge conflicts.

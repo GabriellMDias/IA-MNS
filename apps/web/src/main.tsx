@@ -1,4 +1,5 @@
 import React from "react";
+import orionMark from "./assets/orion-mark.svg";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -46,6 +47,7 @@ function Shell() {
       <header className="site-header">
         <div className="site-header-inner">
           <Link to="/" search={{ scope: "mine" }} className="brand">
+            <img src={orionMark} alt="" width="32" height="32" />
             ORION
             <span>
               {isDocumentation

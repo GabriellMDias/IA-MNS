@@ -24,6 +24,7 @@ This repository is the canonical upstream foundation. Real projects start from a
 | Find implementation examples and acceptance evidence | [Reference feature source map](docs/foundation-acceptance.md#reference-feature-evidence-map), [foundation acceptance](docs/foundation-acceptance.md) |
 | Find outstanding work or required owner decisions | The plan and human actions linked from [Current state](#current-state) |
 | Start a project from Orion, inspect provenance, or adopt a newer Orion revision | [Project derivation](docs/project-derivation.md) |
+| Identify a foundation release and its compatibility meaning | [Foundation versioning](docs/versioning.md), [Orion tags](https://github.com/GabriellMDias/Orion/tags) |
 | Create an operational procedure | [Runbooks](docs/runbooks/README.md) |
 
 Accepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate. See the [API runtime](apps/api/README.md) and [web workflow](apps/web/README.md) for application-specific behavior.

@@ -4,6 +4,24 @@
     "title": "Documentation Task Index",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Documentation Task Index",
+    "anchor": "documentation-task-index",
+    "text": "Documentation Task Index\nChoose the route relevant to the change, then use the policy's headings and source links for focused reading. Related policies apply when the change crosses their boundaries. The repository has the Approval Request server, PostgreSQL persistence, generated SDK, and web workflow. [Selected technologies](architecture/technology-decisions.md) are not proof of [implemented commands](validation.md).\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Find the smallest useful context",
+    "anchor": "find-the-smallest-useful-context",
+    "text": "Find the smallest useful context\nRead the root and applicable nested `AGENTS.md`, then select the task route below. Read related policies only when the change crosses their boundaries.\nFollow the owner to its canonical source and relevant tests. For an implemented example, start at the [reference feature map](foundation-acceptance.md#reference-feature-evidence-map). For commands, use [setup](setup.md) and [validation](validation.md).\nConsult the [technology map](architecture/technology-decisions.md) and governing ADR for an architectural choice or rationale. Accepted ADRs preserve decision-time context; their future-tense examples are not current command inventories.\nIf implementation and policy disagree, record the discrepancy and resolve it within the task's scope. Do not infer that a requirement is implemented or weaken it to match a gap.\n[Contributing](contributing.md#documentation-ownership) owns documentation responsibilities. The [plan](implementation-plan.md) owns execution status; [human actions](human-actions.md) owns actual owner/access prerequisites. Neither activates conditional deployment work.\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "Architecture and implementation",
     "anchor": "architecture-and-implementation",
     "text": "Architecture and implementation\nTask\nAuthoritative policy\nExecute or track implementation phases\n[Living implementation plan](implementation-plan.md); in a derived project, `docs/project/implementation-plan.md`\nStart a project from Orion, check its provenance, or upgrade its Orion baseline\n[Project derivation](project-derivation.md)\nName a stable Orion foundation release or assess derived-project compatibility\n[Foundation versioning](versioning.md)\nChange agent instruction files or tool compatibility adapters\n[Agent instructions](architecture/agent-instructions.md)\nReproduce development setup, local execution, and the validation gate\n[Development setup](setup.md)\nRun the living API/data/component portal and understand its architecture\n[Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md)\nReview accepted reference feature and portal capabilities, evidence, and limitations\n[Foundation acceptance](foundation-acceptance.md)\nResolve owner decisions, external access, or other human prerequisites\n[Human-action checklist](human-actions.md); in a derived project, `docs/project/human-actions.md`\nUnderstand the reference feature's business rules and acceptance scenarios\n[Approval Request](domains/approval-request.md)\nImplement the reference feature's persistence, concurrency, access, and list contracts\n[Approval Request implementation conventions](domains/approval-request-implementation.md)\nEvaluate architectural tradeoffs or exceptions\n[Principles](architecture/principles.md)\nFind selected technology decisions\n[Technology decisions](architecture/technology-decisions.md)\nPlace code or create an application/package\n[Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md)\nAdd imports or shared dependencies\n[Dependency rules](architecture/dependency-rules.md)\nModel failures and translate boundaries\n[Error handling](architecture/error-handling.md)\nAdd configuration\n[Configuration](architecture/configuration.md)\nChoose test coverage and execution layers\n[Testing strategy](architecture/testing-strategy.md), [validation availability](validation.md)\nChange independently deployed or persisted contracts\n[Versioning and compatibility](architecture/versioning-and-compatibility.md)\nHandle delivery, retries, and external side effects\n[Delivery and side effects](architecture/delivery-and-side-effects.md)\nImplement CI or dependency automation\n[Continuous integration](architecture/continuous-integration.md)\nChange backend execution or regenerate derived references\n[Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md)\nRun or extend the current API feature\n[API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json)\nRun or extend the web workflow or generated SDK\n[Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts)\nChange the SDK public surface or generated types\n[SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md)\nTrace the reference feature through business rules, contracts, data, errors, tests, and telemetry\n[Foundation acceptance map](foundation-acceptance.md#reference-feature-evidence-map)\n"
@@ -889,32 +907,5 @@
     "heading": "Authentication integration tests",
     "anchor": "authentication-integration-tests",
     "text": "Authentication integration tests\nAutomated tests must use synthetic identities and credentials. Unit tests may construct principals when transport verification is outside their scope. Boundary tests should cover valid, missing, invalid, expired, and applicable revoked credentials; wrong audience/issuer/algorithm; provider/key failures; claim mapping; production-bypass rejection; and credential redaction. Add regression tests for security defects whenever practical. End-to-end login, logout, refresh, recovery, MFA, and session tests apply only when those flows exist.\nDevelopment authentication must not require production credentials. Any development/test bypass must be explicit, isolated, testable, and unreachable in production. Preserve account and authorization checks rather than weakening security for convenience.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "New authentication mechanism checklist",
-    "anchor": "new-authentication-mechanism-checklist",
-    "text": "New authentication mechanism checklist\nBefore introducing or materially changing authentication, document:\nActor, identity proof, trusted verification boundary, principal/claim mapping, and provider dependencies.\nCredential purpose, storage by platform, lifetime, rotation, revocation, logout/global logout, account disablement, and recovery semantics.\nAssurance and abuse risks, collected data, safe errors/telemetry, audit ownership, and tests.\nCompatibility of old/new token claims, session formats, keys, cookies, and clients during migration; temporary coexistence and removal where necessary.\nProvider, recovery, MFA, impersonation, delegation, and session changes warrant security review. Document implementation-specific behavior near its owner, derive structural contracts from schemas where practical, and use an ADR for significant choices. Do not invent a provider, global session architecture, mobile/desktop mechanism, or shared authentication package to fill a documentation gap.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Authorization",
-    "anchor": "authorization",
-    "text": "Authorization\nThis policy owns permission decisions for application actors. [Authentication](authentication.md) establishes trusted identity; [production access](production-access.md) governs operational capabilities. Use the [task index](../README.md) for related API, database, and security policy.\n"
-  },
-  {
-    "id": "repository/docs/security/authorization",
-    "title": "Authorization",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Current implementation and ownership",
-    "anchor": "current-implementation-and-ownership",
-    "text": "Current implementation and ownership\nThe Approval Request feature has a concrete policy in [domain.ts](../../apps/api/src/features/approval-requests/domain.ts), enforced by [application operations](../../apps/api/src/features/approval-requests/service.ts) and scoped database queries. Its [domain documentation](../domains/approval-request.md) explains owner/reviewer behavior. This is not a repository-wide role engine or multi-tenant implementation.\nProtected operations must have an identifiable policy owner. Keep business-security meaning near the owning domain; common infrastructure may provide evaluation, principal types, lookup, denial semantics, and audit hooks without becoming a central switch over all domain rules. Introduce shared abstractions, a permission registry, RBAC, ABAC, ReBAC, or row-level security only when actual requirements justify them. Significant choices need an ADR.\n"
   }
 ]

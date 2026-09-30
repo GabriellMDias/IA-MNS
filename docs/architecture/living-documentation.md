@@ -21,6 +21,8 @@ All Markdown under `docs/`, and repository `README.md`/`AGENTS.md` files, are in
 
 ## Sources and representations
 
+The navigation brand displays the Orion foundation revision. At Vite startup/build, [build metadata](../../apps/web/scripts/foundation-version.ts) reads stable Git tags reachable from the foundation checkout; later or modified revisions are marked `unreleased`. Derived projects display their recorded baseline SHA instead of interpreting product tags as Orion releases. Missing Git history is shown as `Version unavailable`. This metadata is embedded in the build, requires no browser network request, and does not duplicate the canonical tag in tracked generated files.
+
 | Subject | Canonical source | Derived representation |
 | --- | --- | --- |
 | Repository knowledge | Authored Markdown under `docs/` and local README/instruction files | Safe rendered page JSON, headings, catalog summaries, and searchable sections |
