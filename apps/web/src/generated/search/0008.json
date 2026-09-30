@@ -1,5 +1,41 @@
 [
   {
+    "id": "repository/docs/project-derivation",
+    "title": "Project Derivation and Orion Upgrades",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Remote rules",
+    "anchor": "remote-rules",
+    "text": "Remote rules\nGit remotes are local configuration, so other clones of the project do not receive `orion-upstream`. Configure it in any clone with:\npnpm orion:upstream\ngit fetch orion-upstream\n\nRemote\nRule\nEnforced by\n`origin`\nMust not identify the Orion foundation through its fetch or push URL, so product work never has the foundation as its normal push target. It need not equal the project's `repository.url`: contributors may work through a fork or mirror.\n`pnpm orion:upstream` refuses; `pnpm orion:check` fails\n`orion-upstream`, when present\nIts fetch URL must identify the foundation repository recorded in the manifest.\n`pnpm orion:upstream` refuses; `pnpm orion:check` fails\n`orion-upstream`, when present\nIts only push URL must be the disabled `orion-upstream-is-fetch-only`.\n`pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream`\n`orion-upstream`, when absent\nValid; a normal clone has no foundation remote until a developer configures it.\n—\nLocal branches\nNo local branch may track `orion-upstream`; an argument-free `git pull` would otherwise merge foundation changes outside a reviewed upgrade.\n`pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream`\n`pnpm orion:upstream` adds `orion-upstream` from the manifest when absent, replaces every push URL of it with the disabled one, disables its tags, and removes upstream tracking of it from every local branch. It is safe to rerun.\nRepository identities compare as normalized HTTPS URLs, so HTTPS, SSH, and scp-like forms of the same repository match. Host names are case-insensitive, but repository path case is significant because self-hosted servers may treat `acme/Ledger` and `acme/ledger` as different repositories: accepting a URL as a given repository, as for `orion-upstream` or the `origin` checked before initialization, requires the exact path. Refusing a URL because it could reach the foundation, as for `origin` or a new project's repository, ignores path case, because hosts such as GitHub resolve differently cased paths to the same repository. An explicit non-default HTTPS port is part of the identity: `https://git.example.com:8443/acme/ledger` differs from `https://git.example.com/acme/ledger`, while `:443` is the same endpoint as no port. A non-default SSH port only selects the SSH transport and does not identify the HTTPS endpoint, so such a URL is refused as a project repository and never matches the foundation; supply the repository's HTTPS URL instead.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Project Derivation and Orion Upgrades",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Upgrade to a newer Orion revision",
+    "anchor": "upgrade-to-a-newer-orion-revision",
+    "text": "Upgrade to a newer Orion revision\nAn upgrade is a normal reviewable engineering change on a branch. Nothing is applied automatically, and semantic conflicts are resolved by people or agents under review.\nTags help humans choose a known release point but do not change this workflow: fetch and merge commits with normal Git ancestry, then record the integrated commit under the existing safety rules. Ordinary conflicts in project-modified shared files do not by themselves indicate a MAJOR Orion release.\nRun `git fetch orion-upstream` and `pnpm orion:status`. Review upstream changes with `git log --oneline <baseline>..orion-upstream/main` and `git diff <baseline> orion-upstream/main`, including ADRs, policies, migrations, and tooling.\nChoose the candidate commit; it must be on `orion-upstream/main`. Create a branch, for example `git switch -c orion-upgrade/<short-commit>`, and run `git merge --no-ff <commit>`.\nResolve conflicts according to the [ownership table](#foundation-owned-and-project-owned-files). Resolve generated references and portal data by rerunning their generators after the canonical sources are merged. Review semantic interactions with product code even where Git reports no conflict.\nRun `pnpm install --frozen-lockfile` if the lockfile changed, the relevant generators, and `pnpm validate`. Commit the merge.\nRun `pnpm orion:record-baseline <commit>`. It refuses unless the worktree is clean and `orion-upstream` exists and satisfies the [remote rules](#remote-rules). It then fetches `main` from that verified foundation, so refs fetched earlier from another repository cannot vouch for the commit. Finally it requires the commit to be on `orion-upstream/main`, descend from the recorded baseline, and already be an ancestor of `HEAD`. Commit the manifest change, rerun `pnpm validate`, and open the pull request against the project's `main`.\nMerge the pull request with a merge commit. Squash or rebase merges discard Orion's commit identities, and `pnpm orion:check` then fails because the recorded baseline is not an ancestor of `HEAD`. The project repository must therefore keep merge commits enabled (project human action PH-02). This applies only to Orion upgrade pull requests; other pull requests may use whichever merge methods the project prefers.\nIf the project's default branch requires pull requests, as PH-02 establishes, the merge and baseline update reach `main` together through that pull request. Record the upgrade and any project-specific follow-up in the project plan.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Project Derivation and Orion Upgrades",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contributing improvements back to Orion",
+    "anchor": "contributing-improvements-back-to-orion",
+    "text": "Contributing improvements back to Orion\nProduct work never goes to `orion-upstream`; its push URL is disabled. To improve the foundation itself, make the change in a separate clone of Orion and submit it there under Orion's own review, then adopt it in projects through the upgrade workflow. Do not move product code, requirements, or history into Orion.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Project Derivation and Orion Upgrades",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Limits",
+    "anchor": "limits",
+    "text": "Limits\nProvenance proves which Orion commits are ancestors of the project; it does not prove that the project still follows every inherited policy. Validation and review remain the enforcement.\n`pnpm orion:check` can verify that the recorded baseline is integrated, but only `pnpm orion:status` with a fetched upstream can report newer integrated commits that were not yet recorded.\nProjects that diverge heavily from foundation files, rename the foundation namespace, or remove the reference implementation should expect more upgrade conflicts in those areas.\nThe immutable Git commit remains the exact foundation revision and provenance identity. [Foundation versioning](versioning.md) assigns human-readable tags only to deliberate stable release points; commits between tags remain usable by SHA.\n"
+  },
+  {
     "id": "repository/docs/README",
     "title": "Documentation Task Index",
     "group": "Project guides",
@@ -862,50 +898,5 @@
     "heading": "Credentials and token verification",
     "anchor": "credentials-and-token-verification",
     "text": "Credentials and token verification\nCredentials that grant access are `RESTRICTED`, including session identifiers, access/refresh tokens, API keys, reset links, recovery codes, and signing material. Never intentionally put them in telemetry, public errors, documentation, source control, or support artifacts. Server-only secrets must never reach clients. Prefer secure derived representations for stored verification material when recoverable bearer values are unnecessary.\nFor every token type, define its purpose, owner, audience, issuer, lifetime, storage, verification, rotation, and revocation. Signed tokens must be cryptographically verified; decoding is not verification, and signing does not encrypt their contents. Explicitly allow intended algorithms and trusted issuers, validate audience and required time/identity claims, and keep clock-skew tolerance bounded. Unknown claims must not silently become trusted state. Minimize token contents rather than embedding profiles or private application data.\nShorter-lived access credentials reduce exposure. Refresh credentials require explicit replay, concurrency, expiration, storage, rotation, and revocation behavior. If immediate revocation is required, design for it before choosing stateless verification. Caching must not retain changed/revoked identity beyond acceptable limits. Signing-key transitions must define valid key identifiers and overlap without accepting obsolete keys indefinitely.\nDo not send credentials in URLs except where an explicit protocol requires a short-lived one-time value and its exposure risks are understood. URLs can reach history, proxies, analytics, referrers, and screenshots. One-time credentials should be high-entropy, short-lived, single-purpose, and single-use where appropriate. Deep links must minimize leakage and verify callback ownership. Redirect destinations must be controlled; protocol state/correlation values must use the chosen protocol's generation and validation rules.\nAPI keys need scoped ownership, attribution, expiration, rotation, and revocation. Non-secret prefixes may support lookup/display while the secret portion stays protected. Authenticate service-to-service calls across meaningful trust boundaries using the selected infrastructure; prefer stronger workload identity over long-lived shared secrets when available. Inbound webhooks must verify provider-supported authenticity and integrity and consider timestamps, nonces, or event IDs for replay protection: a signature alone need not prove freshness.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Password storage",
-    "anchor": "password-storage",
-    "text": "Password storage\nIf passwords are supported, never store plaintext or implement custom password hashing or cryptographic primitives. Use an established password-storage implementation for both hashing and verification; choose algorithm and parameters with the authentication stack. Hashes remain `RESTRICTED` because disclosure enables offline attacks. Limit plaintext lifetime in memory and keep hashes out of APIs, telemetry, support tools, and AI prompts.\nRecovery is another authentication mechanism and must receive comparable protection. Reset credentials and recovery codes need strong entropy, limited purpose/lifetime, and single-use semantics where appropriate; recovery codes should not remain recoverable in plaintext after initial display where practical. Credential changes require assurance proportionate to risk, such as current-password verification, recent authentication, or MFA. Retry, duplicate request, delivery failure, and expired-token behavior must remain safe for email-based flows.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Sessions",
-    "anchor": "sessions",
-    "text": "Sessions\nA session is authenticated continuity, not the user itself. Multiple sessions may differ by device, application, method, creation time, and assurance. Choose server-side, token-based, or hybrid storage against explicit expiration, revocation, multi-device, and operational requirements. Do not create unlimited sessions accidentally.\nDefine absolute/idle/credential/refresh expiration as applicable and the effect of logout, password change, compromise, administrator action, and user revocation. If “log out everywhere” is required, the architecture must support it. Clearing client UI state alone does not invalidate still-usable server credentials. Prevent session fixation and consider identifier rotation after login, privilege elevation, or security-sensitive changes. Credential-bearing session identifiers must be unguessable and protected in transit, storage, and telemetry.\nUse platform-appropriate client storage. Browser choices must account for XSS, CSRF, refresh, revocation, and cross-tab behavior. Cookie authentication needs suitable `Secure`, `HttpOnly`, `SameSite`, and narrow domain/path scope plus an explicit CSRF defense when applicable. Token storage alone does not solve XSS. Persisted mobile credentials should use platform-protected storage; desktop credentials should use operating-system credential facilities rather than plain configuration files.\nClient authentication state and cached roles are presentation aids. Offline state is not current server permission; re-evaluate protected actions on reconnection where required. User-visible device/session management must not justify unnecessary device or IP collection.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Assurance, abuse, and identity providers",
-    "anchor": "assurance-abuse-and-identity-providers",
-    "text": "Assurance, abuse, and identity providers\nMatch authentication assurance to operation risk; do not assume all users have passwords or mandate MFA for every future application. Represent stronger/recent authentication explicitly when required for credential, financial, or administrative operations. Define “recent” from risk rather than inventing a global interval.\nAvoid unnecessary account enumeration in login, registration, reset, and recovery responses. Choose public response equivalence deliberately against product requirements. Detect repeated failures and apply justified rate limits, progressive delays, or challenges without allowing attacker-controlled attempts to permanently lock out legitimate users. Risk scoring, device fingerprints, CAPTCHA, and third-party bot services need actual requirements, privacy review, and consideration of false positives.\nValidate identity-provider assertions using established protocols. Do not link accounts solely by mutable attributes such as email unless verified provider semantics justify it. Collect only required identity attributes and distinguish profile ownership from authentication; do not persist complete provider payloads by default. Provider selection should assess security, standards, availability, recovery/session behavior, export/migration, supported assurance, cost, and lock-in through an ADR.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Failure handling and observability",
-    "anchor": "failure-handling-and-observability",
-    "text": "Failure handling and observability\nValidate required authentication configuration at startup. Distinguish invalid/missing credentials from provider, session-store, or key-refresh failure in safe operational diagnostics. Security-sensitive verification should fail closed unless an explicitly documented offline security model permits otherwise. Provider outage must not silently disable authentication. Avoid unnecessary synchronous provider calls for each request when safe local verification is supported.\nUse the canonical [error contract](../api/error-contract.md) for public failures rather than creating illustrative codes as implemented contracts. Expected invalid credentials are not automatically incidents; infrastructure failure must be observable. Keep public messages privacy-safe, with safe internal result categories and request/trace correlation. Metric labels must not contain actor identifiers or credentials. Audit sensitive credential, MFA, identity-link, and revocation changes without values; domain events, security events, and audit records have distinct purposes.\nCollect only justified security/device/IP data with explicit classification and retention. Follow [incident response](incident-response.md) and [secrets management](secrets-management.md) for takeover, hijacking, bypass, provider compromise, or exposed credentials; containment may require scoped session revocation, rotation, provider action, audit review, and notification according to actual impact.\n"
-  },
-  {
-    "id": "repository/docs/security/authentication",
-    "title": "Authentication",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Authentication integration tests",
-    "anchor": "authentication-integration-tests",
-    "text": "Authentication integration tests\nAutomated tests must use synthetic identities and credentials. Unit tests may construct principals when transport verification is outside their scope. Boundary tests should cover valid, missing, invalid, expired, and applicable revoked credentials; wrong audience/issuer/algorithm; provider/key failures; claim mapping; production-bypass rejection; and credential redaction. Add regression tests for security defects whenever practical. End-to-end login, logout, refresh, recovery, MFA, and session tests apply only when those flows exist.\nDevelopment authentication must not require production credentials. Any development/test bypass must be explicit, isolated, testable, and unreachable in production. Preserve account and authorization checks rather than weakening security for convenience.\n"
   }
 ]

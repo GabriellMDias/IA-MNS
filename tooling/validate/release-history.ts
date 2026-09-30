@@ -112,13 +112,18 @@ function previousRegistry(root: string, baseRef: string): Registry {
 }
 
 export function checkReleaseHistory(root: string, baseRef?: string): number {
+  // GitHub's first push has no previous commit, even with inherited Git history.
+  const comparisonBase = baseRef === "0".repeat(40) ? undefined : baseRef;
   const registry = parseRegistry(
     readFileSync(resolve(root, registryPath), "utf8"),
   );
-  if (baseRef) {
-    if (!/^[a-f0-9]{40}$/.test(baseRef))
+  if (comparisonBase) {
+    if (!/^[a-f0-9]{40}$/.test(comparisonBase))
       throw new Error("Release comparison base must be a full Git commit SHA");
-    const previous = previousRegistry(root, baseRef).recordedDurableReleases;
+    const previous = previousRegistry(
+      root,
+      comparisonBase,
+    ).recordedDurableReleases;
     if (
       JSON.stringify(
         registry.recordedDurableReleases.slice(0, previous.length),
