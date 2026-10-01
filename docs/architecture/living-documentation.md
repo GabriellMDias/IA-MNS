@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md) · [Portal setup](../setup.md#living-documentation-portal) · [Contributing](../contributing.md)
 
-The Living Documentation portal is Orion's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources.
+The Living Documentation portal is the repository's local, searchable interface to repository knowledge and generated references. It lives in the existing React/Vite web application. Markdown, contracts, schemas, and owned metadata remain canonical; browser pages and search assets are disposable generated representations, never separate authoring sources.
 
 ## Information architecture
 
@@ -73,6 +73,6 @@ The catalog still grows with entry count; search and static asset volume grow wi
 3. Run `pnpm docs:references:test`, `pnpm docs:check`, `pnpm docs:references:check`, relevant unit/browser checks, and the full `pnpm validate` gate. Generator tests protect publication boundaries; browser tests cover routes, search, exploration, synthetic previews, and automated accessibility checks plus keyboard/mobile behavior.
 4. For substantial generation/build changes, verify frozen installation, regeneration with no diff, build, and a real browser in a clean checkout without a local environment file or existing generated cache. Remote CI runs the same full gate; record actual results separately from local evidence.
 
-See [setup](../setup.md#living-documentation-portal) for commands and [validation](../validation.md) for available checks. This foundation work does not select providers, deploy infrastructure, or activate Phase 12.
+See [setup](../setup.md#living-documentation-portal) for commands and [validation](../validation.md) for available checks. The portal does not select providers or deploy infrastructure.
 
 The [manual checklist](../validation.md#living-documentation-manual-browser-checks) is the guide for human-observed acceptance after material UI changes. Keep human-observed acceptance distinct from the automated browser suites in the normal repository gate.

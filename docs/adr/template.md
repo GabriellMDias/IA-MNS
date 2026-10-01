@@ -25,7 +25,7 @@ This section should make it possible to understand the chosen direction without 
 Example form:
 
 ```text
-Orion will ...
+This repository will ...
 ```
 
 ## Rationale

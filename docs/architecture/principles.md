@@ -11,7 +11,7 @@ These are durable principles for humans and AI agents. Current policies own deta
 
 ## 1. The Repository Is the Source of Truth
 
-The repository must contain or link the source, contracts, schemas, tests, architecture, operations, security requirements, telemetry conventions, and decisions needed to understand, build, validate, operate, and evolve Orion. Important knowledge must not live only in memory, private conversations, external tools, or undocumented habits. Change the repository when that knowledge changes.
+The repository must contain or link the source, contracts, schemas, tests, architecture, operations, security requirements, telemetry conventions, and decisions needed to understand, build, validate, operate, and evolve the system. Important knowledge must not live only in memory, private conversations, external tools, or undocumented habits. Change the repository when that knowledge changes.
 
 ## 2. One Concept Should Have One Canonical Source
 

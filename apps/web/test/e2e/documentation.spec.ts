@@ -120,6 +120,17 @@ test("the application shell presents the project identity and documentation", as
     overviewTitle,
   );
   await expect(page).toHaveTitle(`${overviewTitle} · ${projectName}`);
+  // The portal returns to this repository's application, not to a module.
+  await page.getByRole("link", { name: "Application ↗" }).click();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.origin === new URL(webUrl()).origin &&
+      url.pathname === "/" &&
+      !url.search,
+  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: projectName, exact: true }),
+  ).toBeVisible();
 });
 
 test("repository documentation reads locally with heading links and unknown-page recovery", async ({

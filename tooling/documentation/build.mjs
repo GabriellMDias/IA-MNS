@@ -138,7 +138,12 @@ export async function buildDocumentation(sources) {
     return sources.get(name).replaceAll("\r\n", "\n");
   };
   const outputs = new Map();
-  const sourceBase = sourceBaseFrom(await read(".orion/project.json"));
+  const projectSource = await read(".orion/project.json");
+  const sourceBase = sourceBaseFrom(projectSource);
+  // The portal belongs to the repository it documents, Orion or a project.
+  const projectName = JSON.parse(projectSource).name;
+  if (typeof projectName !== "string" || !projectName.trim())
+    fail("missing project name in .orion/project.json");
   const openapiText = await read("docs/generated/api/openapi.json");
   const openapi = JSON.parse(openapiText);
   if (!openapi.openapi?.startsWith("3.1.")) fail("expected OpenAPI 3.1");
@@ -505,7 +510,7 @@ export async function buildDocumentation(sources) {
     "apps/web/src/generated/manifest.json",
     await formatJson({
       version: 1,
-      title: "Orion Living Documentation",
+      title: `${projectName} Living Documentation`,
       api: { title: openapi.info.title, version: openapi.info.version },
       entries,
       search: { shards, count: records.length },

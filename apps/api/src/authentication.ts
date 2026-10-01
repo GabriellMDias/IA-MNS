@@ -39,7 +39,7 @@ export function createAccessTokenVerifier(config: {
           audience: config.audience,
           algorithms: ["RS256", "ES256"],
         });
-        // The issuer's trusted adapter must map its user to a stable Orion ID.
+        // The issuer's trusted adapter must map its user to a stable application principal ID.
         const id = payload.orion_principal_id;
         if (
           protectedHeader.typ !== "at+jwt" ||

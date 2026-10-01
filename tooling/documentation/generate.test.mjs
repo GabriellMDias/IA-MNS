@@ -198,10 +198,18 @@ test("source-only links open the repository recorded in the project manifest", a
   derived.set(
     ".orion/project.json",
     JSON.stringify({
+      name: "Acme Ledger",
       repository: { url: derivedRepository, defaultBranch: "main" },
     }),
   );
-  const retargeted = sourceLinks(await buildDocumentation(derived));
+  const derivedOutputs = await buildDocumentation(derived);
+  // The portal is titled after the repository it documents.
+  assert.equal(
+    JSON.parse(derivedOutputs.get("apps/web/src/generated/manifest.json"))
+      .title,
+    "Acme Ledger Living Documentation",
+  );
+  const retargeted = sourceLinks(derivedOutputs);
   // The same source links now open the derived repository, and none keeps
   // the repository of the checkout that generated the committed portal.
   assert.equal(retargeted.length, current.length);

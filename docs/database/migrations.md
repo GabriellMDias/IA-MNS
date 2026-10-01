@@ -6,7 +6,7 @@ This policy owns safe transitions between durable database states. [ADR-0006](..
 
 ## Released Migration
 
-A migration is released when applied to a persistent environment whose history Orion promises to upgrade safely: production, a durable staging baseline, or a customer installation may qualify. Non-production does not necessarily mean disposable. Released SQL, transformations, identifiers, contents, and ordering are immutable; corrections require a new forward migration. Generated and handwritten migrations follow the same rule.
+A migration is released when applied to a persistent environment whose history the application must upgrade safely: production, a durable staging baseline, or a customer installation may qualify. Non-production does not necessarily mean disposable. Released SQL, transformations, identifiers, contents, and ordering are immutable; corrections require a new forward migration. Generated and handwritten migrations follow the same rule.
 
 If release status is uncertain, treat history as immutable until verified. An empty registry means no durable release is **recorded**, not proof that no persistent consumer exists. Do not edit, delete, reorder, or squash uncertain history on that assumption. Follow [release recording](release-evolution.md#record-the-first-durable-migration-boundary) and resolve the applicable human-action evidence in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)) before classifying an existing migration as unreleased.
 

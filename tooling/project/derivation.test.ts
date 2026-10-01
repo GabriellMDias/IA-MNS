@@ -97,10 +97,10 @@ function write(root: string, path: string, content: string) {
 const fixtureContract = {
   schemaVersion: 1,
   foundationOnly: [
-    "apps/api/src/features/approval-requests",
+    "apps/api/src/features/sample-reference",
     "docs/implementation-plan.md",
   ],
-  foundationOnlyTerms: ["approval request"],
+  foundationOnlyTerms: ["sample reference"],
   isolationExempt: [".orion", "tooling/project"],
   projectFiles: {
     "README.md": "tooling/project/templates/README.md.tmpl",
@@ -123,9 +123,9 @@ const fixtureFiles: Record<string, string> = {
   "apps/web/src/api-client.ts":
     'import { createApiClient } from "@orion/sdk";\nexport const client = createApiClient;\n',
   "apps/api/src/modules.ts":
-    'import { approvalModule } from "./features/approval-requests/module.js";\nexport const apiModules = [approvalModule];\n',
-  "apps/api/src/features/approval-requests/module.ts":
-    "// Approval Request reference module.\nexport const approvalModule = {};\n",
+    'import { referenceModule } from "./features/sample-reference/module.js";\nexport const apiModules = [referenceModule];\n',
+  "apps/api/src/features/sample-reference/module.ts":
+    "// Sample reference module.\nexport const referenceModule = {};\n",
   "docs/implementation-plan.md": "# Orion Implementation Plan\n",
   "docs/policy.md": "# Policy\n\nVersion 1. The SDK package is `@orion/sdk`.\n",
   "tooling/project/templates/README.md.tmpl":
@@ -1200,12 +1200,12 @@ void test("upgrade merges are pruned of reintroduced foundation-only content and
   // The foundation evolves its reference implementation and shared source.
   write(
     repo.seed,
-    "apps/api/src/features/approval-requests/module.ts",
-    "export const approvalModule = { version: 2 };\n",
+    "apps/api/src/features/sample-reference/module.ts",
+    "export const referenceModule = { version: 2 };\n",
   );
   write(
     repo.seed,
-    "apps/api/src/features/approval-requests/routes.ts",
+    "apps/api/src/features/sample-reference/routes.ts",
     "export {};\n",
   );
   write(
@@ -1226,13 +1226,13 @@ void test("upgrade merges are pruned of reintroduced foundation-only content and
   const actions = pruneProject(repo.work).join("\n");
   assert.match(
     actions,
-    /Removed foundation-only paths: apps\/api\/src\/features\/approval-requests/,
+    /Removed foundation-only paths: apps\/api\/src\/features\/sample-reference/,
   );
   assert.match(actions, /apps\/web\/src\/extra\.ts/);
   assert.equal(git(repo.work, "diff", "--name-only", "--diff-filter=U"), "");
   git(repo.work, "commit", "--quiet", "--no-edit");
   assert.ok(
-    !existsSync(join(repo.work, "apps/api/src/features/approval-requests")),
+    !existsSync(join(repo.work, "apps/api/src/features/sample-reference")),
   );
   assert.match(
     readFileSync(join(repo.work, "apps/web/src/extra.ts"), "utf8"),
@@ -1426,12 +1426,12 @@ void test("foundation validation keeps shared files independent of foundation-on
   write(
     repo.work,
     "apps/api/src/app.ts",
-    'import { approvalModule } from "./features/approval-requests/module.js";\nexport const app = approvalModule;\n',
+    'import { referenceModule } from "./features/sample-reference/module.js";\nexport const app = referenceModule;\n',
   );
   write(
     repo.work,
     "docs/other.md",
-    "# Other\n\nThe Approval Request example.\n",
+    "# Other\n\nThe Sample Reference example.\n",
   );
   git(repo.work, "add", "--all");
   const errors = checkProvenance(repo.work).errors.join("\n");
@@ -1441,9 +1441,9 @@ void test("foundation validation keeps shared files independent of foundation-on
   );
   assert.match(
     errors,
-    /apps\/api\/src\/app\.ts references apps\/api\/src\/features\/approval-requests/,
+    /apps\/api\/src\/app\.ts references apps\/api\/src\/features\/sample-reference/,
   );
-  assert.match(errors, /docs\/other\.md mentions "approval request"/);
+  assert.match(errors, /docs\/other\.md mentions "sample reference"/);
   git(repo.work, "reset", "--quiet", "--hard");
   git(repo.work, "clean", "-fdq");
   write(
@@ -1482,7 +1482,7 @@ void test("the derivation contract rejects unsafe or contradictory entries", () 
       /must be under tooling\/project\/templates/,
     ],
     [{ workspaceScope: "orion" }, /npm scope/],
-    [{ foundationOnlyTerms: ["Approval"] }, /lowercase terms/],
+    [{ foundationOnlyTerms: ["Sample"] }, /lowercase terms/],
     [{ extra: true }, /must contain exactly/],
     [{ schemaVersion: 2 }, /unsupported schemaVersion/],
   ];

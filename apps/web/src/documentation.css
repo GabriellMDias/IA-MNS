@@ -165,7 +165,7 @@
   background: #1c5b4c;
   border-color: #1c5b4c;
 }
-.docs-workflow-link {
+.docs-app-link {
   font-size: 0.76rem;
   white-space: nowrap;
   color: #425e73;
@@ -684,7 +684,7 @@
     padding-left: 1.6rem;
     padding-right: 1.6rem;
   }
-  .docs-workflow-link {
+  .docs-app-link {
     display: none;
   }
 }
@@ -849,9 +849,6 @@
   border: 1px dashed #9fb2c1;
   border-radius: 8px;
   padding: 1rem;
-}
-.docs-preview .credential-panel {
-  margin: 0;
 }
 .docs-muted {
   color: #536879;

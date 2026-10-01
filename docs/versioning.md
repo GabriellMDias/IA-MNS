@@ -10,7 +10,7 @@ This policy names stable revisions of the reusable Orion foundation for people c
 - A stable release has one immutable, annotated Git tag named `vMAJOR.MINOR.PATCH`. The tag is the canonical human-readable release identifier and points to the exact Orion commit released. A published tag must never be moved to another commit.
 - A GitHub Release may be created from that tag as descriptive metadata. It should concisely state what the release represents, important foundation changes, compatibility or migration notes when relevant, materially required tool/runtime versions, the exact tagged commit, and useful documentation links. It does not establish provenance.
 
-The first stable release is `v1.0.0`. That tag identifies its historical foundation snapshot; later licensing decisions do not change the tagged commit.
+Stable releases start at `v1.0.0`. A tag always identifies the exact commit it was created for; later foundation changes never alter a tagged snapshot.
 
 ## Where version information belongs
 

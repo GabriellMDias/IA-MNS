@@ -291,12 +291,8 @@ export function DocumentationPage() {
             </select>
             <button type="submit">Search</button>
           </form>
-          <Link
-            to="/"
-            search={{ scope: "mine" }}
-            className="docs-workflow-link"
-          >
-            Reference workflow ↗
+          <Link to="/" className="docs-app-link">
+            Application ↗
           </Link>
         </div>
         <div className="docs-page-grid">

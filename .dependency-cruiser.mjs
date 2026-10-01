@@ -10,7 +10,7 @@ export default {
   forbidden: [
     error(
       "no-circular-dependencies",
-      "Circular dependencies violate Orion boundaries.",
+      "Circular dependencies violate architectural boundaries.",
       {},
       { circular: true },
     ),
