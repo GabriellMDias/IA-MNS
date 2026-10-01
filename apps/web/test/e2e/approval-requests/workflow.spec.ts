@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures.ts";
 import type { ApprovalRequestsStack } from "./stack.ts";
+import { expectNoStoredUserData } from "../storage.ts";
 
 let stack: ApprovalRequestsStack;
 test.beforeEach(({ approval }) => {
@@ -42,11 +43,7 @@ test("local synthetic identities connect without persisting bearer tokens", asyn
   await expect(
     page.getByRole("heading", { name: "Approval requests" }),
   ).toBeVisible();
-  const storage = await page.evaluate(() => ({
-    local: localStorage.length,
-    session: sessionStorage.length,
-  }));
-  expect(storage).toEqual({ local: 0, session: 0 });
+  await expectNoStoredUserData(page);
 });
 
 test("owner creates, edits, submits and a different reviewer approves through PostgreSQL", async ({

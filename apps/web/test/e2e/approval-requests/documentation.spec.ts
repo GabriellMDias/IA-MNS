@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./fixtures.ts";
 import type { ApprovalRequestsStack } from "./stack.ts";
+import { expectNoStoredUserData } from "../storage.ts";
 
 // Living Documentation checks for the Approval Request reference content.
 let stack: ApprovalRequestsStack;
@@ -14,16 +15,6 @@ async function openDocument(page: Page, path: string, title: string) {
   await expect(
     page.getByRole("heading", { level: 1, name: title, exact: true }),
   ).toBeVisible();
-}
-
-async function expectNoStoredCredentials(page: Page) {
-  expect(
-    await page.evaluate(() => ({
-      local: localStorage.length,
-      session: sessionStorage.length,
-    })),
-  ).toEqual({ local: 0, session: 0 });
-  await expect(page).not.toHaveURL(/eyJ[A-Za-z0-9_-]+/);
 }
 
 test("reference operations and tables have isolated deep-linked pages", async ({
@@ -144,7 +135,7 @@ test("API explorer validates input and requires confirmation before an authentic
   expect(((await persisted.json()) as { title: string }).title).toBe(
     result.title,
   );
-  await expectNoStoredCredentials(page);
+  await expectNoStoredUserData(page);
   await explorer
     .getByRole("button", { name: "Clear request and response", exact: true })
     .click();
@@ -177,7 +168,7 @@ test("API explorer reports real authentication failures", async ({ page }) => {
   await expect(explorer.locator("pre").last()).toContainText(
     "AUTHENTICATION_REQUIRED",
   );
-  await expectNoStoredCredentials(page);
+  await expectNoStoredUserData(page);
 });
 
 for (const [path, title] of [
