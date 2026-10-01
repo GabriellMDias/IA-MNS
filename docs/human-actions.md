@@ -185,17 +185,17 @@ External settings below were verified on the stated dates. They are evidence of 
 
 ## H-14
 
-- [ ] **Open the clean-project-baseline pull request.**
+- [x] **Open the clean-project-baseline pull request.**
 
-**Status:** pending. **Owner:** repository owner. **Dependency:** [CB5](implementation-plan.md#maintaining-this-plan).
+**Status:** completed. **Owner:** repository owner. **Dependency:** [CB5](implementation-plan.md#maintaining-this-plan).
 
-**Request and reason:** GitHub CLI access is available, but pushing `feature/clean-project-baseline` and opening its pull request publish the change, so they require the owner's explicit authorization. After authorization, the agent can push the branch, open the pull request into `main`, and verify the required gate. Owner review remains the merge prerequisite. This change creates no tag or GitHub Release.
+**Request and reason:** Pushing `feature/clean-project-baseline` and opening its pull request publish the change, so they required the owner's explicit authorization. The pull request must not be merged before review and a passing required gate, and the change creates no tag or GitHub Release.
 
 **Configuration:** none.
 
-**Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; record the links under CB5.
+**Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; the links are recorded under CB5.
 
-**Evidence / blocker:** Local validation is complete under CB4 (2026-10-01). Awaiting the owner's authorization to push and open the pull request.
+**Evidence (2026-10-01):** The owner authorized the submission; the agent pushed the branch and opened [PR #21](https://github.com/GabriellMDias/Orion/pull/21) through the authenticated GitHub CLI. On head `0d75edf` all seven remote checks passed, including the [`Orion required gate`](https://github.com/GabriellMDias/Orion/actions/runs/36863164319). Review, later CI runs, and merge are tracked under CB5 rather than this action.
 
 ## New action template
 

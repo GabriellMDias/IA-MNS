@@ -93,4 +93,40 @@ describe("API module composition", () => {
       ]),
     ).toThrow("Module example redefines public error VALIDATION_FAILED");
   });
+
+  it("rejects a duplicated public code even when the definitions are identical", () => {
+    // Redeclaring a shared code verbatim still gives it a second owner.
+    expect(() =>
+      publicErrorRegistry([
+        exampleModule({
+          errors: { VALIDATION_FAILED: coreErrors.VALIDATION_FAILED },
+        }),
+      ]),
+    ).toThrow(
+      "Module example redefines public error VALIDATION_FAILED, already defined by the shared runtime",
+    );
+    // Two modules may not share a code, identical or not.
+    const first = exampleModule();
+    const second = exampleModule({ name: "second" });
+    expect(first.errors).toEqual(second.errors);
+    expect(() => publicErrorRegistry([first, second])).toThrow(
+      "Module second redefines public error EXAMPLE_CONFLICT, already defined by module example",
+    );
+    expect(() =>
+      publicErrorRegistry([
+        first,
+        exampleModule({
+          name: "third",
+          errors: {
+            EXAMPLE_CONFLICT: {
+              ...first.errors.EXAMPLE_CONFLICT,
+              message: "Different meaning.",
+            },
+          },
+        }),
+      ]),
+    ).toThrow(
+      "Module third redefines public error EXAMPLE_CONFLICT, already defined by module example",
+    );
+  });
 });
