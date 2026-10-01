@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { test, expect, type Page, type Route } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { expectNoStoredUserData, routerReloadMarker } from "./storage.ts";
+import { expectNoStoredUserData, isRouterReloadMarker } from "./storage.ts";
 
 // Shared journeys use only content every Orion-based repository has; module
 // suites check their own operations, tables, and components.
@@ -247,7 +247,7 @@ test("a transient portal chunk failure recovers without storing user data", asyn
   expect(failed).toBeGreaterThan(1);
   const keys = await page.evaluate(() => Object.keys(sessionStorage));
   expect(keys).toHaveLength(1);
-  expect(keys[0]).toMatch(routerReloadMarker);
+  expect(isRouterReloadMarker(keys[0], new URL(page.url()).origin)).toBe(true);
   await expectNoStoredUserData(page);
 });
 
@@ -255,13 +255,31 @@ test("the storage check rejects anything but the router reload marker", async ({
   page,
 }) => {
   await openDocument(page, "/docs/components/ErrorNotice", "ErrorNotice");
-  const marker =
-    "tanstack_router_reload:Failed to fetch dynamically imported module: /src/documentation.tsx";
+  const origin = new URL(page.url()).origin;
+  const prefix =
+    "tanstack_router_reload:Failed to fetch dynamically imported module: ";
+  const marker = `${prefix}${origin}/src/documentation.tsx`;
+  const token = "eyJhbGciOiJub25lIn0.eyJzdWIiOiJ4In0.sig";
   for (const [storage, key, value] of [
     ["session", "draft", "user input"],
     ["local", "anything", "1"],
-    ["session", marker, "eyJhbGciOiJub25lIn0.eyJzdWIiOiJ4In0.sig"],
+    ["session", marker, token],
     ["session", "tanstack_router_reload:other", "1"],
+    // A valid prefix followed by arbitrary data or a token is not a marker.
+    ["session", `${prefix}user typed this`, "1"],
+    ["session", `${prefix}${token}`, "1"],
+    ["session", `${marker} user typed this`, "1"],
+    ["session", `${marker}?draft=user-input`, "1"],
+    ["session", `${marker}#${token}`, "1"],
+    ["session", `${prefix}https://attacker.example/src/documentation.tsx`, "1"],
+    ["session", `${prefix}${origin}/src/other.tsx`, "1"],
+    ["session", `${prefix}${origin}/assets/documentation-a.js/${token}`, "1"],
+    [
+      "session",
+      "tanstack_router_reload:Importing a module script failed. user input",
+      "1",
+    ],
+    ["session", "tanstack_router_reload:Importing a module script failed", "1"],
   ] as const) {
     await page.evaluate(
       ([kind, k, v]) =>
@@ -274,8 +292,18 @@ test("the storage check rejects anything but the router reload marker", async ({
       sessionStorage.clear();
     });
   }
-  await page.evaluate((k) => sessionStorage.setItem(k, "1"), marker);
-  await expectNoStoredUserData(page);
+  // The real error forms for the portal chunk remain accepted.
+  for (const accepted of [
+    marker,
+    `${marker}?t=1759312345678`,
+    `${prefix}${origin}/assets/documentation-C0bf_PFV.js`,
+    `tanstack_router_reload:error loading dynamically imported module: ${origin}/src/documentation.tsx`,
+    "tanstack_router_reload:Importing a module script failed.",
+  ]) {
+    await page.evaluate((k) => sessionStorage.setItem(k, "1"), accepted);
+    await expectNoStoredUserData(page);
+    await page.evaluate(() => sessionStorage.clear());
+  }
 });
 
 test("mobile navigation and real component previews stay local", async ({
