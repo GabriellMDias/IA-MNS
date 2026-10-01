@@ -436,7 +436,13 @@ test("large documentation sets produce separate pages and bounded searchable sha
   const manifest = JSON.parse(
     outputs.get("apps/web/src/generated/manifest.json"),
   );
-  assert.ok(manifest.entries.length >= 1090);
+  // Relative to this checkout, which may be Orion or a smaller derived project.
+  const baseline = JSON.parse(
+    (await buildDocumentation(sources)).get(
+      "apps/web/src/generated/manifest.json",
+    ),
+  );
+  assert.equal(manifest.entries.length, baseline.entries.length + 1000);
   assert.ok(manifest.search.shards.length > 20);
   for (const shard of manifest.search.shards) {
     const records = JSON.parse(
