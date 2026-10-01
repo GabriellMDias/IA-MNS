@@ -1,5 +1,5 @@
 {
-  "name": "@orion/api",
+  "name": "@ia-mns/api",
   "private": true,
   "type": "module",
   "scripts": {

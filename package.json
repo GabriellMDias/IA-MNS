@@ -1,5 +1,5 @@
 {
-  "name": "orion",
+  "name": "ia-mns",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.25.0",

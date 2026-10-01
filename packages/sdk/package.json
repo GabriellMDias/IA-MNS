@@ -1,5 +1,5 @@
 {
-  "name": "@orion/sdk",
+  "name": "@ia-mns/sdk",
   "version": "0.0.0",
   "private": true,
   "type": "module",
