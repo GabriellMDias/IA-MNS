@@ -2,13 +2,13 @@
 
 [Task index](../README.md) · [Error contract](error-contract.md) · [Compatibility](versioning.md) · [Validation](../validation.md)
 
-This policy owns API boundary design. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) selects Fastify; [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable TypeBox wire contracts, generated OpenAPI, and the thin TypeScript SDK. These are implemented. Feature-specific behavior belongs to the [Approval Request specification](../domains/approval-request.md) and [implementation conventions](../domains/approval-request-implementation.md).
+This policy owns API boundary design. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) selects Fastify; [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable TypeBox wire contracts, generated OpenAPI, and the thin TypeScript SDK. These are implemented. Module-specific behavior belongs to each module's business specification and implementation conventions; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows a complete example.
 
 ## Locate the authoritative source
 
 | Task | Start here |
 | --- | --- |
-| Change an operation, request, response, or expected error | [Feature TypeBox contracts](../../apps/api/src/features/approval-requests/contracts.ts), then the owning application operation and tests |
+| Change an operation, request, response, or expected error | The owning [module](../../apps/api/README.md#modules)'s TypeBox contracts, then its application operation and tests |
 | Inspect health contracts | [Health schemas](../../apps/api/src/health-contracts.ts) and [health policy](../reliability/health-checks.md) |
 | Inspect the interoperable API | [Generated OpenAPI](../generated/api/openapi.json); author changes in executable contracts |
 | Change a public error | [Error registry and envelope](../../apps/api/src/errors.ts) and [error policy](error-contract.md) |
@@ -55,13 +55,13 @@ Potentially growing collections must be bounded. Define default/maximum page siz
 
 Choose offset or cursor pagination according to dataset size, change frequency, query cost, and consumer needs. Cursors are opaque inputs, not authorization evidence; validate their scope and contents and protect sensitive state or integrity where needed. Document membership changes between pages instead of implying a snapshot guarantee.
 
-Allowlist filter operators and sort fields. Never pass arbitrary client fields or sort expressions to SQL/ORM queries. Bound flexible queries, related-resource depth, response size, and export work; add sparse fields or expansions only when consumers benefit. Inspect query behavior for material N+1 costs. The [current feature conventions](../domains/approval-request-implementation.md#read-and-list-contracts) own its concrete cursor and page-size choices.
+Allowlist filter operators and sort fields. Never pass arbitrary client fields or sort expressions to SQL/ORM queries. Bound flexible queries, related-resource depth, response size, and export work; add sparse fields or expansions only when consumers benefit. Inspect query behavior for material N+1 costs. Each module's implementation conventions own its concrete cursor and page-size choices.
 
 ## Idempotency
 
 For state-changing operations, consider duplicate submission, concurrent execution, timeout ambiguity, and response loss. HTTP method names alone do not prove idempotency. Where supported, specify key location, scope, intent matching, reuse/different-payload behavior, retention, and replay result. Distinguish a replay from a conflicting new action.
 
-Updates that must protect a previously observed state need a deliberate concurrency protocol, such as a version precondition. Stale writes should produce a stable conflict rather than silently overwrite newer state. Approval Request uses `Idempotency-Key` for creation and `expectedVersion` for edits/transitions; see its [mutation contract](../domains/approval-request-implementation.md#mutations-concurrency-and-transactions). Durable implementation requirements belong to [transactions](../database/transactions-and-concurrency.md) and [delivery](../architecture/delivery-and-side-effects.md).
+Updates that must protect a previously observed state need a deliberate concurrency protocol, such as a version precondition. Stale writes should produce a stable conflict rather than silently overwrite newer state. For example, a module may require `Idempotency-Key` for creation and `expectedVersion` for edits/transitions, recording that protocol in its implementation conventions. Durable implementation requirements belong to [transactions](../database/transactions-and-concurrency.md) and [delivery](../architecture/delivery-and-side-effects.md).
 
 Errors use the [public error contract](error-contract.md). Consumers branch on stable codes, never message text, and must not blindly retry timeouts or all `5xx` responses. Retry safety depends on operation semantics and whether the outcome is known.
 

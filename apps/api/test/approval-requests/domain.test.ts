@@ -7,7 +7,7 @@ import {
   validateRejectionReason,
   type ApprovalRequest,
   type Principal,
-} from "../src/features/approval-requests/domain.js";
+} from "../../src/features/approval-requests/domain.js";
 
 const owner: Principal = {
   id: "9f2c592e-63d7-4e45-923c-3c38a3298761",

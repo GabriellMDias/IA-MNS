@@ -1,6 +1,6 @@
 # Database Schema Documentation
 
-[Task index](../README.md) · [Database principles](principles.md) · [Generated reference](../generated/database/approval-requests.md) · [Living documentation](../architecture/living-documentation.md)
+[Task index](../README.md) · [Database principles](principles.md) · [Generated reference](../generated/database/schema.md) · [Living documentation](../architecture/living-documentation.md)
 
 This policy owns documentation of application-owned database structures. [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) makes fully migrated PostgreSQL the complete physical authority, including custom SQL absent from Prisma Schema Language. Document meaning next to the schema and generate structure; readers should not reconstruct current semantics from migration history or reverse engineer queries.
 
@@ -8,11 +8,11 @@ This policy owns documentation of application-owned database structures. [ADR-00
 
 | Information | Source |
 | --- | --- |
-| Authored representable model | [Prisma schema](../../apps/api/prisma/schema.prisma) |
+| Authored representable model | [Prisma schema folder](../../apps/api/prisma/schema/schema.prisma) |
 | Physical names, types, nullability, defaults, constraints, indexes, enum values | PostgreSQL migrated from committed SQL |
-| Meaning, ownership, classification, lifecycle, null/unit semantics, object purpose | [Schema-adjacent metadata](../../apps/api/prisma/schema-metadata.json) |
-| Generated textual presentation | [Database reference](../generated/database/approval-requests.md), produced by the [catalog-backed generator](../../apps/api/scripts/database-reference.ts) |
-| Cross-file domain behavior and rationale | [Approval Request specification](../domains/approval-request.md), implementation conventions, policies, and ADRs |
+| Meaning, ownership, classification, lifecycle, null/unit semantics, object purpose | Schema-adjacent metadata in `apps/api/prisma/metadata/<module>.json`; a table or enum belongs to exactly one file |
+| Generated textual presentation | [Database reference](../generated/database/schema.md), produced by the [catalog-backed generator](../../apps/api/scripts/database-reference.ts); with no application tables it states that explicitly |
+| Cross-file domain behavior and rationale | The owning module's specification and implementation conventions, policies, and ADRs |
 
 The current metadata uses `tables` and `enums`; table metadata contains owner, description, classification, lifecycle, column metadata, and constraint/index purposes. Structural facts are introspected, not independently copied into JSON. Database-native comments, diagrams, broader manifests, and code-to-schema links remain optional future mechanisms, not alternative canonical sources already in use.
 
@@ -69,7 +69,7 @@ These requirements apply when the object exists; extend generation/validation wi
 
 ## Generated Reference
 
-`pnpm --filter @orion/api references:write` intentionally regenerates current API/database/configuration/error references using a freshly migrated disposable PostgreSQL. `pnpm references:check` checks freshness without editing tracked files; `pnpm docs:references:check` checks the portal's derived representation. See [artifact workflow](../architecture/backend-execution-and-generated-artifacts.md) for the complete order and [validation](../validation.md) for requirements.
+`pnpm -C apps/api references:write` intentionally regenerates current API/database/configuration/error references using a freshly migrated disposable PostgreSQL. `pnpm references:check` checks freshness without editing tracked files; `pnpm docs:references:check` checks the portal's derived representation. See [artifact workflow](../architecture/backend-execution-and-generated-artifacts.md) for the complete order and [validation](../validation.md) for requirements.
 
 The current database generator covers ordinary application tables in `public`, their columns, primary and other constraints, indexes, and enums; it excludes Prisma's migration table. It compares Prisma-representable structure to the freshly migrated database and rejects unmodeled application-owned object kinds rather than silently omitting them. It is still not a universal PostgreSQL catalog export: new schemas, partitioned tables, views, triggers, functions, RLS, or other object kinds require deliberate generator coverage and metadata before adoption.
 

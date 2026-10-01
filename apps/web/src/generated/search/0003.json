@@ -4,6 +4,33 @@
     "title": "ADR-0009: Establish Testing Strategy and Tooling",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Testcontainers",
+    "anchor": "testcontainers",
+    "text": "Testcontainers\nTestcontainers will be Orion's default mechanism for creating ephemeral infrastructure required by integration tests.\nIts initial primary responsibility is PostgreSQL test infrastructure.\nAdditional supported services may use Testcontainers when a real service provides materially better confidence than a mock or local substitute.\nIntroducing a Testcontainers module does not mean that every individual test must start its own container.\nInfrastructure lifecycle may be optimized according to test-suite size and execution environment.\nContainers or infrastructure instances may be scoped to:\na test run;\na worker;\na test suite;\nanother isolation boundary appropriate to the implementation.\nThe architectural requirement is not a particular container lifecycle.\nThe requirement is that tests remain:\nisolated;\ndeterministic;\nindependently executable;\nsafe for parallel execution.\nShared infrastructure must not create dependencies on test execution order.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Database initialization",
+    "anchor": "database-initialization",
+    "text": "Database initialization\nIntegration-test databases must be constructed using the same migration history used for durable application databases.\nThe intended lifecycle is:\nempty PostgreSQL\n    ↓\nversioned production migrations\n    ↓\ntest-specific data\n    ↓\ntest execution\n\nOrion will not maintain an independent test-only schema that bypasses the production migration path.\nThis allows integration tests to verify that the current database can actually be constructed from the committed migration history.\nTest initialization may optimize migration application through safe implementation techniques, but the resulting schema must be equivalent to one created by the canonical migration history.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Test database isolation",
+    "anchor": "test-database-isolation",
+    "text": "Test database isolation\nTests must not depend on state created by unrelated tests.\nState isolation may be implemented through mechanisms such as:\nindependent databases;\nindependent schemas where appropriate;\ntransaction rollback where semantically safe;\ndeterministic cleanup;\nworker-scoped database instances;\nanother mechanism providing equivalent isolation.\nThis ADR does not mandate one universal database-reset technique.\nThe selected technique must preserve correctness, parallelism, and deterministic execution.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Fastify integration testing",
     "anchor": "fastify-integration-testing",
     "text": "Fastify integration testing\nBackend HTTP integration tests should use Fastify's request-injection capabilities when the behavior does not require a real external network socket.\nThe preferred integration path is:\ntest\n    ↓\nFastify request injection\n    ↓\nreal route\n    ↓\nreal validation / serialization\n    ↓\nreal application behavior\n    ↓\nreal persistence when required\n\nThis enables realistic HTTP-boundary testing without paying unnecessary TCP and process-management costs.\nA real listening server should be started only when the behavior under test depends on actual network behavior or is part of a full end-to-end environment.\n"
@@ -1141,23 +1168,5 @@
     "heading": "Consequences",
     "anchor": "consequences",
     "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOrion has a concrete CI platform integrated with the repository host.\nLocal development and CI use the same validation capabilities.\nAI agents can reproduce CI failures through repository commands.\n`pnpm validate` remains the stable validation contract.\nCI jobs can evolve independently behind a stable aggregate required check.\nPull requests receive mechanical validation before merge.\nThe exact merged primary-branch revision is validated again.\nDependency installation is deterministic through the committed frozen lockfile.\nCI caching cannot become an implicit source of correctness.\nReal PostgreSQL and browser testing remain supported in CI.\nSuperseded pull-request runs can be cancelled to control resource usage.\nRenovate provides one explicit dependency-update automation system.\nDependency Dashboard makes pending dependency maintenance visible.\nRelated technology ecosystems can be updated coherently.\nMajor upgrades remain visible and deliberate.\nGitHub Actions dependencies are immutable at the referenced commit.\nRenovate can maintain action pins without sacrificing reproducibility.\nExplicit workflow permissions reduce CI blast radius.\nUntrusted pull-request code remains separated from privileged credentials.\nFuture deployment workflows can use OIDC rather than long-lived credentials.\nGitHub dependency/security capabilities can be adopted without coupling application code to them.\nCI remains separate from deployment architecture.\nOrion does not require a specific paid GitHub security tier.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nGitHub Actions becomes the default CI orchestration platform.\nFull SHA action pins are less readable without accompanying version comments.\nRenovate introduces another repository automation configuration surface.\nWeekly dependency grouping may delay routine non-security upgrades compared with immediate per-release pull requests.\nManual dependency review creates some ongoing maintenance work because broad automerge is disabled.\nFull repository validation may become increasingly expensive as the monorepo grows.\nGitHub-hosted runner performance and cost may eventually require optimization.\nTestcontainers and Playwright increase CI resource requirements.\nSecurity capabilities may differ between public and private repositories depending on GitHub feature availability.\nA conditional security baseline provides less uniform enforcement than mandating one paid toolset.\nBranch-protection and repository-security settings exist partly outside version-controlled source and therefore require administrative configuration.\nCI hardening adds maintenance work when GitHub Actions dependencies release new versions.\n"
   }
 ]

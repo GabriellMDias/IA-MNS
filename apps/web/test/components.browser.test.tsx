@@ -1,41 +1,32 @@
 import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
-import { userEvent } from "vitest/browser";
-import { AccessTokenForm, ErrorNotice } from "../src/components.js";
-import { ApiFailure } from "../src/api.js";
+import { ErrorNotice } from "../src/components.js";
+import { ApiFailure } from "../src/api-client.js";
 
-test("the token form supports keyboard submission without persisting the credential", async () => {
-  const connected = vi.fn();
-  const screen = await render(<AccessTokenForm onConnect={connected} />);
-  const field = screen.getByLabelText("Access token");
-  await expect.element(field).toHaveAttribute("type", "password");
-  await field.fill("  synthetic-token  ");
-  await userEvent.keyboard("{Enter}");
-  expect(connected).toHaveBeenCalledWith("synthetic-token");
-  await expect.element(field).toHaveValue("");
-});
-
-test("a stale update exposes an accessible reload action", async () => {
+test("a failure exposes an accessible reload action", async () => {
   const reload = vi.fn();
   const screen = await render(
     <ErrorNotice
-      error={
-        new ApiFailure(
-          409,
-          "RESOURCE_VERSION_CONFLICT",
-          "test-request",
-          "Changed",
-        )
-      }
+      error={new ApiFailure(409, "EXAMPLE_CONFLICT", "test-request", "Changed")}
+      messages={{ EXAMPLE_CONFLICT: "This item changed. Reload it first." }}
+      reloadLabel="Reload current item"
       onReload={reload}
     />,
   );
   await expect.element(screen.getByRole("alert")).toBeVisible();
   await expect
-    .element(
-      screen.getByText("This request changed. Reload it before trying again."),
-    )
+    .element(screen.getByText("This item changed. Reload it first."))
     .toBeVisible();
-  await screen.getByRole("button", { name: "Reload current request" }).click();
+  await screen.getByRole("button", { name: "Reload current item" }).click();
   expect(reload).toHaveBeenCalledOnce();
+});
+
+test("an unknown write outcome is never presented as a known failure", async () => {
+  const screen = await render(
+    <ErrorNotice error={new TypeError("disconnect")} operation="write" />,
+  );
+  await expect
+    .element(screen.getByText(/Update outcome is unknown/))
+    .toBeVisible();
+  await expect.element(screen.getByRole("button")).not.toBeInTheDocument();
 });

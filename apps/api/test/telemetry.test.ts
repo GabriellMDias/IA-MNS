@@ -34,7 +34,7 @@ describe("telemetry export boundary", () => {
 
   it("retains only a safe database span identity and status code", () => {
     const span = {
-      name: "prisma:query SELECT secret FROM approval_requests",
+      name: "prisma:query SELECT secret FROM example_table",
       instrumentationScope: { name: "prisma" },
       status: { code: 2, message: "database secret" },
       attributes: {

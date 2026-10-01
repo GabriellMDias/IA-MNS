@@ -1,30 +1,29 @@
 # Documentation Task Index
 
-Choose the route relevant to the change, then use the policy's headings and source links for focused reading. Related policies apply when the change crosses their boundaries. The repository has the Approval Request server, PostgreSQL persistence, generated SDK, and web workflow. [Selected technologies](architecture/technology-decisions.md) are not proof of [implemented commands](validation.md).
+Choose the route relevant to the change, then use the policy's headings and source links for focused reading. Related policies apply when the change crosses their boundaries. The repository has an API runtime with composable modules and PostgreSQL support, a generated SDK, and a web application shell with this portal; the README's [Current state](../README.md#current-state) says which modules this repository composes. [Selected technologies](architecture/technology-decisions.md) are not proof of [implemented commands](validation.md).
 
 ## Find the smallest useful context
 
 1. Read the root and applicable nested `AGENTS.md`, then select the task route below. Read related policies only when the change crosses their boundaries.
-2. Follow the owner to its canonical source and relevant tests. For an implemented example, start at the [reference feature map](foundation-acceptance.md#reference-feature-evidence-map). For commands, use [setup](setup.md) and [validation](validation.md).
+2. Follow the owner to its canonical source and relevant tests. For a complete implemented example, see [Orion's reference implementation](project-derivation.md#orions-reference-implementation). For commands, use [setup](setup.md) and [validation](validation.md).
 3. Consult the [technology map](architecture/technology-decisions.md) and governing ADR for an architectural choice or rationale. Accepted ADRs preserve decision-time context; their future-tense examples are not current command inventories.
 4. If implementation and policy disagree, record the discrepancy and resolve it within the task's scope. Do not infer that a requirement is implemented or weaken it to match a gap.
 
-[Contributing](contributing.md#documentation-ownership) owns documentation responsibilities. The [plan](implementation-plan.md) owns execution status; [human actions](human-actions.md) owns actual owner/access prerequisites. Neither activates conditional deployment work.
+[Contributing](contributing.md#documentation-ownership) owns documentation responsibilities. The implementation plan owns execution status and the human-action checklist owns actual owner/access prerequisites; the README's [Current state](../README.md#current-state) links this repository's copies. Neither activates conditional deployment work.
 
 ## Architecture and implementation
 
 | Task | Authoritative policy |
 | --- | --- |
-| Execute or track implementation phases | [Living implementation plan](implementation-plan.md); in a derived project, `docs/project/implementation-plan.md` |
-| Start a project from Orion, check its provenance, or upgrade its Orion baseline | [Project derivation](project-derivation.md) |
+| Execute or track implementation work | The implementation plan linked from the README's [Current state](../README.md#current-state) |
+| Start a new project from Orion, check its provenance, or upgrade its Orion baseline | [Start and upgrade a project from Orion](project-derivation.md) |
 | Name a stable Orion foundation release or assess derived-project compatibility | [Foundation versioning](versioning.md) |
 | Change agent instruction files or tool compatibility adapters | [Agent instructions](architecture/agent-instructions.md) |
 | Reproduce development setup, local execution, and the validation gate | [Development setup](setup.md) |
 | Run the living API/data/component portal and understand its architecture | [Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md) |
-| Review accepted reference feature and portal capabilities, evidence, and limitations | [Foundation acceptance](foundation-acceptance.md) |
-| Resolve owner decisions, external access, or other human prerequisites | [Human-action checklist](human-actions.md); in a derived project, `docs/project/human-actions.md` |
-| Understand the reference feature's business rules and acceptance scenarios | [Approval Request](domains/approval-request.md) |
-| Implement the reference feature's persistence, concurrency, access, and list contracts | [Approval Request implementation conventions](domains/approval-request-implementation.md) |
+| Resolve owner decisions, external access, or other human prerequisites | The human-action checklist linked from the README's [Current state](../README.md#current-state) |
+| Add an API module or web workflow | [API runtime](../apps/api/README.md#modules), [web workflow](../apps/web/README.md#modules) |
+| Study a complete implemented example across database, API, SDK, and UI | [Orion's reference implementation](project-derivation.md#orions-reference-implementation) |
 | Evaluate architectural tradeoffs or exceptions | [Principles](architecture/principles.md) |
 | Find selected technology decisions | [Technology decisions](architecture/technology-decisions.md) |
 | Place code or create an application/package | [Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md) |
@@ -39,7 +38,6 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | Run or extend the current API feature | [API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json) |
 | Run or extend the web workflow or generated SDK | [Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts) |
 | Change the SDK public surface or generated types | [SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md) |
-| Trace the reference feature through business rules, contracts, data, errors, tests, and telemetry | [Foundation acceptance map](foundation-acceptance.md#reference-feature-evidence-map) |
 
 ## APIs and data
 
@@ -52,7 +50,7 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | Change durable schema or migration history | [Migrations](database/migrations.md) |
 | Establish release status, test upgrades, or plan application/database recovery | [Release and evolution workflow](database/release-evolution.md) |
 | Document or generate database reference | [Schema documentation](database/schema-documentation.md) |
-| Inspect the migrated Approval Request schema | [Generated database reference](generated/database/approval-requests.md) |
+| Inspect the migrated database schema | [Generated database reference](generated/database/schema.md) |
 | Find the current machine-readable API contract and public errors | [OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md) |
 | Inspect API configuration names, types, defaults, and visibility | [Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md) |
 | Find the generated frontend component reference | [Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json) |

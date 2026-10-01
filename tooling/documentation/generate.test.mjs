@@ -158,7 +158,14 @@ test("source-only links open the repository recorded in the project manifest", a
   ])
     assert.throws(() => sourceBaseFrom(manifest), /Invalid/);
   // Parse every generated source link and compare its repository identity
-  // exactly, rather than searching output text for URL fragments.
+  // exactly, rather than searching output text for URL fragments. Absolute
+  // links written in the Markdown, such as links pinned to a release tag,
+  // are authored content rather than generated source links.
+  const authored = new Set(
+    [...sources.values()].flatMap((text) =>
+      [...text.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map(([, url]) => url),
+    ),
+  );
   const sourceLinks = (outputs) => {
     const links = [];
     for (const [name, value] of outputs) {
@@ -168,6 +175,7 @@ test("source-only links open the repository recorded in the project manifest", a
         / href="([^"]+)"/g,
       )) {
         if (!/^https?:\/\//.test(href)) continue;
+        if (authored.has(href.replaceAll("&amp;", "&"))) continue;
         const url = new URL(href.replaceAll("&amp;", "&"));
         const [owner, repo, kind, branch] = url.pathname.split("/").slice(1);
         if (kind === "blob")
@@ -190,10 +198,18 @@ test("source-only links open the repository recorded in the project manifest", a
   derived.set(
     ".orion/project.json",
     JSON.stringify({
+      name: "Acme Ledger",
       repository: { url: derivedRepository, defaultBranch: "main" },
     }),
   );
-  const retargeted = sourceLinks(await buildDocumentation(derived));
+  const derivedOutputs = await buildDocumentation(derived);
+  // The portal is titled after the repository it documents.
+  assert.equal(
+    JSON.parse(derivedOutputs.get("apps/web/src/generated/manifest.json"))
+      .title,
+    "Acme Ledger Living Documentation",
+  );
+  const retargeted = sourceLinks(derivedOutputs);
   // The same source links now open the derived repository, and none keeps
   // the repository of the checkout that generated the committed portal.
   assert.equal(retargeted.length, current.length);
@@ -260,16 +276,26 @@ test("generation is deterministic and preserves full contracts with bounded per-
     [...sources.keys()].filter((name) => name.endsWith(".md")).length,
   );
   assert.ok(!first.has("apps/web/src/generated/documentation.json"));
-  const create = JSON.parse(
-    first.get("apps/web/src/generated/pages/api/createApprovalRequest.json"),
+  const openapi = JSON.parse(sources.get("docs/generated/api/openapi.json"));
+  const operations = Object.values(openapi.paths).flatMap((methods) =>
+    Object.values(methods),
   );
-  assert.equal(create.request.schema.type, "object");
-  assert.ok(
-    create.responses.every(
-      (response) => "description" in response && "content" in response,
-    ),
-  );
-  assert.equal(create.components.securitySchemes.bearerAuth.type, "http");
+  assert.ok(operations.length > 0);
+  for (const operation of operations) {
+    const page = JSON.parse(
+      first.get(
+        `apps/web/src/generated/pages/api/${operation.operationId}.json`,
+      ),
+    );
+    assert.ok(
+      page.responses.every(
+        (response) => "description" in response && "content" in response,
+      ),
+    );
+    if (operation.requestBody) assert.equal(page.request.schema.type, "object");
+    if (operation.security)
+      assert.equal(page.components.securitySchemes.bearerAuth.type, "http");
+  }
   assert.ok(manifest.search.shards.every((shard) => shard.kinds.length));
 });
 
@@ -418,7 +444,13 @@ test("large documentation sets produce separate pages and bounded searchable sha
   const manifest = JSON.parse(
     outputs.get("apps/web/src/generated/manifest.json"),
   );
-  assert.ok(manifest.entries.length >= 1090);
+  // Relative to this checkout, which may be Orion or a smaller derived project.
+  const baseline = JSON.parse(
+    (await buildDocumentation(sources)).get(
+      "apps/web/src/generated/manifest.json",
+    ),
+  );
+  assert.equal(manifest.entries.length, baseline.entries.length + 1000);
   assert.ok(manifest.search.shards.length > 20);
   for (const shard of manifest.search.shards) {
     const records = JSON.parse(

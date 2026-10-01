@@ -4,7 +4,7 @@
 
 This policy owns consumer-facing API evolution. Prefer compatible evolution; create a new API version only when a meaningful incompatibility cannot reasonably be handled within the existing contract. Versions create parallel contracts, SDKs, documentation, tests, support, and security-maintenance obligations.
 
-[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable contracts and generated OpenAPI/SDK tooling. The current API, SDK, and web consumer evolve together in this repository. No independently released consumer baseline, public support window, or API version-routing scheme is recorded. Current-source freshness checks exist; historical breaking-change detection is conditional on a real released baseline under [H-08](../human-actions.md#h-08).
+[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable contracts and generated OpenAPI/SDK tooling. The current API, SDK, and web consumer evolve together in this repository. No independently released consumer baseline, public support window, or API version-routing scheme is recorded. Current-source freshness checks exist; historical breaking-change detection is conditional on a real released baseline, recorded as a human action in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).
 
 ## Released Contract
 

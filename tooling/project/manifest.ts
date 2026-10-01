@@ -2,29 +2,24 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 // `.orion/project.json` is the canonical machine-readable identity and
-// provenance record (ADR-0014). The Orion foundation repository describes
-// itself; a derived project additionally records its Orion ancestry.
+// provenance record (ADR-0014, ADR-0017). The Orion foundation repository
+// describes itself; a derived project additionally records its Orion ancestry.
 export const manifestPath = ".orion/project.json";
 export const upstreamRemote = "orion-upstream";
-export const approvalRequestDispositions = [
-  "reference",
-  "adopted",
-  "removed",
-] as const;
+export const manifestSchemaVersion = 2;
 
 export type Repository = { url: string; defaultBranch: string };
-export type ApprovalRequestDisposition =
-  (typeof approvalRequestDispositions)[number];
 export type FoundationManifest = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   kind: "foundation";
   name: string;
   repository: Repository;
 };
 export type ProjectManifest = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   kind: "project";
   name: string;
+  packageScope: string;
   repository: Repository;
   foundation: {
     name: string;
@@ -33,12 +28,13 @@ export type ProjectManifest = {
     initializedFromCommit: string;
     baselineCommit: string;
   };
-  referenceImplementations: { approvalRequest: ApprovalRequestDisposition };
 };
 export type Manifest = FoundationManifest | ProjectManifest;
 
 const commitPattern = /^[a-f0-9]{40}$/;
 const namePattern = /^[\p{L}\p{N}][\p{L}\p{N} ._-]{0,79}$/u;
+// npm scope of the workspace packages; see validatePackageScope.
+const packageScopePattern = /^@[a-z0-9][a-z0-9-]{0,49}$/;
 const branchPattern = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$/;
 
 function record(value: unknown, label: string): Record<string, unknown> {
@@ -57,6 +53,17 @@ function exactKeys(
     throw new Error(
       `${manifestPath}: ${label} must contain exactly ${keys.join(", ")}`,
     );
+}
+
+export function validatePackageScope(
+  scope: unknown,
+  label = "packageScope",
+): string {
+  if (typeof scope !== "string" || !packageScopePattern.test(scope))
+    throw new Error(
+      `${label} must be an npm scope such as @acme: "@" followed by 1-50 lowercase letters, digits, or hyphens, starting with a letter or digit`,
+    );
+  return scope;
 }
 
 export function validateName(name: unknown, label = "name"): string {
@@ -176,7 +183,11 @@ export function parseManifest(source: string): Manifest {
     throw new Error(`${manifestPath}: invalid JSON`);
   }
   const manifest = record(value, "manifest");
-  if (manifest.schemaVersion !== 1)
+  if (manifest.schemaVersion === 1 && manifest.kind === "project")
+    throw new Error(
+      `${manifestPath}: schemaVersion 1 records the earlier derivation contract, which kept Orion's reference implementation and history; migrate the project as described in docs/project-derivation.md#migrate-a-project-from-schema-version-1`,
+    );
+  if (manifest.schemaVersion !== manifestSchemaVersion)
     throw new Error(`${manifestPath}: unsupported schemaVersion`);
   validateName(manifest.name, `${manifestPath}: name`);
   const repository = parseRepository(manifest.repository, "repository");
@@ -187,7 +198,7 @@ export function parseManifest(source: string): Manifest {
       "manifest",
     );
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: "foundation",
       name: manifest.name as string,
       repository,
@@ -201,12 +212,13 @@ export function parseManifest(source: string): Manifest {
       "schemaVersion",
       "kind",
       "name",
+      "packageScope",
       "repository",
       "foundation",
-      "referenceImplementations",
     ],
     "manifest",
   );
+  validatePackageScope(manifest.packageScope, `${manifestPath}: packageScope`);
   const foundation = record(manifest.foundation, "foundation");
   exactKeys(
     foundation,
@@ -233,23 +245,11 @@ export function parseManifest(source: string): Manifest {
     throw new Error(
       `${manifestPath}: a derived project must not claim the foundation repository as its own`,
     );
-  const references = record(
-    manifest.referenceImplementations,
-    "referenceImplementations",
-  );
-  exactKeys(references, ["approvalRequest"], "referenceImplementations");
-  if (
-    !approvalRequestDispositions.includes(
-      references.approvalRequest as ApprovalRequestDisposition,
-    )
-  )
-    throw new Error(
-      `${manifestPath}: referenceImplementations.approvalRequest must be one of ${approvalRequestDispositions.join(", ")}`,
-    );
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "project",
     name: manifest.name as string,
+    packageScope: manifest.packageScope as string,
     repository,
     foundation: {
       name: foundation.name as string,
@@ -257,9 +257,6 @@ export function parseManifest(source: string): Manifest {
       remote: upstreamRemote,
       initializedFromCommit: foundation.initializedFromCommit as string,
       baselineCommit: foundation.baselineCommit as string,
-    },
-    referenceImplementations: {
-      approvalRequest: references.approvalRequest as ApprovalRequestDisposition,
     },
   };
 }

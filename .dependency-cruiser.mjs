@@ -10,7 +10,7 @@ export default {
   forbidden: [
     error(
       "no-circular-dependencies",
-      "Circular dependencies violate Orion boundaries.",
+      "Circular dependencies violate architectural boundaries.",
       {},
       { circular: true },
     ),
@@ -55,6 +55,15 @@ export default {
       "Browser runtime and its SDK must not depend on Node.js built-ins.",
       { path: "^apps/(web|mobile|desktop)/src/|^packages/sdk/src/" },
       { dependencyTypes: ["core"] },
+    ),
+    error(
+      "no-shared-api-to-module",
+      "Shared API runtime code must not depend on a feature module; only the composition file apps/api/src/modules.ts composes modules.",
+      {
+        path: "^apps/api/src/",
+        pathNot: "^apps/api/src/(features/|modules\\.ts$)",
+      },
+      { path: "^apps/api/src/features/" },
     ),
     error(
       "no-domain-to-infrastructure",

@@ -40,7 +40,7 @@ Metrics should generally observe the full population even when traces are sample
 
 Choose signals for actual runtime responsibilities; RED (rate/errors/duration), USE (utilization/saturation/errors), and traffic/errors/latency/saturation are heuristics, not mandatory inventories.
 
-- Requests/dependencies: count, latency distribution, bounded outcome, timeout/retry categories, and provider behavior as Orion observes it.
+- Requests/dependencies: count, latency distribution, bounded outcome, timeout/retry categories, and provider behavior as the application observes it.
 - Database/pools: meaningful query/transaction latency/failures/retries, deadlocks, active/idle/waiting connections, acquisition timeouts; never raw SQL labels.
 - Queues/workers: throughput, depth, oldest-message age, execution duration, retries, in-flight work, terminal failure, and dead-letter growth. Depth alone says little without capacity and age.
 - Cache/storage: justified hit/miss/error counts, durations, and bytes. Derive ratios from counts rather than separate incompatible calculations.

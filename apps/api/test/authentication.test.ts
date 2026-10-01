@@ -5,11 +5,11 @@ import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import {
   AuthenticationUnavailableError,
   createAccessTokenVerifier,
-} from "../src/features/approval-requests/authentication.js";
+} from "../src/authentication.js";
 
 describe("provider-independent access-token boundary", () => {
   const issuer = "https://issuer.example.test/";
-  const audience = "orion-api";
+  const audience = "example-api";
   const id = randomUUID();
   let server: ReturnType<typeof createServer>;
   let verifier: ReturnType<typeof createAccessTokenVerifier>;
@@ -45,7 +45,7 @@ describe("provider-independent access-token boundary", () => {
       sub: "provider-subject",
       orion_principal_id: id,
       orion_actor_type: "human",
-      scope: "approval:review",
+      scope: "example:read example:write",
       ...claims,
     })
       .setProtectedHeader({ alg: "RS256", typ: "at+jwt", kid: "test-key" })
@@ -55,10 +55,13 @@ describe("provider-independent access-token boundary", () => {
       .setExpirationTime(expire)
       .sign(privateKey);
   }
-  it("maps only verified identity and scope to application concepts", async () => {
+  it("exposes only the verified principal and issuer-granted scopes", async () => {
     const principal = await verifier.verify(`Bearer ${await sign({})}`);
     expect(principal?.id).toBe(id);
-    expect(principal?.capabilities.has("approval:review")).toBe(true);
+    expect([...(principal?.scopes ?? [])]).toEqual([
+      "example:read",
+      "example:write",
+    ]);
     expect(await verifier.verify(undefined)).toBeNull();
     expect(
       await verifier.verify(
@@ -74,8 +77,8 @@ describe("provider-independent access-token boundary", () => {
       await verifier.verify(`Bearer ${await sign({ scope: "other" })}`),
     ).toMatchObject({ id });
     expect(
-      (await verifier.verify(`Bearer ${await sign({ scope: "other" })}`))
-        ?.capabilities.size,
+      (await verifier.verify(`Bearer ${await sign({ scope: "" })}`))?.scopes
+        .size,
     ).toBe(0);
   });
   it("rejects expired, wrong-audience, and untrusted tokens", async () => {
@@ -84,7 +87,7 @@ describe("provider-independent access-token boundary", () => {
       sub: "subject",
       orion_principal_id: id,
       orion_actor_type: "human",
-      scope: "approval:review",
+      scope: "example:read example:write",
     })
       .setProtectedHeader({ alg: "RS256", typ: "at+jwt", kid: "test-key" })
       .setIssuer(issuer)

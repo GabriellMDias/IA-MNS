@@ -12,7 +12,7 @@ Tests protect behavior, contracts, invariants, security, and architectural bound
 | API transport/application | Fastify request injection with real owned behavior; real sockets when listener, network, or process lifecycle is the subject. |
 | PostgreSQL persistence/transactions | Vitest with Testcontainers and committed migrations; API integration/failure tests use the migrated-database helper. |
 | Browser components | Vitest Browser Mode with Playwright, `apps/web/test/*.browser.test.tsx`; Windows uses installed Edge, other environments use Chromium. |
-| Full user journeys | Playwright Test, `apps/web/test/e2e/`; real built API/web, migrated PostgreSQL, and synthetic signed identities for Approval Requests; portal navigation/examples have their own journey. |
+| Full user journeys | Playwright Test, `apps/web/test/e2e/`; the real built API and web app for the shell and portal, plus migrated PostgreSQL and synthetic signed identities in module journeys under `test/e2e/<module>/`. |
 | Emitted runtime | API process and feature smoke scripts verify startup/lifecycle and the real feature flow. |
 | Structure and generation | Type/lint/import checks, documentation links/metadata, environment example, release-history checks, API/SDK/portal freshness. |
 

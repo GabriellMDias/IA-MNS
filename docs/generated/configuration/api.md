@@ -1,10 +1,10 @@
 # API Configuration Reference
 
-<!-- Generated from apps/api/src/config.ts. Run pnpm --filter @orion/api references:write; do not edit. -->
+<!-- Generated from apps/api/src/config.ts. Run pnpm -C apps/api references:write; do not edit. -->
 
 [Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)
 
-No values are eligible for client exposure. `ORION_ENV` is always required; the database and token settings are required together to enable the Approval Request feature and in production.
+No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. API modules that require the database or bearer authentication stay unmounted until those settings exist, and production startup fails instead.
 
 | Environment variable | Type | Required | Default | Visibility | Classification | Secret | Purpose |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -16,7 +16,7 @@ No values are eligible for client exposure. `ORION_ENV` is always required; the 
 | `ORION_SHUTDOWN_TIMEOUT_MS` | integer 100..30000 | no | `5000` | server | INTERNAL | no | Total graceful shutdown deadline. |
 | `ORION_OTLP_ENDPOINT` | http(s) URL | no | — | server | INTERNAL | no | Optional OTLP HTTP collector base URL. |
 | `ORION_TRACE_SAMPLE_RATIO` | number 0..1 | no | `1` | server | INTERNAL | no | Trace sampling probability. |
-| `ORION_DATABASE_URL` | PostgreSQL URL | no | — | server | RESTRICTED | yes | Runtime database credential; required to activate Approval Request routes. |
-| `ORION_TOKEN_ISSUER` | issuer URL | no | — | server | INTERNAL | no | Expected access-token issuer; configure with audience and JWKS URL. |
+| `ORION_DATABASE_URL` | PostgreSQL URL | no | — | server | RESTRICTED | yes | Runtime PostgreSQL credential; enables the database for modules that require it and adds it to readiness. |
+| `ORION_TOKEN_ISSUER` | issuer URL | no | — | server | INTERNAL | no | Expected access-token issuer; configure with audience and JWKS URL to enable bearer authentication. |
 | `ORION_TOKEN_AUDIENCE` | nonempty string | no | — | server | INTERNAL | no | Expected API access-token audience. |
 | `ORION_TOKEN_JWKS_URL` | http(s) URL | no | — | server | INTERNAL | no | Trusted issuer public-key endpoint. |

@@ -1,4 +1,4 @@
-name: Orion CI
+name: CI
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: orion-ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
           cache: true
           require-lockfile: true
       - name: Install Chromium and system libraries for browser checks
-        run: pnpm --filter @orion/web exec playwright install --with-deps chromium
+        run: pnpm -C apps/web exec playwright install --with-deps chromium
       - name: Run repository validation
         env:
           ORION_RELEASE_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}

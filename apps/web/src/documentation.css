@@ -54,6 +54,7 @@
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .docs-brand-symbol {
   width: 28px;
@@ -69,6 +70,7 @@
   color: var(--docs-muted);
   letter-spacing: 0;
   margin: 0.3rem 0 0 2rem;
+  text-transform: none;
 }
 .docs-foundation-version {
   display: inline-flex;
@@ -163,7 +165,7 @@
   background: #1c5b4c;
   border-color: #1c5b4c;
 }
-.docs-workflow-link {
+.docs-app-link {
   font-size: 0.76rem;
   white-space: nowrap;
   color: #425e73;
@@ -682,7 +684,7 @@
     padding-left: 1.6rem;
     padding-right: 1.6rem;
   }
-  .docs-workflow-link {
+  .docs-app-link {
     display: none;
   }
 }
@@ -847,9 +849,6 @@
   border: 1px dashed #9fb2c1;
   border-radius: 8px;
   padding: 1rem;
-}
-.docs-preview .credential-panel {
-  margin: 0;
 }
 .docs-muted {
   color: #536879;

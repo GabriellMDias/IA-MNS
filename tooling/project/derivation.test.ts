@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -18,11 +19,15 @@ import {
   DerivationError,
   checkProvenance,
   configureUpstream,
+  defaultPackageScope,
   fetchOnlyPushUrl,
   initializeProject,
+  parseDerivationContract,
   projectHumanActionsPath,
   projectPlanPath,
   projectStatus,
+  pruneProject,
+  readDerivationContract,
   recordBaseline,
   renderProjectFiles,
   type ProjectStatus,
@@ -88,6 +93,51 @@ function write(root: string, path: string, content: string) {
   writeFileSync(resolve(root, path), content);
 }
 
+// A miniature foundation exercising every part of the derivation contract.
+const fixtureContract = {
+  schemaVersion: 1,
+  foundationOnly: [
+    "apps/api/src/features/sample-reference",
+    "docs/implementation-plan.md",
+  ],
+  foundationOnlyTerms: ["sample reference"],
+  isolationExempt: [".orion", "tooling/project"],
+  projectFiles: {
+    "README.md": "tooling/project/templates/README.md.tmpl",
+    "apps/api/src/modules.ts": "tooling/project/templates/modules.ts.tmpl",
+    "apps/web/src/assets/mark.bin": "tooling/project/templates/mark.bin",
+    "docs/project/implementation-plan.md":
+      "tooling/project/templates/plan.md.tmpl",
+    "docs/project/human-actions.md":
+      "tooling/project/templates/actions.md.tmpl",
+  },
+  workspaceScope: "@orion",
+};
+const fixtureFiles: Record<string, string> = {
+  "README.md": "# Orion\n\nFoundation introduction.\n",
+  "package.json": '{\n  "name": "orion",\n  "private": true\n}\n',
+  "apps/web/package.json":
+    '{\n  "name": "@orion/web",\n  "dependencies": { "@orion/sdk": "workspace:*" }\n}\n',
+  "pnpm-lock.yaml":
+    "importers:\n  apps/web:\n    dependencies:\n      '@orion/sdk':\n        version: link:../../packages/sdk\n",
+  "apps/web/src/api-client.ts":
+    'import { createApiClient } from "@orion/sdk";\nexport const client = createApiClient;\n',
+  "apps/api/src/modules.ts":
+    'import { referenceModule } from "./features/sample-reference/module.js";\nexport const apiModules = [referenceModule];\n',
+  "apps/api/src/features/sample-reference/module.ts":
+    "// Sample reference module.\nexport const referenceModule = {};\n",
+  "docs/implementation-plan.md": "# Orion Implementation Plan\n",
+  "docs/policy.md": "# Policy\n\nVersion 1. The SDK package is `@orion/sdk`.\n",
+  "tooling/project/templates/README.md.tmpl":
+    "# {{NAME}}\n\nInitialized from {{FOUNDATION_NAME}} commit `{{BASELINE}}` on {{DATE}}.\n",
+  "tooling/project/templates/modules.ts.tmpl":
+    "export const apiModules = [];\n",
+  "tooling/project/templates/mark.bin": "\u0000binary {{NAME}}\u0000",
+  "tooling/project/templates/plan.md.tmpl": "# {{NAME}} Implementation Plan\n",
+  "tooling/project/templates/actions.md.tmpl":
+    "# {{NAME}} Human Actions\n\n{{PROJECT_URL}} uses {{PACKAGE_SCOPE}}.\n",
+};
+
 let fixtureCount = 0;
 function fixture(options: { releases?: unknown[] } = {}) {
   const base = join(sandbox, `case-${(fixtureCount += 1)}`);
@@ -109,7 +159,7 @@ function fixture(options: { releases?: unknown[] } = {}) {
     ".orion/project.json",
     `${JSON.stringify(
       {
-        schemaVersion: 1,
+        schemaVersion: 2,
         kind: "foundation",
         name: "Orion",
         repository: { url: canonical, defaultBranch: "main" },
@@ -120,9 +170,11 @@ function fixture(options: { releases?: unknown[] } = {}) {
   );
   write(
     seed,
-    "README.md",
-    "# Orion\n\nFoundation introduction.\n\n## Current state\n\nFoundation state.\n\n## Start here\n\nShared routes.\n",
+    ".orion/derivation.json",
+    `${JSON.stringify(fixtureContract, null, 2)}\n`,
   );
+  for (const [path, content] of Object.entries(fixtureFiles))
+    write(seed, path, content);
   write(
     seed,
     "apps/api/prisma/release-history.json",
@@ -131,21 +183,15 @@ function fixture(options: { releases?: unknown[] } = {}) {
       recordedDurableReleases: options.releases ?? [],
     }),
   );
-  write(
-    seed,
-    "apps/api/src/features/approval-requests/domain.ts",
-    "export {};\n",
-  );
-  write(seed, "docs/policy.md", "# Policy\n\nVersion 1.\n");
   git(seed, "add", "--all");
   git(seed, "commit", "--quiet", "--message", "Foundation");
   git(seed, "remote", "add", "origin", canonical);
   git(seed, "push", "--quiet", "origin", "main");
   const work = join(base, "work");
   git(base, "clone", "--quiet", canonical, work);
-  const regenerated: string[] = [];
-  const regenerate = (root: string) => {
-    regenerated.push(root);
+  const materialized: string[] = [];
+  const materialize = (root: string) => {
+    materialized.push(root);
     write(root, "apps/web/src/generated/manifest.json", "{}\n");
   };
   return {
@@ -158,14 +204,14 @@ function fixture(options: { releases?: unknown[] } = {}) {
     productBare,
     fork,
     forkBare,
-    regenerated,
+    materialized,
     init(overrides: Partial<Parameters<typeof initializeProject>[1]> = {}) {
       return initializeProject(work, {
         name: "Acme Ledger",
         repository: product,
         apply: true,
         date: "2026-09-29",
-        regenerate,
+        materialize,
         ...overrides,
       });
     },
@@ -261,7 +307,7 @@ void test("explicit ports are preserved or refused, never discarded", () => {
   );
 
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "foundation",
     name: "Orion",
     repository: { url: custom, defaultBranch: "main" },
@@ -325,9 +371,10 @@ void test("host case is normalized while repository path case is preserved", () 
   );
 
   const project = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     kind: "project",
     name: "Acme Ledger",
+    packageScope: "@acme",
     repository: {
       url: "https://git.example/acme/Ledger",
       defaultBranch: "main",
@@ -342,7 +389,6 @@ void test("host case is normalized while repository path case is preserved", () 
       initializedFromCommit: "a".repeat(40),
       baselineCommit: "a".repeat(40),
     },
-    referenceImplementations: { approvalRequest: "reference" },
   };
   assert.throws(
     () => parseManifest(JSON.stringify(project)),
@@ -362,12 +408,14 @@ void test("this repository's manifest and provenance are valid", () => {
   assert.deepEqual(checkProvenance(repositoryRoot).errors, []);
 });
 
-void test("project templates render complete documents whose local links resolve", () => {
+void test("project templates render complete documents whose local links resolve without foundation-only content", () => {
+  const contract = readDerivationContract(repositoryRoot);
   const manifest = parseManifest(
     JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
       kind: "project",
       name: "Acme Ledger",
+      packageScope: "@acme-ledger",
       repository: {
         url: "https://github.com/acme/ledger",
         defaultBranch: "main",
@@ -379,15 +427,27 @@ void test("project templates render complete documents whose local links resolve
         initializedFromCommit: "a".repeat(40),
         baselineCommit: "a".repeat(40),
       },
-      referenceImplementations: { approvalRequest: "reference" },
     }),
   ) as ProjectManifest;
-  const rendered = renderProjectFiles(manifest, "2026-09-29");
-  const documents = new Map<string, string>([
-    ["README.md", rendered.get("README-intro.md") ?? ""],
-    [projectPlanPath, rendered.get(projectPlanPath) ?? ""],
-    [projectHumanActionsPath, rendered.get(projectHumanActionsPath) ?? ""],
-  ]);
+  const rendered = renderProjectFiles(
+    repositoryRoot,
+    contract,
+    manifest,
+    "2026-09-29",
+  );
+  for (const path of [projectPlanPath, projectHumanActionsPath, "README.md"])
+    assert.ok(rendered.has(path), `${path} is project-owned`);
+  const documents = new Map<string, string>(
+    [...rendered].flatMap(([path, content]) =>
+      path.endsWith(".md") && typeof content === "string"
+        ? [[path, content]]
+        : [],
+    ),
+  );
+  const removed = (path: string) =>
+    contract.foundationOnly.some(
+      (entry) => path === entry || path.startsWith(`${entry}/`),
+    );
   const markdown = new MarkdownIt();
   const source = (name: string) =>
     documents.get(name) ?? readFileSync(resolve(repositoryRoot, name), "utf8");
@@ -408,6 +468,8 @@ void test("project templates render complete documents whose local links resolve
       /\{\{|\}\}/,
       `${name} has unresolved placeholders`,
     );
+    for (const term of contract.foundationOnlyTerms)
+      assert.ok(!text.toLowerCase().includes(term), `${name} mentions ${term}`);
     const links = markdown
       .parse(text, {})
       .flatMap((token) => token.children ?? [])
@@ -421,7 +483,8 @@ void test("project templates render complete documents whose local links resolve
         ? posix.normalize(posix.join(posix.dirname(name), path))
         : name;
       assert.ok(
-        documents.has(target) || existsSync(resolve(repositoryRoot, target)),
+        documents.has(target) ||
+          (existsSync(resolve(repositoryRoot, target)) && !removed(target)),
         `${name}: missing ${href}`,
       );
       if (fragment)
@@ -435,10 +498,12 @@ void test("a dry run verifies preconditions and changes nothing", () => {
   const before = git(repo.work, "rev-parse", "HEAD");
   const result = repo.init({ apply: false });
   assert.equal(result.applied, false);
+  assert.deepEqual(result.removed, fixtureContract.foundationOnly);
+  assert.equal(result.manifest.packageScope, "@acme-ledger");
   assert.equal(result.manifest.foundation.initializedFromCommit, before);
   assert.equal(git(repo.work, "status", "--porcelain"), "");
   assert.equal(git(repo.work, "remote"), "origin");
-  assert.equal(repo.regenerated.length, 0);
+  assert.equal(repo.materialized.length, 0);
 });
 
 void test("initialization preserves ancestry, records provenance, and protects the foundation", () => {
@@ -455,7 +520,7 @@ void test("initialization preserves ancestry, records provenance, and protects t
   assert.equal(manifest.foundation.repository.url, repo.canonical);
   assert.equal(manifest.foundation.initializedFromCommit, orionHead);
   assert.equal(manifest.foundation.baselineCommit, orionHead);
-  assert.equal(manifest.referenceImplementations.approvalRequest, "reference");
+  assert.equal(manifest.packageScope, "@acme-ledger");
 
   assert.equal(git(repo.work, "rev-parse", "HEAD^"), orionHead);
   assert.equal(
@@ -463,22 +528,46 @@ void test("initialization preserves ancestry, records provenance, and protects t
     `Initialize Acme Ledger from Orion ${orionHead.slice(0, 12)}`,
   );
   assert.equal(git(repo.work, "status", "--porcelain"), "");
-  assert.deepEqual(repo.regenerated, [repo.work]);
+  assert.deepEqual(repo.materialized, [repo.work]);
   assert.ok(
     git(repo.work, "ls-files")
       .split("\n")
       .includes("apps/web/src/generated/manifest.json"),
   );
-  const readme = readFileSync(join(repo.work, "README.md"), "utf8");
-  assert.match(readme, /^# Acme Ledger\n/);
-  assert.match(readme, new RegExp(`from Orion commit \`${orionHead}\``));
-  assert.doesNotMatch(readme, /Foundation (introduction|state)/);
-  assert.match(readme, /\n\n## Start here\n\nShared routes\.\n$/);
+  const read = (path: string) => readFileSync(join(repo.work, path), "utf8");
+  assert.equal(
+    read("README.md"),
+    `# Acme Ledger\n\nInitialized from Orion commit \`${orionHead}\` on 2026-09-29.\n`,
+  );
   for (const path of [projectPlanPath, projectHumanActionsPath])
-    assert.match(
-      readFileSync(join(repo.work, path), "utf8"),
-      /^# Acme Ledger /,
-    );
+    assert.match(read(path), /^# Acme Ledger /);
+  assert.match(
+    read(projectHumanActionsPath),
+    new RegExp(`${normalizeRepositoryUrl(repo.product)} uses @acme-ledger\\.`),
+  );
+  // The foundation's reference implementation and history are gone, and the
+  // project-owned composition no longer refers to them.
+  for (const path of fixtureContract.foundationOnly)
+    assert.ok(!existsSync(join(repo.work, path)), path);
+  assert.equal(
+    read("apps/api/src/modules.ts"),
+    "export const apiModules = [];\n",
+  );
+  // Non-template assets are copied byte for byte.
+  assert.equal(
+    read("apps/web/src/assets/mark.bin"),
+    fixtureFiles["tooling/project/templates/mark.bin"],
+  );
+  // Workspace identity follows the project; authored prose is not rewritten.
+  assert.equal(
+    (JSON.parse(read("package.json")) as { name: string }).name,
+    "acme-ledger",
+  );
+  assert.match(read("apps/web/package.json"), /"@acme-ledger\/web"/);
+  assert.match(read("apps/web/package.json"), /"@acme-ledger\/sdk"/);
+  assert.match(read("pnpm-lock.yaml"), /'@acme-ledger\/sdk':/);
+  assert.match(read("apps/web/src/api-client.ts"), /from "@acme-ledger\/sdk"/);
+  assert.match(read("docs/policy.md"), /`@orion\/sdk`/);
 
   const config = (key: string) => git(repo.work, "config", "--get", key);
   assert.equal(config("remote.origin.url"), repo.product);
@@ -604,11 +693,17 @@ void test("a failed initialization restores the clean foundation checkout", () =
   assert.throws(
     () =>
       repo.init({
-        regenerate: () => {
+        materialize: () => {
           throw new Error("generation failed");
         },
       }),
-    /generation failed/,
+    /restored to [0-9a-f]{40}.*\n[\s\S]*generation failed/,
+  );
+  for (const path of fixtureContract.foundationOnly)
+    assert.ok(existsSync(join(repo.work, path)), path);
+  assert.equal(
+    readFileSync(join(repo.work, "package.json"), "utf8"),
+    fixtureFiles["package.json"],
   );
   assert.equal(
     git(repo.work, "status", "--porcelain", "--untracked-files=all"),
@@ -991,7 +1086,7 @@ void test("initialization refuses an origin that also lists another repository",
     git(repo.work, "config", "--get-all", "remote.origin.url"),
     before,
   );
-  assert.equal(repo.regenerated.length, 0);
+  assert.equal(repo.materialized.length, 0);
 
   git(
     repo.work,
@@ -1098,41 +1193,338 @@ void test("a wrong orion-upstream with plausible ancestry cannot become the base
   );
 });
 
-void test("the Approval Request disposition stays coherent with source and releases", () => {
+void test("upgrade merges are pruned of reintroduced foundation-only content and scope", () => {
   const repo = fixture();
   repo.init();
-  const manifest = readManifest(repo.work) as ProjectManifest;
-  const withDisposition = (approvalRequest: string) =>
-    write(
-      repo.work,
-      ".orion/project.json",
-      `${JSON.stringify({ ...manifest, referenceImplementations: { approvalRequest } }, null, 2)}\n`,
-    );
+  git(repo.work, "push", "--quiet", "-u", "origin", "main");
+  // The foundation evolves its reference implementation and shared source.
+  write(
+    repo.seed,
+    "apps/api/src/features/sample-reference/module.ts",
+    "export const referenceModule = { version: 2 };\n",
+  );
+  write(
+    repo.seed,
+    "apps/api/src/features/sample-reference/routes.ts",
+    "export {};\n",
+  );
+  write(
+    repo.seed,
+    "apps/web/src/extra.ts",
+    'export type { paths } from "@orion/sdk";\n',
+  );
+  git(repo.seed, "add", "--all");
+  git(repo.seed, "commit", "--quiet", "--message", "Version 2");
+  git(repo.seed, "push", "--quiet", "origin", "main");
+
+  git(repo.work, "fetch", "--quiet", "orion-upstream");
+  git(repo.work, "switch", "--quiet", "-c", "orion-upgrade");
+  // The project deleted what the foundation modified: a modify/delete conflict.
+  assert.throws(() =>
+    git(repo.work, "merge", "--no-ff", "--no-edit", "orion-upstream/main"),
+  );
+  const actions = pruneProject(repo.work).join("\n");
+  assert.match(
+    actions,
+    /Removed foundation-only paths: apps\/api\/src\/features\/sample-reference/,
+  );
+  assert.match(actions, /apps\/web\/src\/extra\.ts/);
+  assert.equal(git(repo.work, "diff", "--name-only", "--diff-filter=U"), "");
+  git(repo.work, "commit", "--quiet", "--no-edit");
+  assert.ok(
+    !existsSync(join(repo.work, "apps/api/src/features/sample-reference")),
+  );
+  assert.match(
+    readFileSync(join(repo.work, "apps/web/src/extra.ts"), "utf8"),
+    /"@acme-ledger\/sdk"/,
+  );
+  recordBaseline(repo.work, "orion-upstream/main");
+  git(repo.work, "commit", "--quiet", "--all", "--message", "Record baseline");
+  assert.deepEqual(checkProvenance(repo.work).errors, []);
+  assert.deepEqual(pruneProject(repo.work), [
+    "No foundation-only paths were present",
+    "No @orion references remained",
+  ]);
+});
+
+void test("pruning preserves unresolved shared files and project-owned files for review", () => {
+  const repo = fixture();
+  repo.init();
+  write(
+    repo.work,
+    "apps/api/src/modules.ts",
+    'import "@orion/product-module";\nexport const apiModules = [];\n',
+  );
+  git(
+    repo.work,
+    "commit",
+    "--quiet",
+    "--all",
+    "--message",
+    "Project composition",
+  );
+  write(
+    repo.seed,
+    "apps/web/src/api-client.ts",
+    'import { createApiClient } from "@orion/sdk";\nexport const client = createApiClient({});\n',
+  );
+  write(
+    repo.seed,
+    "package.json",
+    '{\n  "name": "orion-foundation",\n  "private": true\n}\n',
+  );
+  write(repo.seed, "apps/web/src/new-client.ts", 'import "@orion/sdk";\n');
+  git(repo.seed, "add", "--all");
+  git(repo.seed, "commit", "--quiet", "--message", "Shared client upgrade");
+  git(repo.seed, "push", "--quiet", "origin", "main");
+  git(repo.work, "fetch", "--quiet", "orion-upstream");
+  assert.throws(() =>
+    git(repo.work, "merge", "--no-ff", "--no-edit", "orion-upstream/main"),
+  );
+  const conflicts = git(repo.work, "ls-files", "--unmerged");
+  assert.match(conflicts, /apps\/web\/src\/api-client\.ts/);
+  assert.match(conflicts, /package\.json/);
+  const preservedPaths = [
+    "package.json",
+    "apps/web/src/api-client.ts",
+    "apps/api/src/modules.ts",
+  ];
+  const before = preservedPaths.map((path) =>
+    readFileSync(join(repo.work, path), "utf8"),
+  );
+  const actions = pruneProject(repo.work).join("\n");
+  assert.equal(git(repo.work, "ls-files", "--unmerged"), conflicts);
+  assert.deepEqual(
+    preservedPaths.map((path) => readFileSync(join(repo.work, path), "utf8")),
+    before,
+  );
+  assert.match(actions, /Skipped unresolved.*package\.json/);
+  assert.equal(
+    git(repo.work, "show", ":apps/web/src/new-client.ts"),
+    'import "@acme-ledger/sdk";',
+  );
+  write(repo.work, "apps/web/src/api-client.ts", 'import "@orion/sdk";\n');
+  write(
+    repo.work,
+    "package.json",
+    '{\n  "name": "acme-ledger",\n  "private": true\n}\n',
+  );
+  git(repo.work, "add", "package.json", "apps/web/src/api-client.ts");
+  pruneProject(repo.work);
+  assert.equal(
+    git(repo.work, "show", ":apps/web/src/api-client.ts"),
+    'import "@acme-ledger/sdk";',
+  );
+});
+
+void test("pruning refuses to delete a recorded durable migration before changing files", () => {
+  const repo = fixture();
+  repo.init();
+  const migration = "20260924000000_example";
+  const migrationPath = `apps/api/prisma/migrations/${migration}`;
+  write(
+    repo.work,
+    ".orion/derivation.json",
+    JSON.stringify({
+      ...fixtureContract,
+      foundationOnly: [...fixtureContract.foundationOnly, migrationPath],
+    }),
+  );
+  write(
+    repo.work,
+    `${migrationPath}/migration.sql`,
+    "CREATE TABLE example (id integer);\n",
+  );
+  write(
+    repo.work,
+    "docs/implementation-plan.md",
+    "# Reintroduced foundation plan\n",
+  );
   write(
     repo.work,
     "apps/api/prisma/release-history.json",
     JSON.stringify({
       schemaVersion: 1,
-      recordedDurableReleases: [{ id: "r1" }],
+      recordedDurableReleases: [
+        {
+          id: "durable-1",
+          environment: "test",
+          gitCommit: "a".repeat(40),
+          migrations: [{ directory: migration, sha256: "b".repeat(64) }],
+        },
+      ],
+    }),
+  );
+  git(repo.work, "add", "--all");
+  const index = git(repo.work, "write-tree");
+  refusal(() => pruneProject(repo.work), /recorded durable migration/);
+  assert.equal(git(repo.work, "write-tree"), index);
+  assert.ok(existsSync(join(repo.work, `${migrationPath}/migration.sql`)));
+  assert.ok(existsSync(join(repo.work, "docs/implementation-plan.md")));
+});
+
+void test("pruning refuses linked paths before deleting outside the checkout", () => {
+  const repo = fixture();
+  repo.init();
+  const outside = join(repo.base, "outside");
+  write(outside, "content/keep.txt", "outside data\n");
+  symlinkSync(
+    outside,
+    join(repo.work, "linked"),
+    process.platform === "win32" ? "junction" : "dir",
+  );
+  write(
+    repo.work,
+    ".orion/derivation.json",
+    JSON.stringify({
+      ...fixtureContract,
+      foundationOnly: [...fixtureContract.foundationOnly, "linked/content"],
+    }),
+  );
+  refusal(() => pruneProject(repo.work), /linked repository path/);
+  assert.equal(
+    readFileSync(join(outside, "content/keep.txt"), "utf8"),
+    "outside data\n",
+  );
+});
+
+void test("project validation rejects foundation-only content and the foundation package scope", () => {
+  const repo = fixture();
+  repo.init();
+  write(repo.work, "docs/implementation-plan.md", "# Orion plan\n");
+  write(repo.work, "apps/web/src/extra.ts", 'import "@orion/sdk";\n');
+  write(repo.work, "package.json", '{"name":"orion","private":true}\n');
+  git(repo.work, "add", "--all");
+  const errors = checkProvenance(repo.work).errors.join("\n");
+  assert.match(errors, /package\.json name must be acme-ledger/);
+  assert.match(
+    errors,
+    /Foundation-only paths are present: docs\/implementation-plan\.md; .*pnpm orion:prune/,
+  );
+  assert.match(
+    errors,
+    /apps\/web\/src\/extra\.ts still reference the foundation package scope @orion; run pnpm orion:prune to rename them to @acme-ledger/,
+  );
+  rmSync(join(repo.work, projectPlanPath));
+  assert.match(
+    checkProvenance(repo.work).errors.join("\n"),
+    /implementation-plan\.md: missing project-owned document/,
+  );
+  git(repo.work, "checkout", "--", projectPlanPath);
+  pruneProject(repo.work);
+  assert.deepEqual(checkProvenance(repo.work).errors, []);
+});
+
+void test("foundation validation keeps shared files independent of foundation-only content", () => {
+  const repo = fixture();
+  assert.deepEqual(checkProvenance(repo.work).errors, []);
+  write(
+    repo.work,
+    "docs/guide.md",
+    "# Guide\n\nSee the [plan](implementation-plan.md#phase-1).\n",
+  );
+  write(
+    repo.work,
+    "apps/api/src/app.ts",
+    'import { referenceModule } from "./features/sample-reference/module.js";\nexport const app = referenceModule;\n',
+  );
+  write(
+    repo.work,
+    "docs/other.md",
+    "# Other\n\nThe Sample Reference example.\n",
+  );
+  git(repo.work, "add", "--all");
+  const errors = checkProvenance(repo.work).errors.join("\n");
+  assert.match(
+    errors,
+    /docs\/guide\.md references docs\/implementation-plan\.md/,
+  );
+  assert.match(
+    errors,
+    /apps\/api\/src\/app\.ts references apps\/api\/src\/features\/sample-reference/,
+  );
+  assert.match(errors, /docs\/other\.md mentions "sample reference"/);
+  git(repo.work, "reset", "--quiet", "--hard");
+  git(repo.work, "clean", "-fdq");
+  write(
+    repo.work,
+    ".orion/derivation.json",
+    JSON.stringify({
+      ...fixtureContract,
+      foundationOnly: [...fixtureContract.foundationOnly, "docs/missing.md"],
     }),
   );
   assert.match(
     checkProvenance(repo.work).errors.join("\n"),
-    /reference implementation is undecided/,
+    /foundation-only docs\/missing\.md does not exist/,
   );
-  withDisposition("adopted");
-  assert.deepEqual(checkProvenance(repo.work).errors, []);
-  withDisposition("removed");
-  assert.match(
-    checkProvenance(repo.work).errors.join("\n"),
-    /recorded as removed/,
+});
+
+void test("the derivation contract rejects unsafe or contradictory entries", () => {
+  assert.doesNotThrow(() =>
+    parseDerivationContract(JSON.stringify(fixtureContract)),
   );
-  rmSync(join(repo.work, "apps/api/src/features/approval-requests"), {
-    recursive: true,
-  });
-  assert.deepEqual(checkProvenance(repo.work).errors, []);
-  withDisposition("reference");
-  assert.match(checkProvenance(repo.work).errors.join("\n"), /is absent/);
-  withDisposition("unknown");
-  assert.match(checkProvenance(repo.work).errors.join("\n"), /must be one of/);
+  assert.ok(readDerivationContract(repositoryRoot).foundationOnly.length > 0);
+  const cases: [Record<string, unknown>, RegExp][] = [
+    [{ foundationOnly: ["../outside"] }, /repository-relative paths/],
+    [{ foundationOnly: [".git"] }, /repository-relative paths/],
+    [{ foundationOnly: ["tooling"] }, /shared derivation tooling/],
+    [
+      { foundationOnly: ["tooling/project/cli.ts"] },
+      /shared derivation tooling/,
+    ],
+    [
+      { foundationOnly: ["README.md"] },
+      /both foundation-only and project-owned/,
+    ],
+    [
+      { projectFiles: { "README.md": "docs/template.md" } },
+      /must be under tooling\/project\/templates/,
+    ],
+    [{ workspaceScope: "orion" }, /npm scope/],
+    [{ foundationOnlyTerms: ["Sample"] }, /lowercase terms/],
+    [{ extra: true }, /must contain exactly/],
+    [{ schemaVersion: 2 }, /unsupported schemaVersion/],
+  ];
+  for (const [change, pattern] of cases)
+    assert.throws(
+      () =>
+        parseDerivationContract(
+          JSON.stringify({ ...fixtureContract, ...change }),
+        ),
+      pattern,
+    );
+});
+
+void test("project identity yields a package scope, and earlier project manifests require migration", () => {
+  assert.equal(defaultPackageScope("Acme Ledger"), "@acme-ledger");
+  assert.equal(defaultPackageScope("Ação Clínica 2"), "@acao-clinica-2");
+  const repo = fixture();
+  assert.equal(
+    repo.init({ apply: false, packageScope: "@ledger" }).manifest.packageScope,
+    "@ledger",
+  );
+  refusal(
+    () => repo.init({ apply: false, packageScope: "@orion" }),
+    /must differ from the foundation scope @orion/,
+  );
+  refusal(
+    () => repo.init({ apply: false, packageScope: "Ledger" }),
+    /--package-scope must be an npm scope/,
+  );
+  refusal(
+    () => repo.init({ apply: false, name: "日本" }),
+    /package scope derived from --name \(@\) must be an npm scope/,
+  );
+  assert.throws(
+    () =>
+      parseManifest(
+        JSON.stringify({
+          schemaVersion: 1,
+          kind: "project",
+          name: "Acme Ledger",
+        }),
+      ),
+    /schemaVersion 1 records the earlier derivation contract.*migrate-a-project-from-schema-version-1/,
+  );
 });

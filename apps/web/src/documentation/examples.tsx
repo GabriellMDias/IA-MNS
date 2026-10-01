@@ -1,34 +1,20 @@
 import { useState } from "react";
-import { AccessTokenForm, ErrorNotice } from "../components.js";
-import { ApiFailure } from "../api.js";
+import { ErrorNotice } from "../components.js";
+import { ApiFailure } from "../api-client.js";
 
 export function Example({ id }: { id: string }) {
   const [message, setMessage] = useState("");
   switch (id) {
-    case "access-token":
-      return (
-        <div className="docs-preview">
-          <AccessTokenForm
-            showLocalIdentity={false}
-            onConnect={() =>
-              setMessage(
-                "Demonstration value discarded; no connection was made.",
-              )
-            }
-          />
-          {message && <p role="status">{message}</p>}
-        </div>
-      );
-    case "version-conflict":
+    case "unavailable-reload":
       return (
         <div className="docs-preview">
           <ErrorNotice
             error={
               new ApiFailure(
-                409,
-                "RESOURCE_VERSION_CONFLICT",
+                503,
+                "SERVICE_UNAVAILABLE",
                 "example",
-                "Changed",
+                "The service is unavailable.",
               )
             }
             onReload={() =>

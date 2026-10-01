@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { Writable } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
-import { createApp } from "../src/app.js";
-import { parseServerConfig } from "../src/config.js";
-import type { ApprovalRequest } from "../src/features/approval-requests/domain.js";
+import { createApp } from "../../src/app.js";
+import { parseServerConfig } from "../../src/config.js";
+import type { ApprovalRequest } from "../../src/features/approval-requests/domain.js";
 import {
   ApprovalRequestService,
   type Repository,
-} from "../src/features/approval-requests/service.js";
-import { createLogger } from "../src/logging.js";
+} from "../../src/features/approval-requests/service.js";
+import { createLogger } from "../../src/logging.js";
+import { approvalRequestRoutes } from "../../src/features/approval-requests/module.js";
 
 describe("Approval Request dependency failure", () => {
   it("reports one safe diagnostic and does not retry a failed write", async () => {
@@ -46,10 +47,14 @@ describe("Approval Request dependency failure", () => {
       createLogger(parseServerConfig({ ORION_ENV: "test" }), destination),
       undefined,
       {
-        service: new ApprovalRequestService(repository),
-        verifier: {
-          verify: () => Promise.resolve({ id: owner, capabilities: new Set() }),
-        },
+        modules: [
+          approvalRequestRoutes({
+            service: new ApprovalRequestService(repository),
+            verifier: {
+              verify: () => Promise.resolve({ id: owner, scopes: new Set() }),
+            },
+          }),
+        ],
       },
     ).app;
     try {

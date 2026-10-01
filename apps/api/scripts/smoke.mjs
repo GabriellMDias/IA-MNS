@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { readdir } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
 import { createServer } from "node:net";
 import { resolve, dirname } from "node:path";
@@ -170,4 +171,31 @@ try {
   child.kill();
   await waitForExit(child, 5000).catch(() => undefined);
   await new Promise((resolveClosed) => collector.close(resolveClosed));
+}
+
+// Modules add process smokes as apps/api/scripts/smoke/*.ts; they run after
+// the shared runtime checks against the same emitted build.
+const moduleSmokes = resolve(appDirectory, "scripts/smoke");
+const smokes = (
+  await readdir(moduleSmokes).catch((error) => {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  })
+)
+  .filter((name) => name.endsWith(".ts"))
+  .sort();
+for (const name of smokes) {
+  const smoke = spawn(
+    process.execPath,
+    ["--import", "tsx", resolve(moduleSmokes, name)],
+    { cwd: appDirectory, stdio: "inherit" },
+  );
+  const result = await new Promise((resolveExit, reject) => {
+    smoke.once("error", reject);
+    smoke.once("exit", (code, signal) => resolveExit({ code, signal }));
+  });
+  if (result.code !== 0)
+    throw new Error(
+      `Module smoke ${name} failed (${result.code ?? result.signal})`,
+    );
 }

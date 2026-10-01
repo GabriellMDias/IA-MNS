@@ -1,0 +1,12 @@
+// Shared Prisma configuration. Each module adds its models in a separate
+// file in this folder; reviewed SQL migrations remain the durable history.
+generator client {
+  provider            = "prisma-client"
+  output              = "../../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md) · [Repository structure](repository-structure.md#local-agent-instructions) · [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)
 
-This page owns how repository instructions reach human contributors and AI coding agents. [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) records the decision. Orion is not coupled to a particular model, agent harness, or vendor.
+This page owns how repository instructions reach human contributors and AI coding agents. [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) records the decision. The repository is not coupled to a particular model, agent harness, or vendor.
 
 ## Canonical instruction source
 
@@ -14,7 +14,7 @@ Obligations belong to the responsibility, not to a product. Write "an agent", "a
 
 ## Tool-specific compatibility
 
-Tool-specific files are thin discovery adapters. They may tell a tool to read `AGENTS.md`; they must not contain, summarize, or override repository instructions, and they are never an architectural authority. Add one only when a tool used with Orion cannot discover `AGENTS.md` otherwise, and verify the tool's current documented behavior first.
+Tool-specific files are thin discovery adapters. They may tell a tool to read `AGENTS.md`; they must not contain, summarize, or override repository instructions, and they are never an architectural authority. Add one only when a tool used with this repository cannot discover `AGENTS.md` otherwise, and verify the tool's current documented behavior first.
 
 | Tool | Verified behavior (2026-09-29) | Repository adapter |
 | --- | --- | --- |

@@ -4,6 +4,33 @@
     "title": "ADR-0005: Select PostgreSQL as the Primary Database",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **PostgreSQL as its primary relational database**.\nPostgreSQL will be the default persistence platform for applications that require durable relational storage unless a concrete application requirement justifies another database technology.\nPostgreSQL will be treated as an application infrastructure concern.\nDomain and application code must remain independent from PostgreSQL-specific APIs and persistence representations where practical.\nThe architectural distinction remains:\ndatabase records\n    !=\ndomain entities\n    !=\napplication models\n    !=\nAPI contracts\n\nThe persistence strategy, database-access library, ORM or query-builder choice, migration implementation, and schema canonical source will be selected separately.\nThis ADR does not select those mechanisms.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Relational data as the default model",
+    "anchor": "relational-data-as-the-default-model",
+    "text": "Relational data as the default model\nOrion applications should use relational modeling when the data represents structured business state with relationships, constraints, invariants, and transactional behavior.\nDatabase constraints should be used where they provide reliable enforcement of data integrity.\nApplication validation does not replace database integrity constraints when the invariant can and should be enforced by the database.\nPostgreSQL features should be adopted according to concrete data requirements rather than abstracting all database behavior behind the lowest common denominator of multiple database engines.\nAt the same time, unnecessary PostgreSQL-specific coupling should be avoided when it does not provide meaningful value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "PostgreSQL extensions",
+    "anchor": "postgresql-extensions",
+    "text": "PostgreSQL extensions\nApplications may enable PostgreSQL extensions when an extension provides a concrete capability required by that application.\nExtensions are not automatically part of the Orion baseline merely because they may be useful in some future system.\nAn application that depends on an extension must treat support for that extension as part of its deployment requirements.\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Vector storage and semantic retrieval",
     "anchor": "vector-storage-and-semantic-retrieval",
     "text": "Vector storage and semantic retrieval\nWhen an Orion application requires vector embeddings, vector similarity search, or semantic retrieval, **pgvector will be the preferred initial vector-storage and similarity-search approach when the workload can be appropriately served by PostgreSQL**.\n`pgvector` will **not** be enabled by default for applications that do not require vector capabilities.\nThe intended default progression is:\napplication requires semantic/vector retrieval\n    ↓\nevaluate PostgreSQL + pgvector\n    ↓\nuse pgvector when requirements are satisfied\n    ↓\nmeasure real workload\n    ↓\nintroduce specialized vector infrastructure only if justified\n\nA dedicated vector database will not be introduced solely in anticipation of future AI workloads.\nA specialized vector or search system may be selected later when demonstrated requirements involving scale, latency, indexing capabilities, isolation, operational behavior, or other constraints materially justify the additional infrastructure.\n"
@@ -979,32 +1006,5 @@
     "heading": "PostgreSQL integration tests",
     "anchor": "postgresql-integration-tests",
     "text": "PostgreSQL integration tests\nTests that verify PostgreSQL-dependent behavior will use a **real PostgreSQL instance**.\nOrion will not use SQLite, an in-memory relational substitute, or mocked database behavior as the default replacement for PostgreSQL in persistence integration tests.\nThe intended test path is:\nVitest\n    ↓\nTestcontainers\n    ↓\nreal PostgreSQL\n    ↓\nreal Orion migrations\n    ↓\nPrisma\n    ↓\npersistence implementation\n\nThis provides coverage for behavior that depends on:\nPostgreSQL data types;\nconstraints;\nindexes;\ntransaction semantics;\nPrisma behavior;\nmigration correctness;\ncustom SQL;\nPostgreSQL extensions when present.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Testcontainers",
-    "anchor": "testcontainers",
-    "text": "Testcontainers\nTestcontainers will be Orion's default mechanism for creating ephemeral infrastructure required by integration tests.\nIts initial primary responsibility is PostgreSQL test infrastructure.\nAdditional supported services may use Testcontainers when a real service provides materially better confidence than a mock or local substitute.\nIntroducing a Testcontainers module does not mean that every individual test must start its own container.\nInfrastructure lifecycle may be optimized according to test-suite size and execution environment.\nContainers or infrastructure instances may be scoped to:\na test run;\na worker;\na test suite;\nanother isolation boundary appropriate to the implementation.\nThe architectural requirement is not a particular container lifecycle.\nThe requirement is that tests remain:\nisolated;\ndeterministic;\nindependently executable;\nsafe for parallel execution.\nShared infrastructure must not create dependencies on test execution order.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Database initialization",
-    "anchor": "database-initialization",
-    "text": "Database initialization\nIntegration-test databases must be constructed using the same migration history used for durable application databases.\nThe intended lifecycle is:\nempty PostgreSQL\n    ↓\nversioned production migrations\n    ↓\ntest-specific data\n    ↓\ntest execution\n\nOrion will not maintain an independent test-only schema that bypasses the production migration path.\nThis allows integration tests to verify that the current database can actually be constructed from the committed migration history.\nTest initialization may optimize migration application through safe implementation techniques, but the resulting schema must be equivalent to one created by the canonical migration history.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Test database isolation",
-    "anchor": "test-database-isolation",
-    "text": "Test database isolation\nTests must not depend on state created by unrelated tests.\nState isolation may be implemented through mechanisms such as:\nindependent databases;\nindependent schemas where appropriate;\ntransaction rollback where semantically safe;\ndeterministic cleanup;\nworker-scoped database instances;\nanother mechanism providing equivalent isolation.\nThis ADR does not mandate one universal database-reset technique.\nThe selected technique must preserve correctness, parallelism, and deterministic execution.\n"
   }
 ]

@@ -133,7 +133,7 @@
     "/health/ready": {
       "get": {
         "operationId": "getReadiness",
-        "description": "Report whether the process can serve requests, including its required database dependency.",
+        "description": "Report whether the process can serve requests, including the database when one is configured.",
         "tags": ["Health"],
         "parameters": [],
         "responses": {

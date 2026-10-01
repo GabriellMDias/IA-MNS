@@ -6,7 +6,6 @@
     "dev": "node --env-file-if-exists=../../.env.local --import tsx --watch src/main.ts",
     "db:generate": "prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
-    "feature:smoke": "tsx scripts/feature-smoke.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",

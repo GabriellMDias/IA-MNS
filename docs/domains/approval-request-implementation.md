@@ -2,7 +2,9 @@
 
 [Business specification](approval-request.md) · [API runtime](../../apps/api/README.md) · [Web workflow](../../apps/web/README.md) · [Artifact workflow](../architecture/backend-execution-and-generated-artifacts.md)
 
-This document owns implementation conventions for the reference feature. The business specification owns actors, invariants, and transitions; executable sources own wire and physical details. The API, PostgreSQL schema, generated references, SDK, and web workflow exist. A concrete identity provider remains unselected.
+This document owns implementation conventions for the reference feature. The business specification owns actors, invariants, and transitions; executable sources own wire and physical details. The API module, PostgreSQL schema, generated references, SDK, and web workflow exist. A concrete identity provider remains unselected.
+
+The reference feature and its documentation are foundation-only: they exist in the Orion repository and are removed when a project is derived. Shared runtime, tooling, and policy never depend on them; the feature attaches only through `apps/api/src/modules.ts` and `apps/web/src/modules.tsx`.
 
 ## Placement and ownership
 
@@ -11,11 +13,13 @@ This document owns implementation conventions for the reference feature. The bus
 | Framework-independent rules and access decisions | [`domain.ts`](../../apps/api/src/features/approval-requests/domain.ts) |
 | Application operations, persistence port, intent fingerprint, cursor | [`service.ts`](../../apps/api/src/features/approval-requests/service.ts) |
 | PostgreSQL writes and authorized read predicates | [`prisma-repository.ts`](../../apps/api/src/features/approval-requests/prisma-repository.ts) |
-| TypeBox contracts, routes/defaults, token adapter | [`contracts.ts`](../../apps/api/src/features/approval-requests/contracts.ts), [`routes.ts`](../../apps/api/src/features/approval-requests/routes.ts), [`authentication.ts`](../../apps/api/src/features/approval-requests/authentication.ts) |
-| Authored schema and meaning | [`schema.prisma`](../../apps/api/prisma/schema.prisma), [`schema-metadata.json`](../../apps/api/prisma/schema-metadata.json) |
-| Real-database verification | [`approval-integration.test.ts`](../../apps/api/test/approval-integration.test.ts) |
+| TypeBox contracts, routes/defaults, scope-to-capability mapping | [`contracts.ts`](../../apps/api/src/features/approval-requests/contracts.ts), [`routes.ts`](../../apps/api/src/features/approval-requests/routes.ts) |
+| Module contract, requirements, and public errors | [`module.ts`](../../apps/api/src/features/approval-requests/module.ts), [`errors.ts`](../../apps/api/src/features/approval-requests/errors.ts) |
+| Authored schema, meaning, and runtime grants | [`approval-requests.prisma`](../../apps/api/prisma/schema/approval-requests.prisma), [`metadata`](../../apps/api/prisma/metadata/approval-requests.json), [`runtime grants`](../../apps/api/prisma/runtime-grants/approval-requests.sql), and the reviewed migration |
+| Real-database and process verification | [`integration.test.ts`](../../apps/api/test/approval-requests/integration.test.ts), [module smoke](../../apps/api/scripts/smoke/approval-requests.ts) |
+| Browser workflow and journeys | [`apps/web/src/approval-requests/`](../../apps/web/src/approval-requests/routes.tsx), [browser journeys](../../apps/web/test/e2e/approval-requests/workflow.spec.ts) |
 
-The API composition root wires the feature. Fastify and token verification remain at transport/infrastructure boundaries; domain/application behavior depends on neither Fastify nor Prisma. The feature owns table meaning and writes. Other applications consume its API rather than importing internals or accessing the table directly. Follow [application boundaries](../architecture/application-boundaries.md), [dependency rules](../architecture/dependency-rules.md), and ADRs [0004](../adr/0004-select-fastify-as-the-backend-http-framework.md), [0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md).
+`apps/api/src/modules.ts` composes the feature, which requires the shared database and bearer authentication. Fastify and the shared token verifier remain at transport/infrastructure boundaries; the module maps the issuer's `approval:review` scope to its review capability; domain/application behavior depends on neither Fastify nor Prisma. The feature owns table meaning and writes. Other applications consume its API rather than importing internals or accessing the table directly. Follow [application boundaries](../architecture/application-boundaries.md), [dependency rules](../architecture/dependency-rules.md), and ADRs [0004](../adr/0004-select-fastify-as-the-backend-http-framework.md), [0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md).
 
 `apps/api/prisma/` remains the schema/migration owner until genuine multi-application ownership exists. Do not create generic domain/contracts/database packages for one backend consumer. `packages/sdk` provides the thin generated boundary used by `apps/web`; these responsibilities do not require a ceremonial file-per-layer scaffold.
 
@@ -68,6 +72,22 @@ Schema-adjacent metadata owns table/column meaning, `INTERNAL` classification, n
 The executable contract requires nonblank `title` up to 200 characters. Optional `description` is `null`/omitted or nonblank supporting text up to 2,000 characters. A draft edit replaces both fields; omitting `description` clears it. Rejection requires nonblank `reason` up to 2,000 characters. These are existing limits, not additional states. Exact wire details remain in TypeBox/OpenAPI.
 
 Migration commands use `ORION_MIGRATION_DATABASE_URL`; runtime uses the separate restricted `ORION_DATABASE_URL`. The [API runtime guide](../../apps/api/README.md#configuration-and-database-access) owns grants and setup; do not duplicate credentials or runtime configuration parsing inside this feature.
+
+## Run the reference workflow manually
+
+With Docker running, build the API and start the disposable reference stack from the repository root:
+
+```sh
+pnpm db:generate
+pnpm -C apps/api build
+node apps/web/test/e2e/approval-requests/manual.ts
+```
+
+It starts a disposable PostgreSQL container, applies the committed migrations with a migration credential, grants the separate restricted runtime role its [runtime grants](../../apps/api/prisma/runtime-grants/approval-requests.sql), and starts the emitted API and Vite server on available loopback ports with an ephemeral synthetic token issuer. The API verifies signed bearer tokens, ownership, and review capability exactly as in the automated journeys; authentication is never bypassed. The command supplies its own temporary configuration and does not read the root `.env.local`.
+
+Open the printed `/approval-requests` URL and choose **Use local owner**. Create a draft, edit it, and submit it; trying **Approve** with this owner identity should be denied. Choose **Disconnect**, then **Use local reviewer**. Under **For review**, open the submitted request and approve or reject it. The reviewer cannot decide their own requests, and the owner can inspect the terminal result after reconnecting. Reloading the page, or leaving the workflow, clears the in-memory token.
+
+The local buttons appear only when the development server is paired with this synthetic issuer. They fetch a signed token through a same-origin, no-store development route and hand it directly to the in-memory credential state. Tokens are never written to files, URLs, browser storage, or terminal output, and they expire after one hour. Press Ctrl+C to stop the servers and database. The same stack serves the [API explorer](../architecture/living-documentation.md) for authenticated reference operations. A real provider and user-facing token acquisition remain conditional under [H-07](../human-actions.md#h-07).
 
 ## Verification
 

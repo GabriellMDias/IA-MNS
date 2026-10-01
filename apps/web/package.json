@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "identity:write": "node scripts/generate-touch-icon.mjs",
-    "dev:approval": "node scripts/manual-approval.mjs",
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "bundle:check": "node scripts/check-bundle.mjs",

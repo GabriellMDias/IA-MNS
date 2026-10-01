@@ -4,7 +4,7 @@ This policy owns actionable alert conditions, severity, ownership, notification,
 
 ## Current scope
 
-[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) leaves the observability backend and deployment alerting infrastructure application-specific. Orion has runtime telemetry and health checks, but no deployed alert rules, paging provider, on-call schedule, service objectives, or alert-as-code validation. This policy establishes constraints for introducing them; it does not authorize or start deployment work.
+[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) leaves the observability backend and deployment alerting infrastructure application-specific. The API has runtime telemetry and health checks, but no deployed alert rules, paging provider, on-call schedule, service objectives, or alert-as-code validation. This policy establishes constraints for introducing them; it does not authorize or start deployment work.
 
 Provider, severity taxonomy, channels/escalation, SLO tooling and burn-rate thresholds, ownership metadata, maintenance windows, and rollback integration must follow actual team structure, topology, service expectations, and operational tooling. Significant architectural choices require an ADR. Do not invent deployment thresholds or missing capabilities to fill documentation.
 
@@ -66,7 +66,7 @@ Infrastructure alerts can coexist with SLO alerts when they detect distinct prev
 | Error rate | Use a meaningful denominator and enough traffic. Low-volume services may need minimum counts, longer windows, or absolute failure conditions. Expected business declines are not availability failures. |
 | Latency | Prefer distributions or objective thresholds to averages alone; tail percentiles such as p99 can be unstable at low volume. |
 | Queue | Combine age, arrival/processing throughput, drain capacity, deadlines, and backlog. Depth alone does not establish impact. Dead letters matter when important work has exhausted recovery; one malformed noncritical item may not page. |
-| Dependency | Measure Orion's observed impact; a provider status page is supporting context. Coordinate shared-provider incidents. |
+| Dependency | Measure the application's observed impact; a provider status page is supporting context. Coordinate shared-provider incidents. |
 | Database | Consider sustained latency, deadlock surges, unavailability, recovery-threatening lag, or pool saturation causing waits/timeouts/failures. Do not alert on every slow-query fingerprint prematurely. |
 | CPU/memory | Use demonstrated saturation, latency, lost headroom, unexpected growth, eviction/restart, or known failure limits. High healthy utilization alone is insufficient. |
 | Storage, certificates, expiring secrets | Give enough preventive lead time. Prefer automated renewal/rotation where safe rather than relying only on notifications. |

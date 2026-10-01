@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "foundationOnly": [
+    "apps/api/prisma/metadata/approval-requests.json",
+    "apps/api/prisma/migrations/20260924000000_approval_requests",
+    "apps/api/prisma/runtime-grants/approval-requests.sql",
+    "apps/api/prisma/schema/approval-requests.prisma",
+    "apps/api/scripts/smoke/approval-requests.ts",
+    "apps/api/src/features/approval-requests",
+    "apps/api/test/approval-requests",
+    "apps/web/src/approval-requests",
+    "apps/web/test/approval-requests",
+    "apps/web/test/e2e/approval-requests",
+    "docs/domains/approval-request-implementation.md",
+    "docs/domains/approval-request.md",
+    "docs/foundation-acceptance.md",
+    "docs/human-actions.md",
+    "docs/implementation-plan.md"
+  ],
+  "foundationOnlyTerms": [
+    "approval request",
+    "approval-request",
+    "approval_request",
+    "approvalrequest"
+  ],
+  "isolationExempt": [
+    ".orion",
+    "apps/web/src/generated",
+    "docs/adr",
+    "docs/generated",
+    "docs/project-derivation.md",
+    "packages/sdk/src/generated",
+    "tooling/project"
+  ],
+  "projectFiles": {
+    "README.md": "tooling/project/templates/README.md.tmpl",
+    "apps/api/src/modules.ts": "tooling/project/templates/api-modules.ts.tmpl",
+    "apps/web/src/modules.tsx": "tooling/project/templates/web-modules.tsx.tmpl",
+    "apps/web/src/assets/brand-mark.svg": "tooling/project/templates/brand-mark.svg",
+    "apps/web/src/assets/brand-touch-icon.png": "tooling/project/templates/brand-touch-icon.png",
+    "docs/project/implementation-plan.md": "tooling/project/templates/implementation-plan.md.tmpl",
+    "docs/project/human-actions.md": "tooling/project/templates/human-actions.md.tmpl"
+  },
+  "workspaceScope": "@orion"
+}

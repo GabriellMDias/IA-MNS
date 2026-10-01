@@ -1,6 +1,7 @@
 import pino, { type DestinationStream, type Logger } from "pino";
 import type { ServerConfig } from "./config.js";
 import { currentTraceContext } from "./request-context.js";
+import { serviceName } from "./service-identity.js";
 
 // All application logs are structured and originate from allowlisted fields.
 // These paths provide a second defense against accidental object logging.
@@ -40,7 +41,7 @@ export function createLogger(
   const options = {
     level: config.logLevel,
     base: {
-      service: "orion-api",
+      service: serviceName,
       environment: config.environment,
       release: config.releaseId,
     },

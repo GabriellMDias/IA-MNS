@@ -4,7 +4,7 @@ import type { paths } from "./generated/api-types.js";
 export type { paths } from "./generated/api-types.js";
 
 /** Credentials are supplied by the host application and never retained by the SDK. */
-export function createOrionClient(
+export function createApiClient(
   baseUrl: string,
   getAccessToken: () => string | null,
 ) {
@@ -19,4 +19,4 @@ export function createOrionClient(
   return client;
 }
 
-export type OrionClient = ReturnType<typeof createOrionClient>;
+export type ApiClient = ReturnType<typeof createApiClient>;

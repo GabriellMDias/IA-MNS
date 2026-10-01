@@ -45,7 +45,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Report whether the process can serve requests, including its required database dependency. */
+        /** @description Report whether the process can serve requests, including the database when one is configured. */
         get: operations["getReadiness"];
         put?: never;
         post?: never;

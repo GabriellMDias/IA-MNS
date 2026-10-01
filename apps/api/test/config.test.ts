@@ -70,4 +70,54 @@ describe("API configuration boundary", () => {
         .releaseId,
     ).toBe("build.42");
   });
+
+  it("configures bearer verification as a complete server-only boundary independent of the database", () => {
+    const identity = {
+      ORION_ENV: "test",
+      ORION_TOKEN_ISSUER: "https://issuer.example.test/",
+      ORION_TOKEN_AUDIENCE: "example-api",
+      ORION_TOKEN_JWKS_URL: "https://issuer.example.test/jwks",
+    };
+    expect(() => parseServerConfig(identity)).not.toThrow();
+    for (const key of [
+      "ORION_TOKEN_ISSUER",
+      "ORION_TOKEN_AUDIENCE",
+      "ORION_TOKEN_JWKS_URL",
+    ])
+      expect(() =>
+        parseServerConfig({ ...identity, [key]: undefined }),
+      ).toThrow("incomplete access-token verification");
+    expect(() => parseServerConfig({ ORION_ENV: "production" })).not.toThrow();
+    const databaseOnly = {
+      ORION_ENV: "test",
+      ORION_DATABASE_URL:
+        "postgresql://runtime:synthetic@127.0.0.1:5432/example",
+    };
+    expect(() => parseServerConfig(databaseOnly)).not.toThrow();
+    expect(
+      clientConfigFrom(parseServerConfig({ ...identity, ...databaseOnly })),
+    ).toEqual({});
+    expect(() =>
+      parseServerConfig({
+        ...identity,
+        ORION_ENV: "production",
+        ORION_TOKEN_JWKS_URL: "http://issuer.example.test/jwks",
+      }),
+    ).toThrow();
+    expect(() =>
+      parseServerConfig({
+        ...identity,
+        ORION_TOKEN_JWKS_URL: "http://127.0.0.1:8080/jwks",
+      }),
+    ).not.toThrow();
+  });
+
+  it("does not expose migration credentials in runtime configuration", () => {
+    const config = parseServerConfig({
+      ORION_ENV: "test",
+      ORION_MIGRATION_DATABASE_URL:
+        "postgresql://migration:synthetic@127.0.0.1/example",
+    });
+    expect(JSON.stringify(config)).not.toContain("migration");
+  });
 });

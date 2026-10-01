@@ -10,7 +10,7 @@ This policy names stable revisions of the reusable Orion foundation for people c
 - A stable release has one immutable, annotated Git tag named `vMAJOR.MINOR.PATCH`. The tag is the canonical human-readable release identifier and points to the exact Orion commit released. A published tag must never be moved to another commit.
 - A GitHub Release may be created from that tag as descriptive metadata. It should concisely state what the release represents, important foundation changes, compatibility or migration notes when relevant, materially required tool/runtime versions, the exact tagged commit, and useful documentation links. It does not establish provenance.
 
-The first stable release is `v1.0.0`. That tag identifies its historical foundation snapshot; later licensing decisions do not change the tagged commit.
+Stable releases start at `v1.0.0`. A tag always identifies the exact commit it was created for; later foundation changes never alter a tagged snapshot.
 
 ## Where version information belongs
 
@@ -47,9 +47,3 @@ A project may be described as derived from `Orion v1.0.0` when its recorded init
 To determine whether a recorded commit has a semantic version, inspect stable tags in the canonical Orion repository and compare their resolved commit SHAs with the recorded SHA (for example, `git rev-list -n 1 v1.0.0` in an Orion clone with the tag). The derived project's `orion-upstream` deliberately does not fetch tags, so use a separate Orion clone or the canonical repository's tag view. A nearby or ancestral tag does not name an untagged baseline.
 
 The latest stable tag identifies the latest released human-readable version. Later commits on `main` are unreleased foundation revisions; a project can deliberately use one by its SHA. The next semantic version is assigned only when another release point is tagged. Ordinary merges require no new tag.
-
-## First release and acceptance sequence
-
-`v1.0.0` represents the completed reusable Orion foundation: agent-neutral repository instructions, Living Documentation, validation/CI/security foundations, the Approval Request reference slice, project derivation with preserved Git ancestry, recorded provenance, and guarded baseline upgrades. It marks the foundation state accepted before the first real GitHub-backed sandbox derivation exercise. It does not certify production deployment, activate Phase 12, select a production identity provider, establish product-specific readiness, or promise conflict-free upgrades. The real GitHub-backed derivation and subsequent upgrade exercise remain acceptance and reverification activities.
-
-The Apache-2.0 licensing change from PR #18 was merged without creating `v1.0.1`; that version does not exist. `v1.1.0` identifies the merged PR #19 revision and was used as the baseline for the real GitHub-backed `Orion-Derivation-Test`. That exercise exposed the [first-push release-history defect](foundation-acceptance.md#github-backed-derivation-first-push-defect). Its compatible validation correction is a PATCH candidate expected to become `v1.1.1`; the [implementation plan](implementation-plan.md#maintaining-this-plan) tracks the correction and separate release/upgrade follow-up. The existing tags remain immutable. A candidate is not a released version until its deliberate release point is tagged.

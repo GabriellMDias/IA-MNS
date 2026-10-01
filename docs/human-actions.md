@@ -6,7 +6,7 @@
 
 This checklist records implementation prerequisites of the Orion foundation repository that require a project-owner decision, human-controlled account action, unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.
 
-The actions below were requested and verified for `GabriellMDias/Orion`. In a project derived from Orion, this checklist is inherited foundation history: completed items such as H-01 to H-03 do not establish Renovate, branch protection, or security settings for the project's repository. The project's own checklist is `docs/project/human-actions.md`, created by [project derivation](project-derivation.md) with pending equivalents.
+The actions below were requested and verified for `GabriellMDias/Orion`. This checklist stays in the foundation and is removed during clean-project initialization. The project's own checklist is `docs/project/human-actions.md`, created by [project derivation](project-derivation.md) with pending equivalents. Copies inherited before the clean-baseline contract do not establish Renovate, branch protection, or security settings for the project's repository.
 
 Phases 1-11 and the original development foundation are complete. The Approval Request owner decisions are recorded in H-04 and H-05; the API, database, generated SDK, web workflow, [configuration schema](../apps/api/src/config.ts), [local setup](setup.md), and [Living Documentation Portal](architecture/living-documentation.md) are implemented. The owner completed the current portal's manual browser acceptance in [H-12](#h-12); automated validation is recorded separately. Phase 12 remains unstarted. A selected identity provider or production environment is not required for the foundation. Conditional items become necessary only when their stated trigger applies; the [generated configuration reference](generated/configuration/api.md) records current API variable names.
 
@@ -105,7 +105,7 @@ External settings below were verified on the stated dates. They are evidence of 
 
 **Verification:** Validate without printing values; test bounded connectivity, token/claim mapping, intended redirects and allow/deny/revocation behavior where applicable. Record inaccessible provider settings and remaining technical verification separately.
 
-**Current evidence:** The API verifies JWTs; the browser holds an issued token in memory. [Manual setup](setup.md#manually-exercise-approval-requests) and automated journeys use a loopback synthetic issuer and disposable database. No provider login/session/refresh workflow is claimed.
+**Current evidence:** The API verifies JWTs; the browser holds an issued token in memory. [Manual setup](../apps/web/test/e2e/approval-requests/manual.ts) and automated journeys use a loopback synthetic issuer and disposable database. No provider login/session/refresh workflow is claimed.
 
 ## H-08
 
@@ -163,7 +163,7 @@ External settings below were verified on the stated dates. They are evidence of 
 
 **Result:** On 2026-09-29 the owner explicitly reported H-12 manual browser acceptance complete. The [manual browser checklist](validation.md#living-documentation-manual-browser-checks) records the scope. This is owner-observed acceptance, not an automated browser-test result or a claim that the agent independently reproduced every observation.
 
-**Configuration:** No external account or production credentials. Use the standalone local portal for reading and the disposable `pnpm dev:approval` workflow for API execution. Its synthetic identities and database exist only for local verification; keep tokens out of evidence.
+**Configuration:** No external account or production credentials. Use the standalone local portal for reading and a disposable module stack (the former `pnpm dev:approval` workflow, now [the Approval Request end-to-end stack](../apps/web/test/e2e/approval-requests/stack.ts)) for API execution. Its synthetic identities and database exist only for local verification; keep tokens out of evidence.
 
 **Reverification:** Repeat the checklist after material portal changes; record the tested revision, browser/version, viewport, development and production-preview results, and any failing route or control. The current owner attestation did not include that granular log, so automated validation and future regression evidence remain separate.
 
@@ -182,6 +182,20 @@ External settings below were verified on the stated dates. They are evidence of 
 **Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; the run link is recorded under PD5.
 
 **Evidence (2026-09-29):** The owner opened [PR #15](https://github.com/GabriellMDias/Orion/pull/15) from that branch into `main`. On head `d593d7e` the [`Orion required gate`](https://github.com/GabriellMDias/Orion/actions/runs/36626454325) passed. Review, remaining CI results, and merge are tracked under PD5 rather than this action.
+
+## H-14
+
+- [x] **Open the clean-project-baseline pull request.**
+
+**Status:** completed. **Owner:** repository owner. **Dependency:** [CB5](implementation-plan.md#maintaining-this-plan).
+
+**Request and reason:** Pushing `feature/clean-project-baseline` and opening its pull request publish the change, so they required the owner's explicit authorization. The pull request must not be merged before review and a passing required gate, and the change creates no tag or GitHub Release.
+
+**Configuration:** none.
+
+**Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; the links are recorded under CB5.
+
+**Evidence (2026-10-01):** The owner authorized the submission; the agent pushed the branch and opened [PR #21](https://github.com/GabriellMDias/Orion/pull/21) through the authenticated GitHub CLI. On head `0d75edf` all seven remote checks passed, including the [`Orion required gate`](https://github.com/GabriellMDias/Orion/actions/runs/36863164319). Review, later CI runs, and merge are tracked under CB5 rather than this action.
 
 ## New action template
 

@@ -2,7 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { configReference } from "../src/config.js";
-import { errorRegistry } from "../src/errors.js";
+import { publicErrorRegistry } from "../src/error-registry.js";
+import { apiModules } from "../src/modules.js";
 import { generateOpenApi } from "./openapi.js";
 import { generateDatabaseReference } from "./database-reference.js";
 import {
@@ -21,11 +22,11 @@ const generated = [
     content: [
       "# API Configuration Reference",
       "",
-      "<!-- Generated from apps/api/src/config.ts. Run pnpm --filter @orion/api references:write; do not edit. -->",
+      "<!-- Generated from apps/api/src/config.ts. Run pnpm -C apps/api references:write; do not edit. -->",
       "",
       "[Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)",
       "",
-      "No values are eligible for client exposure. `ORION_ENV` is always required; the database and token settings are required together to enable the Approval Request feature and in production.",
+      "No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. API modules that require the database or bearer authentication stay unmounted until those settings exist, and production startup fails instead.",
       "",
       "| Environment variable | Type | Required | Default | Visibility | Classification | Secret | Purpose |",
       "| --- | --- | --- | --- | --- | --- | --- | --- |",
@@ -41,13 +42,13 @@ const generated = [
     content: [
       "# API Error Registry",
       "",
-      "<!-- Generated from apps/api/src/errors.ts. Run pnpm --filter @orion/api references:write; do not edit. -->",
+      "<!-- Generated from apps/api/src/errors.ts and composed module errors. Run pnpm -C apps/api references:write; do not edit. -->",
       "",
       "[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)",
       "",
       "| Code | HTTP status | Category | Retryable | Public message |",
       "| --- | --- | --- | --- | --- |",
-      ...Object.entries(errorRegistry).map(
+      ...Object.entries(publicErrorRegistry(apiModules)).map(
         ([code, item]) =>
           `| \`${code}\` | ${item.status} | ${item.category} | ${item.retryable ? "yes" : "no"} | ${item.message} |`,
       ),
@@ -61,7 +62,7 @@ if (!write && process.argv[2] !== "--check")
   throw new Error("Expected --check or --write");
 const normalizeLineEndings = (value: string) => value.replace(/\r\n?/g, "\n");
 generated.push({
-  path: resolve(root, "docs/generated/database/approval-requests.md"),
+  path: resolve(root, "docs/generated/database/schema.md"),
   content: await withMigratedDatabase(async (_runtimeUrl, migrationUrl) => {
     await assertPrismaSchemaMatchesDatabase(migrationUrl);
     return generateDatabaseReference(migrationUrl);

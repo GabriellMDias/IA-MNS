@@ -11,14 +11,14 @@ These locations exist:
 | Location | Responsibility and entry point |
 | --- | --- |
 | Repository root | Repository-wide instructions, workspace/lockfile, dependency and validation configuration. Start with [README](../../README.md) and [AGENTS.md](../../AGENTS.md). |
-| `apps/api/` | Fastify executable, Approval Request feature, API-owned contracts, Prisma schema/migrations, and runtime/generation tests. Start with its [README](../../apps/api/README.md). |
+| `apps/api/` | Fastify executable, composed API modules, API-owned contracts, Prisma schema/migrations, and runtime/generation tests. Start with its [README](../../apps/api/README.md). |
 | `apps/web/` | React/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md). |
 | `packages/sdk/` | Public API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md). |
 | `docs/` | Current policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md). |
 | `tooling/validate/` | Repository documentation, agent-instruction, environment-example, and release-history checks. |
 | `tooling/documentation/` | Portal dataset and component-reference generation. |
-| `tooling/project/` | Project initialization, provenance, and Orion upgrade commands and their templates; see [project derivation](../project-derivation.md). |
-| `.orion/` | [`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance. |
+| `tooling/project/` | Project initialization, pruning, provenance, and Orion upgrade commands and the project-owned file templates; see [project derivation](../project-derivation.md). |
+| `.orion/` | [`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance; [`derivation.json`](../../.orion/derivation.json): the clean-baseline contract of foundation-only and project-owned content. |
 | `.gemini/` | Gemini CLI discovery adapter only; see [agent instructions](agent-instructions.md). |
 | `.github/` | GitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings. |
 
@@ -58,7 +58,7 @@ First search existing owners. Explain the cohesive responsibility, actual consum
 
 ## Feature Organization
 
-Keep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. The current API feature uses `apps/api/src/features/approval-requests/`; its flat domain, service, persistence, authentication, contracts, and route modules are a real example. Domain behavior may stay application-local until sharing has value.
+Keep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. API modules live in `apps/api/src/features/<module>/`, typically as flat domain, service, persistence, contracts, errors, and route files; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) is a complete example. Domain behavior may stay application-local until sharing has value.
 
 Tests normally live near the behavior they protect or in the owning application's test directory; broader system tests may need dedicated locations. Use the [testing strategy](testing-strategy.md) for existing topology and test boundaries. Name directories/packages in English by domain, capability, or responsibility rather than historical accidents.
 

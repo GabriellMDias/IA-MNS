@@ -1,36 +1,51 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withMigratedDatabase } from "../scripts/migrated-database.js";
+import { withMigratedDatabase } from "../../scripts/migrated-database.js";
 import {
   createRepository,
   type PrismaApprovalRequestRepository,
-} from "../src/features/approval-requests/prisma-repository.js";
-import { ApprovalRequestService } from "../src/features/approval-requests/service.js";
-import { createApp } from "../src/app.js";
-import { createLogger } from "../src/logging.js";
-import { parseServerConfig } from "../src/config.js";
+} from "../../src/features/approval-requests/prisma-repository.js";
+import { ApprovalRequestService } from "../../src/features/approval-requests/service.js";
+import { createApp } from "../../src/app.js";
+import { createLogger } from "../../src/logging.js";
+import { parseServerConfig } from "../../src/config.js";
+import type { AccessTokenVerifier } from "../../src/authentication.js";
+import { approvalRequestRoutes } from "../../src/features/approval-requests/module.js";
+
+function assemble(options: {
+  service: ApprovalRequestService;
+  verifier: AccessTokenVerifier;
+  checkReady?: () => Promise<boolean>;
+  rateLimit?: { max: number; timeWindow: number };
+}) {
+  return createApp(
+    createLogger(parseServerConfig({ ORION_ENV: "test" })),
+    undefined,
+    {
+      modules: [approvalRequestRoutes(options)],
+      ...(options.checkReady ? { checkReady: options.checkReady } : {}),
+    },
+  );
+}
 
 const owner = randomUUID();
 const reviewer = randomUUID();
 const outsider = randomUUID();
 const identities = new Map([
-  ["Bearer owner", { id: owner, capabilities: new Set<"approval:review">() }],
+  ["Bearer owner", { id: owner, scopes: new Set<string>() }],
   [
     "Bearer reviewer",
     {
       id: reviewer,
-      capabilities: new Set<"approval:review">(["approval:review"]),
+      scopes: new Set(["approval:review"]),
     },
   ],
-  [
-    "Bearer outsider",
-    { id: outsider, capabilities: new Set<"approval:review">() },
-  ],
+  ["Bearer outsider", { id: outsider, scopes: new Set<string>() }],
   [
     "Bearer both",
     {
       id: owner,
-      capabilities: new Set<"approval:review">(["approval:review"]),
+      scopes: new Set(["approval:review"]),
     },
   ],
 ]);
@@ -53,22 +68,18 @@ describe("Approval Request on migrated PostgreSQL", () => {
     });
     fixture = withMigratedDatabase(async (runtimeUrl) => {
       repo = createRepository(runtimeUrl);
-      const assembled = createApp(
-        createLogger(parseServerConfig({ ORION_ENV: "test" })),
-        undefined,
-        {
-          service: new ApprovalRequestService(repo),
-          checkReady: async () => {
-            if (!dependencyReady) return false;
-            await repo.db.$queryRaw`SELECT 1`;
-            return true;
-          },
-          verifier: {
-            verify: (authorization) =>
-              Promise.resolve(identities.get(authorization ?? "") ?? null),
-          },
+      const assembled = assemble({
+        service: new ApprovalRequestService(repo),
+        checkReady: async () => {
+          if (!dependencyReady) return false;
+          await repo.db.$queryRaw`SELECT 1`;
+          return true;
         },
-      );
+        verifier: {
+          verify: (authorization) =>
+            Promise.resolve(identities.get(authorization ?? "") ?? null),
+        },
+      });
       app = assembled.app;
       await app.ready();
       assembled.lifecycle.markReady();
@@ -151,20 +162,16 @@ describe("Approval Request on migrated PostgreSQL", () => {
   });
   it("limits feature requests before authentication without limiting health", async () => {
     let verifications = 0;
-    const limited = createApp(
-      createLogger(parseServerConfig({ ORION_ENV: "test" })),
-      undefined,
-      {
-        service: new ApprovalRequestService(repo),
-        verifier: {
-          verify: () => {
-            verifications++;
-            return Promise.resolve(null);
-          },
+    const limited = assemble({
+      service: new ApprovalRequestService(repo),
+      verifier: {
+        verify: () => {
+          verifications++;
+          return Promise.resolve(null);
         },
-        rateLimit: { max: 2, timeWindow: 3_600_000 },
       },
-    );
+      rateLimit: { max: 2, timeWindow: 3_600_000 },
+    });
     try {
       limited.lifecycle.markReady();
       for (const [index, url] of [
@@ -280,27 +287,23 @@ describe("Approval Request on migrated PostgreSQL", () => {
     const responseGate = new Promise<void>((resolve) => {
       releaseResponse = resolve;
     });
-    const delayed = createApp(
-      createLogger(parseServerConfig({ ORION_ENV: "test" })),
-      undefined,
-      {
-        service: new ApprovalRequestService({
-          create: async (input) => {
-            const result = await repo.create(input);
-            committed();
-            await responseGate;
-            return result;
-          },
-          get: (id) => repo.get(id),
-          list: (filter) => repo.list(filter),
-          compareAndSwap: (input) => repo.compareAndSwap(input),
-        }),
-        verifier: {
-          verify: (authorization) =>
-            Promise.resolve(identities.get(authorization ?? "") ?? null),
+    const delayed = assemble({
+      service: new ApprovalRequestService({
+        create: async (input) => {
+          const result = await repo.create(input);
+          committed();
+          await responseGate;
+          return result;
         },
+        get: (id) => repo.get(id),
+        list: (filter) => repo.list(filter),
+        compareAndSwap: (input) => repo.compareAndSwap(input),
+      }),
+      verifier: {
+        verify: (authorization) =>
+          Promise.resolve(identities.get(authorization ?? "") ?? null),
       },
-    );
+    });
     try {
       const pending = delayed.app.inject({
         method: "POST",

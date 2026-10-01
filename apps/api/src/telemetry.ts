@@ -21,6 +21,7 @@ import { FastifyOtelInstrumentation } from "@fastify/otel";
 import { PrismaInstrumentation } from "@prisma/instrumentation";
 import type { Logger } from "pino";
 import type { ServerConfig } from "./config.js";
+import { serviceName } from "./service-identity.js";
 
 const allowedSpanAttributes = new Set([
   "http.request.method",
@@ -104,10 +105,10 @@ export function initializeTelemetry(
 ): Telemetry {
   const endpoint = config.otlpEndpoint?.replace(/\/$/, "");
   const sdk = new NodeSDK({
-    serviceName: "orion-api",
+    serviceName,
     autoDetectResources: false,
     resource: resourceFromAttributes({
-      "service.name": "orion-api",
+      "service.name": serviceName,
       "deployment.environment.name": config.environment,
       "service.version": config.releaseId,
     }),
