@@ -829,10 +829,10 @@
     {
       "id": "repository/docs/project-derivation",
       "kind": "repository",
-      "title": "Project Derivation and Orion Upgrades",
+      "title": "Start and Upgrade a Project from Orion",
       "group": "Project guides",
       "source": "docs/project-derivation.md",
-      "summary": "This guide owns how a real project is started from Orion, what a newly derived project contains, how its provenance is recorded and checked, and how it adopts newer Orion…",
+      "summary": "This is the practical reference for turning a revision of Orion into a new, independent project and for keeping that project's foundation current: what to decide and provide,…",
       "headings": [],
       "file": "pages/repository/docs/project-derivation.json"
     },
@@ -1110,11 +1110,11 @@
       { "file": "search/0004.json", "count": 142, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 133, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 87, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 68, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 87, "kinds": ["repository"] },
       { "file": "search/0009.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 36, "kinds": ["repository"] }
+      { "file": "search/0010.json", "count": 41, "kinds": ["repository"] }
     ],
-    "count": 1008
+    "count": 1014
   }
 }

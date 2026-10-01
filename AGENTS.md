@@ -34,6 +34,6 @@ Read the policies and ADRs relevant to the change; use their task links to reach
 | Sensitive data, identity, permissions, production, or incidents | [Security routes](docs/README.md#security-and-operations) |
 | ADRs or operational procedures | [ADR authoring](docs/adr/authoring.md), [runbook authoring](docs/runbooks/authoring.md) |
 | Agent tooling or instruction files | [Agent instructions](docs/architecture/agent-instructions.md) |
-| Project identity, Orion provenance, or Orion upgrades | [Project derivation](docs/project-derivation.md) |
+| Starting a project from Orion, project identity, Orion provenance, or Orion upgrades | [Project derivation](docs/project-derivation.md) |
 
 Before editing migration history, verify release status; uncertain history is immutable until verified. A runbook does not grant production authority. Finish by reviewing the diff for unintended changes and applying the [completion criteria](docs/contributing.md#change-workflow).

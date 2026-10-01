@@ -16,7 +16,7 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | Task | Authoritative policy |
 | --- | --- |
 | Execute or track implementation work | The implementation plan linked from the README's [Current state](../README.md#current-state) |
-| Start a project from Orion, check its provenance, or upgrade its Orion baseline | [Project derivation](project-derivation.md) |
+| Start a new project from Orion, check its provenance, or upgrade its Orion baseline | [Start and upgrade a project from Orion](project-derivation.md) |
 | Name a stable Orion foundation release or assess derived-project compatibility | [Foundation versioning](versioning.md) |
 | Change agent instruction files or tool compatibility adapters | [Agent instructions](architecture/agent-instructions.md) |
 | Reproduce development setup, local execution, and the validation gate | [Development setup](setup.md) |

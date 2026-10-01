@@ -35,7 +35,7 @@ Completion requires, as applicable: correct implementation, respected boundaries
 | Application/package-specific knowledge | Near the owning application or package |
 | Execution status and outstanding work | The implementation plan linked from the README's [Current state](../README.md#current-state) |
 | Decisions or access requiring a human | The human-action checklist linked from the README's [Current state](../README.md#current-state) |
-| Repository identity and Orion provenance | [`.orion/project.json`](../.orion/project.json), under [project derivation](project-derivation.md) |
+| Repository identity, Orion provenance, and the derivation contract | [`.orion/project.json`](../.orion/project.json) and [`.orion/derivation.json`](../.orion/derivation.json), under [project derivation](project-derivation.md) |
 
 The maintainer of the owning code or policy is responsible for keeping its documentation current in the same change. This is responsibility by repository boundary, not an invented team or approval hierarchy. Indexes route readers; they do not own copies of another document's rules. Root `AGENTS.md` owns global invariants and task routes; nested instructions add only distinct local obligations. They apply to every contributor and agent; tool-specific files may only adapt discovery under [agent instructions](architecture/agent-instructions.md). Application/package READMEs explain local responsibility and usage, with links to shared setup and policy.
 

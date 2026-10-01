@@ -17,8 +17,8 @@ These locations exist:
 | `docs/` | Current policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md). |
 | `tooling/validate/` | Repository documentation, agent-instruction, environment-example, and release-history checks. |
 | `tooling/documentation/` | Portal dataset and component-reference generation. |
-| `tooling/project/` | Project initialization, provenance, and Orion upgrade commands and their templates; see [project derivation](../project-derivation.md). |
-| `.orion/` | [`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance. |
+| `tooling/project/` | Project initialization, pruning, provenance, and Orion upgrade commands and the project-owned file templates; see [project derivation](../project-derivation.md). |
+| `.orion/` | [`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance; [`derivation.json`](../../.orion/derivation.json): the clean-baseline contract of foundation-only and project-owned content. |
 | `.gemini/` | Gemini CLI discovery adapter only; see [agent instructions](agent-instructions.md). |
 | `.github/` | GitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings. |
 

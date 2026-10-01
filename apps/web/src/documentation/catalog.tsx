@@ -177,6 +177,9 @@ export function Overview() {
           <DocLink id="repository/docs/setup">
             Set up your workspace <span aria-hidden="true">→</span>
           </DocLink>
+          <DocLink id="repository/docs/project-derivation">
+            Start or upgrade from Orion <span aria-hidden="true">→</span>
+          </DocLink>
           <DocLink id="repository/docs/architecture/repository-structure">
             Explore the repository <span aria-hidden="true">→</span>
           </DocLink>

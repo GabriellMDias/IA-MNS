@@ -166,6 +166,12 @@ test("repository documentation reads locally with heading links and unknown-page
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     overviewTitle,
   );
+  // Every Orion-based repository routes newcomers to the derivation guide.
+  await page.getByRole("link", { name: "Start or upgrade from Orion" }).click();
+  await expect(page).toHaveURL(/\/docs\/repository\/docs\/project-derivation$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Start and Upgrade a Project from Orion",
+  );
 });
 
 test("full-text search finds authored policy and generated operation, column, and component content", async ({
@@ -344,6 +350,10 @@ for (const [path, title] of [
   ["/docs/database", "Data dictionary"],
   ["/docs/components/ErrorNotice", "ErrorNotice"],
   ["/docs/repository/docs/setup", "Development Setup"],
+  [
+    "/docs/repository/docs/project-derivation",
+    "Start and Upgrade a Project from Orion",
+  ],
 ]) {
   test(`documentation has no automated WCAG A/AA violations at ${path}`, async ({
     page,

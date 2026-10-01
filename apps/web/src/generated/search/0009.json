@@ -4,6 +4,51 @@
     "title": "Observability",
     "group": "Reliability",
     "kind": "repository",
+    "heading": "Current implementation and accepted direction",
+    "anchor": "current-implementation-and-accepted-direction",
+    "text": "Current implementation and accepted direction\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects server-side OpenTelemetry traces/metrics, W3C Trace Context, OTLP, and Pino JSON logs. A Collector is preferred when deployment complexity justifies it; direct compatible OTLP export remains valid. No global backend/vendor is selected. The OpenTelemetry Logs SDK and browser instrumentation are not initial defaults, and a dedicated error-reporting provider is optional.\nThe API [initializes telemetry before Fastify/application composition](../../apps/api/src/main.ts), with [Pino redaction](../../apps/api/src/logging.ts), [HTTP instrumentation and allowlisted OTLP export](../../apps/api/src/telemetry.ts), and [health/error boundaries](../../apps/api/src/app.ts). See the [runtime guide](../../apps/api/README.md) and [validation inventory](../validation.md) for current configuration and evidence.\nThe current API logs centralized `request_id`, `trace_id`, and `span_id` where available, carries a configured release identifier, and initializes HTTP, Fastify, and Prisma instrumentation before application composition. Successful health responses are suppressed from request logs. Trace export removes arbitrary attributes, event details, URLs, SQL text, and status messages; it does not provide full database diagnostics. A production Collector, backend, dashboards, alert owners/thresholds, retention durations, and service objectives remain deployment-specific; policy presence is not evidence they exist.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Observability signals",
+    "anchor": "observability-signals",
+    "text": "Observability signals\nQuestion\nOwner\nScope\nWhat happened to a particular operation?\n[Logging](logging.md)\nDiscrete semantic events with safe structured context\nWhere did time/failure propagate?\n[Tracing](tracing.md)\nCausal spans, links, dependency timing, context propagation\nHow often, how slow, how saturated?\n[Metrics](metrics.md)\nAggregate numerical behavior and trends with bounded dimensions\nWhich unexpected failures recur?\n[Error reporting](error-reporting.md)\nAuthoritative failure capture, classification, grouping, and correlation\nCan the process run or receive work?\n[Health checks](health-checks.md)\nStartup, liveness, readiness, dependency diagnostics\nDoes a responder need to act?\n[Alerting](alerting.md)\nActionable conditions, ownership, routing, and investigation context\nWhat data can be collected?\n[Telemetry redaction](../security/telemetry-redaction.md)\nClassification, allowlists, sanitization, and leakage handling\nOperational telemetry is not authoritative business audit history, domain events, or an analytics warehouse. Those have distinct ownership and integrity, persistence, delivery, authorization, and retention guarantees. Do not duplicate every span as a log or report one exception independently at every layer.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Telemetry correlation",
+    "anchor": "telemetry-correlation",
+    "text": "Telemetry correlation\nPreserve request/trace correlation across supported boundaries where practical. A request ID identifies an application-boundary request; a trace ID identifies causal execution; a span ID identifies work within that trace; an error ID identifies a failure report. Jobs, events, and workflows have their own stable identities for retries, deduplication, and replay; do not substitute one ID for another merely because both are unique.\nSupport references must be safe opaque values. Anonymous workflows must remain diagnosable without fake users. Actor/tenant/resource identifiers may appear only when justified and classified; clear/update user context when identity changes. Context must not leak between requests, jobs, or tenants.\nUse consistent service/application and environment identities. Deployed release/source revision and operational changes should be correlatable when that release process exists, including after rollback. Logs, spans, errors, and selected metrics should use consistent semantic operation names and established standard conventions where appropriate; never use high-cardinality correlation IDs as routine metric dimensions.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Instrumentation ownership and coverage",
+    "anchor": "instrumentation-ownership-and-coverage",
+    "text": "Instrumentation ownership and coverage\nThe owner of an operation owns its semantic telemetry. Transport supplies request context, application operations supply meaning/outcome, adapters supply dependency behavior, and cross-cutting infrastructure supplies logger setup, redaction, tracing, and common runtime fields. Share mechanisms only when meaning is shared; do not create generic packages or wrappers merely to hide a vendor. Keep provider SDK coupling at integration boundaries.\nInstrument meaningful boundaries rather than every function. Automatic HTTP/database/runtime instrumentation supplies technical visibility but cannot infer business success. Critical workflows may fail semantically while infrastructure appears healthy. Useful coverage, when the corresponding capability exists, includes:\nRemote calls: provider/operation, latency, outcome, timeout, fallback, and retries.\nDatabase: query/transaction latency, pool saturation, deadlocks, timeouts, and migration outcome without raw values.\nQueues/jobs: publish/consume/progress, waiting age, execution duration, attempts, duplicate handling, dead-letter growth, terminal failure, and originating correlation.\nCaches: justified hit/miss, latency, eviction, and errors; do not build instrumentation before the cache exists.\nLifecycle/releases: startup/shutdown, deployments/rollbacks, migrations, and important safe configuration/flag state.\nClient observability is requirement-driven and must account for privacy, offline delivery, network/battery/overhead, application/OS version, and safe device metadata. Source maps/native symbols can support trusted diagnostics without being public. Do not capture local usernames/paths, user input, or server secrets blindly.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Safety, cost, and pipeline failure",
+    "anchor": "safety-cost-and-pipeline-failure",
+    "text": "Safety, cost, and pipeline failure\nTelemetry is production data. [Redaction](../security/telemetry-redaction.md), [classification](../security/data-classification.md), [retention](../security/data-retention.md), and [production access](../security/production-access.md) govern both human and AI investigation. Use minimum required allowlisted fields and never intentionally collect restricted secrets, even for emergency debugging. New providers are data-processing boundaries.\nNormally telemetry failure must not fail unrelated business operations. An explicit regulatory/security audit requirement can create a different guarantee and must be designed as such. Bound buffers, CPU/memory/network overhead, export timeouts, and dropping behavior; make loss/export failures diagnosable without recursive telemetry storms. Sampling and cost controls must preserve useful evidence for critical, rare, and unexpected failures rather than indiscriminately suppressing it.\nDevelopment must support useful local diagnostics without the full production stack while preserving production semantics and redaction. Missing essential evidence and excessive noisy collection are both defects. Add the smallest signal that answers a real question.\n"
+  },
+  {
+    "id": "repository/docs/reliability/observability",
+    "title": "Observability",
+    "group": "Reliability",
+    "kind": "repository",
     "heading": "Investigation and testing observability",
     "anchor": "investigation-and-testing-observability",
     "text": "Investigation and testing observability\nA useful investigation can move from safe user reference or alert to service/error group, trace, logs, dependency, release, source, and regression test. Use evidence to distinguish facts from hypotheses. Authorized AI tooling follows the same access rules; it is not a reason to collect more sensitive data. Convert confirmed defects into reproduction/regression tests where practical and use runtime evidence to verify recovery.\nTest high-value contracts such as correlation generation/propagation/isolation, authoritative error ownership, redaction before export, meaningful events, and available release metadata. Avoid vendor-specific business-test coupling or assertions for every trivial message/span. Consult [validation](../validation.md) before claiming static checks or remote tests exist.\nDashboards should answer concrete service/workflow questions, not display every available metric. Alerts require action and real evidence-based thresholds; runbooks should reference stable signals and actual queries once tooling exists. Provider deployments, thresholds, retention, and service objectives must be determined by real operational requirements rather than invented to fill this documentation.\n"
@@ -916,50 +961,5 @@
     "heading": "Client applications and build boundaries",
     "anchor": "client-applications-and-build-boundaries",
     "text": "Client applications and build boundaries\nAnything delivered to browser, mobile, or desktop users can be inspected despite compilation, minification, obfuscation, packaging, or signing. Never embed server database credentials, private provider keys, signing keys, or backend tokens. User-specific credentials may exist in clients only according to [authentication storage policy](authentication.md#sessions). Clearly classify intentionally publishable provider values.\nScope CI secrets to required jobs and workflow trust. Contributed or forked code must not automatically receive privileged credentials. A test job must not inherit production deployment authority. Build secrets must not remain in binaries, source maps, generated code, package metadata, container layers/history, or build context. Supply runtime credentials through approved mechanisms; infrastructure definitions should reference secrets, not contain or print values. Review images/artifacts where tooling exists; do not assume source scanning covers them.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Delivery, initialization, and failure",
-    "anchor": "delivery-initialization-and-failure",
-    "text": "Delivery, initialization, and failure\nAcquire credentials near trusted application composition and inject only what each infrastructure adapter needs. Domain code should not fetch arbitrary environment/secret values. Avoid global unrestricted helpers and passing full secret-bearing configuration objects. Use established cryptographically secure generation with adequate entropy; distinct signing/encryption/authentication purposes should normally use separate keys. Password storage follows [authentication](authentication.md#password-storage).\nValidate required secret availability and safe structural format during initialization; diagnostics may name a missing configuration key but never show its value. Fail startup, remain unready, or explicitly degrade only the affected optional capability according to the runtime design. A required secret must not silently become optional. Reject insecure fallback/default/placeholder credentials in production; isolated synthetic development defaults must not become production behavior.\nSpecify retrieval, caching, renewal, and provider-outage behavior. In-memory caching must respect rotation, revocation, lifetime, and memory exposure. Choose restart, periodic/event refresh, or dynamic credentials deliberately; avoid unnecessary per-operation dependence on a secret service. Existing processes may continue with still-valid cached credentials while new processes cannot start, but this behavior must be explicit and observable without secret values. Expiration needs reliable renewal rather than predictable outages.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Secret rotation",
-    "anchor": "secret-rotation",
-    "text": "Secret rotation\nImportant secrets must be rotatable, and revocable where supported. Define who rotates, how a new credential is distributed, how consumers are verified, and how the old credential is revoked. Scheduled, provider-, personnel-, policy-, and incident-driven rotation have different triggers; do not invent a universal cadence.\nWhere supported, create the new credential, update consumers, verify use, then revoke the previous credential with a bounded overlap. A replacement alone does not neutralize a still-valid compromised value. Exposure or suspected compromise requires prompt rotation/revocation according to capability and impact. Webhook secrets need environment isolation, protocol-correct secure comparison, and rotation as well.\nKeep code deployment and credential rotation separable where practical. Account for multi-version rollout, credential-format changes, and rollback compatibility: an old binary may fail after its credential is revoked. Automated rotation must preserve authorization, auditability, safe rollout/recovery, and retirement of prior credentials without creating unmanaged copies. Exercise critical rotation and recovery in suitable non-production environments before emergencies where practical.\nRecovery must address lost credentials/store access, incorrect rotation, provider failure, deleted credentials, or compromised administrators without creating permanent weaker backdoors. [Production access](production-access.md) governs time-limited, exceptional break-glass access. Separation of creation/access/rotation/approval duties should match actual risk and organizational maturity.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Use, diagnostics, and backups",
-    "anchor": "use-diagnostics-and-backups",
-    "text": "Use, diagnostics, and backups\nDo not serialize secret-bearing objects into logs, traces, metrics, errors, breadcrumbs, audit, profiling, caches, or responses. Review provider exceptions and automatic SDK capture of headers, locals, environment, configuration, and requests. Dedicated secret wrappers may help when practical, but their default string/serialization representation must not reveal values. [Redaction policy](telemetry-redaction.md) remains authoritative.\nProduction debugger access is privileged. Full memory dumps are restricted artifacts needing exceptional justified collection and tightly controlled access. Support tools must not expose secrets or inherit infrastructure credentials. Administrative UIs should show configured state or rotation metadata; generated credentials may use one-time display when necessary instead of repeated retrieval.\nSecret-store backups require equivalent or stronger controls. Application backups must not accidentally include secret files; database backups containing hashes, sessions, or provider tokens retain their classification. [Retention](data-retention.md) governs their lifecycle.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Accidental source-control exposure",
-    "anchor": "accidental-source-control-exposure",
-    "text": "Accidental source-control exposure\nTreat a committed or otherwise disclosed credential as potentially compromised, even in a private repository. Identify it without redisplaying it, revoke/rotate, stop future exposure, assess copies/history/destinations and access, investigate use as needed, and add prevention. History rewriting or deleting a file/log can reduce continued exposure but never restores secrecy.\nFor telemetry exposure, stop collection, identify affected logs/traces/errors/exports/backups/providers, remove stored copies where possible, review access, and add regression coverage. Follow [incident response](incident-response.md); do not wait for natural retention expiry. Ordinary chats, issues, pull requests, reviews, AI prompts, and support tickets are not secret-delivery channels; any exception requires an explicitly approved secure workflow.\nAI repository access does not imply raw credential access. Prefer names, schemas, safe errors, and sanitized evidence. When authorized operational actions require credentials, prefer delegated secure tools that keep values outside agent context. Human operators likewise should receive authorized capabilities under their own identity without routinely retrieving long-lived production secrets.\n"
-  },
-  {
-    "id": "repository/docs/security/secrets-management",
-    "title": "Secrets Management",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Removal, audit, and enforcement",
-    "anchor": "removal-audit-and-enforcement",
-    "text": "Removal, audit, and enforcement\nWhen a secret is retired, remove usage and deployment references, verify active consumers, revoke, delete from the store, and update access permissions and documentation. Investigate orphaned credentials rather than retaining unknown capabilities indefinitely. Audit creation, access, permission changes, rotation, revocation, and deletion where supported without recording values.\nUse available secret scanning and consider historical scans because working-tree checks cannot see all exposure. Keep false-positive exceptions narrow and documented; do not disable scanning broadly. Configuration metadata, client/server boundaries, redaction tests, unsafe-default checks, and artifact inspection complement scanning. Credential-handling SDKs and cryptographic dependencies warrant extra scrutiny. Choose any future secret provider through an ADR considering security, availability, audit/access, rotation, platform integration, developer experience, cost, and migration.\n"
   }
 ]
