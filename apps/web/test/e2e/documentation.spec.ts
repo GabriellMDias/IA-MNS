@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { test, expect, type Page, type Route } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { expectNoStoredUserData, routerReloadMarker } from "./storage.ts";
 
 // Shared journeys use only content every Orion-based repository has; module
 // suites check their own operations, tables, and components.
@@ -22,16 +23,6 @@ async function openDocument(page: Page, path: string, title: string) {
   await expect(
     page.getByRole("heading", { level: 1, name: title, exact: true }),
   ).toBeVisible();
-}
-
-async function expectNoStoredCredentials(page: Page) {
-  expect(
-    await page.evaluate(() => ({
-      local: localStorage.length,
-      session: sessionStorage.length,
-    })),
-  ).toEqual({ local: 0, session: 0 });
-  await expect(page).not.toHaveURL(/eyJ[A-Za-z0-9_-]+/);
 }
 
 test("documentation sections isolate details and preserve deep links and browser history", async ({
@@ -239,6 +230,54 @@ test("canonical artifacts are available locally from relevant sections", async (
   }
 });
 
+test("a transient portal chunk failure recovers without storing user data", async ({
+  page,
+}) => {
+  // A load spike can make the lazy portal chunk fail once, as in a post-merge
+  // CI run. The router reloads once and leaves only its non-sensitive marker.
+  let failed = 0;
+  await page.route(
+    /\/(src\/documentation\.tsx|assets\/documentation-[^/]+\.js)(\?|$)/,
+    async (route) => {
+      if (failed++ === 0) return route.abort("connectionreset");
+      return route.continue();
+    },
+  );
+  await openDocument(page, "/docs/components/ErrorNotice", "ErrorNotice");
+  expect(failed).toBeGreaterThan(1);
+  const keys = await page.evaluate(() => Object.keys(sessionStorage));
+  expect(keys).toHaveLength(1);
+  expect(keys[0]).toMatch(routerReloadMarker);
+  await expectNoStoredUserData(page);
+});
+
+test("the storage check rejects anything but the router reload marker", async ({
+  page,
+}) => {
+  await openDocument(page, "/docs/components/ErrorNotice", "ErrorNotice");
+  const marker =
+    "tanstack_router_reload:Failed to fetch dynamically imported module: /src/documentation.tsx";
+  for (const [storage, key, value] of [
+    ["session", "draft", "user input"],
+    ["local", "anything", "1"],
+    ["session", marker, "eyJhbGciOiJub25lIn0.eyJzdWIiOiJ4In0.sig"],
+    ["session", "tanstack_router_reload:other", "1"],
+  ] as const) {
+    await page.evaluate(
+      ([kind, k, v]) =>
+        (kind === "local" ? localStorage : sessionStorage).setItem(k, v),
+      [storage, key, value] as const,
+    );
+    await expect(expectNoStoredUserData(page)).rejects.toThrow();
+    await page.evaluate(() => {
+      localStorage.clear();
+      sessionStorage.clear();
+    });
+  }
+  await page.evaluate((k) => sessionStorage.setItem(k, "1"), marker);
+  await expectNoStoredUserData(page);
+});
+
 test("mobile navigation and real component previews stay local", async ({
   page,
 }) => {
@@ -263,7 +302,7 @@ test("mobile navigation and real component previews stay local", async ({
   await expect(preview.getByRole("status")).toContainText(
     "Demonstration reload selected",
   );
-  await expectNoStoredCredentials(page);
+  await expectNoStoredUserData(page);
   expect(sent).toEqual([]);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
