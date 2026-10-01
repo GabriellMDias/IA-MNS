@@ -169,3 +169,27 @@ The owner directed on 2026-09-30 that a newly derived project start as a clean p
 | Documentation | Shared documentation no longer links to or describes foundation-only files; foundation history stays in Orion-only files. |
 
 Evidence is recorded under CB4 and CB5 in the [implementation plan](implementation-plan.md#maintaining-this-plan).
+
+## End-to-end derivation validation
+
+On 2026-10-01 the derivation flow was validated end to end, following the commands in the [derivation guide](project-derivation.md) as a user runs them. A disposable folder at the repository root, excluded only through the local `.git/info/exclude`, held the project, a teammate clone, and an Orion maintainer clone. Because the branch was not yet on GitHub, `github.com` URLs were resolved with a session-only Git `url.<base>.insteadOf` setting to local bare repositories: a stand-in for `GabriellMDias/Orion` whose `main` was the commit under test, with Orion's tags, and an empty stand-in for the new product repository. The configured remote URLs stayed the real GitHub URLs, which the provenance checks inspect. Nothing in the project was edited by hand; every project file came from initialization, the documented upgrade commands, or the generators.
+
+The test project was named `Pedido Fácil` (repository `git@github.com:GabriellMDias/pedido-facil.git`), exercising a non-ASCII name and the derived package scope `@pedido-facil`.
+
+| Step | Commands | Result in the final cycle |
+| --- | --- | --- |
+| Clone and install | `git clone https://github.com/GabriellMDias/Orion.git pedido-facil`, `pnpm install --frozen-lockfile` | Full history; `origin` recorded as the canonical URL |
+| Dry run | `pnpm orion:init-project --name "Pedido Fácil" --repository …` | Preconditions passed; listed actions; worktree unchanged |
+| Initialization | the same command with `--apply` | Commit `Initialize Pedido Fácil from Orion 0dfdc69eb19d` whose parent is the Orion commit; clean worktree |
+| Inspection | 44 read-only checks | All passed: the 15 foundation-only paths, the Orion plan, human actions, acceptance report, domain documents, migrations, metadata, and grants are absent; Approval Request is named only in ADR-0012/0014/0017, the derivation guide and contract, and their generated portal copies; no Orion history markers in shared documents; README, plan (PJ-01–PJ-05), and human actions (PH-01–PH-06) are the project's own with no unresolved placeholders; packages `pedido-facil` and `@pedido-facil/{api,web,sdk}`, no `@orion/` references in code or configuration, OpenAPI title `Pedido Fácil API`, portal title `Pedido Fácil Living Documentation`, telemetry service `pedido-facil-api`, neutral brand mark; manifest schema 2 with equal initialization and baseline commits; `origin` is the product repository; `orion-upstream` is fetch-only, tag-free, untracked, and refuses pushes; no modules, no tables |
+| Project gate | `pnpm validate` | Passed: 93 cruised modules, 83 Markdown files, 26 derivation tests, 87 portal pages, 95 Vitest tests, smoke, 13 browser journeys; built page title `Pedido Fácil` |
+| Publication (PH-01) | create the empty repository, `git push -u origin main` | `origin/main` equals the initialization commit |
+| Teammate | `git clone`, `pnpm orion:check`, `pnpm orion:upstream`, `git fetch orion-upstream`, `pnpm orion:status` | Valid before and after configuring the foundation remote; push to `orion-upstream` refused |
+| Foundation upgrade | an Orion maintainer commit changing a shared document, the reference implementation and Orion plan, adding a foundation-only test and a shared file importing `@orion/sdk`, with regenerated portal data | Published as `83be01d` on the stand-in |
+| Upgrade merge | `git fetch orion-upstream`, `git switch -c orion-upgrade/…`, `git merge --no-ff …`, `pnpm orion:prune` | Four conflicts; prune resolved the two foundation-only ones, removed the added foundation-only test, renamed the new import to `@pedido-facil/sdk`, and left the two generated-portal conflicts for regeneration |
+| Regeneration | step 5 generators, staging generated output, `pnpm orion:prune` again | No unresolved files; `pnpm validate` passed again |
+| Baseline and merge | `pnpm orion:record-baseline …`, commit, push, merge with a merge commit | Baseline `83be01d`; initialization commit preserved; `pnpm orion:check` passed on `main` and in the teammate clone after pulling |
+
+Earlier cycles found these defects, corrected in Orion before the final cycle: the portal header linked to the reference workflow's list scope; the generated portal manifest and the CI workflow carried Orion titles; shared policies named the system Orion; reference-only styling and an Orion release and phase narrative remained in shared files; the derivation test fixture used reference names; the large-portal generator test assumed Orion's documentation size; and the guide did not say how to resolve conflicts in generated output. The `ORION_*` variables, `orion_*` claims and database roles, the `Orion required gate` check, the portal's Orion baseline badge, and provenance references remain by design ([ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)).
+
+Orion's own format, lint, and documentation checks scan the working tree, so they report the disposable project while it exists; the folder and its exclusion line were removed before Orion's gate ran. Disposable logs and scripts were not committed.

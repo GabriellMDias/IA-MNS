@@ -1110,11 +1110,11 @@
       { "file": "search/0004.json", "count": 142, "kinds": ["repository"] },
       { "file": "search/0005.json", "count": 133, "kinds": ["repository"] },
       { "file": "search/0006.json", "count": 87, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 71, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 86, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 109, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 29, "kinds": ["repository"] }
+      { "file": "search/0007.json", "count": 68, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 36, "kinds": ["repository"] }
     ],
-    "count": 1007
+    "count": 1008
   }
 }
