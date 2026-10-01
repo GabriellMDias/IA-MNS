@@ -187,15 +187,15 @@ External settings below were verified on the stated dates. They are evidence of 
 
 - [ ] **Open the clean-project-baseline pull request.**
 
-**Status:** changed (no human access prerequisite remains). **Owner:** repository owner. **Dependency:** [CB5](implementation-plan.md#maintaining-this-plan).
+**Status:** pending. **Owner:** repository owner. **Dependency:** [CB5](implementation-plan.md#maintaining-this-plan).
 
-**Request and reason:** The earlier environment lacked authenticated GitHub tooling. On 2026-09-30, the continuation environment has working GitHub CLI access, so the agent can submit `feature/clean-project-baseline` after validation and verify the required gate. Owner review remains the normal merge prerequisite. This change creates no tag or GitHub Release.
+**Request and reason:** GitHub CLI access is available, but pushing `feature/clean-project-baseline` and opening its pull request publish the change, so they require the owner's explicit authorization. After authorization, the agent can push the branch, open the pull request into `main`, and verify the required gate. Owner review remains the merge prerequisite. This change creates no tag or GitHub Release.
 
 **Configuration:** none.
 
 **Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; record the links under CB5.
 
-**Evidence / blocker:** Repository PR inspection succeeded on 2026-09-30; no existing PR for this branch was found. Submission and remote CI are tracked under CB5.
+**Evidence / blocker:** Local validation is complete under CB4 (2026-10-01). Awaiting the owner's authorization to push and open the pull request.
 
 ## New action template
 
