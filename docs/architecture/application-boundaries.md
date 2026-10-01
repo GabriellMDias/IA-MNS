@@ -21,7 +21,7 @@ The implemented `apps/api` uses Fastify and Pino. It owns HTTP parsing/validatio
 
 Keep HTTP requests/responses, status codes, headers, cookies, and framework concepts at the transport boundary unless the operation is inherently transport-specific. Map validated application input to business operations and map their outcomes back to public responses. Exposing a rule through HTTP does not make it transport logic.
 
-The API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Current feature ownership is described in the [Approval Request guide](../domains/approval-request-implementation.md).
+The API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.
 
 ## Web Application
 

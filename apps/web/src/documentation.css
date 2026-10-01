@@ -54,6 +54,7 @@
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .docs-brand-symbol {
   width: 28px;
@@ -69,6 +70,7 @@
   color: var(--docs-muted);
   letter-spacing: 0;
   margin: 0.3rem 0 0 2rem;
+  text-transform: none;
 }
 .docs-foundation-version {
   display: inline-flex;

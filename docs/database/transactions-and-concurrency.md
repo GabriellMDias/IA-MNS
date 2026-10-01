@@ -4,7 +4,7 @@
 
 This policy owns database atomicity, isolation, conditional writes, locks, and transaction retries. Cross-system delivery, idempotency, message claiming, retry ownership, and reconciliation belong to [delivery policy](../architecture/delivery-and-side-effects.md). [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) permits appropriate Prisma or explicit SQL transaction mechanisms; [ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md) requires real-database verification where its semantics matter.
 
-The implemented [Approval Request conventions](../domains/approval-request-implementation.md#mutations-concurrency-and-transactions) use atomic PostgreSQL creation/conditional writes, owner-scoped durable create replay, and integer version preconditions. The runtime does not automatically retry writes. Do not treat these as deferred feature choices or infer that outboxes, distributed locks, or generic transaction infrastructure already exist.
+Each module's implementation conventions record its concrete transaction choices, such as atomic PostgreSQL creation/conditional writes, durable create replay, and integer version preconditions. The shared runtime does not automatically retry writes. Do not infer that outboxes, distributed locks, or generic transaction infrastructure already exist.
 
 ## Transactions
 
@@ -56,7 +56,7 @@ Retry only classified transient failures for an operation safe to repeat, with b
 
 Retry the complete logical transaction, including its reads and business assumptions, not only the last failed statement. Everything in that boundary can execute again. Inspect driver, repository, service, SDK, proxy, and caller policies to avoid multiplying retries; normally one layer owns retries for a failure.
 
-A timeout/cancellation or lost connection during commit may mean the operation committed and the response was lost. Propagate cancellation where supported and safe, clean up transactions reliably, and preserve unknown outcomes when relevant. Idempotency, state lookup, or reconciliation must resolve retry safety; a transient connection failure does not prove a write did not occur. Follow [feature recovery](../domains/approval-request-implementation.md#failure-recovery-and-retry-ownership) for current behavior and [delivery retry rules](../architecture/delivery-and-side-effects.md) for broader workflows.
+A timeout/cancellation or lost connection during commit may mean the operation committed and the response was lost. Propagate cancellation where supported and safe, clean up transactions reliably, and preserve unknown outcomes when relevant. Idempotency, state lookup, or reconciliation must resolve retry safety; a transient connection failure does not prove a write did not occur. Follow the owning module's recovery conventions for current behavior and [delivery retry rules](../architecture/delivery-and-side-effects.md) for broader workflows.
 
 ## Authorization, audit, and derived reads
 

@@ -13,7 +13,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import test from "node:test";
 import { checkReleaseHistory } from "./release-history.ts";
 
-const migration = "20260924000000_approval_requests";
+const migration = "20260101000000_example";
 const sqlPath = `apps/api/prisma/migrations/${migration}/migration.sql`;
 const registryPath = "apps/api/prisma/release-history.json";
 

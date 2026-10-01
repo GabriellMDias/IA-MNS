@@ -2,15 +2,13 @@ import { randomUUID } from "node:crypto";
 import Fastify, { LogController } from "fastify";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { Logger } from "pino";
-import { publicError, type ErrorCode } from "./errors.js";
+import { publicError, type CoreErrorCode } from "./errors.js";
 import { Lifecycle, withDeadline } from "./lifecycle.js";
-import { registerApprovalRoutes } from "./features/approval-requests/routes.js";
-import type { ApprovalRequestService } from "./features/approval-requests/service.js";
-import type { AccessTokenVerifier } from "./features/approval-requests/authentication.js";
 import { healthOperations } from "./health-contracts.js";
 import { currentTraceId } from "./request-context.js";
-import { AuthenticationUnavailableError } from "./features/approval-requests/authentication.js";
+import { AuthenticationUnavailableError } from "./authentication.js";
 import { errorDiagnostics } from "./error-diagnostics.js";
+import type { RegisteredModule } from "./module.js";
 
 class SafeLogController extends LogController {
   constructor() {
@@ -21,12 +19,11 @@ class SafeLogController extends LogController {
 export function createApp(
   logger: Logger,
   lifecycle = new Lifecycle(),
-  feature?: {
-    service: ApprovalRequestService;
-    verifier: AccessTokenVerifier;
+  options: {
+    modules?: readonly RegisteredModule[];
+    /** Readiness of configured dependencies, such as the database. */
     checkReady?: () => Promise<boolean>;
-    rateLimit?: { max: number; timeWindow: number };
-  },
+  } = {},
 ) {
   const app = Fastify({
     loggerInstance: logger,
@@ -75,7 +72,7 @@ export function createApp(
       error.statusCode === 429;
     const authenticationUnavailable =
       error instanceof AuthenticationUnavailableError;
-    const code: ErrorCode = authenticationUnavailable
+    const code: CoreErrorCode = authenticationUnavailable
       ? "SERVICE_UNAVAILABLE"
       : rateLimited
         ? "RATE_LIMITED"
@@ -137,10 +134,10 @@ export function createApp(
     { schema: healthOperations[2].schema },
     async (_request, reply) => {
       let ready = lifecycle.ready;
-      if (ready && feature?.checkReady) {
+      if (ready && options.checkReady) {
         try {
           await withDeadline(
-            feature.checkReady().then((value) => {
+            options.checkReady().then((value) => {
               ready = value;
             }),
             500,
@@ -153,12 +150,6 @@ export function createApp(
       return { status: ready ? "ok" : "unavailable" } as const;
     },
   );
-  if (feature)
-    registerApprovalRoutes(
-      app,
-      feature.service,
-      feature.verifier,
-      feature.rateLimit,
-    );
+  for (const module of options.modules ?? []) module.register(app);
   return { app, lifecycle };
 }

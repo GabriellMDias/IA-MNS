@@ -5,7 +5,12 @@ import {
   useState,
   type MouseEvent,
 } from "react";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  Link,
+  useNavigate,
+  useRouterState,
+  useSearch,
+} from "@tanstack/react-router";
 import type { Heading } from "./documentation/types.js";
 import {
   byId,
@@ -19,7 +24,7 @@ import { Detail } from "./documentation/reference-pages.js";
 import { Catalog, Overview } from "./documentation/catalog.js";
 import { SearchPage } from "./documentation/search-page.js";
 import "./documentation.css";
-import orionMark from "./assets/orion-mark.svg";
+import brandMark from "./assets/brand-mark.svg";
 function safeDecode(value: string): string {
   try {
     return decodeURIComponent(value);
@@ -35,18 +40,17 @@ export function DocumentationPage() {
     /\/$/,
     "",
   );
-  const search = location.search as {
-    q?: string;
-    scope?: string;
-    group?: string;
-    page?: number;
-  };
+  const search = useSearch({ strict: false });
   const entry = byId.get(id);
   const section = sections.find((item) => item.id === id);
+  // Top-level sections render even before they have entries, such as a data
+  // dictionary in a project without tables yet.
   const isCatalog =
-    !entry && manifest.entries.some((item) => item.id.startsWith(`${id}/`));
+    !entry &&
+    (section !== undefined ||
+      manifest.entries.some((item) => item.id.startsWith(`${id}/`)));
   const title = !id
-    ? "Orion documentation"
+    ? `${__PROJECT_NAME__} documentation`
     : id === "search"
       ? "Search documentation"
       : (entry?.title ??
@@ -79,7 +83,7 @@ export function DocumentationPage() {
           : (sections.find((s) => s.id === part)?.title ?? folderLabel(part)),
     }));
   useEffect(() => {
-    document.title = `${title} · Orion`;
+    document.title = `${title} · ${__PROJECT_NAME__}`;
     heading.current?.focus({ preventScroll: true });
     if (!location.hash) window.scrollTo(0, 0);
   }, [id, title, search.q, search.page, location.hash]);
@@ -164,12 +168,12 @@ export function DocumentationPage() {
         <div className="docs-rail-brand">
           <img
             className="docs-brand-symbol"
-            src={orionMark}
+            src={brandMark}
             alt=""
             width="28"
             height="28"
           />{" "}
-          ORION <small>Documentation</small>
+          {__PROJECT_NAME__} <small>Documentation</small>
           <span
             className="docs-foundation-version"
             title={__ORION_FOUNDATION_VERSION__.commit ?? undefined}
@@ -320,7 +324,7 @@ export function DocumentationPage() {
                   ? labels[entry.kind]
                   : !id
                     ? "The engineering knowledge base"
-                    : "Explore Orion"}
+                    : `Explore ${__PROJECT_NAME__}`}
               </p>
               <h1 ref={heading} id={titleId} tabIndex={-1}>
                 {title}
@@ -367,7 +371,7 @@ export function DocumentationPage() {
               </p>
             )}
             <footer className="docs-page-footer">
-              Orion · Living documentation{" "}
+              {__PROJECT_NAME__} · Living documentation{" "}
               <span>Canonical sources. Connected context.</span>
             </footer>
           </article>

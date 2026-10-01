@@ -46,11 +46,11 @@ This would add credential and lifecycle responsibilities that H-05 explicitly ex
 
 ### Operational or Migration Impact
 
-Deployments using the Approval Request feature must supply separate runtime database credentials and trusted token issuer/audience/JWKS settings. Keys may rotate through JWKS. Provider provisioning, issuer claims, and secure configuration are tracked under [H-07](../human-actions.md#h-07) only when a real provider is selected.
+Deployments using the Approval Request feature must supply separate runtime database credentials and trusted token issuer/audience/JWKS settings. Keys may rotate through JWKS. Provider provisioning, issuer claims, and secure configuration are tracked under [H-07](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/human-actions.md#h-07) only when a real provider is selected.
 
 ## References
 
-- [Approval Request identity decision](../domains/approval-request.md#identity-and-authorization-boundary)
+- [Approval Request identity decision](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/domains/approval-request.md#identity-and-authorization-boundary)
 - [Authentication policy](../security/authentication.md)
 - [Authorization policy](../security/authorization.md)
-- [Approval Request implementation conventions](../domains/approval-request-implementation.md)
+- [Approval Request implementation conventions](https://github.com/GabriellMDias/Orion/blob/v1.1.1/docs/domains/approval-request-implementation.md)

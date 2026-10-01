@@ -17,7 +17,7 @@ const fixedSources = [
   ".orion/project.json",
   "docs/generated/api/openapi.json",
   "docs/generated/api/errors.md",
-  "docs/generated/database/approval-requests.md",
+  "docs/generated/database/schema.md",
   "apps/web/src/components.docs.json",
   "apps/web/src/components.tsx",
   "apps/web/src/documentation/examples.tsx",

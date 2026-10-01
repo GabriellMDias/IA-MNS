@@ -222,9 +222,7 @@ export async function buildDocumentation(sources) {
   const ids = operations.map((operation) => operation.operationId);
   if (new Set(ids).size !== ids.length) fail("duplicate API operationId");
 
-  const databaseText = await read(
-    "docs/generated/database/approval-requests.md",
-  );
+  const databaseText = await read("docs/generated/database/schema.md");
   const tableHeadings = [...databaseText.matchAll(/^## ([a-z][a-z0-9_]*)$/gm)]
     .map((match) => match[1])
     .filter((name) => name !== "database_enums");
@@ -248,8 +246,13 @@ export async function buildDocumentation(sources) {
       constraints: markdownRows(section, "### Constraints and indexes"),
     };
   });
-  if (tables.length === 0) fail("no application-owned database tables");
-  markdownRows(databaseText, "## Database enums");
+  if (
+    tables.length === 0 &&
+    !databaseText.includes("No application-owned tables exist yet.")
+  )
+    fail("database reference has neither tables nor its empty-state statement");
+  if (databaseText.includes("\n## Database enums\n"))
+    markdownRows(databaseText, "## Database enums");
   const errorsText = await read("docs/generated/api/errors.md");
   markdownRows(errorsText, "| Code |");
 
@@ -258,8 +261,7 @@ export async function buildDocumentation(sources) {
   const portalSource = await read("apps/web/src/documentation/examples.tsx");
   const componentMetadata = JSON.parse(componentText);
   const components = componentMetadata.components;
-  if (!Array.isArray(components) || components.length === 0)
-    fail("component metadata is missing");
+  if (!Array.isArray(components)) fail("component metadata is missing");
   const actualExports = [
     ...componentSource.matchAll(/export function ([A-Z][A-Za-z0-9]*)\(/g),
   ].map((match) => match[1]);
@@ -422,7 +424,7 @@ export async function buildDocumentation(sources) {
         kind: "database",
         title: table.name,
         group: table.owner,
-        source: "docs/generated/database/approval-requests.md",
+        source: "docs/generated/database/schema.md",
         summary: table.description,
         headings: [],
       },

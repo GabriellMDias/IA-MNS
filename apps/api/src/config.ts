@@ -146,7 +146,7 @@ export const configReference = Object.freeze([
     classification: "RESTRICTED",
     secret: true,
     purpose:
-      "Runtime database credential; required to activate Approval Request routes.",
+      "Runtime PostgreSQL credential; enables the database for modules that require it and adds it to readiness.",
   },
   {
     key: "tokenIssuer",
@@ -158,7 +158,7 @@ export const configReference = Object.freeze([
     classification: "INTERNAL",
     secret: false,
     purpose:
-      "Expected access-token issuer; configure with audience and JWKS URL.",
+      "Expected access-token issuer; configure with audience and JWKS URL to enable bearer authentication.",
   },
   {
     key: "tokenAudience",
@@ -242,16 +242,11 @@ export function parseServerConfig(
     candidate.tokenAudience,
     candidate.tokenJwksUrl,
   ];
-  if (
-    authValues.some(Boolean) &&
-    (!candidate.databaseUrl || authValues.some((value) => !value))
-  )
+  // Access-token verification is all-or-none; module requirements are
+  // enforced when modules activate.
+  if (authValues.some(Boolean) && authValues.some((value) => !value))
     throw new Error(
-      "Invalid API configuration: incomplete Approval Request runtime",
-    );
-  if (candidate.databaseUrl && authValues.some((value) => !value))
-    throw new Error(
-      "Invalid API configuration: incomplete Approval Request runtime",
+      "Invalid API configuration: incomplete access-token verification",
     );
   for (const value of [
     candidate.databaseUrl,
@@ -290,10 +285,6 @@ export function parseServerConfig(
     candidate.tokenAudience.trim() === ""
   )
     throw new Error("Invalid API configuration: token audience");
-  if (candidate.environment === "production" && !candidate.databaseUrl)
-    throw new Error(
-      "Invalid API configuration: Approval Request runtime required",
-    );
   return Object.freeze(candidate);
 }
 

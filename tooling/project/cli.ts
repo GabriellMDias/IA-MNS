@@ -4,13 +4,15 @@ import {
   formatStatus,
   initializeProject,
   projectStatus,
+  pruneProject,
   recordBaseline,
 } from "./derivation.ts";
 import { upstreamRemote } from "./manifest.ts";
 
 const usage = `Usage:
-  pnpm orion:init-project --name <project name> --repository <git url> [--apply]
+  pnpm orion:init-project --name <project name> --repository <git url> [--package-scope <@scope>] [--apply]
   pnpm orion:status
+  pnpm orion:prune
   pnpm orion:upstream
   pnpm orion:record-baseline <foundation commit>
   pnpm orion:check`;
@@ -46,12 +48,15 @@ function run(command: string | undefined, args: string[]): number {
   const { options, positional } = parse(args);
   switch (command) {
     case "init-project": {
-      const allowed = new Set(["name", "repository", "apply"]);
+      const allowed = new Set(["name", "repository", "package-scope", "apply"]);
       for (const key of options.keys())
         if (!allowed.has(key)) throw new Error(`Unknown option --${key}`);
       const result = initializeProject(root, {
         name: text(options, "name"),
         repository: text(options, "repository"),
+        packageScope: options.has("package-scope")
+          ? text(options, "package-scope")
+          : undefined,
         apply: options.get("apply") === true,
       });
       console.log(
@@ -69,6 +74,13 @@ function run(command: string | undefined, args: string[]): number {
     }
     case "status":
       for (const line of formatStatus(projectStatus(root))) console.log(line);
+      return 0;
+    case "prune":
+      if (positional.length > 0 || options.size > 0) throw new Error(usage);
+      for (const line of pruneProject(root)) console.log(line);
+      console.log(
+        "Next: pnpm install --frozen-lockfile, regenerate references and documentation (docs/project-derivation.md#upgrade-to-a-newer-orion-revision), then pnpm validate.",
+      );
       return 0;
     case "upstream":
       for (const line of configureUpstream(root)) console.log(line);

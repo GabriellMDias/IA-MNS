@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import pg from "pg";
 
@@ -29,7 +29,37 @@ type Column = {
 };
 type ObjectRow = { table_name: string; name: string; definition: string };
 type EnumRow = { name: string; labels: string };
-const metaPath = resolve(import.meta.dirname, "../prisma/schema-metadata.json");
+const metadataDirectory = resolve(import.meta.dirname, "../prisma/metadata");
+
+/** Merges per-module schema metadata; each table or enum has one owner file. */
+export async function readSchemaMetadata(
+  directory = metadataDirectory,
+): Promise<Metadata> {
+  let files: string[];
+  try {
+    files = (await readdir(directory)).filter((name) => name.endsWith(".json"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT")
+      return { tables: {}, enums: {} };
+    throw error;
+  }
+  const merged: Metadata = { tables: {}, enums: {} };
+  for (const file of files.sort()) {
+    const part = JSON.parse(
+      await readFile(resolve(directory, file), "utf8"),
+    ) as Partial<Metadata>;
+    for (const [kind, entries] of [
+      ["tables", part.tables ?? {}],
+      ["enums", part.enums ?? {}],
+    ] as const)
+      for (const [name, value] of Object.entries(entries)) {
+        if (name in merged[kind])
+          throw new Error(`Schema metadata defines ${name} twice (${file})`);
+        (merged[kind] as Record<string, unknown>)[name] = value;
+      }
+  }
+  return merged;
+}
 function esc(value: string | null): string {
   return value === null
     ? "—"
@@ -54,8 +84,11 @@ function exact(actual: string[], expected: string[], context: string) {
     );
 }
 
-export async function generateDatabaseReference(url: string): Promise<string> {
-  const metadata = JSON.parse(await readFile(metaPath, "utf8")) as Metadata;
+export async function generateDatabaseReference(
+  url: string,
+  directory = metadataDirectory,
+): Promise<string> {
+  const metadata = await readSchemaMetadata(directory);
   const client = new pg.Client({ connectionString: url });
   await client.connect();
   try {
@@ -155,13 +188,18 @@ export async function generateDatabaseReference(url: string): Promise<string> {
       "enums",
     );
     const lines = [
-      "# Approval Request Database Reference",
+      "# Database Reference",
       "",
-      "<!-- Generated from migrated PostgreSQL and apps/api/prisma/schema-metadata.json. Do not edit. -->",
+      "<!-- Generated from migrated PostgreSQL and apps/api/prisma/metadata. Do not edit. -->",
       "",
-      "[Schema documentation policy](../../database/schema-documentation.md) · [Approval Request specification](../../domains/approval-request.md)",
+      "[Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)",
       "",
     ];
+    if (Object.keys(metadata.tables).length === 0)
+      lines.push(
+        "No application-owned tables exist yet. Add a module's Prisma model, reviewed migration, and metadata, then regenerate this reference.",
+        "",
+      );
     for (const [tableName, tableMeta] of Object.entries(metadata.tables)) {
       requireText(tableMeta.owner, `${tableName}.owner`);
       requireText(tableMeta.description, `${tableName}.description`);

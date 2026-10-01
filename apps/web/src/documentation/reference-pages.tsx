@@ -233,7 +233,7 @@ function DataDetail({ data }: { data: DatabasePage }) {
         <RecordTable rows={data.constraints} label="Database constraints" />
       </section>
       <p>
-        <DocLink id="repository/docs/generated/database/approval-requests">
+        <DocLink id="repository/docs/generated/database/schema">
           Complete database reference and enums
         </DocLink>
       </p>

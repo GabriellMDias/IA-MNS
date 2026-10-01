@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiFailure, failureMessage, unwrap } from "../src/api.js";
+import { ApiFailure, failureMessage, unwrap } from "../src/api-client.js";
 
 describe("API error boundary", () => {
   it("preserves an unknown safe code and request ID without trusting its message", () => {
@@ -30,7 +30,7 @@ describe("API error boundary", () => {
       "same idempotency key",
     );
     expect(failureMessage(networkFailure, "write")).toContain(
-      "Reload the request",
+      "Reload the current data",
     );
     expect(
       failureMessage(
@@ -39,5 +39,29 @@ describe("API error boundary", () => {
       ),
     ).toContain("outcome is unknown");
     expect(failureMessage(networkFailure, "read")).toContain("try again");
+  });
+  it("shows registry messages only for codes the caller knows", () => {
+    const response = new Response(null, { status: 409 });
+    const error = {
+      error: { code: "EXAMPLE_CONFLICT", message: "Known", requestId: "r" },
+    };
+    const unwrapWith = (known?: ReadonlySet<string>) => {
+      try {
+        unwrap({ error, response }, known);
+      } catch (caught) {
+        return (caught as ApiFailure).message;
+      }
+    };
+    expect(unwrapWith()).toBe("The request could not be completed.");
+    expect(unwrapWith(new Set(["EXAMPLE_CONFLICT"]))).toBe("Known");
+    expect(
+      failureMessage(
+        new ApiFailure(409, "EXAMPLE_CONFLICT", null, "Known"),
+        "read",
+        {
+          EXAMPLE_CONFLICT: "Module wording",
+        },
+      ),
+    ).toBe("Module wording");
   });
 });

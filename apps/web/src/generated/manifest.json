@@ -201,20 +201,10 @@
       "kind": "database",
       "title": "approval_requests",
       "group": "Approval Request",
-      "source": "docs/generated/database/approval-requests.md",
+      "source": "docs/generated/database/schema.md",
       "summary": "Canonical current state of a human-owned Approval Request, from draft through a terminal decision or cancellation.",
       "headings": [],
       "file": "pages/database/approval_requests.json"
-    },
-    {
-      "id": "components/AccessTokenForm",
-      "kind": "component",
-      "title": "AccessTokenForm",
-      "group": "Web components",
-      "source": "apps/web/src/components.tsx",
-      "summary": "Collects an already-issued bearer token and passes it to the in-memory credential boundary.",
-      "headings": [],
-      "file": "pages/components/AccessTokenForm.json"
     },
     {
       "id": "components/ErrorNotice",
@@ -242,19 +232,29 @@
       "title": "API-local Instructions",
       "group": "Agent instructions",
       "source": "apps/api/AGENTS.md",
-      "summary": "Read the runtime guide for source locations and local commands, and feature conventions before changing Approval Request behavior. Global repository instructions still apply.",
+      "summary": "Read the runtime guide for source locations, local commands, and the module contract. Read the nested AGENTS.md of a module before changing it. Global repository instructions…",
       "headings": [],
       "file": "pages/repository/apps/api/AGENTS.json"
     },
     {
       "id": "repository/apps/api/README",
       "kind": "repository",
-      "title": "Orion API Runtime",
+      "title": "API Runtime",
       "group": "Workspace guides",
       "source": "apps/api/README.md",
-      "summary": "The Fastify API exposes health routes and the authenticated Approval Request feature, persisted in PostgreSQL through Prisma. The web workflow consumes its generated API…",
+      "summary": "The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma,…",
       "headings": [],
       "file": "pages/repository/apps/api/README.json"
+    },
+    {
+      "id": "repository/apps/api/src/features/approval-requests/AGENTS",
+      "kind": "repository",
+      "title": "Approval Request Reference Module",
+      "group": "Agent instructions",
+      "source": "apps/api/src/features/approval-requests/AGENTS.md",
+      "summary": "This module is Orion's executable reference implementation. It exists only in the Orion foundation repository; projects derived from Orion start without it.",
+      "headings": [],
+      "file": "pages/repository/apps/api/src/features/approval-requests/AGENTS.json"
     },
     {
       "id": "repository/apps/web/AGENTS",
@@ -269,12 +269,22 @@
     {
       "id": "repository/apps/web/README",
       "kind": "repository",
-      "title": "Orion Web Reference Workflow",
+      "title": "Web Application",
       "group": "Workspace guides",
       "source": "apps/web/README.md",
-      "summary": "This React/Vite application demonstrates the Approval Request workflow through the generated @orion/sdk client. TanStack Router owns detail IDs and list scope/cursor in the…",
+      "summary": "This React/Vite application provides the application shell, a home page, composed product modules, and the Living Documentation Portal. It calls the API only through the…",
       "headings": [],
       "file": "pages/repository/apps/web/README.json"
+    },
+    {
+      "id": "repository/apps/web/src/approval-requests/AGENTS",
+      "kind": "repository",
+      "title": "Approval Request Reference Workflow",
+      "group": "Agent instructions",
+      "source": "apps/web/src/approval-requests/AGENTS.md",
+      "summary": "This browser workflow is part of Orion's foundation-only reference implementation; projects derived from Orion start without it.",
+      "headings": [],
+      "file": "pages/repository/apps/web/src/approval-requests/AGENTS.json"
     },
     {
       "id": "repository/docs/adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime",
@@ -437,6 +447,16 @@
       "file": "pages/repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0.json"
     },
     {
+      "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+      "kind": "repository",
+      "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+      "group": "Decisions",
+      "source": "docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md",
+      "summary": "Supersedes: ADR-0014, only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -492,7 +512,7 @@
       "title": "API Error Contract",
       "group": "API guides",
       "source": "docs/api/error-contract.md",
-      "summary": "This policy owns public failure semantics. The API's errorRegistry, envelope schema, and constructor are canonical; the generated error reference lists implemented codes,…",
+      "summary": "This policy owns public failure semantics. The API's shared error registry, envelope schema, and responder and each composed module's registered codes are canonical; the public…",
       "headings": [],
       "file": "pages/repository/docs/api/error-contract.json"
     },
@@ -632,7 +652,7 @@
       "title": "Technology Decision Map",
       "group": "Architecture",
       "source": "docs/architecture/technology-decisions.md",
-      "summary": "This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. All fourteen records…",
+      "summary": "This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. Every record listed…",
       "headings": [],
       "file": "pages/repository/docs/architecture/technology-decisions.json"
     },
@@ -672,7 +692,7 @@
       "title": "Database Migrations",
       "group": "Database guides",
       "source": "docs/database/migrations.md",
-      "summary": "This policy owns safe transitions between durable database states. ADR-0006 selects reviewed SQL migrations through Prisma Migrate. The initial SQL migration, release registry,…",
+      "summary": "This policy owns safe transitions between durable database states. ADR-0006 selects reviewed SQL migrations through Prisma Migrate. Committed SQL migrations in…",
       "headings": [],
       "file": "pages/repository/docs/database/migrations.json"
     },
@@ -682,7 +702,7 @@
       "title": "Database Principles",
       "group": "Database guides",
       "source": "docs/database/principles.md",
-      "summary": "This policy owns durable data design and persistence boundaries. ADR-0005 selects PostgreSQL and ADR-0006 selects Prisma ORM/Migrate. Both are implemented for Approval Request;…",
+      "summary": "This policy owns durable data design and persistence boundaries. ADR-0005 selects PostgreSQL and ADR-0006 selects Prisma ORM/Migrate. Both are implemented as shared API…",
       "headings": [],
       "file": "pages/repository/docs/database/principles.json"
     },
@@ -762,7 +782,7 @@
       "title": "Web Component Reference",
       "group": "Generated references",
       "source": "docs/generated/components/web.md",
-      "summary": "Collects an already-issued bearer token and passes it to the in-memory credential boundary.",
+      "summary": "Displays a public API failure message and an optional reload action.",
       "headings": [],
       "file": "pages/repository/docs/generated/components/web.json"
     },
@@ -772,19 +792,19 @@
       "title": "API Configuration Reference",
       "group": "Generated references",
       "source": "docs/generated/configuration/api.md",
-      "summary": "No values are eligible for client exposure. ORION_ENV is always required; the database and token settings are required together to enable the Approval Request feature and in…",
+      "summary": "No values are eligible for client exposure. ORION_ENV is always required. The three token settings are configured together. API modules that require the database or bearer…",
       "headings": [],
       "file": "pages/repository/docs/generated/configuration/api.json"
     },
     {
-      "id": "repository/docs/generated/database/approval-requests",
+      "id": "repository/docs/generated/database/schema",
       "kind": "repository",
-      "title": "Approval Request Database Reference",
+      "title": "Database Reference",
       "group": "Generated references",
-      "source": "docs/generated/database/approval-requests.md",
+      "source": "docs/generated/database/schema.md",
       "summary": "Canonical current state of a human-owned Approval Request, from draft through a terminal decision or cancellation.",
       "headings": [],
-      "file": "pages/repository/docs/generated/database/approval-requests.json"
+      "file": "pages/repository/docs/generated/database/schema.json"
     },
     {
       "id": "repository/docs/human-actions",
@@ -812,7 +832,7 @@
       "title": "Project Derivation and Orion Upgrades",
       "group": "Project guides",
       "source": "docs/project-derivation.md",
-      "summary": "This guide owns how a real project is started from Orion, how its provenance is recorded and checked, and how it adopts newer Orion revisions. ADR-0014 records the decision and…",
+      "summary": "This guide owns how a real project is started from Orion, what a newly derived project contains, how its provenance is recorded and checked, and how it adopts newer Orion…",
       "headings": [],
       "file": "pages/repository/docs/project-derivation.json"
     },
@@ -1059,10 +1079,10 @@
     {
       "id": "repository/packages/sdk/README",
       "kind": "repository",
-      "title": "Orion API SDK",
+      "title": "API SDK",
       "group": "Workspace guides",
       "source": "packages/sdk/README.md",
-      "summary": "@orion/sdk is the private workspace client boundary for the API. src/index.ts exports createOrionClient(baseUrl, getAccessToken), OrionClient, and generated paths types. The…",
+      "summary": "This private workspace package (packages/sdk) is the client boundary for the API. src/index.ts exports createApiClient(baseUrl, getAccessToken), ApiClient, and generated paths…",
       "headings": [],
       "file": "pages/repository/packages/sdk/README.json"
     },
@@ -1086,15 +1106,15 @@
         "kinds": ["api", "component", "database", "repository"]
       },
       { "file": "search/0002.json", "count": 112, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 129, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 136, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 135, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 85, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 78, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 100, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 92, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 14, "kinds": ["repository"] }
+      { "file": "search/0003.json", "count": 130, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 142, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 133, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 87, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 29, "kinds": ["repository"] }
     ],
-    "count": 989
+    "count": 1007
   }
 }

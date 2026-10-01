@@ -1,18 +1,27 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
-import type { Server, IncomingMessage, ServerResponse } from "node:http";
-import type { Logger } from "pino";
-import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
+import type { FastifyRequest } from "fastify";
 import rateLimit from "@fastify/rate-limit";
-import { publicError, errorRegistry } from "../../errors.js";
+import type {
+  AccessTokenVerifier,
+  VerifiedPrincipal,
+} from "../../authentication.js";
+import type { AppInstance } from "../../module.js";
 import { currentTraceId } from "../../request-context.js";
 import {
   BusinessFailure,
   type ApprovalRequest,
   type Principal,
 } from "./domain.js";
-import type { AccessTokenVerifier } from "./authentication.js";
 import { ApprovalRequestService } from "./service.js";
 import { approvalOperations } from "./contracts.js";
+import { respond } from "./errors.js";
+
+/** Maps issuer scopes to this module's capabilities. */
+export function principalFrom(verified: VerifiedPrincipal): Principal {
+  const capabilities = new Set<"approval:review">();
+  if (verified.scopes.has("approval:review"))
+    capabilities.add("approval:review");
+  return { id: verified.id, capabilities };
+}
 
 function wire(item: ApprovalRequest) {
   return {
@@ -23,13 +32,7 @@ function wire(item: ApprovalRequest) {
 }
 
 export function registerApprovalRoutes(
-  app: FastifyInstance<
-    Server,
-    IncomingMessage,
-    ServerResponse,
-    Logger,
-    TypeBoxTypeProvider
-  >,
+  app: AppInstance,
   service: ApprovalRequestService,
   verifier: AccessTokenVerifier,
   limit: { max: number; timeWindow: number } = {
@@ -56,20 +59,17 @@ export function registerApprovalRoutes(
       },
     });
     feature.addHook("preValidation", async (request, reply) => {
-      const principal = await verifier.verify(request.headers.authorization);
-      if (!principal) {
-        reply
-          .code(401)
-          .send(
-            publicError(
-              "AUTHENTICATION_REQUIRED",
-              request.id,
-              currentTraceId(),
-            ),
-          );
+      const verified = await verifier.verify(request.headers.authorization);
+      if (!verified) {
+        const failure = respond(
+          "AUTHENTICATION_REQUIRED",
+          request.id,
+          currentTraceId(),
+        );
+        reply.code(failure.status).send(failure.body);
         return;
       }
-      principals.set(request, principal);
+      principals.set(request, principalFrom(verified));
     });
     for (const operation of approvalOperations) {
       feature.route({
@@ -78,16 +78,14 @@ export function registerApprovalRoutes(
         schema: operation.schema,
         handler: async (request, reply) => {
           const principal = principals.get(request);
-          if (!principal)
-            return reply
-              .code(401)
-              .send(
-                publicError(
-                  "AUTHENTICATION_REQUIRED",
-                  request.id,
-                  currentTraceId(),
-                ),
-              );
+          if (!principal) {
+            const failure = respond(
+              "AUTHENTICATION_REQUIRED",
+              request.id,
+              currentTraceId(),
+            );
+            return reply.code(failure.status).send(failure.body);
+          }
           try {
             const params = request.params as { id: string } | undefined;
             const body = request.body as Record<string, unknown> | undefined;
@@ -173,10 +171,10 @@ export function registerApprovalRoutes(
                 );
             }
           } catch (error) {
-            if (error instanceof BusinessFailure)
-              return reply
-                .code(errorRegistry[error.code].status)
-                .send(publicError(error.code, request.id, currentTraceId()));
+            if (error instanceof BusinessFailure) {
+              const failure = respond(error.code, request.id, currentTraceId());
+              return reply.code(failure.status).send(failure.body);
+            }
             throw error;
           }
         },

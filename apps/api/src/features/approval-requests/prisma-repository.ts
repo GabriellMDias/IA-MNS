@@ -1,9 +1,8 @@
 import {
-  PrismaClient,
   Prisma,
   type ApprovalRequest as Row,
 } from "../../generated/prisma/client.js";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { createDatabase, type Database } from "../../database.js";
 import type { ApprovalRequest, Status } from "./domain.js";
 import type { CreateInput, Repository } from "./service.js";
 
@@ -46,8 +45,8 @@ function mapRaw(row: RawRow): ApprovalRequest {
 }
 
 export class PrismaApprovalRequestRepository implements Repository {
-  readonly db: PrismaClient;
-  constructor(db: PrismaClient) {
+  readonly db: Database;
+  constructor(db: Database) {
     this.db = db;
   }
   async create(
@@ -155,13 +154,5 @@ export class PrismaApprovalRequestRepository implements Repository {
 export function createRepository(
   databaseUrl: string,
 ): PrismaApprovalRequestRepository {
-  return new PrismaApprovalRequestRepository(
-    new PrismaClient({
-      adapter: new PrismaPg({
-        connectionString: databaseUrl,
-        connectionTimeoutMillis: 3000,
-        query_timeout: 5000,
-      }),
-    }),
-  );
+  return new PrismaApprovalRequestRepository(createDatabase(databaseUrl));
 }

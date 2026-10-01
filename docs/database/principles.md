@@ -2,18 +2,19 @@
 
 [Task index](../README.md) · [Migrations](migrations.md) · [Schema documentation](schema-documentation.md) · [Transactions](transactions-and-concurrency.md)
 
-This policy owns durable data design and persistence boundaries. [ADR-0005](../adr/0005-select-postgresql-as-the-primary-database.md) selects PostgreSQL and [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) selects Prisma ORM/Migrate. Both are implemented for [Approval Request](../domains/approval-request-implementation.md); hosting, production topology, and backup procedures depend on actual deployment requirements.
+This policy owns durable data design and persistence boundaries. [ADR-0005](../adr/0005-select-postgresql-as-the-primary-database.md) selects PostgreSQL and [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) selects Prisma ORM/Migrate. Both are implemented as shared API infrastructure that modules use for their own tables; hosting, production topology, and backup procedures depend on actual deployment requirements.
 
 ## Sources and implementation boundary
 
 | Concern | Authority |
 | --- | --- |
-| Structures Prisma can express | [Authored Prisma schema](../../apps/api/prisma/schema.prisma) |
-| Reviewed database evolution | [Initial SQL migration](../../apps/api/prisma/migrations/20260924000000_approval_requests/migration.sql) under [migration policy](migrations.md) |
+| Structures Prisma can express | [Authored Prisma schema folder](../../apps/api/prisma/schema/schema.prisma): shared configuration plus one model file per module |
+| Reviewed database evolution | Committed SQL migrations in `apps/api/prisma/migrations/` under [migration policy](migrations.md) |
 | Complete physical schema, including custom SQL | PostgreSQL after applying the committed migrations |
-| Object meaning, owner, classification, lifecycle | [Schema-adjacent metadata](../../apps/api/prisma/schema-metadata.json) under [schema documentation](schema-documentation.md) |
-| Navigable current reference | [Generated database reference](../generated/database/approval-requests.md), derived from migrated PostgreSQL plus metadata |
-| Feature writes and queries | [Prisma adapter](../../apps/api/src/features/approval-requests/prisma-repository.ts) behind feature-owned persistence capabilities |
+| Object meaning, owner, classification, lifecycle | Schema-adjacent metadata in `apps/api/prisma/metadata/`, one file per module, under [schema documentation](schema-documentation.md) |
+| Least-privilege runtime access | Module grants in `apps/api/prisma/runtime-grants/`, applied to the restricted runtime role in disposable databases |
+| Navigable current reference | [Generated database reference](../generated/database/schema.md), derived from migrated PostgreSQL plus metadata |
+| Feature writes and queries | A module's Prisma adapter behind its own persistence capabilities, using the shared [database client](../../apps/api/src/database.ts) |
 
 Prisma is infrastructure. Its generated records are not automatically domain entities, public contracts, UI models, or events. Use Prisma Client where clear and efficient, and TypedSQL or explicit parameterized SQL for operations better expressed that way. Do not discard valuable PostgreSQL-native constraints, indexes, views, extensions, or types merely for ORM purity or hypothetical portability. Keep specialized access inside persistence adapters and document custom behavior.
 
@@ -41,7 +42,7 @@ JSON is a deliberate flexible representation, not a substitute for schema design
 
 Define identity scope and distinguish internal primary keys, public resource IDs, provider IDs, natural business keys, and idempotency keys. Stable primary keys are preferred; use mutable natural keys only with understood consequences. Public and storage identity may coincide deliberately but should not be coupled accidentally. Generated IDs must not encode sensitive information or serve as authorization.
 
-The [current feature conventions](../domains/approval-request-implementation.md#identity-identifiers-and-time) select immutable UUIDs and database-clock timestamps. They are not deferred questions for this feature and do not force every future domain to use identical semantics.
+Each module's implementation conventions record its identifier and timestamp choices, such as immutable UUIDs and database-clock timestamps. One module's choices do not force every domain to use identical semantics.
 
 ## Query Design
 

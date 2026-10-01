@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
-import { withMigratedDatabase } from "./migrated-database.js";
+import { withMigratedDatabase } from "../migrated-database.js";
 
 async function freePort(): Promise<number> {
   const server = createNetServer();
@@ -31,7 +31,7 @@ await withMigratedDatabase(async (runtimeUrl) => {
   if (!address || typeof address === "string") throw new Error("No JWKS port");
   const issuer = "https://synthetic-issuer.example.test/";
   const port = await freePort();
-  const executable = resolve(import.meta.dirname, "../dist/main.js");
+  const executable = resolve(import.meta.dirname, "../../dist/main.js");
   const childEnvironment = {
     ...process.env,
     ORION_ENV: "test",
@@ -42,7 +42,7 @@ await withMigratedDatabase(async (runtimeUrl) => {
     ORION_TOKEN_JWKS_URL: `http://127.0.0.1:${address.port}/jwks`,
   };
   const child = spawn(process.execPath, [executable], {
-    cwd: resolve(import.meta.dirname, ".."),
+    cwd: resolve(import.meta.dirname, "../.."),
     env: childEnvironment,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -165,7 +165,7 @@ await withMigratedDatabase(async (runtimeUrl) => {
       throw new Error("Could not interrupt feature API");
     await interrupted;
     restarted = spawn(process.execPath, [executable], {
-      cwd: resolve(import.meta.dirname, ".."),
+      cwd: resolve(import.meta.dirname, "../.."),
       env: childEnvironment,
       stdio: ["ignore", "pipe", "pipe"],
     });

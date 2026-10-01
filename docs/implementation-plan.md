@@ -6,7 +6,7 @@
 
 This is Orion's living execution plan. It tracks implementation progress of the Orion foundation repository; it does not replace current architectural policy or accepted ADRs. Preserve accepted decisions, rationale, exceptions, and technology responsibilities.
 
-In a project derived from Orion, this plan is inherited foundation history: its statuses and evidence describe the Orion repository, not the project. The project's current plan is `docs/project/implementation-plan.md`, created by [project derivation](project-derivation.md).
+This plan stays in the Orion foundation and is removed during clean-project initialization. A new project's current plan is `docs/project/implementation-plan.md`, created by [project derivation](project-derivation.md). Copies inherited before the clean-baseline contract describe Orion's history, not the project's progress.
 
 Orion now contains documentation, a pnpm workspace, local validation tooling and CI, plus the Approval Request API, PostgreSQL persistence, generated OpenAPI/client, web reference workflow, and project-derivation tooling. `pnpm validate` runs the checks listed in [validation](validation.md). A concrete identity provider and production deployment remain conditional future work. The phase tables below retain stable task IDs, current deliverables, and conditional obligations. Git preserves implementation chronology.
 
@@ -51,7 +51,7 @@ Agent portability and project derivation (2026-09-29): Orion's instructions beco
 | V1 | Define stable Orion foundation version names and compatibility meaning before the GitHub-backed derivation exercise. | completed | [Versioning policy](versioning.md) and [ADR-0015](adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags.md) keep Git SHA provenance and commit-based upgrades; this change creates no tag or release. Local documentation and full-gate evidence is recorded in the policy PR. Review, CI, merge, and tag creation remain subsequent release steps. |
 | V2 | Prepare Apache-2.0 licensing for Orion source as a compatible PATCH release. | completed | Owner selected [Apache License 2.0](../LICENSE); [ADR-0016](adr/0016-license-the-orion-foundation-under-apache-2-0.md), the [README](../README.md#license), and [H-11](human-actions.md#h-11) reconcile current documentation. PR #18 was reviewed, validated, and merged into `main`; the planned `v1.0.1` tag was never created, and no GitHub Release was published. |
 | V3 | Display the Orion foundation revision visibly in the documentation shell. | completed | [Build metadata](../apps/web/scripts/foundation-version.ts) derives the label from Git tags, marks unreleased work, and respects recorded derived-project baselines. The [placement policy](versioning.md#where-version-information-belongs) keeps package, schema, and artifact identities separate; README routes readers to the canonical release information. On 2026-09-30, focused unit/type checks, desktop/mobile visual inspection, and `pnpm validate` passed, including 19 Playwright journeys. No human prerequisite or tag creation is required. |
-| V4 | Refine Orion's visual identity from the documentation asterisk and apply a canonical vector across the interface and browser icons. | completed | [Visual identity](../apps/web/README.md#visual-identity) owns the SVG and its consumers; only the Apple touch icon remains raster and is generated from that SVG. The former raster mark and generation prompt are removed. On 2026-09-30, desktop/mobile inspection, focused type/documentation checks, and `pnpm validate` passed, including all 19 browser journeys, SVG/favicon loading, and the 180×180 touch icon. Generated portal artifacts are current. No human prerequisite, release, or tag creation is required. |
+| V4 | Refine Orion's visual identity from the documentation asterisk and apply a canonical vector across the interface and browser icons. | completed | [Visual identity](../apps/web/README.md#identity) owns the SVG and its consumers; only the Apple touch icon remains raster and is generated from that SVG. The former raster mark and generation prompt are removed. On 2026-09-30, desktop/mobile inspection, focused type/documentation checks, and `pnpm validate` passed, including all 19 browser journeys, SVG/favicon loading, and the 180×180 touch icon. Generated portal artifacts are current. No human prerequisite, release, or tag creation is required. |
 
 `v1.1.0` identifies merged PR #19 at `d31ca7ddfc3632d46af09db43580004f69b728d9` and was the baseline that exposed the defect during the real `Orion-Derivation-Test`. `v1.0.0` remains immutable; `v1.0.1` was never created.
 
@@ -59,7 +59,19 @@ Agent portability and project derivation (2026-09-29): Orion's instructions beco
 | --- | --- | --- | --- |
 | RH1 | Handle GitHub's first-push zero-SHA comparison sentinel without weakening durable release-history validation. | completed | [Acceptance origin and verification](foundation-acceptance.md#github-backed-derivation-first-push-defect). On 2026-09-30, frozen installation, all eight release-history tests, focused checks with zero and real bases, full `pnpm validate` with the exact first-push environment value, generated-documentation checks, and `git diff --check` passed. Real comparison commits retain append-only and released-migration protections. The dedicated Orion PR requires its own remote CI and review before merge; no new human prerequisite blocks the correction. |
 
-This is a compatible PATCH candidate expected to become `v1.1.1` after review, passing CI, and merge. This correction creates no tag or GitHub Release, changes no `Orion-Derivation-Test` files or settings, and performs no derived-project upgrade. Release publication and the subsequent sandbox upgrade/reverification are separate follow-up work.
+The compatible PATCH correction was merged through [PR #20](https://github.com/GabriellMDias/Orion/pull/20) and subsequently tagged `v1.1.1` at `b2b087037070a228810f3186a6ae92d8a1ca4557`. The correction itself changed no `Orion-Derivation-Test` files or settings and performed no derived-project upgrade. The subsequent sandbox upgrade/reverification remains separate follow-up work.
+
+Clean project baseline (2026-09-30): the owner directed that a newly derived project start as a clean product base—shared architecture, tooling, validation, CI, Living Documentation, provenance, and upgrades, without Orion's reference implementation or development history, and with the project's identity on its important surfaces. `v1.1.1` identifies `b2b087037070a228810f3186a6ae92d8a1ca4557`, the base of this work. [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) records the decision; the [acceptance report](foundation-acceptance.md#clean-project-baseline) summarizes the change.
+
+| Task | Scope | Status | Evidence / dependency |
+| --- | --- | --- | --- |
+| CB1 | Separate shared API and web runtime from the Approval Request reference through module contracts and project-owned composition files; isolate shared documentation and tests. | completed | [Module contract](../apps/api/src/module.ts), [API composition](../apps/api/src/modules.ts), [web composition](../apps/web/src/modules.tsx), per-module schema/metadata/grants/tests/journeys, and the `no-shared-api-to-module` dependency rule with its architecture test. |
+| CB2 | Define the derivation contract and rework initialization, pruning, and provenance checks for the clean baseline and project identity. | completed | [`.orion/derivation.json`](../.orion/derivation.json), manifest schema version 2, [templates](../tooling/project/templates/README.md.tmpl), `pnpm orion:prune`; `pnpm orion:test` covers initialization, rollback, pruning after a conflicting upgrade, isolation, cleanliness, contract validation, and schema version 1 refusal. |
+| CB3 | Update the derivation guide, ADRs, policies, and Orion-only history for the new contract. | completed | [Derivation guide](project-derivation.md), [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) partly superseding ADR-0014; release history moved from the versioning policy to the [acceptance report](foundation-acceptance.md#foundation-release-history). |
+| CB4 | Validate Orion and rehearse a derivation from a pristine clone, validating the derived project. | in progress | Evidence recorded on completion. |
+| CB5 | Submit the change for review and verify the required remote CI gate. | pending | [H-14](human-actions.md#h-14): GitHub CLI access is available in the continuation environment; submit after CB4 and final diff review. |
+
+The derivation contract and manifest schema change incompatibly, so this is a MAJOR candidate under [foundation versioning](versioning.md#compatibility-meaning), expected to become `v2.0.0` after review, passing CI, and merge. This change creates no tag or GitHub Release. Existing derived projects migrate as described in the [derivation guide](project-derivation.md#migrate-a-project-from-schema-version-1).
 
 Every contributor or coding agent performing implementation work must maintain this document and the [human-action checklist](human-actions.md) throughout implementation, within the user's authorized scope.
 
@@ -274,7 +286,7 @@ This table owns phase-level status; the tables within each phase own task-level 
 
 **Scope:** Complete the reference feature through a real browser experience.
 
-**Current evidence:** [SDK guide](../packages/sdk/README.md), [web guide](../apps/web/README.md), component tests, and [browser journeys](../apps/web/test/e2e/approval.spec.ts) cover the actual API/database workflow and client boundaries. No concrete provider login flow is implemented.
+**Current evidence:** [SDK guide](../packages/sdk/README.md), [web guide](../apps/web/README.md), component tests, and [browser journeys](../apps/web/test/e2e/approval-requests/workflow.spec.ts) cover the actual API/database workflow and client boundaries. No concrete provider login flow is implemented.
 
 | Task | Current deliverable or conditional disposition | Status |
 | --- | --- | --- |
@@ -307,7 +319,7 @@ This table owns phase-level status; the tables within each phase own task-level 
 
 **Scope:** Prove the completed feature behaves safely under realistic failures. This extends controls already delivered, rather than deferring basic correctness.
 
-**Current evidence:** [Failure tests](../apps/api/test/approval-failure.test.ts), [restart smoke](../apps/api/scripts/feature-smoke.ts), and [retry ownership](domains/approval-request-implementation.md#failure-recovery-and-retry-ownership) cover unknown outcomes, replay, rollback, conflicts and safe diagnostics. Conditional tasks retain their dispositions below.
+**Current evidence:** [Failure tests](../apps/api/test/approval-requests/failure.test.ts), [restart smoke](../apps/api/scripts/smoke/approval-requests.ts), and [retry ownership](domains/approval-request-implementation.md#failure-recovery-and-retry-ownership) cover unknown outcomes, replay, rollback, conflicts and safe diagnostics. Conditional tasks retain their dispositions below.
 
 | Task | Current deliverable or conditional disposition | Status |
 | --- | --- | --- |

@@ -27,7 +27,7 @@ try {
     normalizeLineEndings(committed)
   )
     throw new Error(
-      "Generated SDK types are stale. Run pnpm --filter @orion/sdk generate.",
+      "Generated SDK types are stale. Run pnpm -C packages/sdk generate.",
     );
   process.stdout.write("Generated SDK types match OpenAPI.\n");
 } finally {

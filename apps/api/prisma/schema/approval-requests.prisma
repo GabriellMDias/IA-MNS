@@ -1,13 +1,5 @@
-generator client {
-  provider            = "prisma-client"
-  output              = "../src/generated/prisma"
-  moduleFormat        = "esm"
-  importFileExtension = "js"
-}
-
-datasource db {
-  provider = "postgresql"
-}
+// Approval Request reference model. Foundation-only: derived projects start
+// without it and add their own model files to this folder.
 
 enum ApprovalRequestStatus {
   DRAFT

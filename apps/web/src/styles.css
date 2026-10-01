@@ -53,6 +53,7 @@ button:disabled {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-decoration: none;
+  text-transform: uppercase;
 }
 .brand img {
   width: 32px;
@@ -74,7 +75,7 @@ button:disabled {
   font-size: 0.8rem;
   color: #b9cbd8;
 }
-.header-docs-link {
+.header-nav a {
   color: #fff;
   font-size: 0.9rem;
 }
@@ -90,7 +91,7 @@ button:disabled {
   margin: 1.2rem 0 2rem;
 }
 .page-heading h1,
-.credential-panel h1 {
+.home-panel h1 {
   font-size: clamp(1.8rem, 4vw, 2.6rem);
   line-height: 1.15;
   margin: 0.3rem 0 0.55rem;
@@ -131,17 +132,11 @@ button:disabled {
   font-size: 1rem;
   margin: 0.4rem 0;
 }
-.section-heading,
-.session-bar {
+.section-heading {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-}
-.session-bar {
-  font-size: 0.83rem;
-  color: #516678;
-  margin-bottom: 0.6rem;
 }
 .button-text {
   border: 0;
@@ -175,43 +170,6 @@ button:disabled {
 .tabs a.active {
   color: #173b5a;
   border-color: #2574b5;
-}
-.request-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.request-list li + li {
-  border-top: 1px solid #e5ecf0;
-}
-.request-list a {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.35rem 1rem;
-  text-decoration: none;
-  padding: 1rem 0.25rem;
-}
-.request-list a:hover .request-title {
-  text-decoration: underline;
-}
-.request-list small {
-  grid-column: 1 / -1;
-  color: #607488;
-}
-.request-title {
-  font-weight: 650;
-  overflow-wrap: anywhere;
-}
-.status-pill {
-  display: inline-block;
-  width: fit-content;
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.04em;
-  color: #245c81;
-  background: #eaf3fa;
-  padding: 0.25rem 0.5rem;
-  border-radius: 999px;
 }
 .pagination {
   display: flex;
@@ -250,14 +208,6 @@ button:disabled {
   align-self: flex-start;
   margin-top: 0.5rem;
 }
-.credential-panel {
-  max-width: 550px;
-  margin: 5vh auto;
-}
-.credential-panel p {
-  line-height: 1.55;
-  color: #536879;
-}
 .notice {
   padding: 0.85rem 1rem;
   border-radius: 7px;
@@ -288,17 +238,6 @@ button:disabled {
 .metadata dd {
   margin: 0;
 }
-.description {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  line-height: 1.5;
-}
-.edit-form,
-.reject-form {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e0e8ee;
-}
 .action-group {
   display: flex;
   gap: 0.6rem;
@@ -321,4 +260,19 @@ button:disabled {
   .header-note {
     display: none;
   }
+}
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.home-panel {
+  max-width: 44rem;
+}
+.home-links {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0.8rem 0 1.2rem;
 }

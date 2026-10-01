@@ -4,7 +4,7 @@ This policy owns permission decisions for application actors. [Authentication](a
 
 ## Current implementation and ownership
 
-The Approval Request feature has a concrete policy in [domain.ts](../../apps/api/src/features/approval-requests/domain.ts), enforced by [application operations](../../apps/api/src/features/approval-requests/service.ts) and scoped database queries. Its [domain documentation](../domains/approval-request.md) explains owner/reviewer behavior. This is not a repository-wide role engine or multi-tenant implementation.
+Each module owns its concrete authorization policy in its domain rules, enforced by its application operations and scoped database queries; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows owner/reviewer rules this way. This is not a repository-wide role engine or multi-tenant implementation.
 
 Protected operations must have an identifiable policy owner. Keep business-security meaning near the owning domain; common infrastructure may provide evaluation, principal types, lookup, denial semantics, and audit hooks without becoming a central switch over all domain rules. Introduce shared abstractions, a permission registry, RBAC, ABAC, ReBAC, or row-level security only when actual requirements justify them. Significant choices need an ADR.
 

@@ -1,6 +1,6 @@
 # Technology Decision Map
 
-This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. All fourteen records currently state `accepted`; workspace tooling, the API/PostgreSQL feature, generated SDK, web workflow, documentation portal, and project-derivation tooling exist. Consult [validation availability](../validation.md) before running commands.
+This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. Every record listed below currently states `accepted`, with ADR-0014 partly superseded by ADR-0017; workspace tooling, the API runtime with composable modules and PostgreSQL support, generated SDK, web shell, documentation portal, and project-derivation tooling exist. Consult [validation availability](../validation.md) before running commands.
 
 ## Selected directions
 
@@ -20,13 +20,14 @@ This is a navigation summary, not an independent technology specification. Each 
 | [ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) | Locally verified JWT bearer access tokens for the first API | Provider-independent issuer/audience/JWKS verification and stable Orion principal mapping; no concrete provider selected. | [Policy](../security/authentication.md) |
 | [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) | `AGENTS.md` hierarchy as the only agent instruction source | Tool-specific files are thin discovery adapters only; currently a Gemini CLI setting. | [Policy](agent-instructions.md) |
 | [ADR-0014](../adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) | Projects derived from Orion by Git ancestry with `.orion/project.json` provenance | Fetch-only `orion-upstream`, reviewed upgrade merges, immutable commits instead of a release scheme. | [Policy](../project-derivation.md) |
+| [ADR-0017](../adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) | Derived projects start from a clean baseline | `.orion/derivation.json` separates shared, foundation-only, and project-owned content; initialization removes the reference implementation and foundation history and applies the project identity. | [Policy](../project-derivation.md) |
 
 ## Deliberately unresolved or conditional choices
 
 - The API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.
 - UI/design systems, styling, accessibility primitives, charts, grids, and forms depend on product needs. No general global-state library or full-stack web framework is selected by default.
 - GraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.
-- [Approval Request identity and authorization](../domains/approval-request.md#identity-and-authorization-boundary) is selected for the reference feature; its concrete provider and provider-specific session/refresh/revocation behavior remain deferred. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.
+- Bearer access-token verification is implemented as shared API infrastructure under ADR-0012; a concrete provider and provider-specific session/refresh/revocation behavior remain deferred. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.
 - Queue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements.
 - Mobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery remain product/deployment decisions. Testcontainers does not select an application deployment platform.
 - Observability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.

@@ -2,13 +2,25 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { readFoundationVersion } from "./scripts/foundation-version.js";
+import { escapeHtml, readProjectIdentity } from "./scripts/project-identity.js";
+
+const repositoryRoot = fileURLToPath(new URL("../..", import.meta.url));
+const identity = readProjectIdentity(repositoryRoot);
 
 export default defineConfig({
-  plugins: [react({ compiler: true })],
+  plugins: [
+    react({ compiler: true }),
+    {
+      name: "project-identity",
+      transformIndexHtml: (html) =>
+        html.replaceAll("%PROJECT_NAME%", escapeHtml(identity.name)),
+    },
+  ],
   define: {
     __ORION_FOUNDATION_VERSION__: JSON.stringify(
-      readFoundationVersion(fileURLToPath(new URL("../..", import.meta.url))),
+      readFoundationVersion(repositoryRoot),
     ),
+    __PROJECT_NAME__: JSON.stringify(identity.name),
   },
   build: { assetsInlineLimit: 0 },
   server: {

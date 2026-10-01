@@ -4,11 +4,11 @@ This policy owns trusted identity, credential, and session requirements. [Author
 
 ## Current implementation and scope
 
-The Approval Request API verifies JWT bearer access tokens according to [ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md). Its [verifier](../../apps/api/src/features/approval-requests/authentication.ts) is the executable source for accepted claims and algorithms. The [API README](../../apps/api/README.md) describes configuration and the current token contract; the [web README](../../apps/web/README.md) describes its in-memory credential boundary.
+The API verifies JWT bearer access tokens according to [ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) when token settings are configured. The shared [verifier](../../apps/api/src/authentication.ts) is the executable source for accepted claims and algorithms; it yields a principal ID and issuer scopes, and each module maps scopes to its own capabilities. The [API README](../../apps/api/README.md) describes configuration and the current token contract; the [web README](../../apps/web/README.md) describes the in-memory credential boundary.
 
 A concrete identity provider, login/recovery flows, persistent sessions, and authentication mechanisms for other applications have not been selected. Requirements below apply when those capabilities are introduced; they do not imply implementation. Do not reopen the accepted JWT decision by treating the first API's token format or verification library as undecided.
 
-The current verifier rejects invalid credentials without disclosing token details. Key retrieval, malformed trusted JWKS data, and unexpected verifier failures raise a separate availability error; the API returns a safe 503 and records bounded diagnostics. This distinguishes an authentication infrastructure failure from a routine invalid token while still failing closed. Provider login, refresh, and revocation remain conditional on [H-07](../human-actions.md#h-07).
+The current verifier rejects invalid credentials without disclosing token details. Key retrieval, malformed trusted JWKS data, and unexpected verifier failures raise a separate availability error; the API returns a safe 503 and records bounded diagnostics. This distinguishes an authentication infrastructure failure from a routine invalid token while still failing closed. Provider login, refresh, and revocation remain conditional on a provider decision recorded as a human action in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)).
 
 ## Authentication boundary
 

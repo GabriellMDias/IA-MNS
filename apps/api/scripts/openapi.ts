@@ -1,7 +1,27 @@
-import { approvalOperations } from "../src/features/approval-requests/contracts.js";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { healthOperations } from "../src/health-contracts.js";
-import { errorRegistry, type ErrorCode } from "../src/errors.js";
+import { publicErrorRegistry } from "../src/error-registry.js";
+import type { ApiModule, ApiOperation } from "../src/module.js";
+import { apiModules } from "../src/modules.js";
 import prettier from "prettier";
+
+// The repository identity names the API; derived projects title their own.
+async function projectName(): Promise<string> {
+  const manifest: unknown = JSON.parse(
+    await readFile(
+      resolve(import.meta.dirname, "../../../.orion/project.json"),
+      "utf8",
+    ),
+  );
+  const name =
+    manifest && typeof manifest === "object" && "name" in manifest
+      ? manifest.name
+      : undefined;
+  if (typeof name !== "string" || !name.trim())
+    throw new Error("Missing project name in .orion/project.json");
+  return name;
+}
 
 type Schema = Record<string, unknown>;
 function asSchema(value: object): Schema {
@@ -24,24 +44,45 @@ function response(schema: unknown, status: string) {
   };
 }
 
-export async function generateOpenApi(): Promise<string> {
+export async function generateOpenApi(
+  modules: readonly ApiModule[] = apiModules,
+): Promise<string> {
   const paths: Record<string, Record<string, unknown>> = {};
   const ids = new Set<string>();
-  for (const operation of [...healthOperations, ...approvalOperations]) {
+  const errorRegistry = publicErrorRegistry(modules);
+  const operations: {
+    operation: ApiOperation;
+    tag: string;
+    authenticated: boolean;
+  }[] = [
+    ...healthOperations.map((operation) => ({
+      operation,
+      tag: "Health",
+      authenticated: false,
+    })),
+    ...modules.flatMap((module) =>
+      module.operations.map((operation) => ({
+        operation,
+        tag: module.tag,
+        authenticated: module.requires.includes("authentication"),
+      })),
+    ),
+  ];
+  for (const { operation, tag, authenticated } of operations) {
     if (ids.has(operation.operationId))
       throw new Error(`Duplicate operationId: ${operation.operationId}`);
     ids.add(operation.operationId);
-    const path = operation.url.replace(":id", "{id}");
+    const path = operation.url.replace(/:([A-Za-z][A-Za-z0-9_]*)/g, "{$1}");
     const schema = operation.schema;
     const parameters: unknown[] = [];
-    if ("params" in schema) {
+    if (schema.params) {
       const params = asSchema(schema.params);
       for (const [name, field] of Object.entries(
         params.properties as Record<string, unknown>,
       ))
         parameters.push({ name, in: "path", required: true, schema: field });
     }
-    if ("querystring" in schema) {
+    if (schema.querystring) {
       const query = asSchema(schema.querystring);
       for (const [name, field] of Object.entries(
         query.properties as Record<string, unknown>,
@@ -54,7 +95,7 @@ export async function generateOpenApi(): Promise<string> {
           schema: field,
         });
     }
-    if ("headers" in schema) {
+    if (schema.headers) {
       const headers = asSchema(schema.headers);
       for (const [name, field] of Object.entries(
         headers.properties as Record<string, unknown>,
@@ -67,9 +108,9 @@ export async function generateOpenApi(): Promise<string> {
         response(value, code),
       ]),
     );
-    if ("expectedErrors" in operation) {
+    if (operation.expectedErrors) {
       for (const code of operation.expectedErrors) {
-        const definition = errorRegistry[code as ErrorCode];
+        const definition = errorRegistry[code];
         if (!definition || !(String(definition.status) in responses))
           throw new Error(
             `Undeclared expected error ${code} on ${operation.operationId}`,
@@ -79,12 +120,10 @@ export async function generateOpenApi(): Promise<string> {
     const descriptor: Record<string, unknown> = {
       operationId: operation.operationId,
       description: operation.description,
-      tags: ["expectedErrors" in operation ? "Approval Requests" : "Health"],
-      ...("expectedErrors" in operation
-        ? { security: [{ bearerAuth: [] }] }
-        : {}),
+      tags: [tag],
+      ...(authenticated ? { security: [{ bearerAuth: [] }] } : {}),
       parameters,
-      ...("body" in schema
+      ...(schema.body
         ? {
             requestBody: {
               required: true,
@@ -93,7 +132,7 @@ export async function generateOpenApi(): Promise<string> {
           }
         : {}),
       responses,
-      ...("expectedErrors" in operation
+      ...(operation.expectedErrors
         ? { "x-expected-error-codes": operation.expectedErrors }
         : {}),
     };
@@ -106,14 +145,22 @@ export async function generateOpenApi(): Promise<string> {
     JSON.stringify(
       {
         openapi: "3.1.0",
-        info: { title: "Orion API", version: "1.0.0" },
+        info: { title: `${await projectName()} API`, version: "1.0.0" },
         servers: [{ url: "/" }],
         paths,
-        components: {
-          securitySchemes: {
-            bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
-          },
-        },
+        ...(operations.some(({ authenticated }) => authenticated)
+          ? {
+              components: {
+                securitySchemes: {
+                  bearerAuth: {
+                    type: "http",
+                    scheme: "bearer",
+                    bearerFormat: "JWT",
+                  },
+                },
+              },
+            }
+          : {}),
       },
       null,
       2,

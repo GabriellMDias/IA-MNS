@@ -6,27 +6,37 @@
     {
       "name": "error",
       "type": "unknown",
-      "meaning": "Mapped through the existing public failure-message boundary."
+      "meaning": "Mapped through the shared public failure-message boundary."
     },
     {
       "name": "operation",
       "type": "read | create | write",
-      "meaning": "Selects the relevant user-facing failure wording; defaults to read."
+      "meaning": "Selects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read."
+    },
+    {
+      "name": "messages",
+      "type": "Record<string, string> (optional)",
+      "meaning": "Module-specific wording for its own stable error codes."
     },
     {
       "name": "onReload",
       "type": "() => void",
-      "meaning": "Optional recovery action for stale resource state."
+      "meaning": "Optional recovery action when current data can be refreshed."
+    },
+    {
+      "name": "reloadLabel",
+      "type": "string (optional)",
+      "meaning": "Accessible name of the reload action; defaults to Reload."
     }
   ],
   "states": ["Failure message", "Failure message with reload action"],
   "accessibility": "Uses role=alert so the failure is announced; the optional reload control is a native button.",
-  "usage": "Pass the original error to preserve stable-code mapping. Offer reload only when the current request can be refreshed.",
+  "usage": "Pass the original error to preserve stable-code mapping. Offer reload only when the current data can be refreshed, and never imply that an unknown write outcome failed.",
   "examples": [
     {
-      "id": "version-conflict",
-      "label": "Stale version with reload",
-      "description": "A synthetic RESOURCE_VERSION_CONFLICT response; no live request is involved."
+      "id": "unavailable-reload",
+      "label": "Unavailable service with reload",
+      "description": "A synthetic SERVICE_UNAVAILABLE response; no live request is involved."
     }
   ]
 }

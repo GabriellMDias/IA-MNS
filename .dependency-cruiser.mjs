@@ -57,6 +57,15 @@ export default {
       { dependencyTypes: ["core"] },
     ),
     error(
+      "no-shared-api-to-module",
+      "Shared API runtime code must not depend on a feature module; only the composition file apps/api/src/modules.ts composes modules.",
+      {
+        path: "^apps/api/src/",
+        pathNot: "^apps/api/src/(features/|modules\\.ts$)",
+      },
+      { path: "^apps/api/src/features/" },
+    ),
+    error(
       "no-domain-to-infrastructure",
       "Domain code must stay independent of HTTP, persistence, and infrastructure adapters.",
       { path: "^(apps|packages)/.+/domain(/|\\.[cm]?[jt]sx?$)" },

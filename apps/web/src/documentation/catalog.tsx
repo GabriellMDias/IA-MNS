@@ -4,7 +4,7 @@ import { manifest, sections, folderLabel } from "./catalog-data.js";
 import { catalogPage } from "./catalog-model.js";
 import openapiUrl from "../../../../docs/generated/api/openapi.json?url";
 import errorsUrl from "../../../../docs/generated/api/errors.md?url";
-import databaseUrl from "../../../../docs/generated/database/approval-requests.md?url";
+import databaseUrl from "../../../../docs/generated/database/schema.md?url";
 import componentsUrl from "../../../../docs/generated/components/web.md?url";
 export function Catalog({
   id,
@@ -21,8 +21,9 @@ export function Catalog({
   return (
     <>
       <p className="docs-lead">
-        {entryCount} entries in this section. Choose a collection or open a
-        reference.
+        {entryCount === 0
+          ? "No entries exist in this section yet."
+          : `${entryCount} entries in this section. Choose a collection or open a reference.`}
       </p>
       {folders.length > 0 && (
         <div className="docs-collections">
@@ -166,7 +167,7 @@ export function Overview() {
       <section className="docs-start">
         <div>
           <p className="docs-kicker">Start with context</p>
-          <h2>New to Orion?</h2>
+          <h2>New to {__PROJECT_NAME__}?</h2>
           <p>
             Set up the project, understand the boundaries, and find the source
             that owns a behavior.
@@ -179,8 +180,8 @@ export function Overview() {
           <DocLink id="repository/docs/architecture/repository-structure">
             Explore the repository <span aria-hidden="true">→</span>
           </DocLink>
-          <DocLink id="repository/docs/domains/approval-request">
-            Understand the reference feature <span aria-hidden="true">→</span>
+          <DocLink id="repository/docs/architecture/principles">
+            Understand the architecture <span aria-hidden="true">→</span>
           </DocLink>
           <DocLink id="repository/docs/contributing">
             Make a change <span aria-hidden="true">→</span>

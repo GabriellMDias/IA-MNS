@@ -1,8 +1,8 @@
-# Approval Request Database Reference
+# Database Reference
 
-<!-- Generated from migrated PostgreSQL and apps/api/prisma/schema-metadata.json. Do not edit. -->
+<!-- Generated from migrated PostgreSQL and apps/api/prisma/metadata. Do not edit. -->
 
-[Schema documentation policy](../../database/schema-documentation.md) · [Approval Request specification](../../domains/approval-request.md)
+[Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)
 
 ## approval_requests
 

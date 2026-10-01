@@ -1,7 +1,14 @@
-import { test, expect, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./fixtures.ts";
+import type { ApprovalRequestsStack } from "./stack.ts";
 
-const webUrl = () => process.env.ORION_E2E_WEB_URL!;
-const apiUrl = () => process.env.ORION_E2E_API_URL!;
+let stack: ApprovalRequestsStack;
+test.beforeEach(({ approval }) => {
+  stack = approval;
+});
+const webUrl = () => stack.webUrl;
+const appUrl = () => `${stack.webUrl}/approval-requests`;
+const apiUrl = () => stack.apiUrl;
 
 async function connect(page: Page, token: string) {
   await page.getByLabel("Access token", { exact: true }).fill(token);
@@ -21,7 +28,7 @@ test("local synthetic identities connect without persisting bearer tokens", asyn
   );
   expect(localResponse.status()).toBe(200);
   expect(localResponse.headers()["cache-control"]).toBe("no-store");
-  await page.goto(webUrl());
+  await page.goto(appUrl());
   await page.getByRole("button", { name: "Use local owner" }).click();
   await expect(
     page.getByRole("heading", { name: "Approval requests" }),
@@ -46,8 +53,8 @@ test("owner creates, edits, submits and a different reviewer approves through Po
   page,
 }) => {
   const title = `Browser request ${Date.now()}`;
-  await page.goto(webUrl());
-  await connect(page, process.env.ORION_E2E_OWNER_TOKEN!);
+  await page.goto(appUrl());
+  await connect(page, stack.ownerToken);
   await expect(
     page.getByRole("heading", { name: "Approval requests" }),
   ).toBeVisible();
@@ -73,23 +80,23 @@ test("owner creates, edits, submits and a different reviewer approves through Po
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(page.getByRole("alert")).toContainText("permission");
   await page.getByRole("button", { name: "Disconnect" }).click();
-  await connect(page, process.env.ORION_E2E_REVIEWER_TOKEN!);
+  await connect(page, stack.reviewerToken);
   await page.getByRole("link", { name: "All requests" }).click();
   await page.getByRole("link", { name: "For review" }).click();
   await expect(page).toHaveURL(/scope=reviewable/);
   await page.reload();
   await expect(page).toHaveURL(/scope=reviewable/);
-  await connect(page, process.env.ORION_E2E_REVIEWER_TOKEN!);
+  await connect(page, stack.reviewerToken);
   await page.getByRole("link", { name: new RegExp(title) }).click();
-  await expect(page).toHaveURL(new RegExp(`/requests/${id}$`));
+  await expect(page).toHaveURL(new RegExp(`/approval-requests/${id}$`));
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(page.getByText("APPROVED", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page).toHaveURL(new RegExp(`/requests/${id}$`));
-  await connect(page, process.env.ORION_E2E_REVIEWER_TOKEN!);
+  await expect(page).toHaveURL(new RegExp(`/approval-requests/${id}$`));
+  await connect(page, stack.reviewerToken);
   await expect(page.getByRole("alert")).toContainText("not found");
   await page.getByRole("button", { name: "Disconnect" }).click();
-  await connect(page, process.env.ORION_E2E_OWNER_TOKEN!);
+  await connect(page, stack.ownerToken);
   await expect(page.getByText("APPROVED", { exact: true })).toBeVisible();
 });
 
@@ -97,8 +104,8 @@ test("a stale browser mutation reports conflict and preserves the newer database
   page,
 }) => {
   const title = `Stale request ${Date.now()}`;
-  await page.goto(webUrl());
-  await connect(page, process.env.ORION_E2E_OWNER_TOKEN!);
+  await page.goto(appUrl());
+  await connect(page, stack.ownerToken);
   await page.getByRole("textbox", { name: "Title" }).fill(title);
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
@@ -106,7 +113,7 @@ test("a stale browser mutation reports conflict and preserves the newer database
   const response = await fetch(`${apiUrl()}/approval-requests/${id}/submit`, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${process.env.ORION_E2E_OWNER_TOKEN}`,
+      authorization: `Bearer ${stack.ownerToken}`,
       "content-type": "application/json",
     },
     body: JSON.stringify({ expectedVersion: 1 }),
@@ -136,13 +143,13 @@ test("a late creation response cannot navigate a replacement credential session"
     await released;
     await route.fulfill({ response });
   });
-  await page.goto(webUrl());
-  await connect(page, process.env.ORION_E2E_OWNER_TOKEN!);
+  await page.goto(appUrl());
+  await connect(page, stack.ownerToken);
   await page.getByRole("textbox", { name: "Title" }).fill("Delayed creation");
   await page.getByRole("button", { name: "Create draft" }).click();
   await ready;
   await page.getByRole("button", { name: "Disconnect" }).click();
-  await connect(page, process.env.ORION_E2E_REVIEWER_TOKEN!);
+  await connect(page, stack.reviewerToken);
   const completed = page.waitForResponse(
     (response) => response.request().method() === "POST",
   );
@@ -155,7 +162,7 @@ test("a late creation response cannot navigate a replacement credential session"
         requestAnimationFrame(() => requestAnimationFrame(resolve)),
       ),
   );
-  await expect(page).toHaveURL(new RegExp(`^${webUrl()}/(?:\\?.*)?$`));
+  await expect(page).toHaveURL(new RegExp(`^${appUrl()}/?(?:\\?.*)?$`));
   await expect(
     page.getByRole("heading", { name: "Approval requests" }),
   ).toBeVisible();
@@ -164,8 +171,8 @@ test("a late creation response cannot navigate a replacement credential session"
 test("a late draft response cannot restore former-session data to the cache", async ({
   page,
 }) => {
-  await page.goto(webUrl());
-  await connect(page, process.env.ORION_E2E_OWNER_TOKEN!);
+  await page.goto(appUrl());
+  await connect(page, stack.ownerToken);
   await page
     .getByRole("textbox", { name: "Title" })
     .fill("Delayed private draft");
@@ -194,7 +201,7 @@ test("a late draft response cannot restore former-session data to the cache", as
   await page.getByRole("button", { name: "Save draft" }).click();
   await ready;
   await page.getByRole("button", { name: "Disconnect" }).click();
-  await connect(page, process.env.ORION_E2E_REVIEWER_TOKEN!);
+  await connect(page, stack.reviewerToken);
   await expect(page.getByRole("alert")).toContainText("not found");
   const completed = page.waitForResponse(
     (response) => response.request().method() === "PUT",

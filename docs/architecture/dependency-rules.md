@@ -54,7 +54,7 @@ Public API/errors must not expose private ORM enums, internal exception classes,
 
 Clients may consume public contracts, SDKs, and explicitly client-safe primitives. They must not import database clients, server credentials/configuration, backend internals, private adapters, filesystem APIs, or server-only SDKs. A shared package must remain safe for every runtime it supports. Secrets must never enter client bundles, generated clients, or public configuration.
 
-The current web workflow depends on `@orion/sdk`; the API owns its executable wire contracts. Generated artifacts remain identifiable, reproducible, and unedited by hand; semantic documentation belongs to the canonical owner.
+The web application depends on the workspace SDK package (`packages/sdk`); the API owns its executable wire contracts. Shared code never imports foundation-only reference modules; only the composition files `apps/api/src/modules.ts` and `apps/web/src/modules.tsx` may compose them. Generated artifacts remain identifiable, reproducible, and unedited by hand; semantic documentation belongs to the canonical owner.
 
 ## Adding or Changing Dependencies
 

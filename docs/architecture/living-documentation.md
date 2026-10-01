@@ -27,7 +27,7 @@ The navigation brand displays the Orion foundation revision. At Vite startup/bui
 | --- | --- | --- |
 | Repository knowledge | Authored Markdown under `docs/` and local README/instruction files | Safe rendered page JSON, headings, catalog summaries, and searchable sections |
 | API | Executable TypeBox contracts, route metadata, and error registry, through generated OpenAPI/errors | Operation detail pages with full schemas and referenced components; error-registry document; generated SDK remains a separate consumer |
-| Database | Migrated PostgreSQL and [schema-adjacent semantic metadata](../../apps/api/prisma/schema-metadata.json), through generated database Markdown | Table dictionary pages and complete physical/semantic reference, including enums |
+| Database | Migrated PostgreSQL and schema-adjacent semantic metadata in `apps/api/prisma/metadata/`, through generated database Markdown | Table dictionary pages and complete physical/semantic reference, including enums |
 | Components | [Actual exports](../../apps/web/src/components.tsx) and [owned examples/metadata](../../apps/web/src/components.docs.json) | Component detail pages, safe previews, and [AI-readable Markdown](../generated/components/web.md) |
 | Configuration | API TypeBox schema and [reference metadata](../../apps/api/src/config.ts) | Locally readable [safe configuration reference](../generated/configuration/api.md); no environment values |
 
@@ -49,7 +49,7 @@ Markdown is rendered at generation time with raw HTML disabled. Unsafe protocols
 
 Reading documentation, searching, and component previews need no API, identity provider, token, database, or external service. Search queries remain local browser work; no third-party search provider receives repository content. Component previews keep synthetic input local and never connect identities or perform domain requests.
 
-The API explorer is an intentionally generic OpenAPI consumer: it uses the generated operation contract to build explicit same-origin HTTP requests. Product workflows continue to use the typed `@orion/sdk`; the explorer imports no API implementation and duplicates no business authorization. A raw HTTP boundary is appropriate here because inspecting rejection and unsupported future operations is part of the tool, not typed product orchestration. It introduces no replacement SDK or new application boundary.
+The API explorer is an intentionally generic OpenAPI consumer: it uses the generated operation contract to build explicit same-origin HTTP requests. Product workflows continue to use the typed workspace SDK; the explorer imports no API implementation and duplicates no business authorization. A raw HTTP boundary is appropriate here because inspecting rejection and unsupported future operations is part of the tool, not typed product orchestration. It introduces no replacement SDK or new application boundary.
 
 - The configured browser API base must be a safe same-origin path. OpenAPI server URLs and user-provided hosts cannot redirect execution elsewhere. Path and header controls reject traversal, encoded separators, protected headers, and unsupported encodings.
 - Nothing executes on page load or navigation. The user fills declared parameters/JSON, supplies an in-memory bearer token when required, and explicitly sends. Writes require acknowledgement that the request can change real data.
@@ -75,4 +75,4 @@ The catalog still grows with entry count; search and static asset volume grow wi
 
 See [setup](../setup.md#living-documentation-portal) for commands and [validation](../validation.md) for available checks. This foundation work does not select providers, deploy infrastructure, or activate Phase 12.
 
-The owner retained interactive manual browser verification and reported [H-12](../human-actions.md#h-12) complete. The [manual checklist](../validation.md#living-documentation-manual-browser-checks) remains the recheck guide after material UI changes. Keep human-observed acceptance distinct from the automated browser suites in the normal repository gate.
+The [manual checklist](../validation.md#living-documentation-manual-browser-checks) is the guide for human-observed acceptance after material UI changes. Keep human-observed acceptance distinct from the automated browser suites in the normal repository gate.

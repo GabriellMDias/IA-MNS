@@ -85,6 +85,26 @@ test("cycles and cross-application imports remain blocked; emitted chunks are ex
   assert.ok(!result.modules.some(({ source }) => source.includes("/dist/")));
 });
 
+test("only the composition file may import an API feature module", async () => {
+  const module = {
+    "apps/api/src/features/example/module.ts": "export const module = {};",
+  };
+  const shared = await inspect({
+    ...module,
+    "apps/api/src/app.ts": 'import "./features/example/module.js";',
+  });
+  assert.ok(
+    shared.summary.violations.some(
+      ({ rule }) => rule.name === "no-shared-api-to-module",
+    ),
+  );
+  const composition = await inspect({
+    ...module,
+    "apps/api/src/modules.ts": 'import "./features/example/module.js";',
+  });
+  assert.deepEqual(composition.summary.violations, []);
+});
+
 test("pure feature dependencies stay permitted", async () => {
   const result = await inspect({
     "apps/api/src/features/example/service.ts": 'import "./domain.js";',

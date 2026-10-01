@@ -1,8 +1,19 @@
+import { readFileSync } from "node:fs";
 import { test, expect, type Page, type Route } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+// Shared journeys use only content every Orion-based repository has; module
+// suites check their own operations, tables, and components.
+const projectName = (
+  JSON.parse(
+    readFileSync(new URL("../../../../.orion/project.json", import.meta.url), {
+      encoding: "utf8",
+    }),
+  ) as { name: string }
+).name;
+const overviewTitle = `${projectName} documentation`;
+
 const webUrl = () => process.env.ORION_E2E_WEB_URL!;
-const apiUrl = () => process.env.ORION_E2E_API_URL!;
 const sections = (page: Page) =>
   page.getByRole("navigation", { name: "Documentation sections" });
 
@@ -26,7 +37,7 @@ async function expectNoStoredCredentials(page: Page) {
 test("documentation sections isolate details and preserve deep links and browser history", async ({
   page,
 }) => {
-  await openDocument(page, "/docs", "Orion documentation");
+  await openDocument(page, "/docs", overviewTitle);
   for (const selector of [".docs-brand-symbol", ".brand img"]) {
     const mark = page.locator(selector);
     await expect(mark).toBeVisible();
@@ -64,51 +75,51 @@ test("documentation sections isolate details and preserve deep links and browser
     .getByRole("link", { name: "API reference", exact: true })
     .click();
   await expect(page).toHaveURL(/\/docs\/api$/);
-  await page
-    .locator('a[href="/docs/api/createApprovalRequest"]')
-    .first()
-    .click();
+  await page.locator('a[href="/docs/api/getReadiness"]').first().click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "createApprovalRequest",
+    "getReadiness",
   );
   await expect(
-    page.getByRole("heading", {
-      name: "editApprovalRequestDraft",
-      exact: true,
-    }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "approval_requests", exact: true }),
+    page.getByRole("heading", { name: "getLiveness", exact: true }),
   ).toHaveCount(0);
   await expect(
     page.getByRole("navigation", { name: "Breadcrumbs" }),
   ).toContainText("API");
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "createApprovalRequest",
+    "getReadiness",
   );
   await page.goBack();
   await expect(page).toHaveURL(/\/docs\/api$/);
   await page.goForward();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "createApprovalRequest",
+    "getReadiness",
   );
   await sections(page)
     .getByRole("link", { name: "Data dictionary", exact: true })
     .click();
+  await expect(page).toHaveURL(/\/docs\/database$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Data dictionary",
+  );
+});
+
+test("the application shell presents the project identity and documentation", async ({
+  page,
+}) => {
+  await page.goto(webUrl());
+  await expect(
+    page.getByRole("heading", { level: 1, name: projectName, exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveTitle(projectName);
+  await expect(page.locator(".brand")).toContainText(projectName);
   await page
-    .locator('a[href="/docs/database/approval_requests"]')
-    .first()
+    .getByRole("link", { name: "Read the living documentation" })
     .click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "approval_requests",
+    overviewTitle,
   );
-  await expect(
-    page.getByRole("rowheader", { name: "creator_id", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("No supporting context supplied.", { exact: false }),
-  ).toBeVisible();
+  await expect(page).toHaveTitle(`${overviewTitle} · ${projectName}`);
 });
 
 test("repository documentation reads locally with heading links and unknown-page recovery", async ({
@@ -142,21 +153,20 @@ test("repository documentation reads locally with heading links and unknown-page
     .getByRole("link", { name: "Overview", exact: true })
     .click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Orion documentation",
+    overviewTitle,
   );
 });
 
 test("full-text search finds authored policy and generated operation, column, and component content", async ({
   page,
 }) => {
-  await openDocument(page, "/docs", "Orion documentation");
+  await openDocument(page, "/docs", overviewTitle);
   for (const [query, path] of [
     [
       "destructive integration suites",
       "/docs/repository/docs/architecture/testing-strategy",
     ],
-    ["createApprovalRequest", "/docs/api/createApprovalRequest"],
-    ["creator_id", "/docs/database/approval_requests"],
+    ["getReadiness", "/docs/api/getReadiness"],
     ["onReload", "/docs/components/ErrorNotice"],
   ]) {
     await page
@@ -189,7 +199,7 @@ test("canonical artifacts are available locally from relevant sections", async (
       "/docs/database",
       "Data dictionary",
       "AI-readable database reference",
-      "approval_requests_creator_key_unique",
+      "# Database Reference",
     ],
     [
       "/docs/components",
@@ -212,7 +222,7 @@ test("canonical artifacts are available locally from relevant sections", async (
   }
 });
 
-test("mobile navigation and real component previews keep synthetic input local", async ({
+test("mobile navigation and real component previews stay local", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -221,11 +231,7 @@ test("mobile navigation and real component previews keep synthetic input local",
     if (new URL(request.url()).pathname.startsWith("/api/"))
       sent.push(request.url());
   });
-  await openDocument(
-    page,
-    "/docs/components/AccessTokenForm",
-    "AccessTokenForm",
-  );
+  await openDocument(page, "/docs/components/ErrorNotice", "ErrorNotice");
   await expect(page.locator(".docs-foundation-version")).toBeVisible();
   await page.getByRole("button", { name: "Browse documentation" }).click();
   await expect(
@@ -234,40 +240,18 @@ test("mobile navigation and real component previews keep synthetic input local",
   await sections(page)
     .getByRole("link", { name: "Components", exact: true })
     .click();
-  await page
-    .locator('a[href="/docs/components/AccessTokenForm"]')
-    .first()
-    .click();
+  await page.locator('a[href="/docs/components/ErrorNotice"]').first().click();
   const preview = page.locator(".docs-preview").first();
-  await expect(
-    preview.getByRole("button", { name: "Use local owner" }),
-  ).toHaveCount(0);
-  await preview
-    .getByLabel("Access token", { exact: true })
-    .fill("non-secret-example");
-  await preview
-    .getByRole("button", { name: "Connect", exact: true })
-    .press("Enter");
-  await expect(preview.getByRole("status")).toContainText("discarded");
-  await expect(preview.getByLabel("Access token", { exact: true })).toHaveValue(
-    "",
+  await preview.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(preview.getByRole("status")).toContainText(
+    "Demonstration reload selected",
   );
-  await expect(page).not.toHaveURL(/non-secret-example/);
   await expectNoStoredCredentials(page);
   expect(sent).toEqual([]);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
-  await openDocument(page, "/docs/components/ErrorNotice", "ErrorNotice");
-  await page.getByRole("button", { name: "Reload current request" }).click();
-  await expect(page.getByRole("status")).toContainText(
-    "Demonstration reload selected",
-  );
-  await openDocument(
-    page,
-    "/docs/database/approval_requests",
-    "approval_requests",
-  );
+  await openDocument(page, "/docs/database", "Data dictionary");
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(390);
@@ -294,109 +278,6 @@ test("API explorer waits for an explicit request and returns the real health res
   await expect(explorer.locator("pre").last()).toContainText('"status": "ok"');
   expect(sent).toHaveLength(1);
   expect(new URL(sent[0]).pathname).toBe("/api/health/ready");
-});
-
-test("API explorer validates input and requires confirmation before an authenticated mutation", async ({
-  page,
-}) => {
-  const sent: string[] = [];
-  page.on("request", (request) => {
-    if (
-      request.method() === "POST" &&
-      new URL(request.url()).pathname === "/api/approval-requests"
-    )
-      sent.push(request.url());
-  });
-  await openDocument(
-    page,
-    "/docs/api/createApprovalRequest",
-    "createApprovalRequest",
-  );
-  const explorer = page.getByRole("region", { name: "Try this operation" });
-  const token = explorer.getByLabel("Access token", { exact: true });
-  await expect(token).toHaveAttribute("type", "password");
-  await token.fill(process.env.ORION_E2E_OWNER_TOKEN!);
-  await explorer
-    .getByLabel("idempotency-key (header)", { exact: true })
-    .fill(crypto.randomUUID());
-  await explorer
-    .getByLabel("JSON request body", { exact: true })
-    .fill('{"title":"Synthetic documentation request","description":null}');
-  expect(sent).toEqual([]);
-  const confirmation = explorer.getByRole("checkbox", {
-    name: "I understand this request can change real API data.",
-  });
-  await expect(confirmation).not.toBeChecked();
-  await explorer
-    .getByRole("button", { name: "Send request", exact: true })
-    .click();
-  expect(sent).toEqual([]);
-  await expect(confirmation).toBeFocused();
-  await confirmation.check();
-  await explorer
-    .getByLabel("JSON request body", { exact: true })
-    .fill("{ invalid JSON");
-  await explorer
-    .getByRole("button", { name: "Send request", exact: true })
-    .click();
-  await expect(explorer.getByRole("alert")).toContainText(/JSON/i);
-  expect(sent).toEqual([]);
-  await explorer
-    .getByLabel("JSON request body", { exact: true })
-    .fill('{"title":"Synthetic documentation request","description":null}');
-  await explorer
-    .getByRole("button", { name: "Send request", exact: true })
-    .click();
-  await expect(explorer.getByText("HTTP 201", { exact: false })).toBeVisible();
-  expect(sent).toHaveLength(1);
-  const result = JSON.parse(
-    await explorer.locator("pre").last().innerText(),
-  ) as { id: string; title: string };
-  expect(result.title).toBe("Synthetic documentation request");
-  const persisted = await page.request.get(
-    `${apiUrl()}/approval-requests/${result.id}`,
-    {
-      headers: { authorization: `Bearer ${process.env.ORION_E2E_OWNER_TOKEN}` },
-    },
-  );
-  expect(persisted.status()).toBe(200);
-  expect(((await persisted.json()) as { title: string }).title).toBe(
-    result.title,
-  );
-  await expectNoStoredCredentials(page);
-  await explorer
-    .getByRole("button", { name: "Clear request and response", exact: true })
-    .click();
-  await expect(token).toHaveValue("");
-  await expect(confirmation).not.toBeChecked();
-  await expect(
-    explorer.getByRole("heading", { name: "Response", exact: true }),
-  ).toHaveCount(0);
-  await token.fill("synthetic-invalid-token");
-  await page.reload();
-  await expect(page.getByLabel("Access token", { exact: true })).toHaveValue(
-    "",
-  );
-});
-
-test("API explorer reports real authentication failures", async ({ page }) => {
-  await openDocument(
-    page,
-    "/docs/api/listApprovalRequests",
-    "listApprovalRequests",
-  );
-  const explorer = page.getByRole("region", { name: "Try this operation" });
-  await explorer
-    .getByLabel("Access token", { exact: true })
-    .fill("synthetic-invalid-token");
-  await explorer
-    .getByRole("button", { name: "Send request", exact: true })
-    .click();
-  await expect(explorer.getByText("HTTP 401", { exact: false })).toBeVisible();
-  await expect(explorer.locator("pre").last()).toContainText(
-    "AUTHENTICATION_REQUIRED",
-  );
-  await expectNoStoredCredentials(page);
 });
 
 test("API explorer cancellation discards late responses and response markup stays inert", async ({
@@ -447,10 +328,10 @@ test("API explorer cancellation discards late responses and response markup stay
 });
 
 for (const [path, title] of [
-  ["/docs", "Orion documentation"],
-  ["/docs/api/createApprovalRequest", "createApprovalRequest"],
-  ["/docs/database/approval_requests", "approval_requests"],
-  ["/docs/components/AccessTokenForm", "AccessTokenForm"],
+  ["/docs", overviewTitle],
+  ["/docs/api/getReadiness", "getReadiness"],
+  ["/docs/database", "Data dictionary"],
+  ["/docs/components/ErrorNotice", "ErrorNotice"],
   ["/docs/repository/docs/setup", "Development Setup"],
 ]) {
   test(`documentation has no automated WCAG A/AA violations at ${path}`, async ({

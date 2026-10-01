@@ -1,9 +1,10 @@
 # API-local Instructions
 
-Read [the runtime guide](README.md) for source locations and local commands, and [feature conventions](../../docs/domains/approval-request-implementation.md) before changing Approval Request behavior. Global repository instructions still apply.
+Read [the runtime guide](README.md) for source locations, local commands, and the module contract. Read the nested `AGENTS.md` of a module before changing it. Global repository instructions still apply.
 
 - Preserve `src/main.ts` ordering: parse configuration, initialize Pino/OpenTelemetry, then dynamically load Fastify and compose `src/app.ts` before listening. Instrumented infrastructure depends on this order.
 - Keep `src/config.ts` as the runtime environment parser. Change schemas and reference metadata together; client-eligible values must pass explicitly through `clientConfigFrom`.
+- Shared runtime files never import a module. A module implements the `ApiModule` contract in `src/module.ts` and is composed only in `src/modules.ts`; it owns its contracts, errors, routes, persistence adapter, Prisma model file under `prisma/schema/`, metadata under `prisma/metadata/`, runtime grants under `prisma/runtime-grants/`, migrations, tests, and optional process smoke under `scripts/smoke/`.
 - Keep TypeBox wire schemas/routes at the Fastify boundary. Domain rules and application operations remain independent of Fastify and Prisma; the adapter owns PostgreSQL and conditional writes.
 - Keep Prisma schema, reviewed SQL, and semantic metadata coherent under [migration](../../docs/database/migrations.md) and [schema-documentation](../../docs/database/schema-documentation.md) policies. The Prisma CLI alone receives `ORION_MIGRATION_DATABASE_URL`; runtime uses `ORION_DATABASE_URL`.
 - Generate the ignored Prisma client with root `pnpm db:generate`. For tracked references, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md); root `pnpm references:check` includes fresh migrated PostgreSQL and SDK drift checks.

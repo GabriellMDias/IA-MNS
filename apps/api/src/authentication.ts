@@ -1,8 +1,15 @@
 import { createRemoteJWKSet, errors, jwtVerify } from "jose";
-import type { Principal } from "./domain.js";
+
+/** Provider-independent identity established by a verified access token. */
+export interface VerifiedPrincipal {
+  /** Stable application principal UUID, never a provider-native subject. */
+  id: string;
+  /** Issuer-granted scopes; modules map them to their own capabilities. */
+  scopes: ReadonlySet<string>;
+}
 
 export interface AccessTokenVerifier {
-  verify(authorization: string | undefined): Promise<Principal | null>;
+  verify(authorization: string | undefined): Promise<VerifiedPrincipal | null>;
 }
 
 export class AuthenticationUnavailableError extends Error {
@@ -48,10 +55,10 @@ export function createAccessTokenVerifier(config: {
           typeof payload.scope !== "string"
         )
           return null;
-        const capabilities = new Set<"approval:review">();
-        if (payload.scope.split(" ").includes("approval:review"))
-          capabilities.add("approval:review");
-        return { id, capabilities };
+        return {
+          id,
+          scopes: new Set(payload.scope.split(" ").filter(Boolean)),
+        };
       } catch (error) {
         // Reject invalid credentials normally. Key retrieval, malformed trusted
         // JWKS data, and unexpected verifier failures must remain observable.

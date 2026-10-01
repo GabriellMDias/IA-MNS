@@ -1,69 +1,61 @@
 import { Type, type Static } from "typebox";
 
-export const errorRegistry = Object.freeze({
-  AUTHENTICATION_REQUIRED: Object.freeze({
+export type ErrorDefinition = Readonly<{
+  status: number;
+  message: string;
+  category: string;
+  retryable: boolean;
+}>;
+
+export function defineErrors<
+  const Registry extends Record<string, ErrorDefinition>,
+>(registry: Registry): Readonly<Registry> {
+  for (const definition of Object.values(registry)) Object.freeze(definition);
+  return Object.freeze(registry);
+}
+
+// Codes the shared runtime can emit itself. Modules declare their own
+// business codes and merge them into the generated public registry.
+export const coreErrors = defineErrors({
+  AUTHENTICATION_REQUIRED: {
     status: 401,
     message: "Authentication is required.",
     category: "authentication",
     retryable: false,
-  }),
-  PERMISSION_DENIED: Object.freeze({
-    status: 403,
-    message: "Permission denied.",
-    category: "authorization",
-    retryable: false,
-  }),
-  APPROVAL_REQUEST_INVALID_STATE: Object.freeze({
-    status: 409,
-    message: "The request cannot be changed in its current state.",
-    category: "conflict",
-    retryable: false,
-  }),
-  RESOURCE_VERSION_CONFLICT: Object.freeze({
-    status: 409,
-    message: "The request changed; reload it before trying again.",
-    category: "conflict",
-    retryable: false,
-  }),
-  IDEMPOTENCY_KEY_REUSED: Object.freeze({
-    status: 409,
-    message: "The creation key was used for different content.",
-    category: "conflict",
-    retryable: false,
-  }),
-  VALIDATION_FAILED: Object.freeze({
+  },
+  VALIDATION_FAILED: {
     status: 400,
     message: "The request is invalid.",
     category: "validation",
     retryable: false,
-  }),
-  RESOURCE_NOT_FOUND: Object.freeze({
+  },
+  RESOURCE_NOT_FOUND: {
     status: 404,
     message: "The resource was not found.",
     category: "not_found",
     retryable: false,
-  }),
-  RATE_LIMITED: Object.freeze({
+  },
+  RATE_LIMITED: {
     status: 429,
     message: "Too many requests. Try again later.",
     category: "rate_limit",
     retryable: true,
-  }),
-  INTERNAL_ERROR: Object.freeze({
+  },
+  INTERNAL_ERROR: {
     status: 500,
     message: "An unexpected error occurred.",
     category: "internal",
     retryable: false,
-  }),
-  SERVICE_UNAVAILABLE: Object.freeze({
+  },
+  SERVICE_UNAVAILABLE: {
     status: 503,
     message: "The service is unavailable.",
     category: "availability",
     retryable: true,
-  }),
-} as const);
+  },
+});
 
-export type ErrorCode = keyof typeof errorRegistry;
+export type CoreErrorCode = keyof typeof coreErrors;
 export const errorEnvelopeSchema = Type.Object(
   {
     error: Type.Object(
@@ -81,19 +73,39 @@ export const errorEnvelopeSchema = Type.Object(
 );
 export type ErrorEnvelope = Static<typeof errorEnvelopeSchema>;
 
+/** Builds public envelopes for one registry, rejecting unregistered codes. */
+export function errorResponder<
+  Registry extends Record<string, ErrorDefinition>,
+>(registry: Registry) {
+  return (
+    code: keyof Registry & string,
+    requestId: string,
+    traceId?: string,
+    errorId?: string,
+  ): { status: number; body: ErrorEnvelope } => {
+    const definition = registry[code];
+    if (!definition) throw new Error(`Unregistered public error ${code}`);
+    return {
+      status: definition.status,
+      body: {
+        error: {
+          code,
+          message: definition.message,
+          requestId,
+          ...(traceId ? { traceId } : {}),
+          ...(errorId ? { errorId } : {}),
+        },
+      },
+    };
+  };
+}
+
+const respond = errorResponder(coreErrors);
 export function publicError(
-  code: ErrorCode,
+  code: CoreErrorCode,
   requestId: string,
   traceId?: string,
   errorId?: string,
 ): ErrorEnvelope {
-  return {
-    error: {
-      code,
-      message: errorRegistry[code].message,
-      requestId,
-      ...(traceId ? { traceId } : {}),
-      ...(errorId ? { errorId } : {}),
-    },
-  };
+  return respond(code, requestId, traceId, errorId).body;
 }

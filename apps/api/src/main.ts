@@ -3,6 +3,7 @@ import { createLogger } from "./logging.js";
 import { errorDiagnostics } from "./error-diagnostics.js";
 import { shutdownRuntime, withDeadline } from "./lifecycle.js";
 import { initializeTelemetry } from "./telemetry.js";
+import { serviceName } from "./service-identity.js";
 
 let logger: ReturnType<typeof createLogger> | undefined;
 let cleanup: (() => Promise<void>) | undefined;
@@ -15,22 +16,20 @@ try {
   const telemetry = initializeTelemetry(config, logger);
   cleanup = () => withDeadline(telemetry.shutdown(), config.shutdownTimeoutMs);
   startupPhase = "composition";
-  // Load Fastify and Prisma only after instrumentation is registered.
+  // Load Fastify, Prisma, and modules only after instrumentation is registered.
   const { createApp } = await import("./app.js");
-  const { createRepository } =
-    await import("./features/approval-requests/prisma-repository.js");
-  const { ApprovalRequestService } =
-    await import("./features/approval-requests/service.js");
-  const { createAccessTokenVerifier } =
-    await import("./features/approval-requests/authentication.js");
-  const repository = config.databaseUrl
-    ? createRepository(config.databaseUrl)
+  const { createDatabase, checkDatabase } = await import("./database.js");
+  const { createAccessTokenVerifier } = await import("./authentication.js");
+  const { activateModules } = await import("./module.js");
+  const { apiModules } = await import("./modules.js");
+  const database = config.databaseUrl
+    ? createDatabase(config.databaseUrl)
     : undefined;
   const resources = {
     shutdown: async () => {
       // Neither resource may prevent the other from starting its cleanup.
       const results = await Promise.allSettled([
-        repository?.db.$disconnect(),
+        database?.$disconnect(),
         telemetry.shutdown(),
       ]);
       if (results.some((result) => result.status === "rejected"))
@@ -38,25 +37,23 @@ try {
     },
   };
   cleanup = () => withDeadline(resources.shutdown(), config.shutdownTimeoutMs);
-  const feature =
-    repository &&
-    config.tokenIssuer &&
-    config.tokenAudience &&
-    config.tokenJwksUrl
-      ? {
-          service: new ApprovalRequestService(repository),
-          checkReady: async () => {
-            await repository.db.$queryRaw`SELECT 1`;
-            return true;
-          },
-          verifier: createAccessTokenVerifier({
-            issuer: config.tokenIssuer,
-            audience: config.tokenAudience,
-            jwksUrl: config.tokenJwksUrl,
-          }),
-        }
+  const verifier =
+    config.tokenIssuer && config.tokenAudience && config.tokenJwksUrl
+      ? createAccessTokenVerifier({
+          issuer: config.tokenIssuer,
+          audience: config.tokenAudience,
+          jwksUrl: config.tokenJwksUrl,
+        })
       : undefined;
-  const { app, lifecycle } = createApp(logger, undefined, feature);
+  const modules = activateModules(
+    apiModules,
+    { database, verifier },
+    config.environment,
+  );
+  const { app, lifecycle } = createApp(logger, undefined, {
+    modules,
+    ...(database ? { checkReady: () => checkDatabase(database) } : {}),
+  });
   const runtimeLogger = logger;
   cleanup = () =>
     shutdownRuntime(
@@ -84,7 +81,7 @@ try {
   });
 
   startupPhase = "database";
-  if (repository) await repository.db.$queryRaw`SELECT 1`;
+  if (database) await checkDatabase(database);
   startupPhase = "listen";
   await app.listen({ host: config.host, port: config.port });
   lifecycle.markReady();
@@ -98,7 +95,7 @@ try {
     process.stderr.write(
       `${JSON.stringify({
         level: 60,
-        service: "orion-api",
+        service: serviceName,
         msg: "api_startup_failed",
         ...diagnostic,
       })}\n`,

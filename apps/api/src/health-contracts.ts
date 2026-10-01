@@ -25,7 +25,7 @@ export const healthOperations = [
     url: "/health/ready",
     operationId: "getReadiness",
     description:
-      "Report whether the process can serve requests, including its required database dependency.",
+      "Report whether the process can serve requests, including the database when one is configured.",
     schema: { response: { 200: healthSchema, 503: healthSchema } },
   },
 ] as const;
