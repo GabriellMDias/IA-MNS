@@ -218,6 +218,10 @@ test("mobile conversation menus act on their row and leave the selected conversa
   await drawer
     .getByRole("button", { name: "Opções de Outra conversa" })
     .click();
+  // The menu takes focus from its asynchronous toggle event; navigate only after it does.
+  await expect(
+    page.getByRole("menuitem", { name: "Renomear", exact: true }),
+  ).toBeFocused();
   await page.keyboard.press("End");
   await expect(
     page.getByRole("menuitem", { name: "Excluir", exact: true }),
