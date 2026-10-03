@@ -28,3 +28,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md) | Bound Natural Language Sales to a Read-Only Query Capability |
 | [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md) | Compose a Corporate Agent with Durable Conversations |
 | [ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md) | Bound Temporary Device Testing to an Authenticated Development Proxy |
+| [ADR-0021](0021-license-ia-mns-under-apache-2-0.md) | License IA-MNS under Apache-2.0 |

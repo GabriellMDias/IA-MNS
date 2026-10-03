@@ -4,6 +4,51 @@
     "title": "Database Principles",
     "group": "Database guides",
     "kind": "repository",
+    "heading": "Database Principles",
+    "anchor": "database-principles",
+    "text": "Database Principles\n[Task index](../README.md) · [Migrations](migrations.md) · [Schema documentation](schema-documentation.md) · [Transactions](transactions-and-concurrency.md)\nThis policy owns durable data design and persistence boundaries. [ADR-0005](../adr/0005-select-postgresql-as-the-primary-database.md) selects PostgreSQL and [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) selects Prisma ORM/Migrate. Both are implemented as shared API infrastructure that modules use for their own tables; hosting, production topology, and backup procedures depend on actual deployment requirements.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Sources and implementation boundary",
+    "anchor": "sources-and-implementation-boundary",
+    "text": "Sources and implementation boundary\nConcern\nAuthority\nStructures Prisma can express\n[Authored Prisma schema folder](../../apps/api/prisma/schema/schema.prisma): shared configuration plus one model file per module\nReviewed database evolution\nCommitted SQL migrations in `apps/api/prisma/migrations/` under [migration policy](migrations.md)\nComplete physical schema, including custom SQL\nPostgreSQL after applying the committed migrations\nObject meaning, owner, classification, lifecycle\nSchema-adjacent metadata in `apps/api/prisma/metadata/`, one file per module, under [schema documentation](schema-documentation.md)\nLeast-privilege runtime access\nModule grants in `apps/api/prisma/runtime-grants/`, applied to the restricted runtime role in disposable databases\nNavigable current reference\n[Generated database reference](../generated/database/schema.md), derived from migrated PostgreSQL plus metadata\nFeature writes and queries\nA module's Prisma adapter behind its own persistence capabilities, using the shared [database client](../../apps/api/src/database.ts)\nPrisma is infrastructure. Its generated records are not automatically domain entities, public contracts, UI models, or events. Use Prisma Client where clear and efficient, and TypedSQL or explicit parameterized SQL for operations better expressed that way. Do not discard valuable PostgreSQL-native constraints, indexes, views, extensions, or types merely for ORM purity or hypothetical portability. Keep specialized access inside persistence adapters and document custom behavior.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Database Ownership",
+    "anchor": "database-ownership",
+    "text": "Database Ownership\nEvery application-owned object needs identifiable architectural ownership; every table must have a primary domain/capability owner. That owner defines meaning, invariants, allowed readers/writers, and evolution. A shared physical database or shared database package does not grant shared mutation authority.\nCross-domain reads create coupling and need intentional semantics; repeated access may justify a capability interface or projection. Cross-domain writes should invoke the owning capability unless the architecture explicitly assigns another writer. Database access itself is a scoped capability, not permission to query everything. Browser, mobile, and desktop clients must not receive direct database credentials by default; direct access needs an explicit architecture/security model.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Constraints",
+    "anchor": "constraints",
+    "text": "Constraints\nProtect durable invariants as close to the data as practical. Application validation provides useful feedback; PostgreSQL constraints and atomic writes provide the final guarantee under concurrency. Use `NOT NULL`, uniqueness, primary/foreign keys, checks, or exclusion constraints where they express the invariant clearly. Application-only uniqueness checks cannot prevent races.\nNullability must represent real absence, unknown, unassigned, or inapplicable semantics, not implementation convenience. Use foreign keys for durable referential integrity where architecture permits them, and choose update/delete actions deliberately: `CASCADE`, `RESTRICT`, or `SET NULL` is a lifecycle decision. Rich workflows belong in domain/application logic rather than unreadable SQL constraints. Multiple layers may protect the same invariant for different purposes without independently duplicating complex business rules.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Data Types",
+    "anchor": "data-types",
+    "text": "Data Types\nChoose types for meaning: explicit states instead of invalid boolean combinations, exact numeric representations for precision-sensitive values, and structured columns for stable fields requiring constraints, indexing, classification, and querying. Avoid undocumented sentinel values. Enums and custom types have schema-evolution implications.\nDocument units, precision, scale, rounding, and currency relationships where relevant. Floating point is unsuitable by default for exact monetary amounts. Distinguish calendar dates, wall-clock times, instants, durations, and time zones. Add lifecycle timestamps only when useful and define who advances them. `updated_at` is neither an audit history nor automatically a reliable concurrency/ordering token.\nJSON is a deliberate flexible representation, not a substitute for schema design. Persisted JSON and free-form metadata still require validation, classification, redaction, migration, and compatibility rules. Large binaries need a decision considering access patterns, transaction requirements, backup, retention, and cost; if stored externally, database ownership/reference and object lifecycle must remain consistent.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
     "heading": "Identifiers",
     "anchor": "identifiers",
     "text": "Identifiers\nDefine identity scope and distinguish internal primary keys, public resource IDs, provider IDs, natural business keys, and idempotency keys. Stable primary keys are preferred; use mutable natural keys only with understood consequences. Public and storage identity may coincide deliberately but should not be coupled accidentally. Generated IDs must not encode sensitive information or serve as authorization.\nEach module's implementation conventions record its identifier and timestamp choices, such as immutable UUIDs and database-clock timestamps. One module's choices do not force every domain to use identical semantics.\n"
@@ -718,50 +763,5 @@
     "heading": "Contributing improvements back to Orion",
     "anchor": "contributing-improvements-back-to-orion",
     "text": "Contributing improvements back to Orion\nProduct work never goes to `orion-upstream`; its push URL is disabled. To improve the foundation itself, make the change in a separate clone of Orion and submit it there under Orion's own review, then adopt it in projects through the upgrade workflow. Do not move product code, requirements, or history into Orion. In Orion, keep new shared content independent of foundation-only content; extend `.orion/derivation.json` when adding foundation-only or project-owned files.\n"
-  },
-  {
-    "id": "repository/docs/project-derivation",
-    "title": "Start and Upgrade a Project from Orion",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Limits",
-    "anchor": "limits",
-    "text": "Limits\nProvenance proves which Orion commits are ancestors of the project; it does not prove that the project still follows every inherited policy. Validation and review remain the enforcement.\n`pnpm orion:check` can verify that the recorded baseline is integrated, but only `pnpm orion:status` with a fetched upstream can report newer integrated commits that were not yet recorded.\nUpgrades that change foundation-only or project-owned files conflict in projects; projects that diverge heavily from shared files should expect more conflicts there.\nThe isolation check matches links, imports, path names, and listed terms; it cannot judge whether shared prose implicitly assumes the reference implementation. Review remains necessary.\nThe immutable Git commit remains the exact foundation revision and provenance identity. [Foundation versioning](versioning.md) assigns human-readable tags only to deliberate stable release points; commits between tags remain usable by SHA.\n"
-  },
-  {
-    "id": "repository/docs/project/corporate-agent-verification",
-    "title": "Corporate Agent Verification",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Corporate Agent Verification",
-    "anchor": "corporate-agent-verification",
-    "text": "Corporate Agent Verification\n[Current architecture](../domains/corporate-agent.md) · [Project plan](implementation-plan.md) · [Human actions](human-actions.md) · [Setup](../setup.md#corporate-agent-and-local-postgresql)\n"
-  },
-  {
-    "id": "repository/docs/project/corporate-agent-verification",
-    "title": "Corporate Agent Verification",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Scope and evidence boundary",
-    "anchor": "scope-and-evidence-boundary",
-    "text": "Scope and evidence boundary\nVerification on 2026-10-01 covers PJ-09 in this local checkout. Existing uncommitted MVP work was preserved. The owner authorized reuse of the configured OpenAI key; no key was created or rotated. Oracle operations were read-only. PostgreSQL writes affect only IA-MNS's application history. No Git publication, remote CI, production identity or new business domain was performed.\nThe corporate agent has one registered business capability, sales. Social/capability replies use bounded routing and application-owned Portuguese prose. Business numbers retain the original controlled SQL, decimal aggregation and deterministic renderer. The reference excludes computed non-sale movements rather than subtracting returns; requests to include returns are explicitly unavailable. New identity/history work does not redefine that rule.\n"
-  },
-  {
-    "id": "repository/docs/project/corporate-agent-verification",
-    "title": "Corporate Agent Verification",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Changes and relevant guarantees",
-    "anchor": "changes-and-relevant-guarantees",
-    "text": "Changes and relevant guarantees\nA composed agent owns routing, implemented capability metadata, permissions, persistent conversation/context and real progress. Sales retains its domain executor; both legacy and agent transports share one Oracle pool.\nPostgreSQL acceptance uses owner-scoped row locks, ordered turns, request UUID replay/conflict, atomic outcomes and a crash lease. Failed/interrupted turns preserve trusted filters and cannot invent answers. No provider call is automatically retried.\nResult snapshots and context have stored versions. Sales context remains independent of intervening social turns; at most 12 sales questions/clarifications enter interpretation. Financial results never enter OpenAI requests.\nReading historical business answers enforces current capability permission as well as ownership. Runtime PostgreSQL credentials cannot create tables. Administrative migration credentials are removed from the API process before infrastructure imports.\nThe UI uses generated SDK operations, previous conversations, reload/continuation, explicit deletion and recovery of unknown acceptance with the original request UUID. Credentials/transcripts remain out of browser storage; only a light/dark preference is persisted there.\nProgress is emitted before actual routing, sales interpretation, Oracle execution and deterministic result organization. Social, unsupported and clarification paths do not emit an Oracle stage.\n"
-  },
-  {
-    "id": "repository/docs/project/corporate-agent-verification",
-    "title": "Corporate Agent Verification",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Local infrastructure and runtime findings",
-    "anchor": "local-infrastructure-and-runtime-findings",
-    "text": "Local infrastructure and runtime findings\n`pnpm db:local` provisioned PostgreSQL 16 at `127.0.0.1:55432`, applied the reviewed additive migration and restricted runtime grants, and updated only ignored local database settings. Existing OpenAI/Oracle settings were preserved. The named Docker volume retains application history. A Docker Desktop startup failure required moving its verified transient `run` directory to `run.recovery-20261001`; no Docker image/volume data was deleted.\nA cold real Oracle query exceeded the previous 30-second native round-trip limit (`NJS-123`) and correctly persisted a failed turn without a result. The limit is now 45 seconds, within the agent's 90-second overall deadline. There is no automatic retry. Historical native-client compatibility and fetch limitations remain documented in [PH-08](human-actions.md#ph-08).\n"
   }
 ]

@@ -537,6 +537,16 @@
       "file": "pages/repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.json"
     },
     {
+      "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+      "kind": "repository",
+      "title": "ADR-0021: License IA-MNS under Apache-2.0",
+      "group": "Decisions",
+      "source": "docs/adr/0021-license-ia-mns-under-apache-2-0.md",
+      "summary": "IA-MNS was derived from Orion, whose source is licensed under Apache-2.0 (ADR-0016). That decision explicitly left the license of independently created project code to each…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0021-license-ia-mns-under-apache-2-0.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -1192,7 +1202,7 @@
       "title": "IA-MNS",
       "group": "Project guides",
       "source": "README.md",
-      "summary": "IA-MNS is MNS's corporate AI agent, built on the Orion engineering foundation. It provides a Portuguese conversation workspace with persistent history and an explicit registry…",
+      "summary": "IA-MNS is MNS's corporate AI agent, built on the Orion engineering foundation. It provides a Portuguese conversation workspace with persistent history. Business capabilities…",
       "headings": [],
       "file": "pages/repository/README.json"
     }
@@ -1208,13 +1218,13 @@
       { "file": "search/0002.json", "count": 109, "kinds": ["repository"] },
       { "file": "search/0003.json", "count": 120, "kinds": ["repository"] },
       { "file": "search/0004.json", "count": 166, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 114, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 121, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 119, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 122, "kinds": ["repository"] },
       { "file": "search/0007.json", "count": 85, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 84, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 48, "kinds": ["repository"] }
+      { "file": "search/0008.json", "count": 81, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 57, "kinds": ["repository"] }
     ],
-    "count": 1031
+    "count": 1042
   }
 }

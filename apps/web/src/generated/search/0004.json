@@ -1476,21 +1476,21 @@
     "text": "References\n[Network testing procedure](../setup.md#phone-testing-on-the-local-network)\n[Authentication policy](../security/authentication.md)\n[Project plan](../project/implementation-plan.md)\n"
   },
   {
-    "id": "repository/docs/adr/AGENTS",
-    "title": "ADR Instructions",
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR Instructions",
-    "anchor": "adr-instructions",
-    "text": "ADR Instructions\nConsult the [decision index](README.md) and [authoring policy](authoring.md) before creating or changing an ADR.\nStart new proposals with the [template](template.md) and `proposed` status. Acceptance is distinct from implementation completion.\nPreserve accepted rationale, decisions, dates, and stable identifiers. Architectural changes require a new decision and explicit supersession, not rewritten history.\nRetain meaningful alternatives, negative consequences, constraints, and evidence. Do not invent evaluations to fill the template.\nUpdate current policy and reciprocal supersession references when an accepted architectural change requires them.\n"
+    "heading": "ADR-0021: License IA-MNS under Apache-2.0",
+    "anchor": "adr-0021-license-ia-mns-under-apache-20",
+    "text": "ADR-0021: License IA-MNS under Apache-2.0\n**Status:** accepted\n**Date:** 2026-10-03\n"
   },
   {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "Authoring Architecture Decision Records",
-    "anchor": "authoring-architecture-decision-records",
-    "text": "Authoring Architecture Decision Records\nUse the [decision index](README.md) to search existing decisions and the [template](template.md) to draft a record. ADRs preserve decision history and rationale; current policy describes current architecture. Git, migrations, changelogs, design documents, and runbooks retain their separate responsibilities.\n"
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nIA-MNS was derived from Orion, whose source is licensed under Apache-2.0 ([ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)). That decision explicitly left the license of independently created project code to each derived project. Since then, IA-MNS has added its corporate-agent and sales capabilities, documentation, and tooling as its own work. The repository is published at https://github.com/GabriellMDias/IA-MNS. Until this decision, project human action PH-06 tracked the license as undecided.\nOn 2026-10-03 the project owner decided that the repository stays public and that IA-MNS is licensed under the Apache License 2.0. This decision covers IA-MNS's repository source. It does not change third-party dependency rights, Orion's own license, or provenance.\n"
   }
 ]

@@ -1,5 +1,86 @@
 [
   {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Identities, privilege, and access request",
+    "anchor": "identities-privilege-and-access-request",
+    "text": "Identities, privilege, and access request\nUse attributable identities and distinguish humans from service, CI, and deployment actors. Shared human accounts and borrowing an automation identity undermine audit/revocation and should be avoided. Match authentication strength and any recent/step-up requirement to risk. Named cloud-console access must use narrow roles; provider root/owner accounts are break-glass capabilities, not routine accounts.\nSeparate observation, data read/write, deployment, infrastructure, IAM/security administration, and secret administration where practical. An actor who grants privileges need not hold every resource permission. Deploying must not imply viewing raw credentials. Prefer delegated use, workload identity, temporary credentials, or controlled tooling over secret disclosure. Scope by system, resource, operation, environment, time, and classification; add region/tenant scope only where needed.\nAn access request should identify actor, task/reason, target environment/resource, minimum capability, duration, related incident/work item, data classification, and whether safer telemetry/read-only tools suffice. Temporary access should expire automatically where supported; standing privilege needs operational justification, narrow scope, and review. Bounded sessions/idle timeouts reduce unattended access risk; concurrency/device/session-recording controls are requirement-driven, not mandated products.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Approval",
+    "anchor": "approval",
+    "text": "Approval\nHigher-risk capabilities may require stronger approval according to privilege, destructiveness, classification, and urgency. Read-only diagnostics and unrestricted administration do not need identical workflows. Avoid unrestricted self-approval for high-risk access where separation is practical; small teams may combine requester/approver/responder with compensating auditability, time limits, and controls.\nHonor explicit delegated authority and the actual operational approval mechanism. A runbook, repository access, or technical ability is not authorization. Security-sensitive access must fail closed if permission cannot be established; access-system outage does not justify an implicit bypass.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Break-glass access",
+    "anchor": "break-glass-access",
+    "text": "Break-glass access\nUse break-glass only for genuine emergencies when normal mechanisms are unavailable or insufficient. Additional normal workflow steps are not an emergency. Protect emergency identities/credentials according to the selected architecture and [secrets policy](secrets-management.md); ordinary notes, chat, Git, or unapproved stores are not acceptable credential locations.\nGrant only necessary privilege, make use visible promptly to appropriate operators where practical, preserve attribution/audit, limit duration, revoke afterward, and review every use. Record why it was needed, why normal access failed, scope/owner, affected credentials, notifications, and improvements. Offline emergency access requires an explicit strongly controlled design; do not fabricate one in an incident.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Investigation and operational tools",
+    "anchor": "investigation-and-operational-tools",
+    "text": "Investigation and operational tools\nPrefer metrics, logs, traces, error reports, safe diagnostics, and scoped read-only inspection before shells, writes, secret reveal, or administrators. Read-only still exposes confidential data and can exhaust CPU, memory, I/O, locks, or connections. Query tooling should enforce bounded results/timeouts, safe exports, and appropriate audit. Masked/field-limited views can reduce exposure; masking does not automatically declassify data. Sensitive search inputs must not be logged indiscriminately.\nPurpose-built tools should expose only required capabilities, such as safe status inspection or a bounded repair. Admin APIs require strong authentication, authorization, validation, bounds, and audit even on internal networks. Internal placement is defense in depth, not authority. Prefer reviewed repository-controlled infrastructure/configuration and deployment automation where they exist. Emergency manual changes must be reconciled back into the repository afterward.\nShell/container/filesystem access can expose mounted credentials, private data, and network capabilities; do not enable SSH out of habit or make it the first debugging step. Remote debuggers can pause or mutate production and expose memory; require explicit operational justification. Profilers need low-overhead design and access control. Memory/core dumps are highly sensitive artifacts and need reviewed, restricted handling.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Manual data changes",
+    "anchor": "manual-data-changes",
+    "text": "Manual data changes\nDirect production writes bypass validation, domain rules, authorization, audit, and delivery behavior. Prefer application-aware admin operations, reviewed repair scripts, controlled migrations, or reconciliation. Separate runtime, migration, human-read, and administrative database identities; elevated migration credentials must not become normal runtime credentials.\nA repair must identify the violated invariant, affected records, desired canonical state, why ordinary workflow is insufficient, required side effects, concurrency handling, idempotency, verification, failure handling, and real rollback or forward recovery. Significant/reusable scripts should live in the repository for review/testing; retain the exact significant one-off procedure in an appropriate script, incident record, migration, or runbook. Repair tooling must not become a permanent unrestricted admin interface.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Destructive operations",
+    "anchor": "destructive-operations",
+    "text": "Destructive operations\nDeletes, drops, truncation, queue purges, broad revocation, signing-key changes, and restores need authorization/confirmation proportionate to their concrete risk. Confirmation does not replace permission or review. Make the environment obvious and require explicit production selection; production must never be an implicit destructive-tooling default. Prefer read-only, dry-run, non-production, and bounded scope where practical.\nMeaningful dry runs should show affected scope, planned changes, and validation errors without mutation, but cannot guarantee unchanged concurrent state at execution. Batch operations need bounds, progress, pause/resume where supported, failure handling, and safe retry. Resolve uncertain outcomes by inspecting state. Verify actual final conditions and document when rollback is impossible or unsafe, with a forward-recovery path.\nBackups, replicas, analytics, search, caches, and queues remain production data. Restore can overwrite state and requires explicit authorization, compatibility checks, and [retention/deletion reconciliation](data-retention.md#backups-restore-and-deletion-replay). Avoid backup downloads to personal machines. Message replay must account for duplicates, stale data, current authorization, idempotency, and provider effects; blindly releasing a backlog can cause another incident.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Data extraction, support, and AI-executed production changes",
+    "anchor": "data-extraction-support-and-ai-executed-production-changes",
+    "text": "Data extraction, support, and AI-executed production changes\nSupport should use specialized limited capabilities, not general database/secret access. Impersonation must retain the real/effective actor, reason, duration, and audit record. Configuration and feature-flag changes are production mutations; security, billing, deletion, or critical-workflow flags may need stronger controls.\nAuthorize exports explicitly and minimize secure storage/delivery. Production dumps are not default local-development inputs. Screenshots, query results, diagnostic bundles, crash dumps, clipboard, chat, issues, and AI prompts create copies: use safe references or sanitized/synthetic representations. Any unavoidable local artifact needs limited scope, controlled storage, and explicit deletion under [retention policy](data-retention.md).\nAI access requires explicit delegated capability, least privilege, sanitized data, and attributable action where supported. Preserve human principal, agent identity, delegation, and operation. Correct code generation does not grant autonomous production write authority or a broad long-lived credential. Mutations require the same review, scope, preconditions, side-effect, retry, recovery, verification, and audit controls as human actions. Destructive actions require appropriate explicit human authorization under actual tooling; ambiguous context is not approval. Prefer integrations that keep raw secrets outside agent context.\nAutomation may act within explicitly authorized bounds when preconditions, safe failure behavior, and audit exist. It reduces repetitive risk rather than bypassing controls. Do not infer that temporary access should be removed solely because one command ended; follow its explicit grant/expiration lifecycle.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Audit, revocation, and incident handling",
+    "anchor": "audit-revocation-and-incident-handling",
+    "text": "Audit, revocation, and incident handling\nRecord who did what, to which resource, when, through which capability, and with what outcome without secrets. Audit access requests/approvals/grants/expiry/revocation and break-glass where supported. Significant manual changes should link to an appropriate incident, work item, change record, or PR. Audit integrity/retention must not depend on sampled debug logs. Session recordings themselves need classification, access, and retention controls.\nAccess must follow joiner/mover/leaver responsibilities, and support prompt revocation for compromise or role changes where practical. Groups should represent real duties; temporary groups should expire. Review whether standing permissions remain needed, not merely whether once approved. Monitor failed privileged access or unexpected escalation proportionately; routine authorized reads/accidental denials need not notify everyone.\nIncident urgency may justify scoped temporary elevation and shortened normal timing, but preserves identity, auditability, safety, and post-change reconciliation. [Incident response](incident-response.md) governs suspected misuse, evidence, session/credential revocation, and recovery. Emergency privileges and temporary artifacts must not become permanent through neglect.\n"
+  },
+  {
+    "id": "repository/docs/security/production-access",
+    "title": "Production Access",
+    "group": "Security",
+    "kind": "repository",
+    "heading": "Review checklist",
+    "anchor": "review-checklist",
+    "text": "Review checklist\nFor a role/tool/procedure, document real responsibility, owner, permitted/prohibited actions, scope/classification, human or machine identity, standing-versus-temporary justification, audit, expiration/revocation, and available safer paths. For production mutations, include preview, concurrency, side effects, idempotency, recovery, and verification. Add real provider-specific instructions only once infrastructure exists; policies and examples must never be mistaken for implemented access mechanisms.\n"
+  },
+  {
     "id": "repository/docs/security/secrets-management",
     "title": "Secrets Management",
     "group": "Security",
@@ -402,7 +483,7 @@
     "kind": "repository",
     "heading": "IA-MNS",
     "anchor": "ia-mns",
-    "text": "IA-MNS\nIA-MNS is MNS's corporate AI agent, built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. It provides a Portuguese conversation workspace with persistent history and an explicit registry of implemented capabilities. Its first business capability is controlled sales consultation in Sankhya. [Corporate agent](docs/domains/corporate-agent.md) owns the product direction; [sales semantics](docs/domains/sales-chat.md) retain the business guarantees.\n"
+    "text": "IA-MNS\nIA-MNS is MNS's corporate AI agent, built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. It provides a Portuguese conversation workspace with persistent history. Business capabilities plug into an explicit registry: the agent routes each request to an implemented capability and never presents planned ones as available. Sales consultation in Sankhya is the first and currently only business capability. [Corporate agent](docs/domains/corporate-agent.md) owns the product direction; [sales semantics](docs/domains/sales-chat.md) retain the business guarantees.\n"
   },
   {
     "id": "repository/README",
@@ -411,7 +492,7 @@
     "kind": "repository",
     "heading": "Current state",
     "anchor": "current-state",
-    "text": "Current state\nThis repository was initialized on 2026-10-01 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It retains the foundation's architecture, policies, tooling, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). It composes the corporate agent and sales modules, PostgreSQL conversation persistence, grounded social responses, actual execution progress, and light/dark themes. Existing deterministic sales results and read-only Oracle access remain in place. [Local setup](docs/setup.md#corporate-agent-and-local-postgresql) provisions Docker PostgreSQL and starts the application. Live OpenAI/Oracle interpretation and original-SQL reconciliation passed on 2026-10-01 using the existing owner-authorized key; [verification](docs/project/live-sales-verification.md) records the earlier provider repair. A dedicated SELECT-only Oracle account, unit confirmation and shared-deployment lifecycle/identity controls remain owner actions. No production authentication or new ERP domains/actions are implemented.\nThe [corporate agent verification](docs/project/corporate-agent-verification.md) records current real-provider, persistence and gate evidence. The [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\n"
+    "text": "Current state\nThis repository was initialized on 2026-10-01 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It retains the foundation's architecture, policies, tooling, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). It composes the corporate agent and sales modules, PostgreSQL conversation persistence, grounded social responses, actual execution progress, and light/dark themes. Existing deterministic sales results and read-only Oracle access remain in place. [Local setup](docs/setup.md#corporate-agent-and-local-postgresql) provisions Docker PostgreSQL and starts the application. Live OpenAI/Oracle interpretation and original-SQL reconciliation passed on 2026-10-01 using the existing owner-authorized key; [verification](docs/project/live-sales-verification.md) records the earlier provider repair. A dedicated SELECT-only Oracle account, unit confirmation and shared-deployment lifecycle/identity controls remain owner actions. No production authentication or new ERP domains/actions are implemented. The repository is published at https://github.com/GabriellMDias/IA-MNS. Its `main` branch requires pull requests and the `Orion required gate` check, Renovate is enabled, and the applicable GitHub security controls are on.\nThe [corporate agent verification](docs/project/corporate-agent-verification.md) records current real-provider, persistence and gate evidence. The [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\n"
   },
   {
     "id": "repository/README",
@@ -429,6 +510,6 @@
     "kind": "repository",
     "heading": "License",
     "anchor": "license",
-    "text": "License\nIA-MNS's product license has not been chosen; [PH-06](docs/project/human-actions.md#ph-06) tracks that decision. Material inherited from Orion remains available under the [Apache License 2.0](LICENSE).\n"
+    "text": "License\nIA-MNS is licensed under the [Apache License 2.0](LICENSE), which covers both the project's own work and the material inherited from Orion. [ADR-0021](docs/adr/0021-license-ia-mns-under-apache-2-0.md) records the decision. The repository is public. Never commit credentials, local configuration, or confidential business data.\n"
   }
 ]

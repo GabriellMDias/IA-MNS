@@ -1,0 +1,35 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0021-license-ia-mns-under-apache-2-0.md",
+  "title": "ADR-0021: License IA-MNS under Apache-2.0",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-03</p>\n<h2 id=\"context\">Context</h2>\n<p>IA-MNS was derived from Orion, whose source is licensed under Apache-2.0 (<a href=\"/docs/repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0\">ADR-0016</a>). That decision explicitly left the license of independently created project code to each derived project. Since then, IA-MNS has added its corporate-agent and sales capabilities, documentation, and tooling as its own work. The repository is published at https://github.com/GabriellMDias/IA-MNS. Until this decision, project human action PH-06 tracked the license as undecided.</p>\n<p>On 2026-10-03 the project owner decided that the repository stays public and that IA-MNS is licensed under the Apache License 2.0. This decision covers IA-MNS's repository source. It does not change third-party dependency rights, Orion's own license, or provenance.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Distribute the IA-MNS repository source, including material inherited from Orion and IA-MNS's own work, under the unmodified Apache License, Version 2.0. The root <code>LICENSE</code> file holds the canonical terms, and the root README states the decision. The repository remains public.</p>\n<p>Do not add package license metadata, a <code>NOTICE</code> file, or a copyright statement in this decision. Packages are private and unpublished, and the owner has not named a copyright holder. Any later change to the license or distribution model requires a new decision.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>The owner chose the license explicitly. Because the inherited Orion material already uses Apache-2.0, one license now covers the whole repository. Contributors and readers therefore do not need to tell foundation code from project code to know which terms apply, and Orion upgrades keep merging into a single-license tree. The root license file already contains the standard terms, so the decision needs no custom text.</p>\n<p>The repository is public, which means the code and documentation can be read by anyone and reused under these terms. Business rules, ERP table names, and verification evidence in the documentation are therefore public too. Credentials, local configuration, and real financial results stay out of the repository under the existing <a href=\"/docs/repository/docs/security/secrets-management\">secrets</a> and <a href=\"/docs/repository/docs/security/data-classification\">data classification</a> policies.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"keep-ia-mnss-own-work-under-a-different-or-proprietary-license\">Keep IA-MNS's own work under a different or proprietary license</h3>\n<p>The owner did not choose this. It would mean mixed licensing in one repository and does not fit the decision to keep the repository public.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>The repository has one clear, standard license that GitHub detects.</li>\n<li>Orion upgrades do not create licensing boundaries inside the tree.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Anyone may use, modify, and redistribute IA-MNS under Apache-2.0. Confidential business data must therefore never be committed, because publication cannot be undone by later changing the license.</li>\n<li>Redistributors must satisfy Apache-2.0 conditions. The license does not settle obligations of third-party dependencies. A dependency-license policy remains deferred under <a href=\"/docs/repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy#license-policy\">ADR-0011</a>.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>No application, manifest, package publication, or deployment change is required. A copyright notice can be added later if the owner names a holder.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"https://github.com/GabriellMDias/IA-MNS/blob/main/LICENSE\" rel=\"noreferrer noopener\">Canonical Apache-2.0 license</a></li>\n<li><a href=\"/docs/repository/README#license\">Repository README</a></li>\n<li><a href=\"/docs/repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0\">ADR-0016</a></li>\n<li><a href=\"/docs/repository/docs/project/human-actions#ph-06\">Project human action PH-06</a></li>\n<li><a href=\"/docs/repository/docs/project-derivation\">Project derivation</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0021-license-ia-mns-under-apache-20",
+      "text": "ADR-0021: License IA-MNS under Apache-2.0",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "keep-ia-mnss-own-work-under-a-different-or-proprietary-license",
+      "text": "Keep IA-MNS's own work under a different or proprietary license",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

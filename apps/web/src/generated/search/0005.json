@@ -1,5 +1,104 @@
 [
   {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nDistribute the IA-MNS repository source, including material inherited from Orion and IA-MNS's own work, under the unmodified Apache License, Version 2.0. The root `LICENSE` file holds the canonical terms, and the root README states the decision. The repository remains public.\nDo not add package license metadata, a `NOTICE` file, or a copyright statement in this decision. Packages are private and unpublished, and the owner has not named a copyright holder. Any later change to the license or distribution model requires a new decision.\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThe owner chose the license explicitly. Because the inherited Orion material already uses Apache-2.0, one license now covers the whole repository. Contributors and readers therefore do not need to tell foundation code from project code to know which terms apply, and Orion upgrades keep merging into a single-license tree. The root license file already contains the standard terms, so the decision needs no custom text.\nThe repository is public, which means the code and documentation can be read by anyone and reused under these terms. Business rules, ERP table names, and verification evidence in the documentation are therefore public too. Credentials, local configuration, and real financial results stay out of the repository under the existing [secrets](../security/secrets-management.md) and [data classification](../security/data-classification.md) policies.\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Keep IA-MNS's own work under a different or proprietary license",
+    "anchor": "keep-ia-mnss-own-work-under-a-different-or-proprietary-license",
+    "text": "Keep IA-MNS's own work under a different or proprietary license\nThe owner did not choose this. It would mean mixed licensing in one repository and does not fit the decision to keep the repository public.\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nThe repository has one clear, standard license that GitHub detects.\nOrion upgrades do not create licensing boundaries inside the tree.\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nAnyone may use, modify, and redistribute IA-MNS under Apache-2.0. Confidential business data must therefore never be committed, because publication cannot be undone by later changing the license.\nRedistributors must satisfy Apache-2.0 conditions. The license does not settle obligations of third-party dependencies. A dependency-license policy remains deferred under [ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#license-policy).\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo application, manifest, package publication, or deployment change is required. A copyright notice can be added later if the owner names a holder.\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Canonical Apache-2.0 license](../../LICENSE)\n[Repository README](../../README.md#license)\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\n[Project human action PH-06](../project/human-actions.md#ph-06)\n[Project derivation](../project-derivation.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/AGENTS",
+    "title": "ADR Instructions",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR Instructions",
+    "anchor": "adr-instructions",
+    "text": "ADR Instructions\nConsult the [decision index](README.md) and [authoring policy](authoring.md) before creating or changing an ADR.\nStart new proposals with the [template](template.md) and `proposed` status. Acceptance is distinct from implementation completion.\nPreserve accepted rationale, decisions, dates, and stable identifiers. Architectural changes require a new decision and explicit supersession, not rewritten history.\nRetain meaningful alternatives, negative consequences, constraints, and evidence. Do not invent evaluations to fill the template.\nUpdate current policy and reciprocal supersession references when an accepted architectural change requires them.\n"
+  },
+  {
+    "id": "repository/docs/adr/authoring",
+    "title": "Authoring Architecture Decision Records",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Authoring Architecture Decision Records",
+    "anchor": "authoring-architecture-decision-records",
+    "text": "Authoring Architecture Decision Records\nUse the [decision index](README.md) to search existing decisions and the [template](template.md) to draft a record. ADRs preserve decision history and rationale; current policy describes current architecture. Git, migrations, changelogs, design documents, and runbooks retain their separate responsibilities.\n"
+  },
+  {
     "id": "repository/docs/adr/authoring",
     "title": "Authoring Architecture Decision Records",
     "group": "Decisions",
@@ -69,7 +168,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n[ADR-0021](0021-license-ia-mns-under-apache-2-0.md)\nLicense IA-MNS under Apache-2.0\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -970,59 +1069,5 @@
     "heading": "Adding or Changing Dependencies",
     "anchor": "adding-or-changing-dependencies",
     "text": "Adding or Changing Dependencies\nBefore a new edge, identify its responsibility, canonical owner, public API, permitted direction, platform compatibility, cycle risk, and runtime/deployment coupling. Search existing capabilities before adding a new abstraction. If a legitimate need conflicts with the model, report and resolve that conflict explicitly.\nFor third-party libraries, follow [contributing guidance](../contributing.md#change-workflow) and assess maintenance, security, license, maturity, runtime/bundle cost, portability, testability, lock-in, and overlap. Declare directly used dependencies in the owning application/package; do not rely on undeclared transitives. Optional dependencies must represent genuinely optional capabilities. Dynamic imports, reflection, and plugins need real use cases and must not evade enforcement.\nCycles are forbidden by default. Resolve their ownership by moving a shared responsibility lower, merging one concept, or revising the boundary; do not hide them with lazy imports, global registration, duplicated interfaces, or initialization order. Remove intermediate layers that add no meaning. High fan-out warrants a responsibility review; high fan-in requires focused APIs, stability, careful compatibility, minimal dependencies, and strong tests. Neither metric alone decides correctness.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Mechanical Enforcement",
-    "anchor": "mechanical-enforcement",
-    "text": "Mechanical Enforcement\n`pnpm architecture` runs [dependency-cruiser configuration](../../.dependency-cruiser.mjs) locally and in `pnpm validate`/CI. It rejects cycles, unresolved imports, cross-application imports, package-to-application imports, runtime-to-tooling/infra imports, known client-to-server paths, Node built-ins in browser/SDK runtime, and configured domain-to-infrastructure paths. Type-aware [ESLint restrictions](../../eslint.config.mjs) also reject direct browser/SDK imports of known server infrastructure libraries. `pnpm architecture:test` exercises representative forbidden and permitted edges, including a flat `domain.ts` module and emitted-bundle exclusion.\nEnforcement is path-based, not a proof of every policy above. The domain rule covers named `domain/` directories and flat `domain.ts` modules but cannot infer all business ownership. Browser restrictions list known server libraries rather than every possible unsafe external dependency; the web build also has a [bundle check](../../apps/web/scripts/check-bundle.mjs). Public-surface restrictions, undeclared dependencies, data ownership, dynamic edges, and arbitrary platform leakage require review or additional targeted checks. Generated directories, emitted `dist/` bundles, and dependency internals are excluded from the import scan. Bundler chunk relationships are derived from the checked source graph and must not make architecture results depend on whether a build has already run.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Dependency Enforcement",
-    "anchor": "dependency-enforcement",
-    "text": "Dependency Enforcement\nExtend checks when real boundaries appear. Failures should identify the violating edge, rule, reason, and corrective route. Keep the same core checks available locally and in CI; do not silently weaken them to pass a change. When introducing stricter rules, measure existing violations, prevent new ones, migrate deliberately, remove exceptions, and make the rule fully blocking.\n"
-  },
-  {
-    "id": "repository/docs/architecture/dependency-rules",
-    "title": "Dependency Rules",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Temporary Exceptions",
-    "anchor": "temporary-exceptions",
-    "text": "Temporary Exceptions\nDocument a significant temporary exception's edge, reason, scope, risk, and removal condition; track it mechanically where practical. It must not become permanent silently. A permanent exception to a major dependency rule normally needs an ADR and corresponding policy/enforcement updates.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Error Handling",
-    "anchor": "error-handling",
-    "text": "Error Handling\n[Documentation index](../README.md) · [API error contract](../api/error-contract.md) · [Error reporting](../reliability/error-reporting.md)\nThis page owns failure semantics and translation between layers. [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) governs executable contracts and [ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) diagnostic signals. Separate what happened, what the caller may know, what the user sees, and what trusted diagnostics need.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Error Categories",
-    "anchor": "error-categories",
-    "text": "Error Categories\nCategory\nMeaning and handling\nValidation\nInput shape or constraints are invalid. Return stable, safe caller-actionable semantics; structured field details require a public schema.\nDomain\nA valid request violates a business rule/state. Describe business meaning rather than a database/provider failure.\nAuthentication\nIdentity cannot be established. Avoid unnecessary credential/account-existence disclosure.\nAuthorization\nAn actor lacks permission. Enforce at the trusted boundary and avoid exposing protected resource information.\nNot found\nA resource cannot be resolved. Security policy may require indistinguishable not-found/denied behavior.\nConflict\nState, uniqueness, idempotency, or concurrent version prevents the action. Map to the intended business condition.\nRate limit\nA threshold is exceeded. Expose useful retry guidance where safe without revealing anti-abuse internals.\nExternal dependency/infrastructure\nA provider, database, queue, filesystem, network, or runtime fails. Translate at its boundary according to operation semantics.\nUnexpected internal\nA defect, broken invariant, unmodeled response, or unexpected dependency failure. Capture once, correlate, and return a safe generic result.\nThese categories classify meaning, not guaranteed retry safety or operational severity. The same provider can produce a business rejection, transient outage, or internal credential/configuration incident.\n"
-  },
-  {
-    "id": "repository/docs/architecture/error-handling",
-    "title": "Error Handling",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Expected vs Unexpected Failures",
-    "anchor": "expected-vs-unexpected-failures",
-    "text": "Expected vs Unexpected Failures\nExpected failures are modeled outcomes such as invalid input, missing access, or an invalid transition. They should not automatically receive the severity/alerting of an unexpected exception. Unexpected failures need diagnostic telemetry and, when the operating environment supplies it, centralized error reporting.\nCatch only where the boundary can recover, translate, enrich, retry safely, compensate, or report. Otherwise propagate to its owner. Never turn every failure into “not found,” swallow exceptions as `null`, or claim success when a required effect failed. Assertions detect impossible internal states; they do not replace validation of external input.\n"
   }
 ]
