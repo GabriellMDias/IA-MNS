@@ -10,6 +10,11 @@ const safeTypes = new Set([
   "SyntaxError",
   "ReferenceError",
   "AuthenticationUnavailableError",
+  "APIError",
+  "AuthenticationError",
+  "PermissionDeniedError",
+  "RateLimitError",
+  "NotFoundError",
 ]);
 const safeCodes = new Set([
   "ECONNREFUSED",
@@ -21,6 +26,10 @@ const safeCodes = new Set([
   "ERR_JWKS_TIMEOUT",
   "ERR_JWKS_INVALID",
   "ERR_JWK_INVALID",
+  "invalid_api_key",
+  "insufficient_quota",
+  "model_not_found",
+  "rate_limit_exceeded",
 ]);
 
 type SafeDiagnostic = {
@@ -37,7 +46,16 @@ export function errorDiagnostics(error: unknown): { causes: SafeDiagnostic[] } {
   let current = error;
   while (current instanceof Error && !seen.has(current) && causes.length < 4) {
     seen.add(current);
-    const code = "code" in current ? current.code : undefined;
+    const candidate = "code" in current ? current.code : undefined;
+    const oracleCode =
+      typeof candidate === "string"
+        ? candidate.match(/^(?:ORA-\d{5}|NJS-\d{3}|DPI-\d{4})$/)?.[0]
+        : current.message.match(/^(ORA-\d{5}|NJS-\d{3}|DPI-\d{4}):/)?.[1];
+    const code =
+      oracleCode ??
+      (typeof candidate === "string" && safeCodes.has(candidate)
+        ? candidate
+        : undefined);
     const frames: SafeDiagnostic["frames"] = [];
     for (const line of (current.stack ?? "").split("\n").slice(1, 40)) {
       const match = line.match(
@@ -65,7 +83,7 @@ export function errorDiagnostics(error: unknown): { causes: SafeDiagnostic[] } {
     }
     causes.push({
       type: safeTypes.has(current.name) ? current.name : "UnhandledError",
-      ...(typeof code === "string" && safeCodes.has(code) ? { code } : {}),
+      ...(code ? { code } : {}),
       frames,
     });
     current = current.cause;

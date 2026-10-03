@@ -20,3 +20,13 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `ORION_TOKEN_ISSUER` | issuer URL | no | — | server | INTERNAL | no | Expected access-token issuer; configure with audience and JWKS URL to enable bearer authentication. |
 | `ORION_TOKEN_AUDIENCE` | nonempty string | no | — | server | INTERNAL | no | Expected API access-token audience. |
 | `ORION_TOKEN_JWKS_URL` | http(s) URL | no | — | server | INTERNAL | no | Trusted issuer public-key endpoint. |
+| `OPENAI_API_KEY` | nonempty string | no | — | server | RESTRICTED | yes | Dedicated IA-MNS project key; required for agent routing and capability interpretation. |
+| `OPENAI_MODEL` | model identifier | no | `gpt-6.1-sol` | server | INTERNAL | no | Responses API model supporting strict function calling. |
+| `SANKHYA_DB_USER` | nonempty string | no | — | server | RESTRICTED | yes | Oracle account with CREATE SESSION and only SELECT grants on the sales reference tables. |
+| `SANKHYA_DB_PASSWORD` | nonempty string | no | — | server | RESTRICTED | yes | Restricted Oracle account password; configure with user and connect string. |
+| `SANKHYA_DB_CONNECT_STRING` | Oracle connect descriptor | no | — | server | RESTRICTED | yes | Oracle Easy Connect or full descriptor, without embedded credentials. |
+| `SANKHYA_ORACLE_CLIENT_LIB_DIR` | local directory | no | — | server | INTERNAL | no | Optional Oracle Client 19+ library directory; enables Thick mode when needed. |
+| `IA_MNS_LOCAL_ACCESS` | true \| false | no | `false` | server | INTERNAL | no | Explicit local development access; forbidden in production or on a non-loopback listener. |
+| `IA_MNS_DEV_ACCESS_TOKEN` | 64 lowercase hexadecimal characters | no | — | server | RESTRICTED | yes | Temporary bearer for an owner-controlled LAN test; non-production loopback API only, paired with origin and expiration. Never browser configuration. |
+| `IA_MNS_DEV_ACCESS_ORIGIN` | private IPv4 HTTP origin | no | — | server | INTERNAL | no | Exact browser origin for the temporary LAN test; no credentials, path or wildcard. |
+| `IA_MNS_DEV_ACCESS_EXPIRES_AT` | Unix timestamp in seconds | no | — | server | INTERNAL | no | Absolute temporary bearer expiry; at most two hours after startup. Checked on every request, not renewed. |

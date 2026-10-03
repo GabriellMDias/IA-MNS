@@ -1,4 +1,5 @@
 {
+  "featureMetadata": ["apps/web/src/features/sales/components.docs.json"],
   "components": [
     {
       "name": "ErrorNotice",

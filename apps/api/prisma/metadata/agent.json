@@ -1,0 +1,143 @@
+{
+  "tables": {
+    "agent_conversations": {
+      "owner": "agent",
+      "classification": "CONFIDENTIAL",
+      "description": "Actor-owned corporate agent conversation with capability-specific validated context and a bounded execution lease.",
+      "lifecycle": "Local history persists until the owner explicitly deletes the conversation. Conversation deletion cascades to turns and contexts. No automatic expiry is implemented; shared deployment requires an owner-defined retention/backups/provider policy before rollout. No vector, export or replica copies are created by the application.",
+      "columns": {
+        "id": {
+          "description": "Public immutable UUID; never authorization.",
+          "classification": "CONFIDENTIAL"
+        },
+        "owner": {
+          "description": "Authenticated principal id or explicit loopback developer identity.",
+          "classification": "CONFIDENTIAL"
+        },
+        "title": {
+          "description": "Owner-editable bounded title, initially derived from the first question; never model instructions.",
+          "classification": "CONFIDENTIAL"
+        },
+        "version": {
+          "description": "Monotonically allocated turn sequence; advanced under a row lock.",
+          "classification": "CONFIDENTIAL"
+        },
+        "contexts": {
+          "description": "Versioned capability contexts keyed by capability id. Sales stores its last validated query and bounded sales questions/clarifications, never financial result prose. No secret credentials.",
+          "classification": "CONFIDENTIAL"
+        },
+        "active_turn_id": {
+          "description": "Current execution lease holder; absence means no active execution.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Absent in the lifecycle states described in the field meaning."
+        },
+        "lease_until": {
+          "description": "Database-clock lease expiry, 120 seconds after acceptance; absent when inactive.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Absent in the lifecycle states described in the field meaning."
+        },
+        "created_at": {
+          "description": "Database-clock creation instant.",
+          "classification": "CONFIDENTIAL"
+        },
+        "updated_at": {
+          "description": "Database-clock last turn or organization change; list ordering, not an audit trail.",
+          "classification": "CONFIDENTIAL"
+        },
+        "title_manual": {
+          "description": "Owner explicitly named this conversation; automatic first-turn naming must not replace it.",
+          "classification": "CONFIDENTIAL"
+        },
+        "pinned": {
+          "description": "Owner favorite retained across archive/restore; archived favorites are excluded from the active pinned list.",
+          "classification": "CONFIDENTIAL"
+        },
+        "archived": {
+          "description": "Hidden from active history without deleting turns or context. Restore before accepting new turns.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "agent_conversations_pkey": "Immutable conversation identity.",
+        "agent_conversations_version_check": "Nonnegative turn allocation.",
+        "agent_conversations_lease_check": "Lease holder and expiry exist together.",
+        "agent_conversations_contexts_check": "Capability context must be a JSON object.",
+        "agent_conversations_owner_check": "Ownership is required.",
+        "agent_conversations_owner_updated_idx": "Bounded owner-scoped keyset history listing.",
+        "agent_conversations_history_idx": "Owner-scoped active/archive and favorite-first keyset listing."
+      }
+    },
+    "agent_turns": {
+      "owner": "agent",
+      "classification": "CONFIDENTIAL",
+      "description": "One user message and its execution lifecycle, real progress, and versioned assistant outcome. Failed/interrupted turns retain no fabricated answer.",
+      "lifecycle": "Local history persists until the owner explicitly deletes the conversation. Conversation deletion cascades to turns and contexts. No automatic expiry is implemented; shared deployment requires an owner-defined retention/backups/provider policy before rollout. No vector, export or replica copies are created by the application.",
+      "columns": {
+        "id": {
+          "description": "Immutable turn UUID.",
+          "classification": "CONFIDENTIAL"
+        },
+        "conversation_id": {
+          "description": "Owning conversation; hard deletion cascades to all turns.",
+          "classification": "CONFIDENTIAL"
+        },
+        "sequence": {
+          "description": "Positive conversation-local ordering allocated transactionally.",
+          "classification": "CONFIDENTIAL"
+        },
+        "request_id": {
+          "description": "Client UUID for idempotent acceptance replay; same id with different message is a conflict.",
+          "classification": "CONFIDENTIAL"
+        },
+        "state": {
+          "description": "running, completed, failed or interrupted. Interrupted work is not automatically retried.",
+          "classification": "CONFIDENTIAL"
+        },
+        "question": {
+          "description": "Bounded confidential user message; never logged.",
+          "classification": "CONFIDENTIAL"
+        },
+        "reply": {
+          "description": "Version 1 envelope containing application-authored reply and bounded result snapshot. Not current ERP truth and never sent back to OpenAI as financial data.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Absent in the lifecycle states described in the field meaning."
+        },
+        "events": {
+          "description": "Bounded ordered real progress events with stage, localized display message and instant; not durable workflow/audit infrastructure.",
+          "classification": "CONFIDENTIAL"
+        },
+        "capability_id": {
+          "description": "Executed capability for a completed business reply; absent for social/failure turns.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Absent in the lifecycle states described in the field meaning."
+        },
+        "failure_code": {
+          "description": "Allowlisted public failure code; absent unless failed/interrupted. No exception text.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Absent in the lifecycle states described in the field meaning."
+        },
+        "created_at": {
+          "description": "Database-clock acceptance instant.",
+          "classification": "CONFIDENTIAL"
+        },
+        "finished_at": {
+          "description": "Database-clock terminal outcome instant; absent while running.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Absent in the lifecycle states described in the field meaning."
+        }
+      },
+      "objects": {
+        "agent_turns_pkey": "Immutable turn identity.",
+        "agent_turns_conversation_id_fkey": "Conversation ownership/lifecycle referential integrity; cascade on hard deletion.",
+        "agent_turns_sequence_check": "Positive order.",
+        "agent_turns_question_check": "Nonblank user message.",
+        "agent_turns_events_check": "Progress is an array.",
+        "agent_turns_state_check": "Explicit supported lifecycle states.",
+        "agent_turns_outcome_check": "Terminal reply/failure and timestamp agree with lifecycle state.",
+        "agent_turns_conversation_sequence_key": "One turn per allocated sequence.",
+        "agent_turns_conversation_request_key": "One acceptance per client request id in a conversation."
+      }
+    }
+  },
+  "enums": {}
+}

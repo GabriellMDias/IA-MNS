@@ -1,0 +1,106 @@
+{
+  "kind": "api",
+  "operationId": "getAgentStatus",
+  "summary": "",
+  "description": "Agent availability and implemented capability catalog. No credentials or conversation data.",
+  "security": [],
+  "components": {},
+  "method": "GET",
+  "path": "/agent/status",
+  "tags": ["Agent"],
+  "authentication": "None declared",
+  "parameters": [],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["configured", "accessMode", "capabilities"],
+            "properties": {
+              "configured": { "type": "boolean" },
+              "accessMode": {
+                "anyOf": [
+                  { "type": "string", "const": "local" },
+                  { "type": "string", "const": "token" },
+                  { "type": "string", "const": "unavailable" }
+                ]
+              },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "title", "description", "examples"],
+                  "properties": {
+                    "id": { "type": "string" },
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "examples": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["configured", "accessMode", "capabilities"],
+        "properties": {
+          "configured": { "type": "boolean" },
+          "accessMode": {
+            "anyOf": [
+              { "type": "string", "const": "local" },
+              { "type": "string", "const": "token" },
+              { "type": "string", "const": "unavailable" }
+            ]
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "title", "description", "examples"],
+              "properties": {
+                "id": { "type": "string" },
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "examples": { "type": "array", "items": { "type": "string" } }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "configured", "type": "boolean", "required": true },
+        {
+          "name": "accessMode",
+          "type": "\"local\" | \"token\" | \"unavailable\"",
+          "required": true
+        },
+        { "name": "capabilities", "type": "array of object", "required": true },
+        { "name": "capabilities[].id", "type": "string", "required": true },
+        { "name": "capabilities[].title", "type": "string", "required": true },
+        {
+          "name": "capabilities[].description",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "capabilities[].examples",
+          "type": "array of string",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

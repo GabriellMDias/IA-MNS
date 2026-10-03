@@ -1,0 +1,904 @@
+{
+  "kind": "api",
+  "operationId": "askSalesQuestion",
+  "summary": "",
+  "description": "Interprets a Portuguese sales question and executes a fixed read-only sales query. Context is actor-owned, in memory, expires after 30 minutes idle and is limited to 12 questions. Local development access is explicitly restricted to loopback. Requires sales:read otherwise.",
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "method": "POST",
+  "path": "/sales/chat",
+  "tags": ["Sales"],
+  "authentication": "Bearer access token",
+  "parameters": [],
+  "request": {
+    "required": true,
+    "description": "",
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "required": ["message"],
+          "properties": {
+            "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+            "conversationId": { "type": "string", "format": "uuid" }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "required": ["message"],
+      "properties": {
+        "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "conversationId": { "type": "string", "format": "uuid" }
+      },
+      "additionalProperties": false
+    },
+    "fields": [
+      {
+        "name": "message",
+        "type": "string (min length 1, max length 2000)",
+        "required": true
+      },
+      { "name": "conversationId", "type": "string (uuid)", "required": false }
+    ]
+  },
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": [
+              "conversationId",
+              "kind",
+              "message",
+              "result",
+              "suggestions"
+            ],
+            "properties": {
+              "conversationId": { "type": "string", "format": "uuid" },
+              "kind": {
+                "anyOf": [
+                  { "type": "string", "const": "answer" },
+                  { "type": "string", "const": "clarification" },
+                  { "type": "string", "const": "unsupported" }
+                ]
+              },
+              "message": { "type": "string" },
+              "result": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "query",
+                      "rows",
+                      "products",
+                      "totals",
+                      "comparison",
+                      "warnings"
+                    ],
+                    "properties": {
+                      "query": {
+                        "type": "object",
+                        "required": [
+                          "productSearch",
+                          "startDate",
+                          "endDate",
+                          "metric",
+                          "groupBy",
+                          "comparison"
+                        ],
+                        "properties": {
+                          "productSearch": {
+                            "anyOf": [{ "type": "string" }, { "type": "null" }]
+                          },
+                          "startDate": { "type": "string" },
+                          "endDate": { "type": "string" },
+                          "metric": {
+                            "anyOf": [
+                              { "type": "string", "const": "net_value" },
+                              { "type": "string", "const": "quantity" },
+                              { "type": "string", "const": "weight" }
+                            ]
+                          },
+                          "groupBy": {
+                            "anyOf": [
+                              { "type": "string", "const": "month" },
+                              { "type": "string", "const": "product" },
+                              { "type": "string", "const": "total" }
+                            ]
+                          },
+                          "comparison": {
+                            "anyOf": [
+                              { "type": "string", "const": "none" },
+                              { "type": "string", "const": "previous_year" },
+                              { "type": "string", "const": "previous_period" }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "rows": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["period", "product", "unit", "value"],
+                          "properties": {
+                            "period": { "type": "string" },
+                            "product": {
+                              "anyOf": [
+                                { "type": "string" },
+                                { "type": "null" }
+                              ]
+                            },
+                            "unit": { "type": "string" },
+                            "value": { "type": "string" }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "products": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["code", "description"],
+                          "properties": {
+                            "code": { "type": "string" },
+                            "description": { "type": "string" }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "totals": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "unit",
+                            "value",
+                            "previousValue",
+                            "changePercent"
+                          ],
+                          "properties": {
+                            "unit": { "type": "string" },
+                            "value": { "type": "string" },
+                            "previousValue": {
+                              "anyOf": [
+                                { "type": "string" },
+                                { "type": "null" }
+                              ]
+                            },
+                            "changePercent": {
+                              "anyOf": [
+                                { "type": "string" },
+                                { "type": "null" }
+                              ]
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "comparison": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": ["startDate", "endDate", "rows"],
+                            "properties": {
+                              "startDate": { "type": "string" },
+                              "endDate": { "type": "string" },
+                              "rows": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "period",
+                                    "product",
+                                    "unit",
+                                    "value"
+                                  ],
+                                  "properties": {
+                                    "period": { "type": "string" },
+                                    "product": {
+                                      "anyOf": [
+                                        { "type": "string" },
+                                        { "type": "null" }
+                                      ]
+                                    },
+                                    "unit": { "type": "string" },
+                                    "value": { "type": "string" }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          { "type": "null" }
+                        ]
+                      },
+                      "warnings": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "suggestions": {
+                "type": "array",
+                "items": { "type": "string" },
+                "maxItems": 3
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": [
+          "conversationId",
+          "kind",
+          "message",
+          "result",
+          "suggestions"
+        ],
+        "properties": {
+          "conversationId": { "type": "string", "format": "uuid" },
+          "kind": {
+            "anyOf": [
+              { "type": "string", "const": "answer" },
+              { "type": "string", "const": "clarification" },
+              { "type": "string", "const": "unsupported" }
+            ]
+          },
+          "message": { "type": "string" },
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "query",
+                  "rows",
+                  "products",
+                  "totals",
+                  "comparison",
+                  "warnings"
+                ],
+                "properties": {
+                  "query": {
+                    "type": "object",
+                    "required": [
+                      "productSearch",
+                      "startDate",
+                      "endDate",
+                      "metric",
+                      "groupBy",
+                      "comparison"
+                    ],
+                    "properties": {
+                      "productSearch": {
+                        "anyOf": [{ "type": "string" }, { "type": "null" }]
+                      },
+                      "startDate": { "type": "string" },
+                      "endDate": { "type": "string" },
+                      "metric": {
+                        "anyOf": [
+                          { "type": "string", "const": "net_value" },
+                          { "type": "string", "const": "quantity" },
+                          { "type": "string", "const": "weight" }
+                        ]
+                      },
+                      "groupBy": {
+                        "anyOf": [
+                          { "type": "string", "const": "month" },
+                          { "type": "string", "const": "product" },
+                          { "type": "string", "const": "total" }
+                        ]
+                      },
+                      "comparison": {
+                        "anyOf": [
+                          { "type": "string", "const": "none" },
+                          { "type": "string", "const": "previous_year" },
+                          { "type": "string", "const": "previous_period" }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["period", "product", "unit", "value"],
+                      "properties": {
+                        "period": { "type": "string" },
+                        "product": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        },
+                        "unit": { "type": "string" },
+                        "value": { "type": "string" }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "products": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["code", "description"],
+                      "properties": {
+                        "code": { "type": "string" },
+                        "description": { "type": "string" }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "totals": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "unit",
+                        "value",
+                        "previousValue",
+                        "changePercent"
+                      ],
+                      "properties": {
+                        "unit": { "type": "string" },
+                        "value": { "type": "string" },
+                        "previousValue": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        },
+                        "changePercent": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "comparison": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": ["startDate", "endDate", "rows"],
+                        "properties": {
+                          "startDate": { "type": "string" },
+                          "endDate": { "type": "string" },
+                          "rows": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "period",
+                                "product",
+                                "unit",
+                                "value"
+                              ],
+                              "properties": {
+                                "period": { "type": "string" },
+                                "product": {
+                                  "anyOf": [
+                                    { "type": "string" },
+                                    { "type": "null" }
+                                  ]
+                                },
+                                "unit": { "type": "string" },
+                                "value": { "type": "string" }
+                              },
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      { "type": "null" }
+                    ]
+                  },
+                  "warnings": { "type": "array", "items": { "type": "string" } }
+                },
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ]
+          },
+          "suggestions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 3
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "conversationId", "type": "string (uuid)", "required": true },
+        {
+          "name": "kind",
+          "type": "\"answer\" | \"clarification\" | \"unsupported\"",
+          "required": true
+        },
+        { "name": "message", "type": "string", "required": true },
+        { "name": "result", "type": "object | null", "required": true },
+        { "name": "suggestions", "type": "array of string", "required": true }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "410",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

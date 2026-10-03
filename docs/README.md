@@ -15,6 +15,7 @@ Choose the route relevant to the change, then use the policy's headings and sour
 
 | Task | Authoritative policy |
 | --- | --- |
+| Understand IA-MNS as a corporate agent and extend its capability registry | [Corporate agent](domains/corporate-agent.md), [sales capability](domains/sales-chat.md) |
 | Execute or track implementation work | The implementation plan linked from the README's [Current state](../README.md#current-state) |
 | Start a new project from Orion, check its provenance, or upgrade its Orion baseline | [Start and upgrade a project from Orion](project-derivation.md) |
 | Name a stable Orion foundation release or assess derived-project compatibility | [Foundation versioning](versioning.md) |

@@ -1,0 +1,1229 @@
+{
+  "kind": "api",
+  "operationId": "getAgentConversation",
+  "summary": "",
+  "description": "Read up to 40 turns, including actual progress and stored outcomes. beforeSequence retrieves older turns. Expired execution leases become interrupted and are never automatically rerun.",
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "method": "GET",
+  "path": "/agent/conversations/{conversationId}",
+  "tags": ["Agent"],
+  "authentication": "Bearer access token",
+  "parameters": [
+    {
+      "name": "conversationId",
+      "in": "path",
+      "required": true,
+      "schema": { "type": "string", "format": "uuid" },
+      "type": "string (uuid)",
+      "description": ""
+    },
+    {
+      "name": "beforeSequence",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "integer", "minimum": 1 },
+      "type": "integer (minimum 1)",
+      "description": ""
+    }
+  ],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["conversation", "turns", "olderThan"],
+            "properties": {
+              "conversation": {
+                "type": "object",
+                "required": ["id", "title", "pinned", "archived", "updatedAt"],
+                "properties": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "title": { "type": "string" },
+                  "pinned": { "type": "boolean" },
+                  "archived": { "type": "boolean" },
+                  "updatedAt": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": false
+              },
+              "turns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "requestId",
+                    "sequence",
+                    "question",
+                    "state",
+                    "reply",
+                    "events",
+                    "failureCode",
+                    "createdAt",
+                    "finishedAt"
+                  ],
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "requestId": { "type": "string", "format": "uuid" },
+                    "sequence": { "type": "integer", "minimum": 1 },
+                    "question": { "type": "string" },
+                    "state": {
+                      "anyOf": [
+                        { "type": "string", "const": "running" },
+                        { "type": "string", "const": "completed" },
+                        { "type": "string", "const": "failed" },
+                        { "type": "string", "const": "interrupted" }
+                      ]
+                    },
+                    "reply": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "message",
+                            "capabilityId",
+                            "result",
+                            "suggestions"
+                          ],
+                          "properties": {
+                            "kind": {
+                              "anyOf": [
+                                { "type": "string", "const": "conversation" },
+                                { "type": "string", "const": "answer" },
+                                { "type": "string", "const": "clarification" },
+                                { "type": "string", "const": "unavailable" }
+                              ]
+                            },
+                            "message": { "type": "string", "maxLength": 10000 },
+                            "capabilityId": {
+                              "anyOf": [
+                                { "type": "string" },
+                                { "type": "null" }
+                              ]
+                            },
+                            "result": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "required": [
+                                    "query",
+                                    "rows",
+                                    "products",
+                                    "totals",
+                                    "comparison",
+                                    "warnings"
+                                  ],
+                                  "properties": {
+                                    "query": {
+                                      "type": "object",
+                                      "required": [
+                                        "productSearch",
+                                        "startDate",
+                                        "endDate",
+                                        "metric",
+                                        "groupBy",
+                                        "comparison"
+                                      ],
+                                      "properties": {
+                                        "productSearch": {
+                                          "anyOf": [
+                                            { "type": "string" },
+                                            { "type": "null" }
+                                          ]
+                                        },
+                                        "startDate": { "type": "string" },
+                                        "endDate": { "type": "string" },
+                                        "metric": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "const": "net_value"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "quantity"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "weight"
+                                            }
+                                          ]
+                                        },
+                                        "groupBy": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "const": "month"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "product"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "total"
+                                            }
+                                          ]
+                                        },
+                                        "comparison": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "const": "none"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "previous_year"
+                                            },
+                                            {
+                                              "type": "string",
+                                              "const": "previous_period"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    "rows": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "period",
+                                          "product",
+                                          "unit",
+                                          "value"
+                                        ],
+                                        "properties": {
+                                          "period": { "type": "string" },
+                                          "product": {
+                                            "anyOf": [
+                                              { "type": "string" },
+                                              { "type": "null" }
+                                            ]
+                                          },
+                                          "unit": { "type": "string" },
+                                          "value": { "type": "string" }
+                                        },
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "products": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": ["code", "description"],
+                                        "properties": {
+                                          "code": { "type": "string" },
+                                          "description": { "type": "string" }
+                                        },
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "totals": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "unit",
+                                          "value",
+                                          "previousValue",
+                                          "changePercent"
+                                        ],
+                                        "properties": {
+                                          "unit": { "type": "string" },
+                                          "value": { "type": "string" },
+                                          "previousValue": {
+                                            "anyOf": [
+                                              { "type": "string" },
+                                              { "type": "null" }
+                                            ]
+                                          },
+                                          "changePercent": {
+                                            "anyOf": [
+                                              { "type": "string" },
+                                              { "type": "null" }
+                                            ]
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "comparison": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "required": [
+                                            "startDate",
+                                            "endDate",
+                                            "rows"
+                                          ],
+                                          "properties": {
+                                            "startDate": { "type": "string" },
+                                            "endDate": { "type": "string" },
+                                            "rows": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "required": [
+                                                  "period",
+                                                  "product",
+                                                  "unit",
+                                                  "value"
+                                                ],
+                                                "properties": {
+                                                  "period": {
+                                                    "type": "string"
+                                                  },
+                                                  "product": {
+                                                    "anyOf": [
+                                                      { "type": "string" },
+                                                      { "type": "null" }
+                                                    ]
+                                                  },
+                                                  "unit": { "type": "string" },
+                                                  "value": { "type": "string" }
+                                                },
+                                                "additionalProperties": false
+                                              }
+                                            }
+                                          },
+                                          "additionalProperties": false
+                                        },
+                                        { "type": "null" }
+                                      ]
+                                    },
+                                    "warnings": {
+                                      "type": "array",
+                                      "items": { "type": "string" }
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                },
+                                { "type": "null" }
+                              ]
+                            },
+                            "suggestions": {
+                              "type": "array",
+                              "items": { "type": "string", "maxLength": 2000 },
+                              "maxItems": 3
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["stage", "message", "at"],
+                        "properties": {
+                          "stage": {
+                            "anyOf": [
+                              { "type": "string", "const": "thinking" },
+                              {
+                                "type": "string",
+                                "const": "interpreting_sales"
+                              },
+                              { "type": "string", "const": "querying_sales" },
+                              { "type": "string", "const": "organizing" }
+                            ]
+                          },
+                          "message": { "type": "string" },
+                          "at": { "type": "string", "format": "date-time" }
+                        },
+                        "additionalProperties": false
+                      },
+                      "maxItems": 20
+                    },
+                    "failureCode": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "finishedAt": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 40
+              },
+              "olderThan": {
+                "anyOf": [
+                  { "type": "integer", "minimum": 1 },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["conversation", "turns", "olderThan"],
+        "properties": {
+          "conversation": {
+            "type": "object",
+            "required": ["id", "title", "pinned", "archived", "updatedAt"],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "title": { "type": "string" },
+              "pinned": { "type": "boolean" },
+              "archived": { "type": "boolean" },
+              "updatedAt": { "type": "string", "format": "date-time" }
+            },
+            "additionalProperties": false
+          },
+          "turns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "requestId",
+                "sequence",
+                "question",
+                "state",
+                "reply",
+                "events",
+                "failureCode",
+                "createdAt",
+                "finishedAt"
+              ],
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "requestId": { "type": "string", "format": "uuid" },
+                "sequence": { "type": "integer", "minimum": 1 },
+                "question": { "type": "string" },
+                "state": {
+                  "anyOf": [
+                    { "type": "string", "const": "running" },
+                    { "type": "string", "const": "completed" },
+                    { "type": "string", "const": "failed" },
+                    { "type": "string", "const": "interrupted" }
+                  ]
+                },
+                "reply": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "message",
+                        "capabilityId",
+                        "result",
+                        "suggestions"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "anyOf": [
+                            { "type": "string", "const": "conversation" },
+                            { "type": "string", "const": "answer" },
+                            { "type": "string", "const": "clarification" },
+                            { "type": "string", "const": "unavailable" }
+                          ]
+                        },
+                        "message": { "type": "string", "maxLength": 10000 },
+                        "capabilityId": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        },
+                        "result": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "query",
+                                "rows",
+                                "products",
+                                "totals",
+                                "comparison",
+                                "warnings"
+                              ],
+                              "properties": {
+                                "query": {
+                                  "type": "object",
+                                  "required": [
+                                    "productSearch",
+                                    "startDate",
+                                    "endDate",
+                                    "metric",
+                                    "groupBy",
+                                    "comparison"
+                                  ],
+                                  "properties": {
+                                    "productSearch": {
+                                      "anyOf": [
+                                        { "type": "string" },
+                                        { "type": "null" }
+                                      ]
+                                    },
+                                    "startDate": { "type": "string" },
+                                    "endDate": { "type": "string" },
+                                    "metric": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "const": "net_value"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "quantity"
+                                        },
+                                        { "type": "string", "const": "weight" }
+                                      ]
+                                    },
+                                    "groupBy": {
+                                      "anyOf": [
+                                        { "type": "string", "const": "month" },
+                                        {
+                                          "type": "string",
+                                          "const": "product"
+                                        },
+                                        { "type": "string", "const": "total" }
+                                      ]
+                                    },
+                                    "comparison": {
+                                      "anyOf": [
+                                        { "type": "string", "const": "none" },
+                                        {
+                                          "type": "string",
+                                          "const": "previous_year"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "previous_period"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                },
+                                "rows": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "period",
+                                      "product",
+                                      "unit",
+                                      "value"
+                                    ],
+                                    "properties": {
+                                      "period": { "type": "string" },
+                                      "product": {
+                                        "anyOf": [
+                                          { "type": "string" },
+                                          { "type": "null" }
+                                        ]
+                                      },
+                                      "unit": { "type": "string" },
+                                      "value": { "type": "string" }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "products": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": ["code", "description"],
+                                    "properties": {
+                                      "code": { "type": "string" },
+                                      "description": { "type": "string" }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "totals": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "unit",
+                                      "value",
+                                      "previousValue",
+                                      "changePercent"
+                                    ],
+                                    "properties": {
+                                      "unit": { "type": "string" },
+                                      "value": { "type": "string" },
+                                      "previousValue": {
+                                        "anyOf": [
+                                          { "type": "string" },
+                                          { "type": "null" }
+                                        ]
+                                      },
+                                      "changePercent": {
+                                        "anyOf": [
+                                          { "type": "string" },
+                                          { "type": "null" }
+                                        ]
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "comparison": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "startDate",
+                                        "endDate",
+                                        "rows"
+                                      ],
+                                      "properties": {
+                                        "startDate": { "type": "string" },
+                                        "endDate": { "type": "string" },
+                                        "rows": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "required": [
+                                              "period",
+                                              "product",
+                                              "unit",
+                                              "value"
+                                            ],
+                                            "properties": {
+                                              "period": { "type": "string" },
+                                              "product": {
+                                                "anyOf": [
+                                                  { "type": "string" },
+                                                  { "type": "null" }
+                                                ]
+                                              },
+                                              "unit": { "type": "string" },
+                                              "value": { "type": "string" }
+                                            },
+                                            "additionalProperties": false
+                                          }
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    { "type": "null" }
+                                  ]
+                                },
+                                "warnings": {
+                                  "type": "array",
+                                  "items": { "type": "string" }
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "suggestions": {
+                          "type": "array",
+                          "items": { "type": "string", "maxLength": 2000 },
+                          "maxItems": 3
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "events": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["stage", "message", "at"],
+                    "properties": {
+                      "stage": {
+                        "anyOf": [
+                          { "type": "string", "const": "thinking" },
+                          { "type": "string", "const": "interpreting_sales" },
+                          { "type": "string", "const": "querying_sales" },
+                          { "type": "string", "const": "organizing" }
+                        ]
+                      },
+                      "message": { "type": "string" },
+                      "at": { "type": "string", "format": "date-time" }
+                    },
+                    "additionalProperties": false
+                  },
+                  "maxItems": 20
+                },
+                "failureCode": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "createdAt": { "type": "string", "format": "date-time" },
+                "finishedAt": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                }
+              },
+              "additionalProperties": false
+            },
+            "maxItems": 40
+          },
+          "olderThan": {
+            "anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }]
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "conversation", "type": "object", "required": true },
+        {
+          "name": "conversation.id",
+          "type": "string (uuid)",
+          "required": true
+        },
+        { "name": "conversation.title", "type": "string", "required": true },
+        { "name": "conversation.pinned", "type": "boolean", "required": true },
+        {
+          "name": "conversation.archived",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "conversation.updatedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        { "name": "turns", "type": "array of object", "required": true },
+        { "name": "turns[].id", "type": "string (uuid)", "required": true },
+        {
+          "name": "turns[].requestId",
+          "type": "string (uuid)",
+          "required": true
+        },
+        {
+          "name": "turns[].sequence",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        { "name": "turns[].question", "type": "string", "required": true },
+        {
+          "name": "turns[].state",
+          "type": "\"running\" | \"completed\" | \"failed\" | \"interrupted\"",
+          "required": true
+        },
+        { "name": "turns[].reply", "type": "object | null", "required": true },
+        {
+          "name": "turns[].events",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "turns[].events[].stage",
+          "type": "\"thinking\" | \"interpreting_sales\" | \"querying_sales\" | \"organizing\"",
+          "required": true
+        },
+        {
+          "name": "turns[].events[].message",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "turns[].events[].at",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "turns[].failureCode",
+          "type": "string | null",
+          "required": true
+        },
+        {
+          "name": "turns[].createdAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "turns[].finishedAt",
+          "type": "string | null",
+          "required": true
+        },
+        {
+          "name": "olderThan",
+          "type": "integer (minimum 1) | null",
+          "required": true
+        }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

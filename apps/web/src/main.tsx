@@ -3,8 +3,11 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { ModuleNavigation } from "./module-navigation.js";
-import { moduleNavigation, routeTree } from "./modules.js";
+import { moduleNavigation, routeTree, ProductProvider } from "./modules.js";
 import "./styles.css";
+import { initializeTheme } from "./theme.js";
+
+initializeTheme();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,7 +27,9 @@ createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ModuleNavigation value={moduleNavigation}>
-        <RouterProvider router={router} />
+        <ProductProvider>
+          <RouterProvider router={router} />
+        </ProductProvider>
       </ModuleNavigation>
     </QueryClientProvider>
   </React.StrictMode>,

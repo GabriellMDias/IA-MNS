@@ -275,6 +275,37 @@ export async function buildDocumentation(sources) {
     actualExports.some((name) => !components.some((item) => item.name === name))
   )
     fail("every exported web component needs owned metadata");
+  for (const metadataPath of componentMetadata.featureMetadata ?? []) {
+    if (
+      !/^apps\/web\/src\/features\/[A-Za-z0-9_-]+\/components\.docs\.json$/.test(
+        metadataPath,
+      )
+    )
+      fail("unsafe feature component metadata path");
+    const featureComponents = JSON.parse(await read(metadataPath)).components;
+    if (!Array.isArray(featureComponents))
+      fail("feature component metadata is missing");
+    for (const component of featureComponents) {
+      const directory = metadataPath.slice(
+        0,
+        metadataPath.lastIndexOf("/") + 1,
+      );
+      if (
+        !component.source?.startsWith(directory) ||
+        !/^[A-Za-z0-9_/-]+\.tsx$/.test(component.source) ||
+        component.source.includes("..")
+      )
+        fail("unsafe feature component source");
+      const text = await read(component.source);
+      if (
+        !text.includes(`export function ${component.name}(`) ||
+        actualExports.includes(component.name)
+      )
+        fail("missing or duplicate feature component export");
+      actualExports.push(component.name);
+      components.push(component);
+    }
+  }
   const exampleIds = new Set();
   for (const component of components) {
     if (
@@ -316,7 +347,7 @@ export async function buildDocumentation(sources) {
   const componentMarkdown = [
     "# Web Component Reference",
     "",
-    "<!-- Generated from apps/web/src/components.docs.json and verified against components.tsx. Do not edit. -->",
+    "<!-- Generated from apps/web/src/components.docs.json and its feature metadata; verified against component sources. Do not edit. -->",
     "",
     "[Living documentation](../../architecture/living-documentation.md) · [Component source](../../../apps/web/src/components.tsx)",
     "",
@@ -446,7 +477,7 @@ export async function buildDocumentation(sources) {
         kind: "component",
         title: component.name,
         group: "Web components",
-        source: "apps/web/src/components.tsx",
+        source: component.source ?? "apps/web/src/components.tsx",
         summary: component.summary,
         headings: [],
       },

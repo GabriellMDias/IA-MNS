@@ -1,0 +1,37 @@
+model AgentConversation {
+  id           String   @id @db.Uuid
+  owner        String   @db.VarChar(300)
+  title        String   @db.VarChar(100)
+  titleManual  Boolean  @default(false) @map("title_manual")
+  pinned       Boolean  @default(false)
+  archived     Boolean  @default(false)
+  version      Int      @default(0)
+  contexts     Json     @default("{}")
+  activeTurnId String?  @map("active_turn_id") @db.Uuid
+  leaseUntil   DateTime? @map("lease_until") @db.Timestamptz(3)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  turns        AgentTurn[]
+  @@index([owner, updatedAt, id], map: "agent_conversations_owner_updated_idx")
+  @@index([owner, archived, pinned(sort: Desc), updatedAt(sort: Desc), id(sort: Desc)], map: "agent_conversations_history_idx")
+  @@map("agent_conversations")
+}
+
+model AgentTurn {
+  id             String @id @db.Uuid
+  conversationId String @map("conversation_id") @db.Uuid
+  conversation   AgentConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sequence       Int
+  requestId      String @map("request_id") @db.Uuid
+  state          String @db.VarChar(20)
+  question       String @db.VarChar(2000)
+  reply          Json?
+  events         Json @default("[]")
+  capabilityId   String? @map("capability_id") @db.VarChar(80)
+  failureCode    String? @map("failure_code") @db.VarChar(80)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  finishedAt     DateTime? @map("finished_at") @db.Timestamptz(3)
+  @@unique([conversationId, sequence], map: "agent_turns_conversation_sequence_key")
+  @@unique([conversationId, requestId], map: "agent_turns_conversation_request_key")
+  @@map("agent_turns")
+}

@@ -1,0 +1,32 @@
+{
+  "components": [
+    {
+      "name": "SalesResults",
+      "source": "apps/web/src/features/sales/results.tsx",
+      "summary": "Presents validated sales aggregates, distinct units, comparisons and matched products.",
+      "props": [
+        {
+          "name": "result",
+          "type": "SalesResult",
+          "meaning": "Generated SDK response containing server-owned rows, exact decimal totals, comparison periods and warnings."
+        }
+      ],
+      "states": [
+        "Empty sales",
+        "Table",
+        "Single-unit monthly chart",
+        "Comparison details",
+        "Matched products"
+      ],
+      "accessibility": "Native captioned tables, scoped headers, text values beside chart bars, pressed-state view buttons and native details controls.",
+      "usage": "Render only validated API results. Charts are available for monthly data sharing one unit; different quantity units never share a chart or total.",
+      "examples": [
+        {
+          "id": "sales-monthly-results",
+          "label": "Monthly sales with comparison",
+          "description": "Synthetic decimal sales and prior-year totals; the preview makes no API or provider request."
+        }
+      ]
+    }
+  ]
+}

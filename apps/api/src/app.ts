@@ -64,7 +64,10 @@ export function createApp(
 
   app.setErrorHandler((error, request, reply) => {
     const validation =
-      typeof error === "object" && error !== null && "validation" in error;
+      typeof error === "object" &&
+      error !== null &&
+      ("validation" in error ||
+        ("code" in error && error.code === "FST_ERR_CTP_BODY_TOO_LARGE"));
     const rateLimited =
       typeof error === "object" &&
       error !== null &&
