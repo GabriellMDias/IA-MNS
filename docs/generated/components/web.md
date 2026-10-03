@@ -1,6 +1,6 @@
 # Web Component Reference
 
-<!-- Generated from apps/web/src/components.docs.json and verified against components.tsx. Do not edit. -->
+<!-- Generated from apps/web/src/components.docs.json and its feature metadata; verified against component sources. Do not edit. -->
 
 [Living documentation](../../architecture/living-documentation.md) · [Component source](../../../apps/web/src/components.tsx)
 
@@ -30,3 +30,29 @@ Usage: Pass the original error to preserve stable-code mapping. Offer reload onl
 ### Examples
 
 - **Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.
+
+## SalesResults
+
+Presents validated sales aggregates, distinct units, comparisons and matched products.
+
+### Props
+
+| Name | Type | Meaning |
+| --- | --- | --- |
+| `result` | `SalesResult` | Generated SDK response containing server-owned rows, exact decimal totals, comparison periods and warnings. |
+
+### States
+
+- Empty sales
+- Table
+- Single-unit monthly chart
+- Comparison details
+- Matched products
+
+Accessibility: Native captioned tables, scoped headers, text values beside chart bars, pressed-state view buttons and native details controls.
+
+Usage: Render only validated API results. Charts are available for monthly data sharing one unit; different quantity units never share a chart or total.
+
+### Examples
+
+- **Monthly sales with comparison** (`sales-monthly-results`): Synthetic decimal sales and prior-year totals; the preview makes no API or provider request.

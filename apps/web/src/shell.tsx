@@ -9,6 +9,7 @@ import {
 import brandMark from "./assets/brand-mark.svg";
 import { HomePage } from "./home.js";
 import { useModuleNavigation } from "./module-navigation.js";
+import { ThemeToggle } from "./theme.js";
 
 function Shell() {
   const navigation = useModuleNavigation();
@@ -19,27 +20,30 @@ function Shell() {
   });
   return (
     <div className="app-shell">
-      <header className="site-header">
-        <div className="site-header-inner">
-          <Link to="/" className="brand">
-            <img src={brandMark} alt="" width="32" height="32" />
-            {__PROJECT_NAME__}
-            {isDocumentation && <span> / Documentation</span>}
-          </Link>
-          {isDocumentation && (
+      {isDocumentation && (
+        <header className="site-header">
+          <div className="site-header-inner">
+            <Link to="/" className="brand">
+              <img src={brandMark} alt="" width="32" height="32" />
+              {__PROJECT_NAME__}
+              <span> / Documentation</span>
+            </Link>
             <span className="header-note">Living documentation</span>
-          )}
-          <nav aria-label="Application" className="header-nav">
-            {navigation.map((Item, index) => (
-              <Item key={index} />
-            ))}
-            <Link to="/docs">Documentation</Link>
-          </nav>
-        </div>
-      </header>
+            <nav aria-label="Application" className="header-nav">
+              {navigation.map((Item, index) => (
+                <Item key={index} />
+              ))}
+              <Link to="/docs">Documentation</Link>
+              <ThemeToggle />
+            </nav>
+          </div>
+        </header>
+      )}
       <main
         className={
-          isDocumentation ? "main-content documentation-main" : "main-content"
+          isDocumentation
+            ? "main-content documentation-main"
+            : "main-content product-main"
         }
       >
         <Outlet />
@@ -50,7 +54,7 @@ function Shell() {
 
 export const rootRoute = createRootRoute({ component: Shell });
 
-const homeRoute = createRoute({
+export const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: HomePage,

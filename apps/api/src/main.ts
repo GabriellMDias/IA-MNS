@@ -10,6 +10,8 @@ let cleanup: (() => Promise<void>) | undefined;
 let startupPhase = "configuration";
 
 try {
+  // Migration credentials belong to CLI tooling, never the runtime.
+  delete process.env.ORION_MIGRATION_DATABASE_URL;
   const config = parseServerConfig(process.env);
   startupPhase = "observability";
   logger = createLogger(config);
@@ -47,7 +49,7 @@ try {
       : undefined;
   const modules = activateModules(
     apiModules,
-    { database, verifier },
+    { database, verifier, config },
     config.environment,
   );
   const { app, lifecycle } = createApp(logger, undefined, {

@@ -103,9 +103,10 @@ test("the application shell presents the project identity and documentation", as
     page.getByRole("heading", { level: 1, name: projectName, exact: true }),
   ).toBeVisible();
   await expect(page).toHaveTitle(projectName);
-  await expect(page.locator(".brand")).toContainText(projectName);
+  await expect(page.locator(".agent-chat-header")).toContainText(projectName);
   await page
-    .getByRole("link", { name: "Read the living documentation" })
+    .getByRole("navigation", { name: "Aplicação", exact: true })
+    .getByRole("link", { name: "Documentação", exact: true })
     .click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     overviewTitle,

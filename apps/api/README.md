@@ -18,6 +18,8 @@ The Fastify API runtime provides configuration, structured logging and tracing, 
 
 ## Modules
 
+IA-MNS composes the [corporate agent](src/features/agent/module.ts) and the [sales capability](src/features/sales/capability.ts). The agent owns PostgreSQL conversations/turns, a registered-capability router, actual progress and `/agent` operations. Sales retains strict interpretation, controlled Oracle queries and deterministic calculations. Legacy `/sales` endpoints remain for first-MVP compatibility. [Agent architecture](../../docs/domains/corporate-agent.md), [sales semantics](../../docs/domains/sales-chat.md) and [local setup](../../docs/setup.md#corporate-agent-and-local-postgresql) are canonical. Production requires PostgreSQL, OpenAI and authentication; local availability remains explicit when dependencies are absent. The agent validates its required table projection before startup; no migration is applied by the runtime.
+
 A module is one cohesive API capability. It implements the `ApiModule` contract in [`src/module.ts`](src/module.ts): a name, an OpenAPI tag, its requirements (`database`, `authentication`), its executable operations, its public error codes, and an `activate` function that mounts routes once its requirements are configured. Shared runtime files never import a module; [`src/modules.ts`](src/modules.ts) is the only composition point, and dependency rules enforce that boundary.
 
 Keep a module's files together under its name: `src/features/<module>/` for domain, application, persistence, contracts, routes, and errors; `prisma/schema/<module>.prisma` for its models; `prisma/metadata/<module>.json` for table meaning; `prisma/runtime-grants/<module>.sql` for least-privilege runtime access; a reviewed migration; tests under `test/<module>/`; and an optional emitted-process smoke at `scripts/smoke/<module>.ts`. Follow [application boundaries](../../docs/architecture/application-boundaries.md), [dependency rules](../../docs/architecture/dependency-rules.md), and the [database policies](../../docs/database/principles.md). [Orion's reference implementation](../../docs/project-derivation.md#orions-reference-implementation) is a complete example.
@@ -32,6 +34,7 @@ From the repository root:
 
 | Purpose | Command |
 | --- | --- |
+| Provision local durable Docker PostgreSQL and apply migrations/grants | `pnpm db:local` |
 | Generate ignored Prisma client | `pnpm -C apps/api db:generate` |
 | Apply committed migrations to the configured database | `pnpm -C apps/api db:migrate:deploy` |
 | Check API behavior/types | `pnpm -C apps/api test` and `pnpm -C apps/api typecheck` |

@@ -1,0 +1,177 @@
+{
+  "kind": "database",
+  "name": "agent_turns",
+  "description": "One user message and its execution lifecycle, real progress, and versioned assistant outcome. Failed/interrupted turns retain no fabricated answer.",
+  "owner": "agent",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Local history persists until the owner explicitly deletes the conversation. Conversation deletion cascades to turns and contexts. No automatic expiry is implemented; shared deployment requires an owner-defined retention/backups/provider policy before rollout. No vector, export or replica copies are created by the application.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Immutable turn UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "conversation_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owning conversation; hard deletion cascades to all turns.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "sequence",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Positive conversation-local ordering allocated transactionally.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "request_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Client UUID for idempotent acceptance replay; same id with different message is a conflict.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "state",
+      "PostgreSQL type": "character varying(20)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "running, completed, failed or interrupted. Interrupted work is not automatically retried.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "question",
+      "PostgreSQL type": "character varying(2000)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Bounded confidential user message; never logged.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "reply",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Version 1 envelope containing application-authored reply and bounded result snapshot. Not current ERP truth and never sent back to OpenAI as financial data.",
+      "Null meaning": "Absent in the lifecycle states described in the field meaning.",
+      "Unit": "—"
+    },
+    {
+      "Column": "events",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'[]'::jsonb",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Bounded ordered real progress events with stage, localized display message and instant; not durable workflow/audit infrastructure.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "capability_id",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Executed capability for a completed business reply; absent for social/failure turns.",
+      "Null meaning": "Absent in the lifecycle states described in the field meaning.",
+      "Unit": "—"
+    },
+    {
+      "Column": "failure_code",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Allowlisted public failure code; absent unless failed/interrupted. No exception text.",
+      "Null meaning": "Absent in the lifecycle states described in the field meaning.",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock acceptance instant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "finished_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock terminal outcome instant; absent while running.",
+      "Null meaning": "Absent in the lifecycle states described in the field meaning.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "agent_turns_conversation_id_fkey",
+      "Physical definition": "FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Conversation ownership/lifecycle referential integrity; cascade on hard deletion."
+    },
+    {
+      "Object": "agent_turns_events_check",
+      "Physical definition": "CHECK ((jsonb_typeof(events) = 'array'::text))",
+      "Purpose": "Progress is an array."
+    },
+    {
+      "Object": "agent_turns_outcome_check",
+      "Physical definition": "CHECK (((((state)::text = 'running'::text) AND (reply IS NULL) AND (failure_code IS NULL) AND (finished_at IS NULL)) OR (((state)::text = 'completed'::text) AND (reply IS NOT NULL) AND (failure_code IS NULL) AND (finished_at IS NOT NULL)) OR (((state)::text = ANY ((ARRAY['failed'::character varying, 'interrupted'::character varying])::text[])) AND (reply IS NULL) AND (failure_code IS NOT NULL) AND (finished_at IS NOT NULL))))",
+      "Purpose": "Terminal reply/failure and timestamp agree with lifecycle state."
+    },
+    {
+      "Object": "agent_turns_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Immutable turn identity."
+    },
+    {
+      "Object": "agent_turns_question_check",
+      "Physical definition": "CHECK ((length(btrim((question)::text)) > 0))",
+      "Purpose": "Nonblank user message."
+    },
+    {
+      "Object": "agent_turns_sequence_check",
+      "Physical definition": "CHECK ((sequence > 0))",
+      "Purpose": "Positive order."
+    },
+    {
+      "Object": "agent_turns_state_check",
+      "Physical definition": "CHECK (((state)::text = ANY ((ARRAY['running'::character varying, 'completed'::character varying, 'failed'::character varying, 'interrupted'::character varying])::text[])))",
+      "Purpose": "Explicit supported lifecycle states."
+    },
+    {
+      "Object": "agent_turns_conversation_request_key",
+      "Physical definition": "CREATE UNIQUE INDEX agent_turns_conversation_request_key ON public.agent_turns USING btree (conversation_id, request_id)",
+      "Purpose": "One acceptance per client request id in a conversation."
+    },
+    {
+      "Object": "agent_turns_conversation_sequence_key",
+      "Physical definition": "CREATE UNIQUE INDEX agent_turns_conversation_sequence_key ON public.agent_turns USING btree (conversation_id, sequence)",
+      "Purpose": "One turn per allocated sequence."
+    }
+  ]
+}

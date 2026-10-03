@@ -322,6 +322,36 @@ test("missing or duplicate operation IDs and unowned components fail generation"
   );
 });
 
+test("feature components retain ownership and reject unsafe or nonexistent sources", async () => {
+  const rootMetadataPath = "apps/web/src/components.docs.json";
+  const featureMetadataPath =
+    "apps/web/src/features/sales/components.docs.json";
+  const output = await buildDocumentation(sources);
+  const page = JSON.parse(
+    output.get("apps/web/src/generated/pages/components/SalesResults.json"),
+  );
+  assert.equal(page.source, "apps/web/src/features/sales/results.tsx");
+  for (const invalid of ["metadata", "source", "export", "duplicate"]) {
+    const changed = new Map(sources);
+    const rootMetadata = JSON.parse(changed.get(rootMetadataPath));
+    const featureMetadata = JSON.parse(changed.get(featureMetadataPath));
+    if (invalid === "metadata")
+      rootMetadata.featureMetadata = ["../private.json"];
+    if (invalid === "source")
+      featureMetadata.components[0].source = "apps/web/src/components.tsx";
+    if (invalid === "export")
+      featureMetadata.components[0].name = "MissingFeature";
+    if (invalid === "duplicate")
+      featureMetadata.components.push(featureMetadata.components[0]);
+    changed.set(rootMetadataPath, JSON.stringify(rootMetadata));
+    changed.set(featureMetadataPath, JSON.stringify(featureMetadata));
+    await assert.rejects(
+      buildDocumentation(changed),
+      /unsafe feature component|missing or duplicate feature component export/,
+    );
+  }
+});
+
 test("new documentation is covered by sensitive-content checks", async () => {
   const changed = new Map(sources);
   changed.set(

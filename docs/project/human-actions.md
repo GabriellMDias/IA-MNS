@@ -72,14 +72,14 @@ IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (htt
 
 ## PH-05
 
-- [ ] **Define the product scope and acceptance criteria.**
+- [x] **Define the product scope and acceptance criteria.**
 
-**Status:** pending. **Owner:** project owner.
+**Status:** completed. **Owner:** project owner.
 **Dependency / trigger:** [PJ-02](implementation-plan.md#current-work); required before product modules are implemented.
 **Request and reason:** Describe the product, actors, first capabilities, data classification, identity and authorization needs, and acceptance scenarios. Agents must not invent product requirements.
 **Configuration:** none.
 **Verification:** Requirements are recorded in the repository and linked from the project plan.
-**Evidence / blocker:** Not started.
+**Evidence / blocker:** Owner initially supplied the focused Portuguese sales-chat scope and reference SQL on 2026-10-01; [requirements and acceptance](../domains/sales-chat.md) record the initial decision. On 2026-10-01 the owner expanded the product direction to the [corporate agent](../domains/corporate-agent.md), retaining sales as the only implemented business capability.
 
 ## PH-06
 
@@ -91,6 +91,50 @@ IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (htt
 **Configuration:** none.
 **Verification:** License files, the README, and publication metadata match the recorded decision.
 **Evidence / blocker:** No product license selected.
+
+## PH-07
+
+- [x] **Select the dedicated IA-MNS OpenAI project and securely provision its project key.**
+
+**Status:** completed. **Owner:** project owner / OpenAI Platform administrator.
+**Dependency / trigger:** [PJ-06](implementation-plan.md#current-work); required for live interpretation, not synthetic tests.
+**Request and reason:** The owner configured a key manually and explicitly authorized reusing it on 2026-10-01, superseding the previous request for a new key and its incomplete picker/destination flow. No new key was created or rotated by the agent.
+**Configuration:** OPENAI_API_KEY, optional OPENAI_MODEL; ignored root .env.local, never browser or tracked source. Minimum application capability: model Responses requests.
+**Verification:** Safe presence check and actual strict Responses interpretation with the configured key/model succeeded; ten live-language HTTP scenarios passed through the real application. [Live evidence](live-sales-verification.md).
+**Evidence / blocker:** Authenticated live interpretation passed on 2026-10-01. Account ownership, project attribution, billing, and retention policy remain owner controls; successful requests do not independently attest those settings. Oracle grants/units remain PH-08.
+
+## PH-08
+
+- [ ] **Supply read-only Sankhya configuration and reconcile live sales results.**
+
+**Status:** blocked. **Owner:** project owner and ERP DBA.
+**Dependency / trigger:** [PJ-06](implementation-plan.md#current-work); the owner explicitly reserved credential entry.
+**Request and reason:** Credentials are present and real queries now execute, but the supplied account has seven broad write privileges. Provide a dedicated CREATE SESSION / SELECT-only Oracle reader; do not grant ANY TABLE, DML, DDL, or procedure execution. Preserve table/synonym resolution for TGFCAB, TGFTOP, TGFVEN, TGFITE, TGFPAR, TGFPRO, TGFGRU, TSIEMP, TCSPRJ, TGFVAR, AD_MOTIVODEV, and AD_RESULTADO_LOTE. Confirm BRL currency and the ERP's weight unit. No grants or other ERP state were changed during verification.
+**Configuration:** `SANKHYA_DB_USER`, `SANKHYA_DB_PASSWORD`, `SANKHYA_DB_CONNECT_STRING`; optional `SANKHYA_ORACLE_CLIENT_LIB_DIR` only if installed Oracle Client libraries are needed. `IA_MNS_LOCAL_ACCESS=true` is limited to private local development; shared access instead needs the existing issuer/audience/JWKS settings and sales:read scope.
+**Verification:** Run the acceptance examples and [reconciliation cases](../domains/sales-chat.md#local-execution-and-external-verification), compare totals with the supplied SQL using equivalent full-day date bounds, and verify write grants are absent. Never test writes against the ERP.
+**Evidence / blocker:** On 2026-10-01, Oracle 12.1.0.2 connectivity and nine structured-query reconciliations succeeded in READ ONLY snapshots. Isolated Client 19.32 was checksum-verified and the ignored local library setting updated; Client 11.2/DPI-1050 and Thin/NJS-116 were incompatible. SESSION_PRIVS confirmed seven broad write privileges. Complete-record fetching showed an intermittent difference with small native fetch batches; database-side MINUS found no differences, and a complete bounded fetch matched all 46 fields. The adapter uses the bounded-fetch workaround; the precise legacy driver/server cause still needs DBA investigation. The DBA's reader account and owner confirmation of currency/weight units remain outstanding; The later live-language acceptance and original-SQL reconciliation passed with the manually configured key; the dedicated reader and unit confirmations remain outstanding.
+
+## PH-09
+
+- [ ] **Define lifecycle and operational controls before shared use of persistent conversations.**
+
+**Status:** pending (conditional on shared deployment). **Owner:** project owner.
+**Dependency / trigger:** PJ-05; PostgreSQL local history introduced by PJ-09 is explicitly authorized.
+**Request and reason:** Before shared deployment, choose conversation retention/deletion duration, provider data policy, backup/restore requirements and permitted operators. Local history currently persists until its owner explicitly deletes it; no automatic expiry or backup promise is made. Select real employee authentication/permission mapping at that point, not in this task.
+**Configuration:** Existing ORION_DATABASE_URL and verifier settings; no new secret or provider is required for local operation.
+**Verification:** Approved lifecycle controls, recovery evidence and deployment-specific identity exist before sharing confidential history.
+**Evidence / blocker:** Local Docker volume, restricted runtime grants and explicit cascade deletion implemented on 2026-10-01; shared-operation policy remains intentionally undecided.
+
+## PH-10
+
+- [ ] **Record the first durable migration boundary before publishing a durable release.**
+
+**Status:** pending (conditional on durable release publication). **Owner:** project owner/release maintainer.
+**Dependency / trigger:** PJ-01/PJ-05 and the repository's [release workflow](../database/release-evolution.md).
+**Request and reason:** Commit the reviewed migration/application baseline and record its immutable commit/checksums in release-history.json when establishing a supported persistent environment. The local conversation migration has been applied; treat its SQL as immutable now. Do not edit applied history because the registry currently has no recorded release. No Git publication or commit is performed by this task.
+**Configuration:** none.
+**Verification:** Release-history validation and supported upgrade evidence reference the actual committed baseline.
+**Evidence / blocker:** Two additive local agent migrations have been applied, including conversation organization on 2026-10-02; no released Git revision or remote release was created.
 
 ## New action template
 

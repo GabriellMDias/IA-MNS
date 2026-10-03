@@ -1,0 +1,62 @@
+{
+  "kind": "api",
+  "operationId": "getSalesStatus",
+  "summary": "",
+  "description": "Returns configuration presence and the required access mode; contains no credentials or sales data.",
+  "security": [],
+  "components": {},
+  "method": "GET",
+  "path": "/sales/status",
+  "tags": ["Sales"],
+  "authentication": "None declared",
+  "parameters": [],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["configured", "accessMode"],
+            "properties": {
+              "configured": { "type": "boolean" },
+              "accessMode": {
+                "anyOf": [
+                  { "type": "string", "const": "local" },
+                  { "type": "string", "const": "token" },
+                  { "type": "string", "const": "unavailable" }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["configured", "accessMode"],
+        "properties": {
+          "configured": { "type": "boolean" },
+          "accessMode": {
+            "anyOf": [
+              { "type": "string", "const": "local" },
+              { "type": "string", "const": "token" },
+              { "type": "string", "const": "unavailable" }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "configured", "type": "boolean", "required": true },
+        {
+          "name": "accessMode",
+          "type": "\"local\" | \"token\" | \"unavailable\"",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

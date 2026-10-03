@@ -120,4 +120,41 @@ describe("API configuration boundary", () => {
     });
     expect(JSON.stringify(config)).not.toContain("migration");
   });
+  it("isolates temporary device access, bounds its lifetime and never projects its credential", () => {
+    const temporary = {
+      ORION_ENV: "test",
+      IA_MNS_DEV_ACCESS_TOKEN: "a".repeat(64),
+      IA_MNS_DEV_ACCESS_ORIGIN: "http://192.168.1.12:5174",
+      IA_MNS_DEV_ACCESS_EXPIRES_AT: String(
+        Math.floor(Date.now() / 1000) + 3600,
+      ),
+    };
+    expect(clientConfigFrom(parseServerConfig(temporary))).toEqual({});
+    for (const key of [
+      "IA_MNS_DEV_ACCESS_TOKEN",
+      "IA_MNS_DEV_ACCESS_ORIGIN",
+      "IA_MNS_DEV_ACCESS_EXPIRES_AT",
+    ])
+      expect(() =>
+        parseServerConfig({ ...temporary, [key]: undefined }),
+      ).toThrow();
+    for (const unsafe of [
+      { ORION_ENV: "production" },
+      { IA_MNS_LOCAL_ACCESS: "true" },
+      { ORION_API_HOST: "0.0.0.0" },
+      { IA_MNS_DEV_ACCESS_TOKEN: "weak" },
+      { IA_MNS_DEV_ACCESS_ORIGIN: "http://example.com:5174" },
+      { IA_MNS_DEV_ACCESS_ORIGIN: "http://192.168.1.12:5174/path" },
+      { IA_MNS_DEV_ACCESS_ORIGIN: "http://192.168.1.12:5174/" },
+      { IA_MNS_DEV_ACCESS_ORIGIN: "http://999.1.1.1:5174" },
+      { IA_MNS_DEV_ACCESS_EXPIRES_AT: "1" },
+      {
+        IA_MNS_DEV_ACCESS_EXPIRES_AT: String(
+          Math.floor(Date.now() / 1000) + 10000,
+        ),
+      },
+      { ORION_TOKEN_ISSUER: "https://issuer.example/" },
+    ])
+      expect(() => parseServerConfig({ ...temporary, ...unsafe })).toThrow();
+  });
 });

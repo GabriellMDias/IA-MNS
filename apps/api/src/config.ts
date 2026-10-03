@@ -27,6 +27,16 @@ export const serverConfigSchema = Type.Object(
     tokenIssuer: Type.Optional(Type.String({ minLength: 1 })),
     tokenAudience: Type.Optional(Type.String({ minLength: 1 })),
     tokenJwksUrl: Type.Optional(Type.String({ minLength: 1 })),
+    openaiApiKey: Type.Optional(Type.String({ minLength: 1 })),
+    openaiModel: Type.String({ minLength: 1, maxLength: 100 }),
+    sankhyaUser: Type.Optional(Type.String({ minLength: 1 })),
+    sankhyaPassword: Type.Optional(Type.String({ minLength: 1 })),
+    sankhyaConnectString: Type.Optional(Type.String({ minLength: 1 })),
+    oracleClientLibDir: Type.Optional(Type.String({ minLength: 1 })),
+    localAccess: Type.Boolean(),
+    devAccessToken: Type.Optional(Type.String({ pattern: "^[a-f0-9]{64}$" })),
+    devAccessOrigin: Type.Optional(Type.String({ minLength: 1 })),
+    devAccessExpiresAt: Type.Optional(Type.Integer({ minimum: 1 })),
   },
   { additionalProperties: false },
 );
@@ -182,7 +192,141 @@ export const configReference = Object.freeze([
     secret: false,
     purpose: "Trusted issuer public-key endpoint.",
   },
+  {
+    key: "openaiApiKey",
+    name: "OPENAI_API_KEY",
+    type: "nonempty string",
+    default: "",
+    secret: true,
+    purpose:
+      "Dedicated IA-MNS project key; required for agent routing and capability interpretation.",
+    required: false,
+    visibility: "server",
+    classification: "RESTRICTED",
+  },
+  {
+    key: "openaiModel",
+    name: "OPENAI_MODEL",
+    type: "model identifier",
+    default: "gpt-6.1-sol",
+    secret: false,
+    purpose: "Responses API model supporting strict function calling.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
+    key: "sankhyaUser",
+    name: "SANKHYA_DB_USER",
+    type: "nonempty string",
+    default: "",
+    secret: true,
+    purpose:
+      "Oracle account with CREATE SESSION and only SELECT grants on the sales reference tables.",
+    required: false,
+    visibility: "server",
+    classification: "RESTRICTED",
+  },
+  {
+    key: "sankhyaPassword",
+    name: "SANKHYA_DB_PASSWORD",
+    type: "nonempty string",
+    default: "",
+    secret: true,
+    purpose:
+      "Restricted Oracle account password; configure with user and connect string.",
+    required: false,
+    visibility: "server",
+    classification: "RESTRICTED",
+  },
+  {
+    key: "sankhyaConnectString",
+    name: "SANKHYA_DB_CONNECT_STRING",
+    type: "Oracle connect descriptor",
+    default: "",
+    secret: true,
+    purpose:
+      "Oracle Easy Connect or full descriptor, without embedded credentials.",
+    required: false,
+    visibility: "server",
+    classification: "RESTRICTED",
+  },
+  {
+    key: "oracleClientLibDir",
+    name: "SANKHYA_ORACLE_CLIENT_LIB_DIR",
+    type: "local directory",
+    default: "",
+    secret: false,
+    purpose:
+      "Optional Oracle Client 19+ library directory; enables Thick mode when needed.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
+    key: "localAccess",
+    name: "IA_MNS_LOCAL_ACCESS",
+    type: "true | false",
+    default: "false",
+    secret: false,
+    purpose:
+      "Explicit local development access; forbidden in production or on a non-loopback listener.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
+    key: "devAccessToken",
+    name: "IA_MNS_DEV_ACCESS_TOKEN",
+    type: "64 lowercase hexadecimal characters",
+    default: "",
+    secret: true,
+    purpose:
+      "Temporary bearer for an owner-controlled LAN test; non-production loopback API only, paired with origin and expiration. Never browser configuration.",
+    required: false,
+    visibility: "server",
+    classification: "RESTRICTED",
+  },
+  {
+    key: "devAccessOrigin",
+    name: "IA_MNS_DEV_ACCESS_ORIGIN",
+    type: "private IPv4 HTTP origin",
+    default: "",
+    secret: false,
+    purpose:
+      "Exact browser origin for the temporary LAN test; no credentials, path or wildcard.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
+    key: "devAccessExpiresAt",
+    name: "IA_MNS_DEV_ACCESS_EXPIRES_AT",
+    type: "Unix timestamp in seconds",
+    default: "",
+    secret: false,
+    purpose:
+      "Absolute temporary bearer expiry; at most two hours after startup. Checked on every request, not renewed.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
 ] as const satisfies readonly ConfigMetadata[]);
+
+export function isPrivateIpv4(value: string): boolean {
+  const parts = value.split(".");
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !/^(0|[1-9]\d{0,2})$/.test(part) || Number(part) > 255)
+  )
+    return false;
+  const [first, second] = parts.map(Number);
+  return (
+    first === 10 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
+}
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
   if (value === undefined) return fallback;
@@ -195,6 +339,32 @@ export function parseServerConfig(
 ): ServerConfig {
   const candidate = {
     environment: env.ORION_ENV,
+    ...(env.IA_MNS_DEV_ACCESS_TOKEN === undefined
+      ? {}
+      : { devAccessToken: env.IA_MNS_DEV_ACCESS_TOKEN }),
+    ...(env.IA_MNS_DEV_ACCESS_ORIGIN === undefined
+      ? {}
+      : { devAccessOrigin: env.IA_MNS_DEV_ACCESS_ORIGIN }),
+    ...(env.IA_MNS_DEV_ACCESS_EXPIRES_AT === undefined
+      ? {}
+      : { devAccessExpiresAt: Number(env.IA_MNS_DEV_ACCESS_EXPIRES_AT) }),
+    openaiModel: env.OPENAI_MODEL ?? "gpt-6.1-sol",
+    localAccess: env.IA_MNS_LOCAL_ACCESS === "true",
+    ...(env.OPENAI_API_KEY === undefined
+      ? {}
+      : { openaiApiKey: env.OPENAI_API_KEY }),
+    ...(env.SANKHYA_DB_USER === undefined
+      ? {}
+      : { sankhyaUser: env.SANKHYA_DB_USER }),
+    ...(env.SANKHYA_DB_PASSWORD === undefined
+      ? {}
+      : { sankhyaPassword: env.SANKHYA_DB_PASSWORD }),
+    ...(env.SANKHYA_DB_CONNECT_STRING === undefined
+      ? {}
+      : { sankhyaConnectString: env.SANKHYA_DB_CONNECT_STRING }),
+    ...(env.SANKHYA_ORACLE_CLIENT_LIB_DIR === undefined
+      ? {}
+      : { oracleClientLibDir: env.SANKHYA_ORACLE_CLIENT_LIB_DIR }),
     releaseId: env.ORION_RELEASE_ID ?? "local",
     host: env.ORION_API_HOST ?? "127.0.0.1",
     port: numberFromEnv(env.ORION_API_PORT, 3000),
@@ -220,6 +390,67 @@ export function parseServerConfig(
   if (!Value.Check(serverConfigSchema, candidate)) {
     throw new Error("Invalid API configuration");
   }
+  if (
+    env.IA_MNS_LOCAL_ACCESS !== undefined &&
+    !["true", "false"].includes(env.IA_MNS_LOCAL_ACCESS)
+  )
+    throw new Error("Invalid API configuration: local access must be boolean");
+  if (
+    candidate.localAccess &&
+    (candidate.environment === "production" ||
+      !["127.0.0.1", "::1"].includes(candidate.host))
+  )
+    throw new Error(
+      "Invalid API configuration: local access requires a non-production loopback listener",
+    );
+  const devValues = [
+    candidate.devAccessToken,
+    candidate.devAccessOrigin,
+    candidate.devAccessExpiresAt,
+  ];
+  if (devValues.some((value) => value !== undefined)) {
+    if (
+      devValues.some((value) => value === undefined) ||
+      candidate.environment === "production" ||
+      candidate.localAccess ||
+      !["127.0.0.1", "::1"].includes(candidate.host) ||
+      candidate.tokenIssuer ||
+      candidate.tokenAudience ||
+      candidate.tokenJwksUrl
+    )
+      throw new Error(
+        "Invalid API configuration: temporary access requires isolated non-production loopback mode",
+      );
+    const now = Math.floor(Date.now() / 1000);
+    if (
+      candidate.devAccessExpiresAt! <= now ||
+      candidate.devAccessExpiresAt! > now + 7200
+    )
+      throw new Error(
+        "Invalid API configuration: temporary access expiry must be within two hours",
+      );
+    let origin: URL;
+    try {
+      origin = new URL(candidate.devAccessOrigin!);
+    } catch {
+      throw new Error("Invalid API configuration: temporary access origin");
+    }
+    if (
+      origin.protocol !== "http:" ||
+      origin.origin !== candidate.devAccessOrigin ||
+      !isPrivateIpv4(origin.hostname)
+    )
+      throw new Error(
+        "Invalid API configuration: temporary access requires an exact private IPv4 HTTP origin",
+      );
+  }
+  const oracleValues = [
+    candidate.sankhyaUser,
+    candidate.sankhyaPassword,
+    candidate.sankhyaConnectString,
+  ];
+  if (oracleValues.some(Boolean) && oracleValues.some((value) => !value))
+    throw new Error("Invalid API configuration: incomplete Sankhya connection");
   if (candidate.otlpEndpoint !== undefined) {
     let endpoint: URL;
     try {

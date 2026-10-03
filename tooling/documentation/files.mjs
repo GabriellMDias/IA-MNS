@@ -33,6 +33,16 @@ export async function readSources(root) {
     ...documentationPaths(stdout.split("\0").filter(Boolean)),
     ...fixedSources,
   ]);
+  // Feature metadata and its colocated component sources are documentation
+  // inputs; the existing path/symlink checks still protect every file read.
+  for (const name of stdout.split("\0").filter(Boolean)) {
+    if (
+      /^apps\/web\/src\/features\/[A-Za-z0-9_-]+\/(components\.docs\.json|[A-Za-z0-9_-]+\.tsx)$/.test(
+        name,
+      )
+    )
+      names.add(name);
+  }
   const sources = new Map();
   for (const name of [...names].sort()) {
     try {

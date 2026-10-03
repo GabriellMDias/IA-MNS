@@ -4,6 +4,110 @@
   "api": { "title": "IA-MNS API", "version": "1.0.0" },
   "entries": [
     {
+      "id": "api/askSalesQuestion",
+      "kind": "api",
+      "title": "askSalesQuestion",
+      "group": "Sales",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /sales/chat",
+      "method": "POST",
+      "path": "/sales/chat",
+      "tags": ["Sales"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/askSalesQuestion.json"
+    },
+    {
+      "id": "api/createAgentConversation",
+      "kind": "api",
+      "title": "createAgentConversation",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /agent/conversations",
+      "method": "POST",
+      "path": "/agent/conversations",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createAgentConversation.json"
+    },
+    {
+      "id": "api/deleteAgentConversation",
+      "kind": "api",
+      "title": "deleteAgentConversation",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /agent/conversations/{conversationId}",
+      "method": "DELETE",
+      "path": "/agent/conversations/{conversationId}",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteAgentConversation.json"
+    },
+    {
+      "id": "api/forgetSalesConversation",
+      "kind": "api",
+      "title": "forgetSalesConversation",
+      "group": "Sales",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /sales/conversations/{conversationId}",
+      "method": "DELETE",
+      "path": "/sales/conversations/{conversationId}",
+      "tags": ["Sales"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/forgetSalesConversation.json"
+    },
+    {
+      "id": "api/getAgentConversation",
+      "kind": "api",
+      "title": "getAgentConversation",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /agent/conversations/{conversationId}",
+      "method": "GET",
+      "path": "/agent/conversations/{conversationId}",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getAgentConversation.json"
+    },
+    {
+      "id": "api/getAgentStatus",
+      "kind": "api",
+      "title": "getAgentStatus",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /agent/status",
+      "method": "GET",
+      "path": "/agent/status",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getAgentStatus.json"
+    },
+    {
       "id": "api/getLiveness",
       "kind": "api",
       "title": "getLiveness",
@@ -38,6 +142,23 @@
       "file": "pages/api/getReadiness.json"
     },
     {
+      "id": "api/getSalesStatus",
+      "kind": "api",
+      "title": "getSalesStatus",
+      "group": "Sales",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /sales/status",
+      "method": "GET",
+      "path": "/sales/status",
+      "tags": ["Sales"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getSalesStatus.json"
+    },
+    {
       "id": "api/getStartupHealth",
       "kind": "api",
       "title": "getStartupHealth",
@@ -55,6 +176,97 @@
       "file": "pages/api/getStartupHealth.json"
     },
     {
+      "id": "api/listAgentConversations",
+      "kind": "api",
+      "title": "listAgentConversations",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /agent/conversations",
+      "method": "GET",
+      "path": "/agent/conversations",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listAgentConversations.json"
+    },
+    {
+      "id": "api/searchAgentConversations",
+      "kind": "api",
+      "title": "searchAgentConversations",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /agent/conversations/search",
+      "method": "POST",
+      "path": "/agent/conversations/search",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/searchAgentConversations.json"
+    },
+    {
+      "id": "api/submitAgentTurn",
+      "kind": "api",
+      "title": "submitAgentTurn",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /agent/conversations/{conversationId}/turns",
+      "method": "POST",
+      "path": "/agent/conversations/{conversationId}/turns",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/submitAgentTurn.json"
+    },
+    {
+      "id": "api/updateAgentConversation",
+      "kind": "api",
+      "title": "updateAgentConversation",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /agent/conversations/{conversationId}",
+      "method": "PATCH",
+      "path": "/agent/conversations/{conversationId}",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateAgentConversation.json"
+    },
+    {
+      "id": "database/agent_conversations",
+      "kind": "database",
+      "title": "agent_conversations",
+      "group": "agent",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Actor-owned corporate agent conversation with capability-specific validated context and a bounded execution lease.",
+      "headings": [],
+      "file": "pages/database/agent_conversations.json"
+    },
+    {
+      "id": "database/agent_turns",
+      "kind": "database",
+      "title": "agent_turns",
+      "group": "agent",
+      "source": "docs/generated/database/schema.md",
+      "summary": "One user message and its execution lifecycle, real progress, and versioned assistant outcome. Failed/interrupted turns retain no fabricated answer.",
+      "headings": [],
+      "file": "pages/database/agent_turns.json"
+    },
+    {
       "id": "components/ErrorNotice",
       "kind": "component",
       "title": "ErrorNotice",
@@ -63,6 +275,16 @@
       "summary": "Displays a public API failure message and an optional reload action.",
       "headings": [],
       "file": "pages/components/ErrorNotice.json"
+    },
+    {
+      "id": "components/SalesResults",
+      "kind": "component",
+      "title": "SalesResults",
+      "group": "Web components",
+      "source": "apps/web/src/features/sales/results.tsx",
+      "summary": "Presents validated sales aggregates, distinct units, comparisons and matched products.",
+      "headings": [],
+      "file": "pages/components/SalesResults.json"
     },
     {
       "id": "repository/AGENTS",
@@ -283,6 +505,36 @@
       "summary": "Supersedes: ADR-0014, only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded…",
       "headings": [],
       "file": "pages/repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline.json"
+    },
+    {
+      "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+      "kind": "repository",
+      "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+      "group": "Decisions",
+      "source": "docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability.md",
+      "summary": "IA-MNS's first product capability is Portuguese sales chat over an existing Oracle 12.1 Sankhya database. The owner delegated technical choices and supplied the sales reference…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability.json"
+    },
+    {
+      "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+      "kind": "repository",
+      "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+      "group": "Decisions",
+      "source": "docs/adr/0019-compose-a-corporate-agent-with-durable-conversations.md",
+      "summary": "The owner defines IA-MNS as MNS's corporate AI agent and delegates implementation choices. Sales is the first implemented business capability, not the identity of the product.…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations.json"
+    },
+    {
+      "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+      "kind": "repository",
+      "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+      "group": "Decisions",
+      "source": "docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md",
+      "summary": "The owner requests testing IA-MNS from a phone on the same network. The current web/API bind to loopback, and the credential-free developer access is deliberately unavailable…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -565,6 +817,26 @@
       "file": "pages/repository/docs/database/transactions-and-concurrency.json"
     },
     {
+      "id": "repository/docs/domains/corporate-agent",
+      "kind": "repository",
+      "title": "IA-MNS Corporate Agent",
+      "group": "Domain guides",
+      "source": "docs/domains/corporate-agent.md",
+      "summary": "IA-MNS is MNS's corporate AI agent. Its product identity and conversational experience are independent of its first business capability. It can greet users, respond to…",
+      "headings": [],
+      "file": "pages/repository/docs/domains/corporate-agent.json"
+    },
+    {
+      "id": "repository/docs/domains/sales-chat",
+      "kind": "repository",
+      "title": "Sankhya Sales Capability",
+      "group": "Domain guides",
+      "source": "docs/domains/sales-chat.md",
+      "summary": "The first business capability of the IA-MNS corporate agent lets an authorized MNS sales reader ask questions in Portuguese about confirmed Sankhya sales, receive real…",
+      "headings": [],
+      "file": "pages/repository/docs/domains/sales-chat.json"
+    },
+    {
       "id": "repository/docs/generated/api/errors",
       "kind": "repository",
       "title": "API Error Registry",
@@ -600,7 +872,7 @@
       "title": "Database Reference",
       "group": "Generated references",
       "source": "docs/generated/database/schema.md",
-      "summary": "No application-owned tables exist yet. Add a module's Prisma model, reviewed migration, and metadata, then regenerate this reference.",
+      "summary": "Actor-owned corporate agent conversation with capability-specific validated context and a bounded execution lease.",
       "headings": [],
       "file": "pages/repository/docs/generated/database/schema.json"
     },
@@ -613,6 +885,16 @@
       "summary": "This is the practical reference for turning a revision of Orion into a new, independent project and for keeping that project's foundation current: what to decide and provide,…",
       "headings": [],
       "file": "pages/repository/docs/project-derivation.json"
+    },
+    {
+      "id": "repository/docs/project/corporate-agent-verification",
+      "kind": "repository",
+      "title": "Corporate Agent Verification",
+      "group": "Project guides",
+      "source": "docs/project/corporate-agent-verification.md",
+      "summary": "Verification on 2026-10-01 covers PJ-09 in this local checkout. Existing uncommitted MVP work was preserved. The owner authorized reuse of the configured OpenAI key; no key was…",
+      "headings": [],
+      "file": "pages/repository/docs/project/corporate-agent-verification.json"
     },
     {
       "id": "repository/docs/project/human-actions",
@@ -633,6 +915,26 @@
       "summary": "This is IA-MNS's living execution plan and the current plan for this repository. It tracks product and repository work; the README, current policies, and accepted ADRs govern…",
       "headings": [],
       "file": "pages/repository/docs/project/implementation-plan.json"
+    },
+    {
+      "id": "repository/docs/project/live-sales-verification",
+      "kind": "repository",
+      "title": "Live Sales Runtime Verification",
+      "group": "Project guides",
+      "source": "docs/project/live-sales-verification.md",
+      "summary": "On 2026-10-01 the owner explicitly authorized reusing the manually configured OPENAI_API_KEY and reported SALES_PROVIDER_UNAVAILABLE after removing…",
+      "headings": [],
+      "file": "pages/repository/docs/project/live-sales-verification.json"
+    },
+    {
+      "id": "repository/docs/project/mvp-audit",
+      "kind": "repository",
+      "title": "IA-MNS MVP Readiness Audit",
+      "group": "Project guides",
+      "source": "docs/project/mvp-audit.md",
+      "summary": "Historical review on 2026-10-01. The subsequent corporate agent evolution owns current product identity, durable context and progress; the sales guarantees below remain…",
+      "headings": [],
+      "file": "pages/repository/docs/project/mvp-audit.json"
     },
     {
       "id": "repository/docs/README",
@@ -890,27 +1192,29 @@
       "title": "IA-MNS",
       "group": "Project guides",
       "source": "README.md",
-      "summary": "IA-MNS is a software product built on the Orion engineering foundation. Its product scope has not been recorded yet; define it under PJ-02 and replace this introduction.",
+      "summary": "IA-MNS is MNS's corporate AI agent, built on the Orion engineering foundation. It provides a Portuguese conversation workspace with persistent history and an explicit registry…",
       "headings": [],
       "file": "pages/repository/README.json"
     }
   ],
   "search": {
     "shards": [
+      { "file": "search/0000.json", "count": 16, "kinds": ["api"] },
       {
-        "file": "search/0000.json",
-        "count": 97,
-        "kinds": ["api", "component", "repository"]
+        "file": "search/0001.json",
+        "count": 61,
+        "kinds": ["api", "component", "database", "repository"]
       },
-      { "file": "search/0001.json", "count": 113, "kinds": ["repository"] },
-      { "file": "search/0002.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 143, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 133, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 92, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 95, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 19, "kinds": ["repository"] }
+      { "file": "search/0002.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0003.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0004.json", "count": 166, "kinds": ["repository"] },
+      { "file": "search/0005.json", "count": 114, "kinds": ["repository"] },
+      { "file": "search/0006.json", "count": 121, "kinds": ["repository"] },
+      { "file": "search/0007.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 84, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 48, "kinds": ["repository"] }
     ],
-    "count": 926
+    "count": 1031
   }
 }

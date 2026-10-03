@@ -1,173 +1,758 @@
 [
   {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
+    "id": "repository/docs/project/corporate-agent-verification",
+    "title": "Corporate Agent Verification",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Living Documentation Portal",
-    "anchor": "living-documentation-portal",
-    "text": "Living Documentation Portal\nThe portal needs no API, database, identity provider, or `.env.local`. After the clean-checkout install above, run `pnpm -C apps/web dev` and open `http://127.0.0.1:5173/docs` (or the Vite-printed port plus `/docs`). Use its section navigation and breadcrumbs for API operations, tables, component examples, architecture, guides, policies, and ADRs. Repository documentation opens locally with headings and search, rather than requiring GitHub. Relevant sections also expose AI-readable OpenAPI, database, error, and component references.\nTo try an API route, also run the API as described above, open an API operation, enter declared inputs and a token when the operation requires one, then select **Send request**. Writes require explicit acknowledgement. Tokens and responses remain in memory; no request executes automatically. Cancellation/timeouts do not prove a write was undone. Without the API, reading remains available and request failures are shown safely.\nAfter editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Build with `pnpm -C apps/web build`; preview with `pnpm -C apps/web exec vite preview --host 127.0.0.1`, then open `/docs` on the printed port. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.\n"
+    "heading": "Validation evidence",
+    "anchor": "validation-evidence",
+    "text": "Validation evidence\nFrozen dependency installation and the complete local `pnpm validate` passed: format, lint, types, architectural boundaries, documentation/instructions, environment metadata, migration/provenance guards, generated API/database/SDK/portal checks, 92 API tests, 63 web unit tests, five browser component tests, builds/bundle checks, process smoke and all 20 end-to-end journeys. Remote CI was not run. An earlier complete run retained a historical failure in one shell journey that expected the removed documentation CTA; after updating it to exercise the real application navigation, its focused rerun and the complete gate passed. Final documentation/artifact consistency checks were repeated after recording these results.\nThe tests use synthetic providers and migrated PostgreSQL to cover ownership/current permission, concurrent acceptance, replay/conflict, lease interruption, paging, cascade deletion, context continuity, malformed provider output, redaction, truthful progress, history/reload, unknown acceptance, token memory, light/dark desktop/mobile and accessibility. Synthetic screenshots contain no ERP data. Both themes and the mobile layout were visually inspected.\nFourteen real HTTP scenarios passed using the existing key, actual routing/planning and Oracle 12.1.0.2 in Thick mode. Eight numerical answers were independently reconciled against the owner's complete original reference projection, including grouped rows, unit-specific totals, product sets, prior-year rows and percentage changes. Reference operations ran in a separate READ ONLY snapshot; no financial values or credentials are copied into this report.\nScenario\nResult\n\"Oi, tudo bem?\" and \"O que você pode fazer hoje?\"\nNatural conversation/current registered capabilities; no Oracle stage.\nCurrent stock and a request to change prices\nUnavailable; no Oracle stage or ERP write.\n\"Quanto vendi de maçã por mês nos últimos 3 meses?\"\nJuly 1 through September 30, 2026; three monthly rows and 33 matched products; original SQL matched.\nPlural \"maçãs\", \"mês a mês\", \"último trimestre completo\"\nSame explicit period/filters and reference results.\nConsidered products as a follow-up\nPreserved product/period filters; 33 product rows; reference matched.\n\"Quanto vendi de maçã este mês?\"\nOctober 1, 2026 month-to-date; reference matched.\n\"Quantos quilos de maçã vendi nos últimos 30 dias?\"\nSeptember 2 through October 1; ERP weight calculation matched, with the existing unconfirmed-unit warning.\n\"E comparado ao mesmo período do ano passado?\"\nPreserved July–September filters; current/prior rows, union of 69 products and percentage changes matched.\nQuantity between July and September\nTwo separate ERP units; no cross-unit sum; reference matched.\nMissing period, then \"Nos últimos três meses, separado por mês.\"\nClarification followed by correct July–September monthly answer; reference matched.\nInclude sales and returns\nExplicitly unavailable under the existing reference business rule; no Oracle stage.\nThe real query responses in this run took approximately 14–41 seconds. Progress reduces uncertainty but does not make Oracle faster; the deadline remains bounded and slow/failed executions produce explicit errors rather than guessed results.\nAfter restarting the actual PostgreSQL container and repeating `pnpm db:local`, all 11 conversations from the 14-scenario set had identical HTTP history snapshots. The actual emitted API was then stopped/restarted; those histories remained identical. A real browser, without API interception, reopened a conversation, sent a social thanks and continued with \"Agora mostre por mês, mantendo o mesmo produto e período.\" All four persisted stages were observed, the original filters survived, three monthly rows/33 products matched the already reconciled baseline, and reload retained the conversation. Browser storage held no credentials/transcript. A container restart is durability evidence, not a backup/restore test.\n"
   },
   {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
+    "id": "repository/docs/project/corporate-agent-verification",
+    "title": "Corporate Agent Verification",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Exercise automated workflows",
-    "anchor": "exercise-automated-workflows",
-    "text": "Exercise automated workflows\nAutomated workflows use disposable databases and synthetic identities. No seed data or external account is needed:\npnpm build\npnpm smoke\npnpm test:e2e\n\n`pnpm smoke` exercises the emitted API process, then any module process smokes. `pnpm test:e2e` runs the emitted API and the Vite web app for the shared documentation and shell journeys; module journeys start their own migrated PostgreSQL and synthetic issuer through the shared [end-to-end stack helpers](../apps/web/test/e2e/stack.ts). These fixtures are disposable and are not release or production data.\n"
+    "heading": "Sidebar organization and local upgrade (2026-10-02)",
+    "anchor": "sidebar-organization-and-local-upgrade-2026-10-02",
+    "text": "Sidebar organization and local upgrade (2026-10-02)\nPJ-13 adds an animated, resizable desktop sidebar with a 60-pixel collapsed icon rail. New conversation, title/question search, pinned/archived views, documentation and theme selection live in the sidebar; each history row has a native menu for rename, pin/unpin, archive/restore and delete. Pointer and keyboard resizing, reduced motion, mobile modal focus and row-specific actions are covered by browser journeys. Original shared light/dark palettes and sales semantics are unchanged.\nThe additive `202610020001_conversation_organization` migration was applied to the existing local PostgreSQL database without resetting it. Real local HTTP calls verified title/favorite/archive updates, case-insensitive owned search, restoration and deletion. A fresh database connection read the saved metadata; after removing only the synthetic verification conversation, the existing history count matched. No OpenAI or Oracle request was needed. Migrated disposable-PostgreSQL tests additionally cover manual-title preservation, busy/owner validation, archive/replay/context continuation, literal wildcard escaping and favorite-first pagination.\nThe complete local `pnpm validate` passed after corrections: 95 API tests, 63 web unit tests, five browser component tests and 23 end-to-end journeys, including desktop/mobile accessibility and documentation navigation. The first full run exposed default-scope URL pollution and an accessibility test racing initial rendering; the default active view now keeps the canonical home URL clean, and the test awaits the visible workspace before analysis. No check was disabled or weakened. Generated API/SDK/schema/portal references were refreshed from their sources.\nConversation organization survives reconnect/restart through PostgreSQL. Sidebar expansion and width remain session preferences in memory; reload resets their default values. Search is literal and case-insensitive over titles and sent questions, including archives; accent-insensitive, semantic and answer-body search are intentionally absent. Shared retention/backup/authentication obligations remain unchanged. Manual acceptance should include dragging the desktop edge, using the collapsed shortcuts, renaming/pinning a prior conversation, archiving/restoring it, and cancelling deletion in the mobile drawer.\n"
   },
   {
-    "id": "repository/docs/setup",
-    "title": "Development Setup",
+    "id": "repository/docs/project/corporate-agent-verification",
+    "title": "Corporate Agent Verification",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Validate, regenerate, and build",
-    "anchor": "validate-regenerate-and-build",
-    "text": "Validate, regenerate, and build\nRun the full, non-mutating tracked-source gate after changes:\npnpm validate\n\nIt checks format, lint, types, dependency boundaries, documentation, `.env.example` against API configuration metadata, migration release history, project provenance, current generated references, real PostgreSQL and browser tests, builds, and process smokes. `pnpm references:check` diagnoses generated API/database/SDK drift independently; it migrates a fresh PostgreSQL for the physical database reference and does not repair tracked files. To intentionally change those references, edit their canonical TypeBox/schema/metadata sources and run `pnpm -C apps/api references:write`, then `pnpm -C packages/sdk generate` after an OpenAPI change. Review the generated diff and rerun `pnpm references:check`.\nAfter intentional repository Markdown, API, database, or component-metadata changes, run `pnpm docs:references:write` and review the generated component Markdown, catalog, detail pages, and search shards. Vite serves/emits the existing API, database, error, and component artifacts without committing duplicate copies. `pnpm docs:references:check` is non-mutating and fails on drift, missing component metadata, or known secret patterns; it runs within `pnpm validate` and CI. Do not edit either generated layer directly.\n`pnpm build` emits the API ESM and web static assets into ignored `dist/` directories and checks the browser bundle for known server-only markers. The [release evolution workflow](database/release-evolution.md) governs migrations; no durable release is recorded merely by running these commands.\n"
+    "heading": "Intentional limits and next decisions",
+    "anchor": "intentional-limits-and-next-decisions",
+    "text": "Intentional limits and next decisions\nOnly sales is implemented. Conversation is bounded rather than an unrestricted general-knowledge assistant. Execution is process-local, not a durable workflow engine: crashed work is interrupted after the lease and never automatically resumed. Old temporary transcripts have no durable migration source. Stored answers are historical snapshots, not automatically refreshed ERP data.\nLocal development represents one local owner; production login/shared deployment remain PJ-05. Before shared use, PH-09 requires retention/provider/backup/identity decisions. PH-08 still requires a dedicated SELECT-only Oracle account, currency/weight confirmation and investigation of the legacy fetch discrepancy. PH-10 requires a committed immutable migration baseline before a supported durable release. These are not silently implemented by this review.\nManual interface acceptance should include toggling both themes, reopening an old conversation after closing the browser, continuing its filters, checking a clarification, reading the matched-products list and cancelling/confirming explicit deletion. The automated and real-browser checks do not replace the owner's assessment of conversational tone and presentation.\n"
   },
   {
-    "id": "repository/docs/validation",
-    "title": "Validation",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Validation",
-    "anchor": "validation",
-    "text": "Validation\n"
+    "heading": "IA-MNS Human Actions",
+    "anchor": "ia-mns-human-actions",
+    "text": "IA-MNS Human Actions\n[Project plan](implementation-plan.md) · [Project derivation](../project-derivation.md) · [Secrets policy](../security/secrets-management.md)\n"
   },
   {
-    "id": "repository/docs/validation",
-    "title": "Validation",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Current availability",
-    "anchor": "current-availability",
-    "text": "Current availability\nThe repository has a pnpm workspace, a committed lockfile, and local validation tooling. Install Node.js 24.13.0 and pnpm 11.25.0 (pinned in `.node-version` and `package.json`), then run from the repository root:\npnpm install --frozen-lockfile\npnpm validate\n\n`pnpm validate` runs the independently available checks below in order and stops at the first failure. It is non-interactive and does not fix tracked files. Run a narrower script to diagnose a particular failure.\nCommand\nCurrent check\n`pnpm format:check`\nPrettier checks source and configuration files. Existing authored Markdown is covered by structural checks below, not a repository-wide Prettier baseline.\n`pnpm lint`\nESLint Flat Config checks JavaScript and TypeScript; TypeScript uses typescript-eslint's type-aware rules.\n`pnpm typecheck`\nStrict TypeScript checking of repository tooling, API, generated SDK wrapper, web source, and browser/E2E test code.\n`pnpm architecture`\ndependency-cruiser checks resolvable imports, cycles, and applicable repository/application/package boundary rules. Extend rules with real package ownership and public APIs.\n`pnpm architecture:test`\nNegative and permitted import fixtures verify flat domain, client/SDK, cross-application, cycle and generated-output boundaries.\n`pnpm docs:check`\nChecks local Markdown targets and heading anchors, single top-level headings, ADR filenames/metadata/index entries, and reachability from the root README. It does not verify external URLs or the meaning of a document.\n`pnpm agents:check` / `pnpm agents:test`\nRejects committed instruction copies such as `CLAUDE.md` or `GEMINI.md`, requires the Gemini CLI adapter to set only `context.fileName: [\"AGENTS.md\"]`, and keeps each root-to-directory `AGENTS.md` chain within 32 KiB; tests use disposable Git repositories. See [agent instructions](architecture/agent-instructions.md).\n`pnpm env:example:check`\nCompares the safe root `.env.example` with API TypeBox configuration reference metadata and verifies its active development value parses. Runtime and migration credentials remain separate.\n`pnpm release:check` / `pnpm release:test`\nVerifies recorded durable migration SQL and append-only release history against Git; fixture tests prove tampering fails and unrecorded migrations remain refinable. An empty registry records no release but does not certify that no private durable environment exists.\n`pnpm orion:check` / `pnpm orion:test`\nValidates [`.orion/project.json`](../.orion/project.json) and the [derivation contract](../.orion/derivation.json). In the Orion foundation it verifies that shared files never depend on foundation-only content. In a derived project it requires the project plan and human actions and the root package name of the recorded package scope, rejects foundation-only content and the foundation workspace package scope, requires the recorded Orion commits in history with the baseline an ancestor of `HEAD`, and applies the [remote rules](project-derivation.md#remote-rules) to the clone's `origin` and any `orion-upstream`. Tests initialize, prune, protect, upgrade, work through a fork, and refuse unsafe states in disposable local Git repositories. See [project derivation](project-derivation.md).\n`pnpm references:check`\nChecks API configuration, errors, OpenAPI, and migrated-PostgreSQL references; independently regenerates SDK types from the committed OpenAPI and compares without changing tracked files. Text comparisons normalize checkout line endings, so Windows CRLF does not masquerade as generated-content drift.\n`pnpm docs:references:check`\nDerives the portal catalog, local Markdown/reference pages, search shards, and component Markdown; rejects incomplete metadata, unsafe source content, or missing/stale/orphaned generated output. `pnpm docs:references:write` intentionally regenerates these artifacts.\n`pnpm docs:references:test`\nTests deterministic generation, local links/heading IDs, hostile content, supported schema/reference handling, large inventories, and generated-output lifecycle.\n`pnpm test`\nRuns API Vitest tests, including module tests against migrated PostgreSQL, and web component tests in a real Chromium-family browser through Vitest Browser Mode/Playwright.\n`pnpm build`\nEmits Node-compatible ESM for `apps/api` and a static Vite production build for `apps/web` to ignored `dist/` directories, then checks browser assets for known server-only markers.\n`pnpm smoke`\nStarts the emitted API to check invalid configuration, trace propagation, failed OTLP export, and health, then runs each module process smoke in `apps/api/scripts/smoke/` against the same build.\n`pnpm test:e2e`\nRuns Playwright Test in Chromium against the emitted API and the actual Vite web app: the application shell, local documentation navigation/search, safe API exploration, responsive/keyboard behavior, and axe accessibility scans. Module journeys in `apps/web/test/e2e/<module>/` add their own fresh migrated Testcontainers PostgreSQL with a separate restricted runtime role and signed synthetic identities.\nUse `pnpm format` only when an intentional formatting edit is needed; it writes files and is separate from `pnpm validate`. A formatting failure names the file; type, lint, architecture, and documentation failures report the relevant source location or import/link. Repair the canonical source and rerun the failing script, then the aggregate command.\nTracked text uses LF through `.gitattributes`; reference comparisons normalize checkout line endings. Preserve content when correcting line endings, and do not hide drift by regenerating tracked references.\n`pnpm release:checksums <full-deployed-commit-sha>` prints candidate migration source hashes for the [release recording workflow](database/release-evolution.md); it does not record a release or verify what a database applied.\nThe API runtime, generated SDK, web application, and living documentation portal exist. `pnpm validate` first generates the ignored Prisma client; API references, integration tests, and browser E2E require a Testcontainers-compatible runtime. Browser tests require Playwright Chromium (the local Windows Vitest provider can use installed Edge); CI installs Chromium and its system libraries before running the same validation command. A concrete identity provider remains a conditional owner decision. A GitHub Actions workflow invokes `pnpm validate`; its execution and required-check settings are tracked in [CI status](architecture/continuous-integration.md). First-party workspace dependencies use `workspace:`.\n"
+    "heading": "Purpose and current state",
+    "anchor": "purpose-and-current-state",
+    "text": "Purpose and current state\nThis checklist records IA-MNS's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.\nIA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion—Renovate, branch protection, and security controls—do not apply to this repository; the actions below establish them here. Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.\n"
   },
   {
-    "id": "repository/docs/validation",
-    "title": "Validation",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Accepted responsibilities",
-    "anchor": "accepted-responsibilities",
-    "text": "Accepted responsibilities\nThe [validation ADR](adr/0003-establish-repository-validation-and-architecture-enforcement.md), [testing ADR](adr/0009-establish-testing-strategy-and-tooling.md), and [CI ADR](adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) govern implementation.\nResponsibility\nAccepted mechanism\nFormatting checks\nPrettier; separate checking from automatic fixes\nStatic analysis\nESLint Flat Config and typescript-eslint, with typed linting where useful\nType checking\nTypeScript compiler; test execution and linting do not replace it\nDependency boundaries\ndependency-cruiser, derived from [dependency rules](architecture/dependency-rules.md)\nPure logic\nVitest in Node.js\nInfrastructure integration\nVitest with real dependencies; Testcontainers and migrated PostgreSQL for persistence behavior\nBrowser-dependent component/feature behavior\nVitest Browser Mode with the Playwright provider\nComplete browser journeys\nPlaywright Test; Chromium initially, additional browsers according to product requirements\nDerived artifacts and documentation\nConsistency, links, metadata, and generation checks when their canonical sources and tooling exist\nThe canonical workflow must be deterministic, non-interactive, composable, and non-mutating with respect to tracked source files. Explicit formatting/fix operations remain separate. Managed generated or ignored execution artifacts are not source modifications.\nAdd validation capabilities only when their implementations exist. Individual responsibilities should remain independently runnable where practical. CI must invoke the same validation capabilities rather than maintain different correctness logic. See [CI policy](architecture/continuous-integration.md).\n"
+    "heading": "Maintaining this checklist",
+    "anchor": "maintaining-this-checklist",
+    "text": "Maintaining this checklist\nInspect existing decisions, access, tools, configuration, and prior authorization before requesting human intervention. Complete authorized automation and all useful preparation first.\nKeep one stable `PH-NN` ID per coherent action; never reuse or renumber IDs. Split broad items into independently verifiable actions as they become concrete, and add newly discovered actions immediately.\nEvery action retains its ID, checkbox, owner, status, dependency, and evidence. Active or conditional requests also need the exact action, reason, non-secret configuration names, and verification method. Use `pending`, `in progress`, `completed`, `blocked`, or `changed` consistently with the [plan](implementation-plan.md#maintaining-this-plan).\nBefore asking the user, provide a concrete request: the exact setting or decision, prepared options where appropriate, why automation cannot finish it, affected task IDs, and how completion will be checked.\nIf an action blocks work now, mark the dependent plan task `blocked`, link this entry, and surface the request to the user. Continue independent authorized work.\nUse `[x]` and `completed` only after verification, recording safe evidence and the verification date. If direct verification is unavailable, record the limitation rather than claiming success.\nReopen an action with `[ ]` if later evidence invalidates completion, access expires, or configuration changes, and record why.\nA conditional item that becomes unnecessary remains `[ ]` with status `changed`, an explicit reason, and its future trigger or replacement.\n"
   },
   {
-    "id": "repository/docs/validation",
-    "title": "Validation",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Choosing verification",
-    "anchor": "choosing-verification",
-    "text": "Choosing verification\nUse [testing strategy](architecture/testing-strategy.md) for risk and test-layer selection. During documentation work, run `pnpm docs:check` for links, anchors, reachability, and ADR metadata; use `pnpm docs:references:check` when reviewing generated portal/component output. Run the full `pnpm validate` for substantial work. Structural checks do not replace semantic review, preservation of requirements/ADRs, or the final diff review.\nWhen adding a capability, extend the applicable checks and update this command inventory in the same change. Examples of future commands in ADRs are not evidence that those commands have been implemented.\n"
+    "heading": "Safe configuration handoff",
+    "anchor": "safe-configuration-handoff",
+    "text": "Safe configuration handoff\nRecord configuration names, required scopes, environment, purpose, non-secret resource identifiers, and secure destination. Never record passwords, tokens, API keys, connection strings containing credentials, private keys, or complete environment dumps here, in the plan, in chat, or in tracked example files.\nName only implemented configuration keys and link the [generated configuration reference](../generated/configuration/api.md); do not invent variable names in advance.\nHumans place secrets directly into the selected protected secret store or an explicitly documented ignored local file. Contributors verify presence and authorized behavior without printing secret contents.\nUse synthetic local and test data and ephemeral credentials where possible. Production secrets must not be prerequisites for ordinary development or CI.\n"
   },
   {
-    "id": "repository/docs/validation",
-    "title": "Validation",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Living Documentation manual browser checks",
-    "anchor": "living-documentation-manual-browser-checks",
-    "text": "Living Documentation manual browser checks\nThe automated browser suites run within `pnpm test` and `pnpm validate` and must be reported from actual runs. Use this checklist for human-observed acceptance after material portal changes, and record its results as dated evidence in the repository's plan or human actions.\nStart the [standalone portal](setup.md#living-documentation-portal) for checks 1–6. Repeat deep-link and asset checks against the production build using Vite preview. For checks 7–9, also run the API; for authenticated operations, use a disposable stack with a database and synthetic issuer, such as a module's end-to-end stack, and synthetic data only.\n**Collections and local reading:** From `/docs`, visit API, Data dictionary, Components, Repository docs, and Architecture. Follow Repository docs → Project knowledge → Architecture and use breadcrumbs to return. Read `/docs/repository/docs/setup`, a numbered ADR, and the root README/AGENTS pages. Documentation links and heading anchors should remain local; code links may open the repository host. Select each API group and verify the list changes. Collections with more than 24 direct entries should offer working pagination; an empty collection should say so.\n**Deep links and recovery:** Open `/docs/api/getReadiness`, a table page under `/docs/database` when tables exist, and `/docs/repository/docs/setup#prepare-a-clean-checkout` directly. Reload and use Back/Forward; the same page/section should remain reachable. Follow an outline link, then visit `/docs/repository/docs/not-a-real-document`; expect a useful missing-page message and working navigation back to Overview. Repeat direct loading and reload against Vite preview.\n**Search:** Search separately for `destructive integration suites`, `getReadiness`, a column name when tables exist, and `onReload`. Results should reach the testing policy, API operation, table, and ErrorNotice component respectively, including matching sections where present. Narrow by documentation kind, reload the search URL, and try an unmatched query. Confirm clear empty results and that rapidly replacing a query does not show stale results.\n**Reference completeness and artifacts:** Inspect operation parameters, required fields, authentication, request/response schemas and referenced schemas; inspect table columns, null meaning, lifecycle, constraints and indexes; inspect component props, usage, accessibility and examples. Open the section's OpenAPI/database/component artifact links and confirm they resolve on the local origin with the expected content.\n**Responsive and accessible use:** At desktop width and approximately 390 px, navigate only with Tab, Shift+Tab, Enter and Space. Verify a visible focus indicator, Skip to documentation, usable search and labels, the collapsible Browse documentation menu and On this page outline, logical focus after navigation, and readable errors/status updates. At 200% zoom, check wrapping and access to all controls; wide tables/code may scroll inside their container, but the page should not overflow horizontally. Run an accessibility scan on Overview, API detail, table, component and setup pages, then inspect heading order, contrast, names and status announcements with a screen reader; automated scans alone do not establish accessibility.\n**Synthetic previews and passive privacy:** With browser Network and Storage panels open, exercise the ErrorNotice demonstration reload. Browsing, search and previews must make no API calls or external image/search requests and must not store input in URLs, local storage or session storage. The only permitted storage entry is TanStack Router's session marker with value `1`, written when the portal chunk fails to load and the page reloads once. Its key is `tanstack_router_reload:` followed by the browser's exact module-load error for the portal chunk on the same origin, which names that module and holds no user data. Network inspection should show selected detail assets on demand and search shards only after searching.\n**Explicit API execution:** On `/docs/api/getReadiness`, confirm no API request occurs before Send request. Send once and expect one same-origin `/api/health/ready` request, HTTP 200, elapsed time and JSON status. On an authenticated operation, enter `synthetic-invalid-token`, send and expect HTTP 401 with the public authentication error. Confirm no credential appears in the URL or browser storage.\n**Authenticated mutation and clearing:** With a synthetic token from the disposable stack, open a write operation, enter declared inputs and any required idempotency key. Sending without acknowledgement must make no request. After acknowledging, invalid JSON must show an error without sending; valid JSON should produce one success response. Confirm the created or changed resource through the API. Clear request and response, leave the operation, and reload; token, response and acknowledgement must not persist.\n**Connection failure and cancellation:** Using the browser's network throttling/offline controls, exercise failed connection, cancellation and the 15-second timeout. Verify bounded, understandable feedback, recovery of Send request, and no late response after cancellation/navigation. For a mutation, the message must preserve the possibility that the server accepted it; inspect state before retrying. Confirm responses render as text and headers expose only the safe allowlist. Restore normal network settings afterwards.\nFor rechecks, record the tested commit (or branch and working-tree changes if uncommitted), browser/version, viewport, development versus production preview, results and any failing route/control. Do not attach credentials, request headers or sensitive payloads.\n"
+    "heading": "PH-01",
+    "anchor": "ph-01",
+    "text": "PH-01\n[ ] **Create IA-MNS's repository and publish the initialized default branch.**\n**Status:** pending. **Owner:** project owner or repository administrator.\n**Dependency / trigger:** [PJ-01](implementation-plan.md#current-work); required before this repository has its own pull requests, CI runs, or settings.\n**Request and reason:** Create an empty repository at https://github.com/GabriellMDias/IA-MNS without a generated README, license, or ignore file, then run `git push -u origin main`. Initialization configured `origin` locally but never creates remote repositories or pushes.\n**Configuration:** none. Do not embed credentials in remote URLs.\n**Verification:** `git ls-remote origin main` returns the local `main` commit, and `pnpm orion:check` passes in a fresh clone.\n**Evidence / blocker:** Not started.\n"
   },
   {
-    "id": "repository/docs/versioning",
-    "title": "Orion Foundation Versioning",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Orion Foundation Versioning",
-    "anchor": "orion-foundation-versioning",
-    "text": "Orion Foundation Versioning\n[Documentation index](README.md) · [Project derivation](project-derivation.md) · [ADR-0015](adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nThis policy names stable revisions of the reusable Orion foundation for people comparing releases and planning derived-project upgrades. It does not version a derived product, API contract, database migration, or deployment independently; those boundaries retain their own policies.\n"
+    "heading": "PH-02",
+    "anchor": "ph-02",
+    "text": "PH-02\n[ ] **Require pull requests and the CI gate on this repository's default branch, and keep merge commits available.**\n**Status:** pending. **Owner:** repository administrator.\n**Dependency / trigger:** PH-01; [PJ-01](implementation-plan.md#current-work).\n**Request and reason:** Protect `main`: require pull requests and the `Orion required gate` status check, block force pushes and deletion, and review bypass actors. Keep merge commits allowed and do not require linear history on `main`, because Orion upgrade pull requests must be merged with a merge commit to preserve upstream ancestry ([upgrade workflow](../project-derivation.md#upgrade-to-a-newer-orion-revision)). Branch protection is repository administration that local automation cannot perform.\n**Configuration:** none beyond the repository ruleset and merge settings.\n**Verification:** Read the effective rules for `main` and confirm the required check name matches [CI](../../.github/workflows/ci.yml) and that no linear-history requirement applies; confirm merge commits are allowed; a successful required-gate run appears on a pull request.\n**Evidence / blocker:** Not started.\n"
   },
   {
-    "id": "repository/docs/versioning",
-    "title": "Orion Foundation Versioning",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Identity and release points",
-    "anchor": "identity-and-release-points",
-    "text": "Identity and release points\nThe immutable Git commit SHA is the exact technical identity of a foundation revision. Derived-project provenance records commits, and validation relies on commit identity and ancestry.\nA stable release has one immutable, annotated Git tag named `vMAJOR.MINOR.PATCH`. The tag is the canonical human-readable release identifier and points to the exact Orion commit released. A published tag must never be moved to another commit.\nA GitHub Release may be created from that tag as descriptive metadata. It should concisely state what the release represents, important foundation changes, compatibility or migration notes when relevant, materially required tool/runtime versions, the exact tagged commit, and useful documentation links. It does not establish provenance.\nStable releases start at `v1.0.0`. A tag always identifies the exact commit it was created for; later foundation changes never alter a tagged snapshot.\n"
+    "heading": "PH-03",
+    "anchor": "ph-03",
+    "text": "PH-03\n[ ] **Enable Renovate for this repository.**\n**Status:** pending. **Owner:** repository administrator.\n**Dependency / trigger:** PH-01.\n**Request and reason:** Grant the Renovate GitHub App access to https://github.com/GabriellMDias/IA-MNS so the committed [configuration](../../renovate.json) runs. App installation is an account action.\n**Configuration:** none; no personal token is required.\n**Verification:** Renovate opens this repository's Dependency Dashboard reflecting the committed dependencies and schedule.\n**Evidence / blocker:** Not started.\n"
   },
   {
-    "id": "repository/docs/versioning",
-    "title": "Orion Foundation Versioning",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Where version information belongs",
-    "anchor": "where-version-information-belongs",
-    "text": "Where version information belongs\nKeep the stable Git tag as the single source of the foundation release number. Do not maintain a current-version field or a `VERSION` file alongside it.\nLocation\nResponsibility\n`/docs`\nDisplay a build-time projection of Git release metadata, with unreleased revisions identified explicitly. Derived projects display their recorded Orion baseline SHA. See [portal metadata](architecture/living-documentation.md#sources-and-representations).\n`README.md` and documentation indexes\nLink to this policy and the canonical repository's tags rather than store a current release number. Historical examples and release records may name specific versions.\nRoot and workspace `package.json` files\nDescribe private workspace packages. Their package versions, where present, do not identify an Orion foundation release; package publication would require its own deliberate policy.\n`.orion/project.json`\nRecord project identity and immutable foundation commit provenance. `schemaVersion` identifies the manifest schema, not a foundation release. No semantic-version field is required.\n`ORION_RELEASE_ID` and database release history\nIdentify executable artifacts for telemetry and protect migration history respectively, under their [configuration](architecture/configuration.md#canonical-configuration-schema) and [database evolution](database/release-evolution.md) policies. Do not automatically assign the Orion foundation version to them.\nAfter release tags become available in the local checkout, restart Vite or rebuild the web app to refresh the `/docs` label. An existing build retains its embedded metadata; it does not check GitHub for new releases. No manual version bump or synchronization across tracked files is needed.\n"
+    "heading": "PH-04",
+    "anchor": "ph-04",
+    "text": "PH-04\n[ ] **Enable and verify applicable GitHub security controls.**\n**Status:** pending. **Owner:** repository administrator.\n**Dependency / trigger:** PH-01.\n**Request and reason:** Enable available code scanning, secret scanning and push protection, dependency graph, and vulnerability alerts, and set the Actions variable `DEPENDENCY_REVIEW_ENABLED=true` so the dependency-review job runs. Record entitlement limits for this repository's visibility and plan.\n**Configuration:** Actions variable `DEPENDENCY_REVIEW_ENABLED` (non-secret).\n**Verification:** Inspect effective security settings and a pull-request run in which dependency review executed and the aggregate gate passed.\n**Evidence / blocker:** Not started.\n"
   },
   {
-    "id": "repository/docs/versioning",
-    "title": "Orion Foundation Versioning",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Compatibility meaning",
-    "anchor": "compatibility-meaning",
-    "text": "Compatibility meaning\nChoose the next version from the intended impact on the foundation contract and supported upgrade model for derived projects, not from diff size or the number of merge conflicts.\nPart\nIncrement when\nExamples\nMAJOR\nOrion intentionally makes the foundation contract or supported upgrade model incompatible, requiring deliberate project migration.\nBreaking provenance/schema changes; removal or incompatible replacement of an established foundation contract; previously valid projects becoming unsupported; incompatible derivation or baseline-upgrade rules.\nMINOR\nOrion adds backward-compatible foundation capability.\nOptional architecture or reference patterns, reusable tooling, agent/tool integrations, validation capabilities, or substantial compatible development-experience improvements.\nPATCH\nOrion makes compatible corrections or hardening without intentionally changing the foundation contract.\nBug and documentation fixes, security hardening, test or validation fixes, and small tooling or development-experience corrections.\nA project may legitimately change shared files. A three-way merge can therefore conflict even between compatible Orion releases; resolve the semantic conflict under review. A Git conflict alone does not make the foundation change MAJOR.\nStable tags are sufficient for Orion now. No pre-release tags or workflow are defined; naming such as `-alpha.1`, `-beta.1`, or `-rc.1` can be specified when an actual pre-release need arises.\n"
+    "heading": "PH-05",
+    "anchor": "ph-05",
+    "text": "PH-05\n[x] **Define the product scope and acceptance criteria.**\n**Status:** completed. **Owner:** project owner.\n**Dependency / trigger:** [PJ-02](implementation-plan.md#current-work); required before product modules are implemented.\n**Request and reason:** Describe the product, actors, first capabilities, data classification, identity and authorization needs, and acceptance scenarios. Agents must not invent product requirements.\n**Configuration:** none.\n**Verification:** Requirements are recorded in the repository and linked from the project plan.\n**Evidence / blocker:** Owner initially supplied the focused Portuguese sales-chat scope and reference SQL on 2026-10-01; [requirements and acceptance](../domains/sales-chat.md) record the initial decision. On 2026-10-01 the owner expanded the product direction to the [corporate agent](../domains/corporate-agent.md), retaining sales as the only implemented business capability.\n"
   },
   {
-    "id": "repository/docs/versioning",
-    "title": "Orion Foundation Versioning",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Derived projects and unreleased commits",
-    "anchor": "derived-projects-and-unreleased-commits",
-    "text": "Derived projects and unreleased commits\nA project may be described as derived from `Orion v1.0.0` when its recorded initialization commit equals that tag's target, or as having a `v1.0.0` foundation baseline when its recorded baseline equals the target. Its [manifest](../.orion/project.json) still stores the corresponding SHA, with no required semantic-version field. Tags neither change the [baseline-recording safety rules](project-derivation.md#upgrade-to-a-newer-orion-revision) nor replace normal Git ancestry, reviewed merge commits, and validation for upgrades.\nTo determine whether a recorded commit has a semantic version, inspect stable tags in the canonical Orion repository and compare their resolved commit SHAs with the recorded SHA (for example, `git rev-list -n 1 v1.0.0` in an Orion clone with the tag). The derived project's `orion-upstream` deliberately does not fetch tags, so use a separate Orion clone or the canonical repository's tag view. A nearby or ancestral tag does not name an untagged baseline.\nThe latest stable tag identifies the latest released human-readable version. Later commits on `main` are unreleased foundation revisions; a project can deliberately use one by its SHA. The next semantic version is assigned only when another release point is tagged. Ordinary merges require no new tag.\n"
+    "heading": "PH-06",
+    "anchor": "ph-06",
+    "text": "PH-06\n[ ] **Determine the product license before distribution requires it.**\n**Status:** pending (conditional on distribution). **Owner:** project owner, with legal input when needed.\n**Dependency / trigger:** Publication or distribution of IA-MNS.\n**Request and reason:** Choose the license, copyright holder, and distribution model for IA-MNS's own work. Agents must not choose legal policy by assumption. Material inherited from Orion is Apache-2.0, which does not decide IA-MNS's license.\n**Configuration:** none.\n**Verification:** License files, the README, and publication metadata match the recorded decision.\n**Evidence / blocker:** No product license selected.\n"
   },
   {
-    "id": "repository/packages/sdk/AGENTS",
-    "title": "SDK-local Instructions",
-    "group": "Agent instructions",
-    "kind": "repository",
-    "heading": "SDK-local Instructions",
-    "anchor": "sdk-local-instructions",
-    "text": "SDK-local Instructions\nUse [the package guide](README.md) for ownership and generation. Global repository instructions still apply.\n`src/index.ts` is the public surface. Keep the SDK a thin generated-contract consumer; never import API implementation, persistence, or backend business authorization.\nGenerate `src/generated/api-types.ts` from committed OpenAPI after changing the API's executable contracts. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md); never hand-edit generated types or duplicate wire schemas here.\nThe host supplies bearer tokens through `createApiClient`; do not add token storage, provider-specific identity, or authorization rules.\nPreserve structured errors and safe unknown-code fallback. Consider actual consumer compatibility when changing the client surface or generator; this private workspace package has no independent publication promise.\nRun `pnpm -C packages/sdk typecheck` and root `pnpm references:check`, then root `pnpm validate` before substantial-work handoff.\n"
-  },
-  {
-    "id": "repository/packages/sdk/README",
-    "title": "API SDK",
-    "group": "Workspace guides",
-    "kind": "repository",
-    "heading": "API SDK",
-    "anchor": "api-sdk",
-    "text": "API SDK\n[API modules](../../apps/api/README.md#modules) · [Generated OpenAPI](../../docs/generated/api/openapi.json) · [API policy](../../docs/api/principles.md) · [Web consumer](../../apps/web/README.md)\nThis private workspace package (`packages/sdk`) is the client boundary for the API. [`src/index.ts`](src/index.ts) exports `createApiClient(baseUrl, getAccessToken)`, `ApiClient`, and generated `paths` types. The host provides credentials through the callback; the SDK adds the bearer header without issuing, refreshing, persisting, or logging tokens. It contains no business authorization, persistence, or provider-specific identity model.\nThe API owns executable TypeBox schemas and stable operation IDs. Generated OpenAPI feeds `openapi-typescript`, which produces [`src/generated/api-types.ts`](src/generated/api-types.ts); `openapi-fetch` supplies the thin typed runtime. Never edit generated types or import server implementation models. Compile-time typing does not automatically revalidate successful responses at runtime.\nFrom the repository root, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md): regenerate API OpenAPI first, run `pnpm -C packages/sdk generate`, and regenerate affected portal data. `pnpm references:check` verifies API/database/SDK freshness without editing tracked files. Run `pnpm -C packages/sdk typecheck` and the full `pnpm validate` gate for the client and web consumer.\nThis package has no independently published compatibility promise. A real independently released consumer activates [API compatibility policy](../../docs/api/versioning.md) and a human action to identify its supported baseline; SDK package versions and server contract versions are distinct. Current-source drift checks do not validate a historical released consumer.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "IA-MNS",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "IA-MNS",
-    "anchor": "ia-mns",
-    "text": "IA-MNS\nIA-MNS is a software product built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. Its product scope has not been recorded yet; define it under [PJ-02](docs/project/implementation-plan.md#current-work) and replace this introduction.\n"
+    "heading": "PH-07",
+    "anchor": "ph-07",
+    "text": "PH-07\n[x] **Select the dedicated IA-MNS OpenAI project and securely provision its project key.**\n**Status:** completed. **Owner:** project owner / OpenAI Platform administrator.\n**Dependency / trigger:** [PJ-06](implementation-plan.md#current-work); required for live interpretation, not synthetic tests.\n**Request and reason:** The owner configured a key manually and explicitly authorized reusing it on 2026-10-01, superseding the previous request for a new key and its incomplete picker/destination flow. No new key was created or rotated by the agent.\n**Configuration:** OPENAI_API_KEY, optional OPENAI_MODEL; ignored root .env.local, never browser or tracked source. Minimum application capability: model Responses requests.\n**Verification:** Safe presence check and actual strict Responses interpretation with the configured key/model succeeded; ten live-language HTTP scenarios passed through the real application. [Live evidence](live-sales-verification.md).\n**Evidence / blocker:** Authenticated live interpretation passed on 2026-10-01. Account ownership, project attribution, billing, and retention policy remain owner controls; successful requests do not independently attest those settings. Oracle grants/units remain PH-08.\n"
   },
   {
-    "id": "repository/README",
-    "title": "IA-MNS",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Current state",
-    "anchor": "current-state",
-    "text": "Current state\nThis repository was initialized on 2026-10-01 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It contains the foundation's architecture, policies, accepted ADRs, tooling, validation gate, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal), and no product modules yet: the API serves only health endpoints, and the web application shows its shell and the portal. A concrete authentication provider and production environment have not been selected.\nThe [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\n"
+    "heading": "PH-08",
+    "anchor": "ph-08",
+    "text": "PH-08\n[ ] **Supply read-only Sankhya configuration and reconcile live sales results.**\n**Status:** blocked. **Owner:** project owner and ERP DBA.\n**Dependency / trigger:** [PJ-06](implementation-plan.md#current-work); the owner explicitly reserved credential entry.\n**Request and reason:** Credentials are present and real queries now execute, but the supplied account has seven broad write privileges. Provide a dedicated CREATE SESSION / SELECT-only Oracle reader; do not grant ANY TABLE, DML, DDL, or procedure execution. Preserve table/synonym resolution for TGFCAB, TGFTOP, TGFVEN, TGFITE, TGFPAR, TGFPRO, TGFGRU, TSIEMP, TCSPRJ, TGFVAR, AD_MOTIVODEV, and AD_RESULTADO_LOTE. Confirm BRL currency and the ERP's weight unit. No grants or other ERP state were changed during verification.\n**Configuration:** `SANKHYA_DB_USER`, `SANKHYA_DB_PASSWORD`, `SANKHYA_DB_CONNECT_STRING`; optional `SANKHYA_ORACLE_CLIENT_LIB_DIR` only if installed Oracle Client libraries are needed. `IA_MNS_LOCAL_ACCESS=true` is limited to private local development; shared access instead needs the existing issuer/audience/JWKS settings and sales:read scope.\n**Verification:** Run the acceptance examples and [reconciliation cases](../domains/sales-chat.md#local-execution-and-external-verification), compare totals with the supplied SQL using equivalent full-day date bounds, and verify write grants are absent. Never test writes against the ERP.\n**Evidence / blocker:** On 2026-10-01, Oracle 12.1.0.2 connectivity and nine structured-query reconciliations succeeded in READ ONLY snapshots. Isolated Client 19.32 was checksum-verified and the ignored local library setting updated; Client 11.2/DPI-1050 and Thin/NJS-116 were incompatible. SESSION_PRIVS confirmed seven broad write privileges. Complete-record fetching showed an intermittent difference with small native fetch batches; database-side MINUS found no differences, and a complete bounded fetch matched all 46 fields. The adapter uses the bounded-fetch workaround; the precise legacy driver/server cause still needs DBA investigation. The DBA's reader account and owner confirmation of currency/weight units remain outstanding; The later live-language acceptance and original-SQL reconciliation passed with the manually configured key; the dedicated reader and unit confirmations remain outstanding.\n"
   },
   {
-    "id": "repository/README",
-    "title": "IA-MNS",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Start here",
-    "anchor": "start-here",
-    "text": "Start here\nTask\nEntry point\nFind the policy for a change\n[Documentation task index](docs/README.md)\nUnderstand contributor and agent obligations\n[Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)\nUnderstand architecture and code placement\n[Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)\nAdd a product capability\n[API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation)\nFind a selected technology or its rationale\n[Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)\nDetermine available verification\n[Validation](docs/validation.md)\nReproduce the local workflow\n[Development setup](docs/setup.md)\nExplore local guides, architecture, API routes, data, and components\n[Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data)\nFind outstanding work or required owner decisions\nThe plan and human actions linked from [Current state](#current-state)\nInspect provenance or adopt a newer Orion revision\n[Project derivation](docs/project-derivation.md)\nCreate an operational procedure\n[Runbooks](docs/runbooks/README.md)\nAccepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate.\nDirectory trees in architecture documents describe intended responsibilities, not proof that those directories exist. The physical repository takes precedence over illustrations. English is the canonical repository language; product localization is separate.\n"
+    "heading": "PH-09",
+    "anchor": "ph-09",
+    "text": "PH-09\n[ ] **Define lifecycle and operational controls before shared use of persistent conversations.**\n**Status:** pending (conditional on shared deployment). **Owner:** project owner.\n**Dependency / trigger:** PJ-05; PostgreSQL local history introduced by PJ-09 is explicitly authorized.\n**Request and reason:** Before shared deployment, choose conversation retention/deletion duration, provider data policy, backup/restore requirements and permitted operators. Local history currently persists until its owner explicitly deletes it; no automatic expiry or backup promise is made. Select real employee authentication/permission mapping at that point, not in this task.\n**Configuration:** Existing ORION_DATABASE_URL and verifier settings; no new secret or provider is required for local operation.\n**Verification:** Approved lifecycle controls, recovery evidence and deployment-specific identity exist before sharing confidential history.\n**Evidence / blocker:** Local Docker volume, restricted runtime grants and explicit cascade deletion implemented on 2026-10-01; shared-operation policy remains intentionally undecided.\n"
   },
   {
-    "id": "repository/README",
-    "title": "IA-MNS",
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "License",
-    "anchor": "license",
-    "text": "License\nIA-MNS's product license has not been chosen; [PH-06](docs/project/human-actions.md#ph-06) tracks that decision. Material inherited from Orion remains available under the [Apache License 2.0](LICENSE).\n"
+    "heading": "PH-10",
+    "anchor": "ph-10",
+    "text": "PH-10\n[ ] **Record the first durable migration boundary before publishing a durable release.**\n**Status:** pending (conditional on durable release publication). **Owner:** project owner/release maintainer.\n**Dependency / trigger:** PJ-01/PJ-05 and the repository's [release workflow](../database/release-evolution.md).\n**Request and reason:** Commit the reviewed migration/application baseline and record its immutable commit/checksums in release-history.json when establishing a supported persistent environment. The local conversation migration has been applied; treat its SQL as immutable now. Do not edit applied history because the registry currently has no recorded release. No Git publication or commit is performed by this task.\n**Configuration:** none.\n**Verification:** Release-history validation and supported upgrade evidence reference the actual committed baseline.\n**Evidence / blocker:** Two additive local agent migrations have been applied, including conversation organization on 2026-10-02; no released Git revision or remote release was created.\n"
+  },
+  {
+    "id": "repository/docs/project/human-actions",
+    "title": "IA-MNS Human Actions",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "New action template",
+    "anchor": "new-action-template",
+    "text": "New action template\nAllocate a new stable `PH-NN`; do not reuse existing IDs. Link it from the blocked or conditional plan task.\n## PH-NN\n\n- [ ] **Concrete human action.**\n\n**Status:** pending. **Owner:** actual person or responsible role.\n**Dependency / trigger:** Linked task; whether it blocks current work.\n**Request and reason:** Exact need, completed preparation, and why authorized automation cannot finish it.\n**Configuration:** Exact non-secret names, minimum scopes and secure destination; never secret values. Use \"none\" if no configuration is needed.\n**Verification:** Observable checks required before completion.\n**Evidence / blocker:** Dated safe evidence, outstanding limit, or changed applicability.\n\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "IA-MNS Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "IA-MNS Implementation Plan",
+    "anchor": "ia-mns-implementation-plan",
+    "text": "IA-MNS Implementation Plan\n[Project human actions](human-actions.md) · [Project derivation](../project-derivation.md) · [Validation](../validation.md) · [Documentation index](../README.md)\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "IA-MNS Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Purpose and baseline",
+    "anchor": "purpose-and-baseline",
+    "text": "Purpose and baseline\nThis is IA-MNS's living execution plan and the current plan for this repository. It tracks product and repository work; the [README](../../README.md), current policies, and [accepted ADRs](../adr/README.md) govern implementation.\nIA-MNS was initialized on 2026-10-01 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea` of https://github.com/GabriellMDias/Orion. The [project manifest](../../.orion/project.json) records that immutable initialization commit and the Orion baseline currently integrated. The repository starts with the foundation's architecture, policies, ADRs, tooling, validation gate, CI, generated references, and Living Documentation Portal, and with no product modules. Results recorded for the Orion repository are not results for this repository until they pass in this checkout and in this repository's CI.\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "IA-MNS Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Maintaining this plan",
+    "anchor": "maintaining-this-plan",
+    "text": "Maintaining this plan\nEvery contributor or coding agent performing implementation work must maintain this plan and the [project human actions](human-actions.md) within the user's authorized scope.\nBefore implementation, inspect actual repository state, the relevant task, its prerequisites, governing policy, and linked human actions. Do not treat a planned capability or unchecked action as available.\nMark a task `in progress` when work actually starts. Update statuses when evidence, scope, dependencies, or blockers change, and before each handoff or completion report.\nAllocate stable task IDs as `PJ-NN`; never reuse or renumber them. Add finer tasks when needed; do not hide unfinished subtasks inside a completed row.\nRecord concise evidence in the task row: implementation paths, validation commands and results, review references, or a linked decision. Record evidence produced for this repository—local validation, this repository's CI runs, and this repository's external settings. Do not store secret values or sensitive output.\nA task becomes `completed` only when its deliverables and acceptance criteria are satisfied with evidence. A partial implementation or an unavailable required check is not completion.\nWhen human intervention is necessary, add or update a project human action, link it from the affected task, mark that task `blocked`, and tell the user what is needed. Continue independent authorized work where possible.\nA future prerequisite is `pending`, not automatically `blocked`.\nWhen scope or sequencing changes, use `changed`, explain why and what replaces the work, and link supporting decisions. Do not delete unresolved obligations to make the plan look complete.\nUpdate command availability, current documentation, generated artifacts, and the human actions in the same coherent change where applicable. Do not change ADR status merely to record implementation progress.\nStatus\nMeaning\n`pending`\nNot started; includes conditional work whose trigger has not occurred.\n`in progress`\nWork has started and is incomplete.\n`completed`\nApplicable deliverables and acceptance criteria are satisfied with evidence.\n`blocked`\nThe identified work cannot proceed without a recorded dependency, decision, access, or correction.\n`changed`\nScope, applicability, or sequencing was explicitly revised; reason and replacement or disposition are recorded.\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "IA-MNS Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Constraints throughout implementation",
+    "anchor": "constraints-throughout-implementation",
+    "text": "Constraints throughout implementation\nRetain the accepted stack recorded in the [technology map](../architecture/technology-decisions.md); incompatibilities require explicit resolution rather than silent substitution.\nAdd product capabilities as [API modules](../../apps/api/README.md#modules) and [web modules](../../apps/web/README.md#modules) composed in `apps/api/src/modules.ts` and `apps/web/src/modules.tsx`; Orion's [reference implementation](../project-derivation.md#orions-reference-implementation) shows a complete example.\nDeliver tests, security controls, telemetry, and documentation with the behavior they protect.\nKeep generated artifacts reproducible and subordinate to canonical sources. Reviewed SQL migrations follow their separate release-history rules.\nRequire non-mutating `pnpm validate` for substantial changes, using the same capabilities locally and in CI.\nAdopt newer Orion revisions only through the reviewed [upgrade workflow](../project-derivation.md#upgrade-to-a-newer-orion-revision).\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "IA-MNS Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Current work",
+    "anchor": "current-work",
+    "text": "Current work\nTask\nScope\nStatus\nEvidence / dependency\nPJ-01\nPublish the default branch to this project's `origin`, then verify that `pnpm install --frozen-lockfile` and `pnpm validate` pass and that this repository's required CI gate runs and passes.\npending\nLocal frozen installation and full gate passed on 2026-10-01. Publication and this repository's remote CI remain [PH-01](human-actions.md#ph-01), [PH-02](human-actions.md#ph-02).\nPJ-02\nDefine the product scope, actors, first capabilities, data classification, and acceptance criteria; replace the README introduction.\ncompleted\nOwner request of 2026-10-01; [sales scope and acceptance](../domains/sales-chat.md).\nPJ-03\nImplement the sales API/web module, read-only Oracle adapter, bounded AI interpretation, context, contracts, tests, generated artifacts, and documentation. No application table or ERP migration is needed.\ncompleted\n[API module](../../apps/api/src/features/sales/module.ts), [sales result renderer](../../apps/web/src/features/sales/results.tsx), [decision](../adr/0018-bound-natural-language-sales-to-a-read-only-query-capability.md), generated API/SDK/portal. Local `pnpm validate` passed on 2026-10-01, including 18 browser journeys. Provider boundary tests use synthetic data; live acceptance remains PJ-06.\nPJ-06\nConfigure dedicated external providers and reconcile live Portuguese questions and Oracle 12.1 totals against the owner's reference.\nblocked\nOn 2026-10-01, nine structured queries and the complete current-period reference projection matched real Oracle 12.1.0.2 data using isolated Client 19.32. Actual HTTP/Oracle comparison and empty-result checks passed with a controlled planner. Description matching, query budgets, comparison products, formatting, and malformed provider results were hardened. [Live evidence and limits](../domains/sales-chat.md#local-execution-and-external-verification). The owner subsequently provisioned a key manually and authorized reuse; [PH-07](human-actions.md#ph-07) is complete. Ten actual language requests, eight direct original-SQL reconciliations, and real-browser acceptance passed; [live verification](live-sales-verification.md). [PH-08](human-actions.md#ph-08) still blocks the dedicated SELECT-only account and weight/currency confirmation.\nPJ-07\nAudit the complete sales MVP for internal-pilot readiness, correct relevant defects, review desktop/mobile presentation, and rerun Orion's full gate without adding domains.\ncompleted\n[Readiness audit](mvp-audit.md), 2026-10-01: model clarification text removed; socket budgets, comparison boundaries, bounded monthly filling, Oracle response scope, and previous-only/negative result presentation corrected. Actual HTTP with real Oracle passed comparison, no-result, and 311-row product detail using a controlled planner. Desktop/mobile synthetic journeys and accessibility passed. Frozen installation and full pnpm validate passed: 82 API tests, 63 web unit tests, 5 browser tests, 19 end-to-end journeys. Subsequent PJ-08 verified live interpretation and browser behavior with the owner-authorized key; shared rollout remains dependent on PH-08 and PJ-05.\nPJ-08\nDiagnose the reported live sales runtime failure, validate existing OpenAI credentials and Oracle separately, then reconcile live natural-language sales queries.\ncompleted\n[Live verification](live-sales-verification.md), 2026-10-01: supplied runtime event confirmed DPI-1047 during native client loading; fresh Thin reproduced NJS-116. Compatible Client 19.32 and a complete watcher restart restored the runtime. Existing key/model and Oracle were separately validated. Ten real HTTP scenarios passed; eight numerical answers matched the original SQL, and the real browser question/reconciliation/context deletion passed. Internal diagnostics now identify provider/stage, with redaction regressions. Frozen installation and full pnpm validate passed: 86 API tests, 63 web unit tests, 5 browser tests, 19 end-to-end journeys. PH-07 is complete; PH-08 still requires a dedicated SELECT-only account and unit confirmations.\nPJ-09\nEvolve IA-MNS into the corporate agent: implemented-capability catalog, grounded conversation, actual execution progress, light/dark themes, local Docker PostgreSQL and durable actor-owned conversation/context. Preserve the sales capability and run Orion gates.\ncompleted\n[Architecture](../domains/corporate-agent.md), [ADR-0019](../adr/0019-compose-a-corporate-agent-with-durable-conversations.md), [verification](corporate-agent-verification.md), 2026-10-01: implemented and locally provisioned. Fourteen real HTTP scenarios and eight original-SQL reconciliations passed; actual PostgreSQL/API restart recovery and real-browser context continuation passed. Frozen installation and complete local pnpm validate passed: 92 API, 63 web unit, five browser component tests and 20 end-to-end journeys. Shared lifecycle/release controls remain conditional PH-09/PH-10; PH-08 remains unchanged.\nPJ-10\nEnable temporary owner-controlled phone testing on a selected LAN interface without exposing credential-free developer access, databases or production authentication.\ncompleted\n[ADR-0020](../adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md), [procedure](../setup.md#phone-testing-on-the-local-network), 2026-10-01: separate private-interface web/loopback API, expiring bearer and HTTP Web Crypto UUID fallback implemented. Actual LAN-origin mobile-viewport browser passed social chat, real OpenAI/Oracle monthly apple sales and persisted history recovery; missing/incorrect bearer and foreign origin rejected. Duplicate launch preserves the active credential; credential files and logs remain protected. Existing Node firewall rules needed no change. Complete local pnpm validate passed: 94 API, 63 web unit, five browser component tests and 20 end-to-end journeys. Physical phone reachability still needs the owner's device test; router/client isolation was not verified from that device.\nPJ-11\nGive the corporate agent a full-window conversation layout with a collapsible desktop sidebar, modal mobile history, and compact light/dark presentation.\ncompleted\n[Presentation](../domains/corporate-agent.md#progress-and-presentation), 2026-10-01: removed outer card/margins and duplicate product header; neutral light/dark workspace, 260-pixel collapsible desktop history, native mobile modal and bottom composer implemented. Synthetic browser checks and visual review covered 1366×768/1024×600 notebooks and 390×844/320×568 mobile viewports, accessible themes/modal keyboard recovery, full available width and retained conversation state. Actual local runtime reopened/reloaded an existing monthly result and exercised sidebar/mobile controls without new provider requests. Complete local pnpm validate passed: 94 API, 63 web unit, five browser component tests and 21 end-to-end journeys.\nPJ-04\nReplace the neutral placeholder brand mark and touch icon with the product's visual identity.\ncompleted\nIA-MNS monogram in [canonical SVG](../../apps/web/src/assets/brand-mark.svg); touch icon regenerated with `pnpm -C apps/web identity:write`. Desktop/mobile chat preview reviewed on 2026-10-01.\nPJ-12\nRestore the original shared product/documentation colors while preserving PJ-11's full-window layout and collapsible history.\ncompleted\nOwner clarification of 2026-10-02: removed only the workspace's neutral palette overrides, reusing the existing light/dark tokens in styles.css. Existing theme/persistence/accessibility browser journey passed across desktop/mobile and documentation; restored colors were visually reviewed and stylesheet formatting passed. PJ-11's layout and behavior remain unchanged.\nPJ-13\nAnimate and resize the sidebar, retain a collapsed icon rail, and persist per-conversation organization/search while preserving palettes and sales behavior.\ncompleted\n[Verification](corporate-agent-verification.md#sidebar-organization-and-local-upgrade-2026-10-02), 2026-10-02: owner-scoped rename/pin/archive/restore/search, additive local migration, native menus/modals, pointer/keyboard resize and reduced-motion transitions implemented. Actual local HTTP/PostgreSQL reconnect verified metadata, search, restore/delete and preserved existing history count without provider calls. Complete local pnpm validate passed: 95 API tests, 63 web unit tests, five browser component tests and 23 end-to-end journeys. Generated API/SDK/schema/portal and lifecycle documentation updated. No new human blocker.\nPJ-05\nSelect an identity provider when the product needs one, and establish deployment-specific operation (hosting, secrets, database, telemetry, backups, alerts, runbooks) when real environment requirements exist.\npending\nConditional; add project human actions when triggered. Governing policies: [production access](../security/production-access.md), [secrets](../security/secrets-management.md), [retention](../security/data-retention.md), [alerting](../reliability/alerting.md), [incident response](../security/incident-response.md), [runbook authoring](../runbooks/authoring.md).\n"
+  },
+  {
+    "id": "repository/docs/project/implementation-plan",
+    "title": "IA-MNS Implementation Plan",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Progress and plan changes",
+    "anchor": "progress-and-plan-changes",
+    "text": "Progress and plan changes\nPJ-13 completed on 2026-10-02 with the owner-requested sidebar interaction and durable conversation organization. Existing shared palettes and sales semantics were preserved; no additional business capability was introduced.\nCurrent task statuses own progress. Git preserves detailed editing history. Do not remove unresolved tasks or activation conditions when consolidating completed work.\n"
+  },
+  {
+    "id": "repository/docs/project/live-sales-verification",
+    "title": "Live Sales Runtime Verification",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Live Sales Runtime Verification",
+    "anchor": "live-sales-runtime-verification",
+    "text": "Live Sales Runtime Verification\n[Sales semantics](../domains/sales-chat.md) · [Implementation plan](implementation-plan.md) · [Human actions](human-actions.md)\n"
+  },
+  {
+    "id": "repository/docs/project/live-sales-verification",
+    "title": "Live Sales Runtime Verification",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Failure and root cause",
+    "anchor": "failure-and-root-cause",
+    "text": "Failure and root cause\nOn 2026-10-01 the owner explicitly authorized reusing the manually configured OPENAI_API_KEY and reported SALES_PROVIDER_UNAVAILABLE after removing SANKHYA_ORACLE_CLIENT_LIB_DIR. No key was created or rotated during diagnosis.\nThe owner supplied a correlated sales_provider_unavailable event for request req_b9508661-d561-4516-9843-a65288f8d2d0 / error err_87cf46e9-c126-48f1-9bdc-79e411494aa6. Its cause was DPI-1047 at initOracleClient, before obtaining an Oracle connection. This means the native client selected by that process could not be loaded. The event does not reveal its path or distinguish missing libraries from their dependencies or architecture. It has different IDs from the initially reported request; the original event was unavailable, so no exact-ID correlation is claimed.\nSeparately, a fresh process using the edited environment without a client directory selected Thin mode and failed with NJS-116. Thin supports Oracle 12.1, but not this account's legacy password verifier. A fresh process using the existing compatible Client 19.32 connected successfully in Thick mode to Oracle 12.1.0.2.0 and executed SELECT 1 in a read-only transaction. These constraints are documented in the [official mode comparison](https://node-oracledb.readthedocs.io/en/stable/user_guide/appendix_a.html#password-verifier-support).\nThe live development listener still failed after correcting the file and reloading source, while fresh-process Oracle and OpenAI checks succeeded. The earlier event also attempted client initialization despite the file's removed setting. Startup/inherited configuration therefore mattered: source hot reload was not an effective environment reset. Only the verified API listener and its watcher were restarted; the existing web server was retained. The restarted API then passed the full real-provider workflow.\n"
+  },
+  {
+    "id": "repository/docs/project/live-sales-verification",
+    "title": "Live Sales Runtime Verification",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Changes",
+    "anchor": "changes",
+    "text": "Changes\nRestored only the non-secret Oracle Client directory setting in ignored root .env.local, selecting the already installed compatible Client 19.32. Existing key, password, user, and connection descriptor were preserved. No automatic mode fallback, new installation, password reset, grant, or ERP mutation was performed.\nAdded internal provider/stage metadata to sales failures: OpenAI interpretation; Oracle connection, query, or cleanup. Correlated logs retain public provider codes and safe frames. Public error envelopes remain generic and never expose those internal details, raw messages, configuration, credentials, or SQL.\nAdded regressions for Thin authentication failure, native client loading failure, OpenAI authentication/no retry behavior, and safe HTTP diagnostic correlation/redaction.\nUpdated setup to require a complete development-process restart after environment changes and explain why this account needs Thick. No sales SQL, domain rules, frontend, or product scope changed for this repair.\n"
+  },
+  {
+    "id": "repository/docs/project/live-sales-verification",
+    "title": "Live Sales Runtime Verification",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Separate provider checks",
+    "anchor": "separate-provider-checks",
+    "text": "Separate provider checks\nThe configured OpenAI model accepted the existing key and the actual strict plan_sales_query request. It interpreted the original question as net_value, month grouping, product maçã, July 1 through September 30, 2026, without a comparison. No retry, new key, or model substitution was used.\nOracle was tested independently using the same existing credentials. Without an explicit client it failed with NJS-116; with Client 19.32 it connected in Thick, confirmed server version 12.1.0.2.0, and executed SELECT 1, followed by rollback/close. That isolated both native connectivity and authentication from model behavior.\n"
+  },
+  {
+    "id": "repository/docs/project/live-sales-verification",
+    "title": "Live Sales Runtime Verification",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Real HTTP and reference reconciliation",
+    "anchor": "real-http-and-reference-reconciliation",
+    "text": "Real HTTP and reference reconciliation\nThe real API at loopback port 3000 used its actual OpenAI planner and Oracle adapter. Ten natural-language requests passed. Eight produced sales answers; the other two correctly requested a period or rejected unsupported returns.\nScenario\nVerified interpretation / result shape\nQuanto vendi de maçã por mês nos últimos 3 meses?\nJuly–September 2026, three month rows, 33 considered products.\nMostre o valor líquido das vendas de maçãs mês a mês no último trimestre completo.\nSame dates, net value, and monthly/product scope.\nQuais produtos de maçã foram considerados nessa consulta?\nContext preserves the original filters; 33 product rows and matched products.\nQuanto vendi de maçã este mês?\nOctober 1 to date; one aggregate and one product at verification time.\nQuantos quilos de maçã vendi nos últimos 30 dias?\nSeptember 2–October 1 inclusive, QTDNEG times PESOLIQ, one row and 20 products. The unverified ERP weight unit remains explicit.\nE comparado ao mesmo período do ano passado?\nContext preserves July–September monthly filters; compares July–September 2025, 69 unique products across both periods.\nQual foi a quantidade vendida de maçã entre julho e setembro de 2026?\nTwo ERP unit totals; units are not added together.\nQuanto vendi de maçã? → Nos últimos três meses, separado por mês.\nFixed clarification followed by the correctly scoped monthly query.\nSome as vendas e devoluções de maçã no mês passado.\nUnsupported scope; no partial sales-only answer is substituted.\nAll eight numerical answers were reconciled directly with the owner's original SQL, not a replay of the adapter's optimized CTE. The verification adjusted only date bind bounds to include complete days and applied the equivalent product predicate after the original DISTINCT projection. Aggregate rows, exact decimal totals per unit, previous-period values, percentage changes, and considered-product lists matched. Reference reads shared a separate read-only Oracle snapshot after HTTP execution; this is an observed match, not a claim that HTTP and verification used one cross-process snapshot. Only metadata/counts were saved in ignored test-results/live-sales-acceptance.log and .json; no financial values or source records were persisted.\nThe reference's final TIPMOV = V still excludes returns and bonus sales. “Net value” remains VLRLIQUIDO with the original adjustment precedence; it does not mean revenue after subtracting returns.\n"
+  },
+  {
+    "id": "repository/docs/project/live-sales-verification",
+    "title": "Live Sales Runtime Verification",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Browser, gates, and remaining controls",
+    "anchor": "browser-gates-and-remaining-controls",
+    "text": "Browser, gates, and remaining controls\nThe actual browser at the existing Vite server used the generated SDK/proxy and live API, with no network interception. The original question returned HTTP 200, displayed three monthly rows and 33 considered products, and matched an independent original-SQL aggregate. The input became available again without an alert. New conversation deleted the real server context and returned to the welcome screen. No real-data screenshot, trace, or financial output was saved. SESSION_PRIVS still showed seven broad write privileges.\nFrozen installation and the complete pnpm validate gate passed after the repair: 86 API tests, 63 web unit tests, 5 browser tests, and 19 end-to-end journeys, plus format, lint, types, architecture, instruction/documentation/configuration/provenance validation, API/SDK/portal reference checks, builds, bundle-secret checks, and process smoke. Evidence is in ignored test-results/validation-live-runtime.log. PJ-08 records completion. Synthetic regression tests remain separate from live-provider acceptance and use no real credentials. No remote CI run is claimed.\nThe runtime repair does not resolve the DBA's dedicated SELECT-only account, owner confirmation of BRL/PESOLIQ units, the earlier legacy small-fetch investigation, or shared-use identity/deployment controls. These remain PH-08/PJ-05. Live language acceptance now supplements the earlier [readiness audit](mvp-audit.md); it is not approval for shared deployment. Questions use literal description matching, not a semantic product taxonomy. This finite acceptance set does not prove every future natural-language interpretation.\n"
+  },
+  {
+    "id": "repository/docs/project/mvp-audit",
+    "title": "IA-MNS MVP Readiness Audit",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "IA-MNS MVP Readiness Audit",
+    "anchor": "ia-mns-mvp-readiness-audit",
+    "text": "IA-MNS MVP Readiness Audit\n[Implementation plan](implementation-plan.md) · [Human dependencies](human-actions.md) · [Sales semantics](../domains/sales-chat.md)\n"
+  },
+  {
+    "id": "repository/docs/project/mvp-audit",
+    "title": "IA-MNS MVP Readiness Audit",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Decision and scope",
+    "anchor": "decision-and-scope",
+    "text": "Decision and scope\nHistorical review on 2026-10-01. The subsequent [corporate agent evolution](../domains/corporate-agent.md) owns current product identity, durable context and progress; the sales guarantees below remain relevant. The sales MVP has a coherent Orion module architecture and an executable Portuguese chat interface. It is suitable for continued supervised local evaluation, subject to the external controls below. Subsequent [live verification](live-sales-verification.md) resolved provider interpretation/browser acceptance with the owner-authorized existing key. It is not yet approved for a shared internal rollout. Local validation is evidence about this checkout, not remote CI or account-specific provider behavior.\nThe review covered the API module, OpenAI SDK boundary, deterministic domain calculations, Oracle adapter and reference projection, context lifecycle, authorization, configuration, redacted diagnostics, generated contracts, desktop/mobile presentation, tests, and documentation. No additional business domain, ERP write, grant, migration, deployment, or new infrastructure was introduced. Existing uncommitted MVP work was preserved.\n"
+  },
+  {
+    "id": "repository/docs/project/mvp-audit",
+    "title": "IA-MNS MVP Readiness Audit",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Defects corrected",
+    "anchor": "defects-corrected",
+    "text": "Defects corrected\nFinding\nCorrection and regression boundary\nA clarification could contain arbitrary model-authored text, including invented figures.\nThe internal strict tool accepts only six clarification categories. The application supplies Portuguese prompts. Inconsistent plans and arbitrary text fail closed. SDK tests exercise invented figures, malformed plans, refusal, incomplete responses, multiple calls, and wrong tools.\nFoundation socket inactivity expired after 10 seconds while sales processing allowed 90 seconds. Injection tests did not reveal this transport mismatch.\nThe sales route allows 95 seconds of socket inactivity and retains its 90-second cancellation deadline. A real HTTP regression exercises a deliberately shorter server timeout; real Oracle requests subsequently succeeded beyond 10 seconds.\nComparisons could derive dates before the supported year 2000 boundary.\nBoth periods pass the same calendar/date-window validation before database execution. Prior-year and prior-period boundary tests cover rejection.\nZero filling could expand a bounded monthly result beyond its row cap.\nThe completed monthly series also enforces 500 rows. A regression exercises expansion beyond the cap.\nA well-shaped Oracle row could still carry an unexpected period, unit, grouping, or duplicate aggregate key.\nThe adapter checks each row against the requested scope and rejects duplicate groups before returning totals. Regressions cover wrong years, total/month mismatch, units, product grouping, and repeated rows.\nPrevious-period detail disappeared when current product rows were empty.\nComparison tables are independent of current-row visibility, and an explicit warning separates empty current sales from prior sales. Browser tests inspect the prior-only table.\nPositive-only bars could misrepresent negative adjusted net values.\nNegative results retain their signed table and do not offer the positive-only chart. A browser regression protects this behavior.\nFilters were less inspectable, typography was small, and product navigation mixed languages.\nResults visibly show dates and product scope; typography is more readable; product navigation is Portuguese. Pending questions remain visible while querying. Existing desktop/mobile layout and component ownership were retained.\n"
+  },
+  {
+    "id": "repository/docs/project/mvp-audit",
+    "title": "IA-MNS MVP Readiness Audit",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Confirmed guarantees and limits",
+    "anchor": "confirmed-guarantees-and-limits",
+    "text": "Confirmed guarantees and limits\nThe model selects structured filters; it never supplies SQL, database numbers, public clarification prose, or result arithmetic. Numeric answers, tables, totals, and percentage changes derive from checked Oracle aggregates using decimal arithmetic. This prevents model-authored figures; it does not prove that every natural-language interpretation selects the intended filters.\nThe SQL retains the supplied 46-column DISTINCT grain, joins, adjusted net precedence, operation/product exclusions, confirmed status, and movement rule. The final computed TIPMOV = V excludes returns and bonus sales. “Net value” is the reference's VLRLIQUIDO, not revenue after returns. A request including returns is outside this capability.\nDate ends include the complete calendar day. Sao Paulo determines today. Current and comparison reads share one read-only snapshot; units remain separate. Leap days, missing months, no rows, missing weights, zero comparison bases, accent/case matching, and oversized results have explicit behavior.\nUser text and descriptions remain bound data. Tool shapes are checked. Truncation, provider failure, invalid dates, cancellation, and cleanup failures do not become plausible successful sales answers. Oracle cancellation is covered by an active-call interruption/rollback/close test.\nEvery protected request requires sales:read or deliberate private loopback mode. Actor ownership protects context, including deletion. Context is transient, bounded, and contains filters/questions rather than ERP rows. Browser storage does not persist credentials or results. Local bypass is unsuitable for a shared listener or tunnel.\nCredentials remain server-only and ignored; the root .env.local was verified untracked. Logs retain correlation and allowlisted diagnostic categories without questions, binds, totals, secrets, or connect descriptors. OpenAI receives questions/filter context, not ERP result rows. store:false is not a claim of zero provider retention.\nThe existing separation between planner, application, pure domain, fixed SQL, and Oracle reader is useful. No agent loop, vector database, persisted chat store, new dependency, or abstraction was necessary for this audit.\n"
+  },
+  {
+    "id": "repository/docs/project/mvp-audit",
+    "title": "IA-MNS MVP Readiness Audit",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Executed verification",
+    "anchor": "executed-verification",
+    "text": "Executed verification\nThe same-day reference reconciliation previously compared nine structured scenarios with real Oracle 12.1.0.2: monthly apple net sales for July–September 2026, month to date, 30 inclusive days of weight, quantities by ERP unit, product detail, prior year, preceding equal-length days, accent/case equivalence, and an absent product. Complete reference records and a separate 311-group all-product week were also reconciled. SQL was unchanged during this readiness review; those results do not establish live model interpretation.\nThis review reran three requests through an actual listening Fastify HTTP server and the real Oracle adapter with a controlled planner. Annual comparison passed in 29.2 seconds with three current month rows and 69 products across both periods. No-result handling passed. A seven-day all-product breakdown passed in 27.6 seconds with 311 rows. These were SELECT operations in read-only transactions, followed by rollback and connection release. No ERP mutation was attempted. Evidence is metadata-only in ignored test-results/real-socket-check.log.\nFrozen-lockfile installation and the full pnpm validate gate passed on 2026-10-01: 82 API tests, 63 web unit tests, 5 browser tests, and 19 end-to-end journeys, in addition to generated-reference drift, architectural/security checks, builds, and smoke. Evidence is in ignored test-results/validation-mvp-audit.log. Desktop and mobile browser journeys use synthetic data and check accessibility and overflow. Screenshots are ignored local artifacts, never real sales disclosures. PJ-07 records completion of this audit, while the remaining external-account controls stay separately blocked under PJ-06. No remote CI run is claimed.\n"
+  },
+  {
+    "id": "repository/docs/project/mvp-audit",
+    "title": "IA-MNS MVP Readiness Audit",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Outstanding acceptance and next steps",
+    "anchor": "outstanding-acceptance-and-next-steps",
+    "text": "Outstanding acceptance and next steps\n[PH-07](human-actions.md#ph-07) was subsequently completed: the owner configured a key manually and explicitly authorized reuse. Actual Portuguese queries and original-SQL reconciliation passed in the [live follow-up](live-sales-verification.md). This finite evaluation does not establish every possible future interpretation; account policies remain owner controls.\nComplete [PH-08](human-actions.md#ph-08): provide a dedicated SELECT-only Oracle account. The current account has seven broad write privileges even though this application uses read-only transactions. Confirm BRL and the PESOLIQ unit before describing weight as certified kilograms.\nInvestigate the intermittent legacy Oracle/Thick small-fetch discrepancy with the DBA. Database-side MINUS and complete bounded fetching agreed; the adapter uses the bounded-fetch workaround. The underlying cause remains unverified.\nBefore shared use, select the identity/login provider and deployment controls under PJ-05; local mode and manual bearer input are not a complete employee sign-in experience. Publish and verify this repository's own CI/settings under PH-01–PH-04 when authorized.\nManual acceptance should inspect the displayed product/date scope for differently phrased questions, complete-month versus rolling-day periods, variety names, contextual changes, ambiguous or unsupported filters, empty current comparisons, and weight warnings. Check keyboard submission, error recovery, new-conversation deletion, mobile scrolling, and tables with long product descriptions. Do not broaden into purchases, stock, production, orders, or automation before sales interpretation acceptance.\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Documentation Task Index",
+    "anchor": "documentation-task-index",
+    "text": "Documentation Task Index\nChoose the route relevant to the change, then use the policy's headings and source links for focused reading. Related policies apply when the change crosses their boundaries. The repository has an API runtime with composable modules and PostgreSQL support, a generated SDK, and a web application shell with this portal; the README's [Current state](../README.md#current-state) says which modules this repository composes. [Selected technologies](architecture/technology-decisions.md) are not proof of [implemented commands](validation.md).\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Find the smallest useful context",
+    "anchor": "find-the-smallest-useful-context",
+    "text": "Find the smallest useful context\nRead the root and applicable nested `AGENTS.md`, then select the task route below. Read related policies only when the change crosses their boundaries.\nFollow the owner to its canonical source and relevant tests. For a complete implemented example, see [Orion's reference implementation](project-derivation.md#orions-reference-implementation). For commands, use [setup](setup.md) and [validation](validation.md).\nConsult the [technology map](architecture/technology-decisions.md) and governing ADR for an architectural choice or rationale. Accepted ADRs preserve decision-time context; their future-tense examples are not current command inventories.\nIf implementation and policy disagree, record the discrepancy and resolve it within the task's scope. Do not infer that a requirement is implemented or weaken it to match a gap.\n[Contributing](contributing.md#documentation-ownership) owns documentation responsibilities. The implementation plan owns execution status and the human-action checklist owns actual owner/access prerequisites; the README's [Current state](../README.md#current-state) links this repository's copies. Neither activates conditional deployment work.\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Architecture and implementation",
+    "anchor": "architecture-and-implementation",
+    "text": "Architecture and implementation\nTask\nAuthoritative policy\nUnderstand IA-MNS as a corporate agent and extend its capability registry\n[Corporate agent](domains/corporate-agent.md), [sales capability](domains/sales-chat.md)\nExecute or track implementation work\nThe implementation plan linked from the README's [Current state](../README.md#current-state)\nStart a new project from Orion, check its provenance, or upgrade its Orion baseline\n[Start and upgrade a project from Orion](project-derivation.md)\nName a stable Orion foundation release or assess derived-project compatibility\n[Foundation versioning](versioning.md)\nChange agent instruction files or tool compatibility adapters\n[Agent instructions](architecture/agent-instructions.md)\nReproduce development setup, local execution, and the validation gate\n[Development setup](setup.md)\nRun the living API/data/component portal and understand its architecture\n[Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md)\nResolve owner decisions, external access, or other human prerequisites\nThe human-action checklist linked from the README's [Current state](../README.md#current-state)\nAdd an API module or web workflow\n[API runtime](../apps/api/README.md#modules), [web workflow](../apps/web/README.md#modules)\nStudy a complete implemented example across database, API, SDK, and UI\n[Orion's reference implementation](project-derivation.md#orions-reference-implementation)\nEvaluate architectural tradeoffs or exceptions\n[Principles](architecture/principles.md)\nFind selected technology decisions\n[Technology decisions](architecture/technology-decisions.md)\nPlace code or create an application/package\n[Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md)\nAdd imports or shared dependencies\n[Dependency rules](architecture/dependency-rules.md)\nModel failures and translate boundaries\n[Error handling](architecture/error-handling.md)\nAdd configuration\n[Configuration](architecture/configuration.md)\nChoose test coverage and execution layers\n[Testing strategy](architecture/testing-strategy.md), [validation availability](validation.md)\nChange independently deployed or persisted contracts\n[Versioning and compatibility](architecture/versioning-and-compatibility.md)\nHandle delivery, retries, and external side effects\n[Delivery and side effects](architecture/delivery-and-side-effects.md)\nImplement CI or dependency automation\n[Continuous integration](architecture/continuous-integration.md)\nChange backend execution or regenerate derived references\n[Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md)\nRun or extend the current API feature\n[API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json)\nRun or extend the web workflow or generated SDK\n[Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts)\nChange the SDK public surface or generated types\n[SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "APIs and data",
+    "anchor": "apis-and-data",
+    "text": "APIs and data\nTask\nAuthoritative policy\nDesign an operation or generate a client\n[API principles](api/principles.md)\nExpose an error\n[API error contract](api/error-contract.md)\nEvolve, deprecate, or retire an API contract\n[API versioning](api/versioning.md)\nModel persistent data and ownership\n[Database principles](database/principles.md)\nChange durable schema or migration history\n[Migrations](database/migrations.md)\nEstablish release status, test upgrades, or plan application/database recovery\n[Release and evolution workflow](database/release-evolution.md)\nDocument or generate database reference\n[Schema documentation](database/schema-documentation.md)\nInspect the migrated database schema\n[Generated database reference](generated/database/schema.md)\nFind the current machine-readable API contract and public errors\n[OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md)\nInspect API configuration names, types, defaults, and visibility\n[Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md)\nFind the generated frontend component reference\n[Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json)\nProtect atomicity or concurrent writes\n[Transactions and concurrency](database/transactions-and-concurrency.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Reliability",
+    "anchor": "reliability",
+    "text": "Reliability\nTask\nAuthoritative policy\nSelect or integrate diagnostic signals\n[Observability](reliability/observability.md)\nAdd structured events\n[Logging](reliability/logging.md)\nInstrument causal execution and propagation\n[Tracing](reliability/tracing.md)\nAdd measurements and bounded dimensions\n[Metrics](reliability/metrics.md)\nCapture and group unexpected failures\n[Error reporting](reliability/error-reporting.md)\nChange startup, liveness, readiness, or shutdown\n[Health checks](reliability/health-checks.md)\nCreate actionable alerts\n[Alerting](reliability/alerting.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Security and operations",
+    "anchor": "security-and-operations",
+    "text": "Security and operations\nTask\nAuthoritative policy\nClassify, expose, copy, or export data\n[Data classification](security/data-classification.md)\nCapture telemetry fields or payloads\n[Telemetry redaction](security/telemetry-redaction.md)\nIntroduce, deliver, rotate, or revoke credentials\n[Secrets management](security/secrets-management.md)\nVerify identity or manage authentication state\n[Authentication](security/authentication.md)\nEnforce capabilities and tenant/resource isolation\n[Authorization](security/authorization.md)\nAccess production or perform privileged actions\n[Production access](security/production-access.md)\nRetain, delete, restore, or propagate deletion\n[Data retention](security/data-retention.md)\nContain an incident and verify recovery\n[Incident response](security/incident-response.md)\nFollow or author an operational procedure\n[Runbook index](runbooks/README.md), [authoring](runbooks/authoring.md), [template](runbooks/template.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Decisions and documentation",
+    "anchor": "decisions-and-documentation",
+    "text": "Decisions and documentation\n[ADR index](adr/README.md): significant decisions and their rationale; status belongs to each ADR.\n[ADR authoring](adr/authoring.md) and [template](adr/template.md): proposals, acceptance, historical integrity, and supersession.\n[Contributing](contributing.md): change workflow, documentation ownership, canonical sources, maintenance, and review.\n[Global agent instructions](../AGENTS.md): invariants, command availability, and conditional routes for every contributor and agent; [agent instructions](architecture/agent-instructions.md) owns tool compatibility.\nCurrent policies describe current architectural expectations. ADRs preserve decision history; [setup](setup.md) and [release evolution](database/release-evolution.md) describe real procedures. Generated references exist for the current API, configuration, errors, database, and web components. The portal renders these sources in the existing web application. No production runbook exists without a selected environment.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alerting",
+    "anchor": "alerting",
+    "text": "Alerting\nThis policy owns actionable alert conditions, severity, ownership, notification, and rule maintenance. [Metrics](metrics.md) owns measurement semantics; [incident response](../security/incident-response.md) owns incidents; [runbooks](../runbooks/README.md) own executable procedures. Alerts direct human or automated attention to a condition requiring action, rather than notifying merely because a signal exists.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current scope",
+    "anchor": "current-scope",
+    "text": "Current scope\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) leaves the observability backend and deployment alerting infrastructure application-specific. The API has runtime telemetry and health checks, but no deployed alert rules, paging provider, on-call schedule, service objectives, or alert-as-code validation. This policy establishes constraints for introducing them; it does not authorize or start deployment work.\nProvider, severity taxonomy, channels/escalation, SLO tooling and burn-rate thresholds, ownership metadata, maintenance windows, and rollback integration must follow actual team structure, topology, service expectations, and operational tooling. Significant architectural choices require an ADR. Do not invent deployment thresholds or missing capabilities to fill documentation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alert severity and response",
+    "anchor": "alert-severity-and-response",
+    "text": "Alert severity and response\nUse a small consistent severity model whose levels determine response time, channel, and escalation. Severity reflects impact and urgency, not alarming wording or one HTTP error. The following is conceptual guidance, not a selected severity taxonomy or response-time commitment.\nImpact\nAppropriate response\nMajor outage, data integrity/security risk, critical workflow unavailable, widespread failure without recovery\nMay require immediate paging.\nSubstantial degradation, increasing failure rate, important dependency failure, or backlog threatening objectives\nPrompt action; page only when it cannot safely wait.\nLimited degradation with workaround or actionable capacity trend\nBusiness-hours notification or owned work item may fit.\nNoncritical trend, deprecation use, or an isolated automatically recovered instance\nDashboard/periodic review; avoid competing with urgent alerts.\nPaging is for a reliable condition requiring action before the next normal working period, with an authorized recipient who can mitigate it. Safe automatic recovery may eliminate the need to page. Critical unacknowledged alerts need an escalation path; broadcasting to everyone is not ownership. Email suits slower risks; critical incidents must not rely only on easily missed chat notifications.\nProduction and non-production must be distinguishable. Staging may notify development/release owners; local development should not generate operational alerts, and ordinary test failures should fail CI rather than page production responders.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Symptom-based alerting",
+    "anchor": "symptom-based-alerting",
+    "text": "Symptom-based alerting\nPrefer evidence of user/service impact: valid requests failing, latency objectives violated, work missing deadlines, or a critical operation unavailable. Cause metrics support investigation. Preventive cause alerts are appropriate when a known risk, meaningful response window, and effective action can prevent impact, such as full storage, expiring certificates, recovery-threatening replication lag, or an undrainable queue.\nAn alert must answer what action follows. If none is required, use a dashboard, metric, log, periodic review, or ticket as appropriate. Before adding a signal, inspect existing symptom alerts for the same incident. Do not page separately on every error, restart, unready replica, retry, short circuit-breaker transition, or arbitrary resource percentage.\nPrefer safe, understood, verifiable automatic recovery; notify when it fails, repeats excessively, threatens capacity/redundancy, or leaves meaningful impact. Unique/stateful instances and data-risk failures may justify instance-level alerts even when stateless replicated services use service-level aggregation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alert ownership and context",
+    "anchor": "alert-ownership-and-context",
+    "text": "Alert ownership and context\nEvery alert must identify an owner able and authorized to act. Ownership can follow service, domain, application, or infrastructure responsibility. Shared dependency failures need coordinated response across infrastructure and affected application owners, not independent competing investigations.\nUse stable semantic names describing the condition; keep volatile thresholds in configuration. Names, ownership, severity, service, environment, and signal type should be machine-readable where tooling supports it. Do not group alerts primarily by arbitrary message text or use high-cardinality personal data in queries.\nA concise notification should explain impact, duration, current value versus threshold/objective, release when relevant, owner, and first investigation step. Link directly to useful dashboards/runbooks and safe trace/error references where available. Investigators should be able to connect the condition to affected service/release, metrics, error groups, traces, and recovery guidance.\nNotifications must contain only safe operational context. Chat/paging access may be broader than production telemetry: keep detailed evidence in authorized systems, and never include credentials, raw payloads, personal data, or restricted identifiers. Follow [telemetry redaction](../security/telemetry-redaction.md) and [production access](../security/production-access.md), including for AI investigation.\nAcknowledgement assigns response ownership; it does not resolve the condition. Alert resolution means the triggering condition cleared, not that the root cause is permanently fixed or the incident is closed. [Incident response](../security/incident-response.md) determines proportional coordination and closure based on impact, duration, data/security risk, and involved owners. Incidents may arise without an automated alert, and not every alert becomes an incident.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Thresholds, windows, and missing data",
+    "anchor": "thresholds-windows-and-missing-data",
+    "text": "Thresholds, windows, and missing data\nThresholds require evidence: real service expectations/SLOs, capacity/safe limits, deadlines, known operational requirements, or an appropriate historical baseline. Never invent arbitrary availability percentages or round resource thresholds. Dynamic/anomaly rules add false-positive risk; use them when simpler rules cannot express the condition effectively.\nPersistence windows, hysteresis, and aggregation can reduce flapping. Choose duration from time-to-impact; corruption, all replicas unavailable, or security breach indicators may require immediate action. Slow risks should allow useful remediation lead time. A pending period is a deliberate delay, not a universal requirement. Recovery thresholds/notifications should represent actual improvement.\nDefine missing-data semantics explicitly: no traffic, dead service, failed exporter, and renamed metric are different states. Absence must not silently equal healthy zero. Observability pipeline impairment can justify an alert when diagnostic capability is materially lost; avoid one page per backend hiccup. Telemetry failure should not normally break business operations, but prolonged blindness can require intervention.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "SLO-based alerting",
+    "anchor": "slo-based-alerting",
+    "text": "SLO-based alerting\nWhen meaningful SLOs exist, prefer user-impact measurements from accurate SLIs. Define eligible/successful requests or events and distinguish technical failures from expected client/business outcomes. An incorrect denominator makes the alert misleading.\nAn error budget is the permitted failure allowance over the objective window. Burn rate describes consumption relative to the rate that would exhaust that allowance over the window: a rate of one follows that planned rate. Fast burn over short windows may require paging; slower sustained burn may justify less urgent work. Short and longer confirmation windows can reduce transient false positives. Select formulas, thresholds, windows, and slow-burn coverage only against actual objectives and validate behavior.\nInfrastructure alerts can coexist with SLO alerts when they detect distinct preventive risks. A service objective should not be fabricated to justify an existing metric threshold.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Choosing the signal",
+    "anchor": "choosing-the-signal",
+    "text": "Choosing the signal\nSurface\nDecision rule\nError rate\nUse a meaningful denominator and enough traffic. Low-volume services may need minimum counts, longer windows, or absolute failure conditions. Expected business declines are not availability failures.\nLatency\nPrefer distributions or objective thresholds to averages alone; tail percentiles such as p99 can be unstable at low volume.\nQueue\nCombine age, arrival/processing throughput, drain capacity, deadlines, and backlog. Depth alone does not establish impact. Dead letters matter when important work has exhausted recovery; one malformed noncritical item may not page.\nDependency\nMeasure the application's observed impact; a provider status page is supporting context. Coordinate shared-provider incidents.\nDatabase\nConsider sustained latency, deadlock surges, unavailability, recovery-threatening lag, or pool saturation causing waits/timeouts/failures. Do not alert on every slow-query fingerprint prematurely.\nCPU/memory\nUse demonstrated saturation, latency, lost headroom, unexpected growth, eviction/restart, or known failure limits. High healthy utilization alone is insufficient.\nStorage, certificates, expiring secrets\nGive enough preventive lead time. Prefer automated renewal/rotation where safe rather than relying only on notifications.\nBackups/restore\nDistinguish one retryable attempt from recovery objectives at risk. Successful backup creation does not establish recoverability; restore verification can have separate signals.\nMigration\nProduction failure must immediately become visible to deployment systems. Human paging depends on release state, impact, and safe recovery.\nReadiness/liveness\nAssess ready capacity, redundancy, duration, traffic, and restart loops. A healthy pool should usually recover one stateless replica automatically.\nError tracker\nNew actionable issues, regressions, fatal crashes, or frequency changes may matter. Unsupported client-extension noise does not deserve the same response as a critical backend workflow failure.\nSecurity/audit\nSecurity-specific detection/escalation follows incident policy. Recording a privileged action does not automatically require notification; suspicious or policy-significant conditions may.\nQuota/cost\nFor quotas consider consumption, growth, and time until reset. Reliable trends can support preventive work; budget notifications are not automatically reliability incidents.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Deduplication, maintenance, and deployment",
+    "anchor": "deduplication-maintenance-and-deployment",
+    "text": "Deduplication, maintenance, and deployment\nAggregate identical replica failures into the service condition. A primary symptom can page while related dependency signals remain supporting context. Parent-condition suppression must not hide unrelated independent failures.\nMaintenance suppression must be explicit, owned, scoped, and time-bounded. Do not permanently mute alerts or disable all alerting during every deployment; releases are when regressions often appear. Suppress only known expected behavior for its actual window, and correlate alerts with recent deployment/release annotations where practical.\nCanary comparison and automated rollback remain deployment capabilities, not foundation defaults. Any automation needs high-confidence signals, clear rollback safety, bounded execution, and auditability. Never attach noisy alerts to destructive automated actions. Canary error/latency/critical-success comparisons must follow an actual release policy.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Rule lifecycle and noisy alert review",
+    "anchor": "rule-lifecycle-and-noisy-alert-review",
+    "text": "Rule lifecycle and noisy alert review\nPrefer version-controlled, reviewed, reproducible rules where tooling supports them. Provider-side manual rules may be acceptable during early experimentation; long-term critical detection should be reproducible from repository-controlled configuration. Review critical changes like production code.\nValidate query syntax, metric/label existence, expressions, metadata, and runbook links with available tools. Critical rules need meaningful healthy/unhealthy/recovery evidence through query fixtures, rule tests, or safe staging simulation. Document unavailable checks rather than claiming verification.\nHigh-severity alerts should have useful runbooks when practical. Prioritize recurring high-impact gaps. A runbook should identify actual signals/queries, common causes, safe mitigation, verification, and escalation rather than merely saying \"check logs\". Follow [runbook authoring](../runbooks/authoring.md); a runbook does not grant operational authority.\nTreat chronic noise as a defect. Review signal, threshold, duration, flapping, expected behavior, ownership, automatic recovery, duplicate coverage, severity/channel, and whether automation or a root-cause fix removes recurring manual work. Raising thresholds, permanent muting, or deletion without understanding the signal is not a fix. Before removing an established alert, identify its original purpose, replacement coverage, and dependent runbooks.\nAs operational needs grow, assess pages per incident, false positives, alerts with no action, acknowledgement time, and repeated noise. Measurements should guide improvements rather than create another alert stream.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "New alert checklist",
+    "anchor": "new-alert-checklist",
+    "text": "New alert checklist\nBefore creating or changing an alert, establish:\nThe condition, actual impact/risk, required action, urgency, and authorized owner.\nA stable reliable signal, meaningful denominator/missing-data semantics, justified threshold, persistence/recovery behavior, and representative tests.\nWhether safe recovery, an existing symptom alert, aggregation, or a work item better addresses the condition.\nSafe concise context, correct environment/channel/escalation, and useful investigation/runbook links.\nFor paging: why action cannot wait, whether the recipient can mitigate it, and how duplicate pages and unacknowledged incidents are handled.\nFor SLO/resource alerts: real objective/eligible population or safe capacity/deadline, expected impact, and sufficient lead time for the response.\nAn alert is not ready if its impact, action, ownership, or threshold justification cannot be explained. Available repository checks are listed in [validation](../validation.md); deployment-specific alert tooling remains conditional.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Error Reporting",
+    "anchor": "error-reporting",
+    "text": "Error Reporting\nThis policy owns unexpected-failure capture, diagnostic context, grouping, and issue triage. [Error handling](../architecture/error-handling.md) owns application failure semantics; the [public error contract](../api/error-contract.md) owns responses. Error tracking complements logs, traces, and metrics; it is neither an audit ledger nor a business analytics store.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation and accepted direction",
+    "anchor": "current-implementation-and-accepted-direction",
+    "text": "Current implementation and accepted direction\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) establishes central error handling, Pino logs, and OpenTelemetry correlation as the foundation. A dedicated error-reporting provider is optional and deployment-specific. No global tracker, provider SDK, source-map upload pipeline, browser crash integration, or issue-routing service is implemented. These capabilities must follow real application needs; do not add a generic provider abstraction without an application responsibility.\nThe API [error boundary](../../apps/api/src/app.ts) reports one `unhandled_request_error` with a stable error ID and [bounded safe diagnostics](../../apps/api/src/error-diagnostics.ts), then returns a safe [`INTERNAL_ERROR` envelope](../../apps/api/src/errors.ts). Only allowlisted error types/codes and repository-owned frame locations are retained; raw messages, arbitrary stacks, and cause objects are excluded. Authentication infrastructure failure receives a safe 503 and `authentication_unavailable` diagnostic. [Startup](../../apps/api/src/main.ts) catches configuration, initialization, connection, and listen failures, attempts bounded cleanup, and emits a fixed safe fallback record if the logger does not yet exist. [Observability](observability.md) owns current correlation and release context.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Expected vs unexpected",
+    "anchor": "expected-vs-unexpected",
+    "text": "Expected vs unexpected\nClassification is semantic, not determined by an exception type or HTTP status.\nFailure\nReporting treatment\nModeled validation, invalid credentials, permission denial, not-found, rate limit, domain rejection, or optimistic concurrency conflict\nNormal error contract; useful aggregate metrics, safe operational/security logs, and required audit events. Do not create tracker issues by default.\nMissing required internal state, broken invariant, programming defect, unexpected provider shape, or authentication subsystem crash\nUnexpected: surface safe diagnostic evidence at the owning boundary.\nProvider business decline\nExpected provider/domain outcome; distinguish it from provider availability failure.\nDependency outage or exhausted retries\nOperational failure; report the logical failed operation where appropriate, not an issue per retry.\nTransient failure/deadlock recovered by retry\nPrefer attempt/outcome metrics, traces, and bounded warnings. Repeated or unrecoverable failures must remain visible.\nClient offline state, cancelled navigation, unsupported extension, or external script failure\nClassify against product behavior and ownership; use deliberate noise filters rather than treating every event as an application defect.\nA specific security or operational requirement may justify capturing an otherwise expected outcome; document the reason and bounded scope. Sampling does not replace correct classification.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Report once",
+    "anchor": "report-once",
+    "text": "Report once\nEach execution model needs an authoritative final boundary: HTTP handler, job runner, consumer wrapper, scheduler, CLI entry point, or client error boundary. Capture an unexpected failure once there. Intermediate layers may translate, wrap, enrich, and preserve cause without duplicate capture. If a catch intentionally consumes an unexpected failure, that layer owns reporting or another explicit way to surface it. Never silently lose it.\nPrefer the actual exception or an equivalent safe structured representation over a generic string. Preserve meaningful type, internal-safe message, stack, cause chain, stable code, and diagnostic metadata where supported and permitted. Sanitization must precede export; preserving a cause never authorizes recursively serializing arbitrary exception attachments. SDK/ORM/database errors can contain credentials, request/response bodies, query values, or connection details.\nFatal startup/process failures should produce a safe diagnostic where possible even if the tracker cannot initialize. Uncaught failures that leave process state unsafe require safe termination; capture does not make continued execution safe. Fatal and short-lived processes may need a bounded best-effort flush, never indefinite shutdown waiting. Follow [lifecycle and error handling](../architecture/error-handling.md).\nClient error boundaries, when introduced, should capture unexpected rendering/runtime errors, show safe fallback UI, and preserve useful correlation. Recovery must be intentional and must not conceal persistent broken state. Framework boundaries do not capture every browser rejection, resource failure, native crash, or hang; choose platform-specific coverage only where required.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Public vs internal error",
+    "anchor": "public-vs-internal-error",
+    "text": "Public vs internal error\nKeep public messages/codes separate from internal diagnostic evidence. Internal stacks and provider details must not leak through responses. An opaque `errorId` can connect a support reference to an occurrence, logs, and trace; it never grants telemetry access. Support staff and AI investigators need the same authorization as any other production investigator.\nCapture the producing service/application, environment, deployed release, and semantic operation. Release identity must identify the actual artifact, remain correlatable after rollback, and not be confused with API, SDK, or database version. Production and non-production must be distinguishable. Meaningful tracker regression analysis requires release metadata.\nInclude active trace/span and request correlation where available, preferably through infrastructure rather than manual copying. Follow [logging's correlation convention](logging.md#current-implementation-and-contract); public API field names are a separate contract. Request IDs remain useful when tracing is sampled. Background work can add safe job/event identity, type/consumer, and attempt, never the entire payload. Stable error codes and bounded semantic categories may help investigation; arbitrary messages are not error codes.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Context and capture safety",
+    "anchor": "context-and-capture-safety",
+    "text": "Context and capture safety\n[Telemetry redaction](../security/telemetry-redaction.md) and [data classification](../security/data-classification.md) govern every field, including automatic SDK capture. Use minimum explicit safe projections. If context cannot be sanitized confidently, drop it. Never intentionally send `RESTRICTED` data; provider-side filters are defense in depth.\nIndexed tags must be stable, bounded, and safe, such as service/environment/operation/code/provider. High-cardinality request, trace, user, resource, and job IDs belong in permitted non-indexed context when provider indexing costs warrant it. Context still needs size/nesting limits and a diagnostic purpose.\nPrefer opaque actor/tenant IDs to names, email, phone, or tenant metadata. Extra personal data requires an explicit approved need. Anonymous session IDs require safe semantics and bounded retention. Device/OS/app/locale metadata should be minimized; unnecessary IP collection and precise geolocation should be disabled/minimized. Do not indiscriminately collect desktop paths, usernames, or machine names.\nDo not attach complete requests, responses, user/domain/ORM objects, configuration, provider payloads, user content, or application state. Automatic request capture must omit bodies, authorization, cookies, and query values by default; response-body capture is disabled by default. Environment capture is disabled: only explicitly allowlisted safe configuration metadata may be attached.\nNever construct exception messages containing credentials or connection strings. Keep dynamic IDs out of message text where a safe separate field provides the same diagnostic value and better grouping.\nBreadcrumb buffers must be bounded and represent recent safe navigation, interaction categories, dependency calls, or state transitions. Review automatic console/network/DOM capture before use. Prefer method, normalized route, status, and duration; exclude typed content, payloads, credentials, sensitive query strings, and unnecessary resource IDs.\nAttachments are disabled or used only with particular caution; never upload arbitrary diagnostics automatically. Screenshots require explicit classification, consent, access, and redaction rules. Session replay requires privacy/security review and is not a default. Automatic stack-frame local-variable capture is disabled unless a safe mechanism is proven.\nProduction tracker access follows [least privilege](../security/production-access.md), including vendor support access. [Retention and deletion](../security/data-retention.md) apply to providers storing personal data. A suspected telemetry leak follows [incident response](../security/incident-response.md): contain collection, determine affected events/providers, rotate exposed secrets where applicable, remove accessible leaked data where possible, fix the source, and add regression protection.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Grouping and fingerprint checklist",
+    "anchor": "grouping-and-fingerprint-checklist",
+    "text": "Grouping and fingerprint checklist\nGroup occurrences by the underlying defect. Prefer provider defaults until evidence shows over-grouping of different causes or under-grouping of one defect. Ordinary deployments/line shifts should not unnecessarily split one issue. Dynamic identifiers, generated paths, and arbitrary provider messages can make grouping unstable.\nBefore adding a custom fingerprint, identify the defect, occurrences that belong together, failures that must remain separate, and how behavior will be validated. Values must be stable, bounded, semantic, and non-sensitive: category, operation, stable provider code, or exception class may fit. Request/user/resource IDs, email, and raw messages must not be fingerprint inputs. Give material custom grouping logic an owner and tests; avoid manual fingerprints on every error.\nDeliberate filters can remove known non-actionable extension/environment/cancellation noise. Prefer stable evidence over fragile message substrings. Significant ignore rules need a reason, owner, scope, and reviewability; do not broadly ignore an exception class without understanding other failures it represents. Earlier filtering reduces privacy risk/cost but must not hide important defects.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Source map checklist",
+    "anchor": "source-map-checklist",
+    "text": "Source map checklist\nBuild transformations must not make required production diagnostics unusable. When source maps, native symbols, or mapping files are needed:\nGenerate them reproducibly and associate them with the exact deployed artifact, release/build, and platform. Incorrect maps are misleading.\nDefine trusted storage/upload and access explicitly. Do not accidentally publish application source because a tracker needs it.\nMake upload/missing-artifact failures visible in release validation when diagnostics depend on them.\nVerify useful stack resolution against the actual artifact; include bounded shutdown/flush behavior for short-lived crash reporting where applicable.\nNative crash/hang/ANR and mobile/desktop symbolication pipelines remain conditional on selected platforms. Introducing them does not permit unrestricted device or environment capture.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Volume and provider failure",
+    "anchor": "volume-and-provider-failure",
+    "text": "Volume and provider failure\nBound buffers, event sizes, export waits, CPU/memory/network use, and provider quotas. A failure storm must not amplify the application outage. Rate limiting, local/collector deduplication, or sampling can preserve issue existence, representative context, and frequency estimates where possible; give critical or rare failures higher retention priority. Understand provider event, attachment, indexing, and retention limits and degrade safely when reached.\nCapture should normally be buffered, bounded, and non-blocking. An unavailable exporter must not normally fail business operations. Emit bounded fallback logs/metrics for capture loss or export failure without recursively reporting the tracker's own failure through itself. Development may use an isolated integration but must not trigger production incidents; ordinary test exceptions belong in CI, with test exporters or isolated environments for integration verification.\n"
+  },
+  {
+    "id": "repository/docs/reliability/error-reporting",
+    "title": "Error Reporting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Ownership, triage, and review",
+    "anchor": "ownership-triage-and-review",
+    "text": "Ownership, triage, and review\nImportant error groups should have an identifiable application/domain/integration owner. Routing can use reliable source/service/operation metadata; avoid brittle incidental stack-frame rules or complexity unsupported by team structure. Prioritize impact, affected operations, data integrity/security, release correlation, reproducibility, criticality, frequency, and regression status. A single corruption or boundary failure can be critical; high occurrence count or HTTP status alone does not determine severity.\nResolved tracker status is not proof of a fix. Preserve release-aware regression detection where supported, add a regression test for confirmed bugs whenever practical, and connect important issues to corrections, tests, incidents, and runbooks. Durable architectural/incident conclusions belong in the repository, not only external issue comments. Recurring high-impact failures warrant investigation/recovery guidance.\n[Alerting](alerting.md) owns notification policy: actionable new issues, regressions, volume changes, fatal crashes, or critical workflow failures may notify; do not alert on every captured occurrence. Metrics express rates, traces causal execution, logs operational evidence, and trackers grouped defects. Audit records must not depend on tracker sampling, retention, or grouping.\nBefore adding capture, verify semantic classification, authoritative boundary, duplicate risk, preserved safe cause, release/environment/correlation, minimal classified context, grouping/volume, owner, and test strategy. Verify safety with synthetic failures/secrets and isolated capture. Do not claim provider, source-map, or deployment checks exist until implemented; available checks are listed in [validation](../validation.md).\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Health Checks",
+    "anchor": "health-checks",
+    "text": "Health Checks\nThis policy owns startup, liveness, readiness, and diagnostic-health semantics. Probes answer narrow operational questions; [metrics](metrics.md), [alerts](alerting.md), synthetic monitoring, and full diagnostics serve different purposes. The application owns dependency criticality; shared mechanisms or an orchestrator must not infer it automatically.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current API contract",
+    "anchor": "current-api-contract",
+    "text": "Current API contract\nThe implemented [health contracts](../../apps/api/src/health-contracts.ts), [handlers](../../apps/api/src/app.ts), and [lifecycle](../../apps/api/src/lifecycle.ts) define three endpoints with `200`/`503` and minimal `{ \"status\": \"ok\" | \"unavailable\" }` responses:\nEndpoint\nCurrent behavior\n`/health/startup`\nUnavailable while lifecycle is `starting`; successful after leaving that phase\n`/health/live`\nSuccessful until lifecycle reaches `stopped`; does not query PostgreSQL\n`/health/ready`\nSuccessful only in `ready`, plus the feature's database check when configured; dependency failure or a 500 ms wait deadline makes it unavailable\n[Bootstrap](../../apps/api/src/main.ts) validates configuration, checks configured database connectivity, listens, then marks ready. Shutdown begins drain before closing HTTP and resources. Ordinary requests during draining/stopped receive a safe unavailable response. The readiness wait deadline does not itself cancel the underlying database operation. The current handler verifies connectivity, not full schema compatibility or every business capability.\nHealth paths/status/schema are implemented contracts, not deferred choices. Orchestrator probe frequency/thresholds, deployed routing, diagnostics authorization, uptime/synthetic monitors, and recovery objectives remain deployment-specific. Global response logging/instrumentation currently includes health traffic; the noise guidance below is an intended improvement, not existing exclusion behavior.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Liveness",
+    "anchor": "liveness",
+    "text": "Liveness\nLiveness asks whether the process can make progress and whether restarting has a reasonable chance of repair. Prefer cheap process-local evidence such as irrecoverable state or inability to serve the handler. A remote database, cache, broker, identity, or provider outage normally does not justify restarting otherwise healthy replicas. Dependency-coupled liveness can amplify shared outages, startup load, and loss of evidence.\nUse runtime/platform controls where adequate instead of fragile custom memory/disk/event-loop thresholds without evidence. High load or memory pressure is not automatically death; rate limiting/backpressure may remain safe. Serverless/client runtimes need appropriate initialization/reachability behavior, not forced container-style endpoints.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Readiness",
+    "anchor": "readiness",
+    "text": "Readiness\nReadiness asks whether this runtime can safely accept its expected work now. Failure normally removes new traffic/job claiming without terminating the process. Consider required initialization/configuration, truly critical dependencies/resources, and draining. A process can be live and unready while a dependency recovers.\nClassify dependencies by actual application responsibility. Optional email/analytics/cache failure may permit degraded operation; a broker can be critical for a worker without being critical to a read API. A nominally optional cache can become critical if fallback overloads the database, so use tested behavior. Do not map every circuit breaker, dependency outage, or individual module to whole-process unready automatically.\nDefine “degraded” explicitly if used. Independent read/write capabilities may justify scoped routing, separate runtimes, or bounded degraded responses when real requirements demand it; do not create dozens of probes preemptively. Health aggregation for a dashboard is not orchestration health authority. Readiness is minimum work-acceptance evidence, not complete correctness, SLO compliance, or a customer-specific domain validation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Startup check and shutdown",
+    "anchor": "startup-check-and-shutdown",
+    "text": "Startup check and shutdown\nStartup distinguishes legitimate initialization time from failure. Bound initialization and fail visibly when it cannot finish. Invalid required configuration generally needs fast failure, while recoverable dependency outages may allow a process to wait/recover if designed to do so. Permanently bad credentials must become observable configuration defects rather than indefinite restart loops. Validate expensive deterministic configuration/schema compatibility at an appropriate boundary rather than repeating full inspection per probe.\nA runtime known to be incompatible with its database schema must not serve unsafe work; the current API connectivity probe does not establish that guarantee. Readiness must precede deployment success, not process creation alone.\nOn shutdown/maintenance, become unready, stop new work, drain in-flight operations within the allowed window, then terminate. A draining process can remain live. Workers must stop claiming and follow their queue's safe completion/release semantics. Do not use liveness failure simply to take an instance out of traffic. Deployment rollback/failure decisions must follow actual release policy and compatibility.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Probe safety and dependency cost",
+    "anchor": "probe-safety-and-dependency-cost",
+    "text": "Probe safety and dependency cost\nChecks must be read-only, cheap, deterministic, and bounded. Never create/delete business records, send messages/email, charge payments, or mutate providers as a routine probe. Avoid data-dependent/random sample rows, full scans/joins, migration replay, schema diffs, all-system tests, and full integrity validation. Cheap connectivity/constant queries should use runtime credentials where practical so an administrator's success does not hide runtime permission failure.\nDo not poll every third party on every probe. Provider checks can consume quotas, cost, and availability; observed error/latency/circuit state may be better evidence. Readiness can remain valid when the service safely queues, retries later, degrades, or returns bounded dependency failures. Long integrity checks belong to separate monitoring unless a discovered defect makes work unsafe.\nEach dependency wait needs a short timeout, with total latency comfortably inside the caller's budget. Parallel independent checks can help but must remain resource-bounded. Account for replica count × frequency, concurrent checks, lingering work after wait deadlines, and recovery thundering herds. Probe cost should not scale with user/table/history size. Define success/failure thresholds or hysteresis only when needed to balance responsiveness and flapping; cached health introduces explicit staleness/recovery delay.\nKeep health handlers simple and responsive during partial degradation. Basic transport/security/correlation middleware may apply; avoid expensive business orchestration or authorization where unnecessary. If saturation prevents safe new work, readiness needs a deliberate decision coordinated with timeouts/retries/backpressure, not a generic restart rule.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Output, monitoring, and security",
+    "anchor": "output-monitoring-and-security",
+    "text": "Output, monitoring, and security\nMachine probes need deterministic minimal state and matching transport status. Detailed diagnostics are a separate authorized surface with stable logical dependency names, not raw hostnames/IPs, configuration, topology, credentials, stack traces, or exceptions. An unauthenticated minimal probe must not become an account/tenant/session inspection endpoint. Network isolation can support probe access but never authorizes a public diagnostic dump.\nProbe response schemas and behavior are compatibility contracts for load balancers, orchestrators, deployers, and monitors. Coordinate changes with consumers. Public correlation IDs are optional and must remain safe. Prefer state-transition evidence over a log/error issue per poll; suppress/sample routine successes and avoid repeated warnings during known outages. Trace health sparingly and use underlying dependency signals where possible.\nProbe failures alone do not determine incident urgency: assess duration, replicas, traffic, error rate, and actual capability. One failed replica may recover automatically; all unready replicas can indicate a shared dependency or bad release. Uptime checks answer external DNS/TLS/routing/reachability; synthetic transactions use isolated data and separate safety controls to test real workflows. Neither replaces readiness.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Health check testing and review",
+    "anchor": "health-check-testing-and-review",
+    "text": "Health check testing and review\nTest actual startup, required-dependency failure, optional degradation where supported, liveness independence, invalid configuration, bounded wait, drain/new-work rejection, safe response shape, and critical recovery transitions. Complex caching/hysteresis needs transition coverage. Do not use production business records as probe fixtures.\nBefore changing a check, identify consumer/owner, exact question, expected recovery action, dependency criticality, safe work during outage, runtime identity, full-scale cost, timeout/cancellation semantics, response security, compatibility, and tests. Add a real runbook only for known repeatable failures. Consult [validation](../validation.md) and the runtime README for available checks; hosting integrations remain out of scope until selected.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Logging",
+    "anchor": "logging",
+    "text": "Logging\nThis policy owns structured operational log events, levels, correlation, and reporting boundaries. [Observability](observability.md) explains signal selection; [redaction](../security/telemetry-redaction.md) owns what may be captured. Logs are diagnostic evidence, not an authoritative audit ledger, business database, analytics warehouse, or substitute for metrics/traces/error reporting.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation and contract",
+    "anchor": "current-implementation-and-contract",
+    "text": "Current implementation and contract\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects Pino production JSON logs and centralized `request_id`, `trace_id`, `span_id` correlation, with `trace_flags` when useful. Local pretty output is permitted. Public API field naming remains a separate contract.\nThe API [logger](../../apps/api/src/logging.ts) emits JSON with service, environment, release identifier, redaction, and active `trace_id`/`span_id` where available. Fastify supplies `request_id` in request-scoped logs. The [request/error boundary](../../apps/api/src/app.ts) reports safe status and diagnostics without request bodies or URLs, and suppresses successful health-request logs. Existing underscore-separated messages such as `http_request` are current event names; the examples below explain semantics, not replacement names to adopt silently.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Event and field design",
+    "anchor": "event-and-field-design",
+    "text": "Event and field design\nUse stable semantic event names plus explicit fields, optionally with a concise English message. Names should survive ordinary refactoring rather than describe private methods. Existing event names, fields, units, and meanings consumed by alerts/dashboards/runbooks are operational contracts; do not rename them casually. Human sentence text is not a query contract. Prefer standard conventions where suitable and avoid several spellings for one concept.\nCommon context includes producer, environment, release when available, operation, bounded result, explicit duration unit, and relevant request/trace/span/error/job/event IDs. Actor and resource owner must not share an ambiguous field meaning. Do not redefine reserved platform fields. Logs can support justified high-cardinality IDs better than metrics, but classification, search/index cost, and access still apply.\nCross-cutting infrastructure owns logger creation, serialization, redaction, context, and transport; application owners choose useful event meaning/fields. Inject a logger or use safe scoped runtime context/child loggers rather than unrestricted mutable globals. Enrich shared fields centrally where practical. Context from one request/job must never reach another, including pooled or asynchronous execution. Typed critical-event helpers may help but do not require a custom type for every trivial log.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Logging levels",
+    "anchor": "logging-levels",
+    "text": "Logging levels\nPino level\nMeaning\n`trace`\nRare detailed diagnostics; disabled in normal production, safe even if enabled\n`debug`\nInvestigation detail too verbose for routine production; normal diagnosability must not depend on it\n`info`\nMeaningful normal operation/lifecycle, not every successful function call\n`warn`\nUnexpected degradation, retry, fallback, or deprecated use worth investigation if frequent\n`error`\nUnexpected failed operation or terminal failure needing investigation\n`fatal`\nProcess cannot continue safely; termination is normally expected\nSeverity follows operational meaning, not HTTP status, exception existence, monetary value, or business importance. Expected validation, missing resources, invalid credentials, permission denials, normal duplicate delivery, and business rejections do not automatically warrant warnings/errors. They can contribute to aggregate or security signals where justified. Avoid level inflation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Reporting boundaries",
+    "anchor": "reporting-boundaries",
+    "text": "Reporting boundaries\nReport an unexpected failure once at an explicit authoritative boundary, with safe context and correlation. Intermediate layers may enrich/translate/rethrow without logging identical failure again. Adapter and caller must agree who reports; a dedicated error tracker does not require duplicate stacks at every layer. Follow [error reporting](error-reporting.md) and [error handling](../architecture/error-handling.md).\nUseful boundaries include request completion, job lifecycle/outcome, significant dependency interactions, process startup/shutdown, and the unexpected-error handler. Completion logs usually provide more value than separate request-start logs; justify both before doubling volume. Expected client errors should not generate stacks. Important jobs/messages need stable identity, type/consumer, attempt, duration, outcome, and safe retry/terminal-failure evidence; never log whole payloads.\nCapture safe dependency name/operation/duration/result/reason where useful, keeping provider codes distinct from the API's public codes. Database diagnostics favor normalized operations, latency, and conflict categories, not rows. [Migration logs](../database/migrations.md) should identify migration/release/environment and start/completion/duration/result without secrets. Lifecycle logs should make readiness, shutdown, drain, and startup failure understandable.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Safe content and volume",
+    "anchor": "safe-content-and-volume",
+    "text": "Safe content and volume\nEmit explicit allowlisted projections, not entire requests/responses, ORM/domain objects, collections, configuration, environments, SQL parameters, or exception payloads. Do not embed sensitive runtime values in arbitrary interpolated messages. Credentials are prohibited even in debug/development modes; protected headers/query strings, filenames, IP/device/location/user content, and provider data require the [redaction policy](../security/telemetry-redaction.md). Trusted internal stacks require safe authoritative handling and must not be returned publicly.\nBound event size, field lengths, collection summaries, nesting, and line structure. Truncation is not secret removal; hashing is not automatic anonymization. Avoid uncontrolled multiline messages and arbitrary console output in runtime application code now that a canonical logger exists; tooling scripts can have different output requirements. Remove temporary debugging output before completion.\nSuccessful health checks and frequent polling should generally be suppressed, reduced, or sampled; failures/state changes may matter. High-volume success logs require demonstrated value. Do not blindly sample errors, security, migration, or rare events where complete visibility matters. Deterministic request/trace sampling can preserve correlation when appropriate. Logs must not be the sole source of important numeric metrics when dedicated measurements fit, nor duplicate every trace span or canonical business event.\nDynamic production verbosity, if introduced, must be authorized, bounded in time/scope, auditable where appropriate, and safe. It must not disable redaction, dump payloads/environment, or expose stacks. Temporary incident diagnostics need an owner/removal plan. Collection, storage, indexing, retention, and sampling remain deployment concerns; do not make an unavailable backend a business dependency.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Testing and review",
+    "anchor": "testing-and-review",
+    "text": "Testing and review\nTest redaction, correlation/isolation, security-sensitive logging, and meaningful operational event contracts using captured/in-memory output rather than requiring a production vendor. Use synthetic secrets and assert absence as well as safe evidence presence. Do not test every ordinary message or wording edit. Quiet successful tests should surface relevant captured diagnostics when failures occur.\nBefore adding an event/field, identify its operational question, owner, stable meaning, level, required fields/classification, units/vocabulary, volume/bounds, existing equivalent signal, duplicate-report risk, automatic context opportunity, and tests. When evidence is missing, choose the smallest useful log, span, metric, error context, or runbook change. Future schema/static enforcement should follow real value; current checks are listed in [validation](../validation.md).\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metrics",
+    "anchor": "metrics",
+    "text": "Metrics\nThis policy owns aggregate measurements, units, dimensions, cardinality, and measurement semantics. Use [logs](logging.md), [traces](tracing.md), or [error reports](error-reporting.md) to investigate individual requests/resources. A custom metric must answer a recurring numerical operational question rather than measure every available value.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation",
+    "anchor": "current-implementation",
+    "text": "Current implementation\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects OpenTelemetry metrics and OTLP. The API [telemetry configuration](../../apps/api/src/telemetry.ts) installs a periodic OTLP metric reader when an endpoint is configured and an attribute allowlist for all instruments. No metric reader is configured without that endpoint. HTTP/framework instrumentation supplies the current baseline; these settings do not imply a custom metric registry, production dashboard, SLO, or backend exists.\nNew dimensions must survive the actual allowlist and preserve its security/cardinality guarantees. Inspect existing instrumentation before adding custom HTTP, database, process, messaging, or resource measurements. Prefer authoritative standard/platform metrics over duplicate custom implementations. Backend, retention, resolution, histogram tuning, dashboards, SLOs, and formal budgets remain requirement-driven decisions.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metric types and units",
+    "anchor": "metric-types-and-units",
+    "text": "Metric types and units\nType\nMeaning\nDesign constraints\nCounter\nCumulative events/items, normally increasing\nLet the backend handle process-reset/rate semantics. Persist only if the meaning explicitly requires durable state. Distinguish logical outcomes from attempts.\nGauge\nCurrent/recent value that may rise or fall, such as backlog or active connections\nIdentify its authoritative source and local/global scope. Multiple replicas must not ambiguously report one global value.\nHistogram\nDistribution of durations/sizes\nPrefer to averages or min/max alone, which conceal tail behavior/frequency. Choose buckets and percentiles against real workload ranges.\nLocal summary/quantile instruments require deliberate multi-instance aggregation and cost evaluation; histograms often aggregate more usefully. Units must be explicit and consistent with the selected standard: avoid mixing equivalent durations across ms/seconds without reason or ambiguous byte/count units. Define timing start/end and whether a duration includes queue wait, retries, or user-visible completion.\nUse primitive counts/distributions and let the backend derive rates, ratios, percentages, and rolling windows where it can do so correctly. Do not implement competing application aggregation or custom temporality. Metrics are observational; business correctness must not depend on their delivery.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Dimensions and cardinality",
+    "anchor": "dimensions-and-cardinality",
+    "text": "Dimensions and cardinality\nNames describe stable quantities and must not contain runtime identifiers. Dimensions need bounded vocabularies and a concrete grouping/filtering question. Estimate worst-case series multiplication, not just label count: five methods × twenty routes × six statuses can produce six hundred series before another dimension is added. Bound label count, possible values, and total series where relevant; formal budgets should follow scale.\nDo not use user/resource/request/trace/error/job IDs, email, IP, raw URLs, SQL statements, or arbitrary error/exception messages as metric labels. Use route templates, bounded operations/providers/job types, result/status categories, and justified bounded error codes. Query values are not default dimensions. Tenant-specific analysis needs a separate explicit bounded justification; do not assume current tenant count remains small. Normalize client versions according to a support model when needed, and evaluate release-label retention/cardinality before broad use.\nA bounded field can still be sensitive, and a numeric value such as an account balance is not automatically operational telemetry. Apply [classification](../security/data-classification.md) before cardinality and [redaction](../security/telemetry-redaction.md) to all values/labels; restricted values and personal-data lookup do not belong in metrics. Prefer designs that cannot identify a person from a series. Do not attach every feature flag or user experiment context to every metric.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Measurement ownership and accuracy",
+    "anchor": "measurement-ownership-and-accuracy",
+    "text": "Measurement ownership and accuracy\nEmit at the authoritative outcome boundary. A metric must measure what its name claims without ambiguous increments or double counting by controller, service, and repository. Distinguish traffic, attempts, logical operations, retries, duplicates, final outcomes, event publication/delivery/processing, and deduplication. A repeated idempotent request can count as traffic without counting a durable business outcome again. Completion counters must not increment before completion is known.\nCounters must remain monotonic for their lifecycle; current state uses a gauge. Prefer bounded attempt classes unless the number of attempts is explicitly small. Safe error categories should distinguish expected business/client rejection from technical failures when reliability analysis depends on that distinction. A `4xx` is not inherently a service failure; an unexpected `5xx` generally is. Specific authentication/denial spikes can still be security or product signals without labeling by actor.\nMetrics should generally observe the full population even when traces are sampled. Do not randomly sample counters unless the mathematics remains explicitly correct. Define semantics of missing, delayed, or dropped measurements: zero events, no series, a dead service, failed collector, and broken query are different states.\n"
   }
 ]

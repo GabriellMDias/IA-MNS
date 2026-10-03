@@ -6,6 +6,7 @@ import type { TSchema } from "typebox";
 import type { AccessTokenVerifier } from "./authentication.js";
 import type { Database } from "./database.js";
 import type { ErrorDefinition } from "./errors.js";
+import type { ServerConfig } from "./config.js";
 
 export type AppInstance = FastifyInstance<
   Server,
@@ -29,10 +30,13 @@ export type ApiOperation = Readonly<{
     response: Readonly<Record<number, TSchema>>;
   }>;
   expectedErrors?: readonly string[];
+  /** Explicit protection for operations in modules with public availability routes. */
+  authentication?: "bearer";
 }>;
 
 export type ModuleRequirement = "database" | "authentication";
 export type ModuleResources = Readonly<{
+  config?: ServerConfig;
   database?: Database;
   verifier?: AccessTokenVerifier;
 }>;

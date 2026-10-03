@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0019-compose-a-corporate-agent-with-durable-conversations.md",
+  "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-01\n<strong>Extended by:</strong> <a href=\"/docs/repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy\">ADR-0020</a> for explicit authenticated temporary phone testing; ordinary loopback development and production controls remain valid.\n<strong>Supersedes:</strong> <a href=\"/docs/repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability\">ADR-0018</a>, only the sales-specific product identity and temporary conversation decision. Controlled sales execution and deterministic financial answers remain valid.</p>\n<h2 id=\"context\">Context</h2>\n<p>The owner defines IA-MNS as MNS's corporate AI agent and delegates implementation choices. Sales is the first implemented business capability, not the identity of the product. Users need grounded social interaction, observable task progress, and conversations that survive application/API restarts. Orion already selects PostgreSQL, Prisma, composable modules, TypeBox and TanStack.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Accepted after reviewing Orion's module/persistence policies under the owner's explicit delegation of design choices on 2026-10-01.</p>\n<p>Compose an agent application module and a registry of implemented capability descriptors/executors. The agent routes a bounded conversational intent or one registered capability; permission and execution checks remain server-side. General instructions describe routing, while each capability owns interpretation, tools, business invariants and versioned context. Application-authored social/capability responses and deterministic sales answers prevent model prose from introducing unsupported functionality or financial facts.</p>\n<p>Persist owner-scoped conversations and turns in PostgreSQL using reviewed additive migrations and a restricted runtime role. Store bounded result snapshots, typed progress events and versioned capability context. Accept one turn at a time under a database row lock and a bounded lease. A client request UUID supports acceptance replay, never provider retries. Work is process-local and bounded; expired execution is interrupted rather than resumed. Poll persisted progress through the generated SDK instead of introducing streaming transport or a workflow engine.</p>\n<p>Keep the existing sales endpoints for compatibility with the first MVP; the product exclusively uses the durable agent endpoints. No persistent legacy history can be migrated because the prior transcript was browser/process memory. Support explicit hard deletion; local history otherwise remains until the owner deletes it. Shared deployment requires a defined retention/provider/backup policy. Do not implement new business domains, external writes, production identity, autonomous loops, vectors or generic workflow machinery.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>Explicit capability registration grows without rewriting general routing policy, while preserving each domain's authority. Durable context contains filters, not financial prose. PostgreSQL constraints, locks and acceptance identifiers address races and unknown delivery. Short polling uses the existing SDK and works after reload; it trades small read traffic and roughly one-second progress latency for a simpler contract.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"free-form-assistant-with-arbitrary-tools-or-sql\">Free-form assistant with arbitrary tools or SQL</h3>\n<p>Rejected because grounded numbers and bounded execution are existing guarantees. The current registry selects only implemented execution code.</p>\n<h3 id=\"streaming-responses-and-durable-workflow-engine\">Streaming responses and durable workflow engine</h3>\n<p>Deferred: one bounded read capability does not require autonomous loops or resumable external actions. Progress in PostgreSQL provides recovery without another transport.</p>\n<h3 id=\"in-memory-history-or-browser-persistence\">In-memory history or browser persistence</h3>\n<p>Rejected because restart durability and future capability context require a canonical server-owned store. Credentials and confidential transcripts remain out of browser storage.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Product identity and conversation are separate from sales semantics.</li>\n<li>History, outcomes and per-capability filters survive restart.</li>\n<li>Progress describes real operations and no speculative functionality is advertised.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Local PostgreSQL becomes required for the product conversation flow.</li>\n<li>Sales interpretation uses a routing request followed by capability planning.</li>\n<li>Stored result snapshots need lifecycle controls and are historical, not refreshed ERP data.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>New tables are additive and application-owned. Docker binds only loopback, persists a named volume, and uses separate migration/runtime credentials. No ERP changes occur. The local provisioning helper applies migrations/grants without dumping credentials or deleting volumes. An interrupted execution is visible after its 120-second lease expires and is never automatically repeated.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/domains/corporate-agent\">Corporate agent</a></li>\n<li><a href=\"/docs/repository/docs/database/principles\">Database principles</a></li>\n<li><a href=\"/docs/repository/docs/database/transactions-and-concurrency\">Transactions</a></li>\n<li><a href=\"/docs/repository/docs/domains/sales-chat\">Sales capability</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0019-compose-a-corporate-agent-with-durable-conversations",
+      "text": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "free-form-assistant-with-arbitrary-tools-or-sql",
+      "text": "Free-form assistant with arbitrary tools or SQL",
+      "level": 3
+    },
+    {
+      "id": "streaming-responses-and-durable-workflow-engine",
+      "text": "Streaming responses and durable workflow engine",
+      "level": 3
+    },
+    {
+      "id": "in-memory-history-or-browser-persistence",
+      "text": "In-memory history or browser persistence",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

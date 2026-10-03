@@ -1,0 +1,40 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md",
+  "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-01\n<strong>Extends:</strong> <a href=\"/docs/repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations\">ADR-0019</a>, only temporary owner-controlled device testing. Persistent history, normal loopback development and production verifier requirements remain unchanged.</p>\n<h2 id=\"context\">Context</h2>\n<p>The owner requests testing IA-MNS from a phone on the same network. The current web/API bind to loopback, and the credential-free developer access is deliberately unavailable to other devices. Simply exposing that proxy would disclose local confidential history. Production identity remains outside scope.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Accepted under the owner's request for phone testing, after reviewing the existing isolation rules and validating the non-production, expiry, credential and origin boundaries. Production identity remains deliberately deferred.</p>\n<p>Provide an explicit temporary network-test launcher with a separate loopback API and a web listener bound to one assigned RFC1918 IPv4 address. All protected operations in that API require a random 256-bit bearer, an absolute expiry within two hours, the application-client header and the configured browser origin when present. Cross-site and non-loopback upstream requests are rejected. Normal credential-free local access and the temporary mode are mutually exclusive; production and normal issuer configuration reject this mode.</p>\n<p>The bearer maps to the existing local developer's conversations. Agent permissions are explicitly provided by composition; currently only sales:read. Future capability registration does not automatically expand this token's permission. The existing access field holds the token in memory, never URL/browser storage. Save its initial value only in an ignored local environment file for the owner to transfer to their device. Stop/expiry terminates the separate services and removes that file; it does not rotate OpenAI/Oracle credentials or alter normal .env.local.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>This reuses the current bearer UI and owner-scoped API without selecting a production identity provider, adding cookies, weakening the desktop bypass or exposing database listeners. A two-hour absolute lifetime and process-local service separation bound this development convenience. HTTP on a private test network does not provide transport encryption; use only an owner-controlled trusted LAN. This is not shared employee access or a deployment method.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"expose-the-existing-credential-free-proxy\">Expose the existing credential-free proxy</h3>\n<p>Rejected because unrelated network devices could retrieve the local owner's history. Relaxing only Origin/listener checks is not authorization.</p>\n<h3 id=\"select-a-production-identity-provider-or-public-tunnel\">Select a production identity provider or public tunnel</h3>\n<p>Deferred because the request is temporary testing on an existing LAN. Production identity, TLS hosting and shared lifecycle controls remain separate decisions.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Phone testing uses actual providers and existing durable context under explicit temporary authorization.</li>\n<li>API and PostgreSQL remain unavailable directly over the LAN.</li>\n<li>Defaults and production authentication guarantees remain unchanged.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>The owner must transfer a temporary credential and restart the test after expiry.</li>\n<li>HTTP transport is limited to trusted development networks; it is not suitable for shared deployment.</li>\n<li>Firewall/router policies can still require owner action; the launcher does not disable or broadly change them.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>No schema, business SQL, existing history owner or external credential changes. The separate web/API use ports 5174/3002. A private HTTP origin can lack crypto.randomUUID; request UUID v4 uses Web Crypto random bytes when necessary, preserving secure acceptance identifiers and replay behavior.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/setup#phone-testing-on-the-local-network\">Network testing procedure</a></li>\n<li><a href=\"/docs/repository/docs/security/authentication\">Authentication policy</a></li>\n<li><a href=\"/docs/repository/docs/project/implementation-plan\">Project plan</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+      "text": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "expose-the-existing-credential-free-proxy",
+      "text": "Expose the existing credential-free proxy",
+      "level": 3
+    },
+    {
+      "id": "select-a-production-identity-provider-or-public-tunnel",
+      "text": "Select a production identity provider or public tunnel",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}
