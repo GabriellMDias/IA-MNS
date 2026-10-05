@@ -7,6 +7,7 @@ import {
   scrypt,
   timingSafeEqual,
 } from "node:crypto";
+import { nfkc } from "./domain.js";
 
 // Established platform primitives only (scrypt, HMAC, AES-GCM, CSPRNG). No custom
 // cryptography: these helpers fix parameters, encodings and comparisons.
@@ -41,14 +42,10 @@ const scryptOptions = {
   maxmem: 64 * 1024 * 1024,
 };
 
-function derive(password: string, salt: Buffer, options = scryptOptions) {
+function derive(input: string, salt: Buffer, options = scryptOptions) {
   return new Promise<Buffer>((resolve, reject) =>
-    scrypt(
-      password.normalize("NFKC"),
-      salt,
-      SCRYPT.keyLength,
-      options,
-      (error, key) => (error ? reject(error) : resolve(key)),
+    scrypt(nfkc(input), salt, SCRYPT.keyLength, options, (error, key) =>
+      error ? reject(error) : resolve(key),
     ),
   );
 }

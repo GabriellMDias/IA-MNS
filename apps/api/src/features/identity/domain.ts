@@ -124,12 +124,17 @@ export function normalizeLogin(login: string): string | null {
   return /^[a-z0-9][a-z0-9._-]{2,63}$/.test(value) ? value : null;
 }
 
+/** Unicode NFKC compatibility normalization applied to user-typed text. */
+export function nfkc(value: string): string {
+  return value.normalize("NFKC");
+}
+
 /** NIST SP 800-63B style: length over composition; reject trivially derived values. */
 export function passwordProblem(
   password: string,
   login: string | null,
 ): string | null {
-  const length = [...password.normalize("NFKC")].length;
+  const length = [...nfkc(password)].length;
   if (length < 12) return "too_short";
   if (length > 256) return "too_long";
   if (login && password.toLowerCase().includes(login)) return "contains_login";
