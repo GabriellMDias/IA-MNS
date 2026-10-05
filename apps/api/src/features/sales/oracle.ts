@@ -2,6 +2,7 @@ import oracledb from "oracledb";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
 import type { ServerConfig } from "../../config.js";
+import { ensureOracleClient } from "../../oracle-client.js";
 import { comparisonQuery, type SalesData, type SalesQuery } from "./domain.js";
 import { SalesFailure } from "./errors.js";
 import { aggregateSql, matchingProductsSql, queryBindings } from "./query.js";
@@ -34,8 +35,7 @@ export function createOracleReader(config: ServerConfig): SalesReader {
   let poolPromise: Promise<oracledb.Pool> | undefined;
   function pool() {
     if (!poolPromise) {
-      if (config.oracleClientLibDir)
-        oracledb.initOracleClient({ libDir: config.oracleClientLibDir });
+      ensureOracleClient(config.oracleClientLibDir);
       poolPromise = oracledb
         .createPool({
           user: config.sankhyaUser,

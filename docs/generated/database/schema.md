@@ -75,3 +75,290 @@ Lifecycle: Local history persists until the owner explicitly deletes the convers
 | `agent_turns_state_check` | `CHECK (((state)::text = ANY ((ARRAY['running'::character varying, 'completed'::character varying, 'failed'::character varying, 'interrupted'::character varying])::text[])))` | Explicit supported lifecycle states. |
 | `agent_turns_conversation_request_key` | `CREATE UNIQUE INDEX agent_turns_conversation_request_key ON public.agent_turns USING btree (conversation_id, request_id)` | One acceptance per client request id in a conversation. |
 | `agent_turns_conversation_sequence_key` | `CREATE UNIQUE INDEX agent_turns_conversation_sequence_key ON public.agent_turns USING btree (conversation_id, sequence)` | One turn per allocated sequence. |
+
+## identity_persons
+
+An IA-MNS Person: the single internal identity that owns conversations, preferences, links, credentials, roles and grants, independent of the surface or method used to sign in.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Persons are never hard-deleted by the application; an owner disables them instead. Shared deployment requires an owner-approved retention policy (PH-09) before rollout.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | CONFIDENTIAL | Stable application principal UUID; issued as the access-token principal and conversation owner. Never derived from a provider identifier. | — | — |
+| `display_name` | `character varying(120)` | no | — | CONFIDENTIAL | Person-editable display name; initially copied from the first verified provider profile or chosen at enrollment. Not an identity key. | — | — |
+| `status` | `character varying(16)` | no | `'active'::character varying` | CONFIDENTIAL | active, disabled or merged. Disabled and merged Persons cannot authenticate and their sessions are revoked. | — | — |
+| `merged_into` | `uuid` | yes | — | CONFIDENTIAL | Person that absorbed this one through a proof-based or owner-approved consolidation; links, local credential, grants and conversations moved there. | Not merged. | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock creation instant. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock last profile or status change; informational, not an audit trail. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_persons_display_name_check` | `CHECK ((length(btrim((display_name)::text)) > 0))` | A display name is required. |
+| `identity_persons_merge_check` | `CHECK (((((status)::text = 'merged'::text) = (merged_into IS NOT NULL)) AND ((merged_into IS NULL) OR (merged_into <> id))))` | Merged status and target exist together and a Person never merges into itself. |
+| `identity_persons_merged_into_fkey` | `FOREIGN KEY (merged_into) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE RESTRICT` | A merged Person points to an existing Person; never deleted while referenced. |
+| `identity_persons_pkey` | `PRIMARY KEY (id)` | Immutable Person identity. |
+| `identity_persons_status_check` | `CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'disabled'::character varying, 'merged'::character varying])::text[])))` | Explicit lifecycle states. |
+| `identity_persons_display_name_idx` | `CREATE INDEX identity_persons_display_name_idx ON public.identity_persons USING btree (display_name, id)` | Bounded administrative listing ordered by name. |
+
+## identity_external_identities
+
+A link between a Person and one stable external account (PDT Connect identitySubject or Sankhya CODUSU) under a fixed issuer, created from a server-verified proof by the account holder or by an owner selecting the account in the Sankhya directory.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Removed explicitly by the Person (recent authentication, never the last sign-in method) or an owner, with an audit event. Cascades only if a Person were deleted, which the application never does.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | CONFIDENTIAL | Immutable link UUID used to address removal. | — | — |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Owning Person. | — | — |
+| `provider` | `character varying(16)` | no | — | CONFIDENTIAL | pdt or sankhya; selects the connector that proved the identity. | — | — |
+| `issuer` | `character varying(300)` | no | — | CONFIDENTIAL | Fixed provider installation identifier from server configuration (PDT_IDENTITY_ISSUER or SANKHYA_IDENTITY_ISSUER); never taken from browser input. | — | — |
+| `subject` | `character varying(200)` | no | — | CONFIDENTIAL | Stable provider subject: PDT identitySubject UUID or Sankhya CODUSU. Never a name or e-mail. | — | — |
+| `label` | `character varying(200)` | yes | — | CONFIDENTIAL | Display snapshot of the provider account name at last verification; informational only. | The provider supplied no display name. | — |
+| `email` | `character varying(254)` | yes | — | CONFIDENTIAL | Normalized e-mail reported by the provider for this account. Used only as a hint to ask for proof before provisioning a second Person; never as proof or merge criterion. | The provider reported no e-mail. | — |
+| `established_by` | `character varying(16)` | no | `'proof'::character varying` | CONFIDENTIAL | proof: the account holder proved the account to IA-MNS; directory: an owner selected and attested the account from the Sankhya directory, validated server-side. | — | — |
+| `linked_by` | `uuid` | yes | — | CONFIDENTIAL | Owner who attested a directory link. | Established by the account holder's proof. | — |
+| `linked_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock instant the link was proven and created. | — | — |
+| `last_verified_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Application-clock instant of the latest successful proof through this link. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_external_identities_email_check` | `CHECK (((email IS NULL) OR ((email)::text = lower(btrim((email)::text)))))` | E-mail hints are stored normalized. |
+| `identity_external_identities_established_check` | `CHECK ((((established_by)::text = ANY ((ARRAY['proof'::character varying, 'directory'::character varying])::text[])) AND (((established_by)::text = 'proof'::text) OR (linked_by IS NOT NULL))))` | Known establishment kinds; directory links name the attesting owner. |
+| `identity_external_identities_issuer_check` | `CHECK ((length((issuer)::text) > 0))` | Issuer required. |
+| `identity_external_identities_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Links belong to one Person. |
+| `identity_external_identities_pkey` | `PRIMARY KEY (id)` | Immutable link identity. |
+| `identity_external_identities_provider_check` | `CHECK (((provider)::text = ANY ((ARRAY['pdt'::character varying, 'sankhya'::character varying])::text[])))` | Only implemented connectors. |
+| `identity_external_identities_subject_check` | `CHECK ((length((subject)::text) > 0))` | Subject required. |
+| `identity_external_identities_email_idx` | `CREATE INDEX identity_external_identities_email_idx ON public.identity_external_identities USING btree (email)` | Candidate lookup before automatic provisioning. |
+| `identity_external_identities_person_provider_key` | `CREATE UNIQUE INDEX identity_external_identities_person_provider_key ON public.identity_external_identities USING btree (person_id, provider, issuer)` | A Person has at most one account per provider installation. |
+| `identity_external_identities_subject_key` | `CREATE UNIQUE INDEX identity_external_identities_subject_key ON public.identity_external_identities USING btree (provider, issuer, subject)` | One external account maps to at most one Person; no silent duplication or merge. |
+
+## identity_local_credentials
+
+Optional IA-MNS local sign-in: unique login, memory-hard password verifier, lockout state and encrypted TOTP secret for strong authentication.
+
+Owner: identity. Classification: RESTRICTED.
+
+Lifecycle: Replaced on password change or owner-issued reset; TOTP reset by the Person or an owner reset. Deleted only with the Person.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Owning Person; at most one local credential. | — | — |
+| `login` | `character varying(64)` | no | — | CONFIDENTIAL | Normalized lowercase sign-in name; unique and not an e-mail requirement. | — | — |
+| `password_hash` | `character varying(200)` | no | — | RESTRICTED | scrypt verifier with parameters and salt; never returned or logged. | — | — |
+| `password_changed_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Application-clock instant of the last password change. | — | — |
+| `failed_attempts` | `integer` | no | `0` | CONFIDENTIAL | Consecutive failed password or second-factor attempts since the last success; drives temporary lockout. | — | — |
+| `locked_until` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Application-clock end of a temporary lockout. | No active lockout. | — |
+| `totp_secret` | `character varying(200)` | yes | — | RESTRICTED | AES-256-GCM encrypted RFC 6238 secret (IA_MNS_IDENTITY_ENCRYPTION_KEY). | No second factor enrolled. | — |
+| `totp_enabled_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Instant the second factor was confirmed with a valid code. | Second factor not enabled. | — |
+| `totp_last_step` | `bigint` | yes | — | CONFIDENTIAL | Last accepted 30-second TOTP step; prevents code reuse. | No code accepted yet. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_local_credentials_attempts_check` | `CHECK ((failed_attempts >= 0))` | Nonnegative failure counter. |
+| `identity_local_credentials_login_check` | `CHECK (((login)::text ~ '^[a-z0-9][a-z0-9._-]{2,63}$'::text))` | Normalized login alphabet and length. |
+| `identity_local_credentials_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Credential belongs to its Person. |
+| `identity_local_credentials_pkey` | `PRIMARY KEY (person_id)` | One credential per Person. |
+| `identity_local_credentials_totp_check` | `CHECK (((totp_enabled_at IS NULL) OR (totp_secret IS NOT NULL)))` | An enabled factor has a secret. |
+| `identity_local_credentials_login_key` | `CREATE UNIQUE INDEX identity_local_credentials_login_key ON public.identity_local_credentials USING btree (login)` | Unique sign-in name. |
+
+## identity_recovery_codes
+
+Single-use second-factor recovery codes, stored only as SHA-256 hashes of high-entropy values shown once.
+
+Owner: identity. Classification: RESTRICTED.
+
+Lifecycle: Regenerated sets replace previous codes; used codes stay marked. Deleted with a TOTP reset or the Person.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | CONFIDENTIAL | Immutable code row UUID. | — | — |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Owning Person. | — | — |
+| `code_hash` | `character(64)` | no | — | RESTRICTED | SHA-256 of the recovery code. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock issue instant. | — | — |
+| `used_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Instant the code was consumed. | Not used. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_recovery_codes_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Codes belong to one Person. |
+| `identity_recovery_codes_pkey` | `PRIMARY KEY (id)` | Immutable code identity. |
+| `identity_recovery_codes_hash_key` | `CREATE UNIQUE INDEX identity_recovery_codes_hash_key ON public.identity_recovery_codes USING btree (code_hash)` | A code hash is unique. |
+| `identity_recovery_codes_person_idx` | `CREATE INDEX identity_recovery_codes_person_idx ON public.identity_recovery_codes USING btree (person_id)` | Per-Person code lookup. |
+
+## identity_sessions
+
+Authenticated continuity for a Person: method, surface, assurance and expiry. Direct-URL sessions hold a rotating refresh credential (hash only); embedded sessions have none and renew through a new host proof.
+
+Owner: identity. Classification: RESTRICTED.
+
+Lifecycle: Expire at idle or absolute limits; revoked on logout, Person disable, credential reset, refresh reuse, or explicit revocation. Expired rows are pruned by the application after 7 days.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | CONFIDENTIAL | Session UUID; carried as the access-token sid claim. | — | — |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Authenticated Person. | — | — |
+| `method` | `character varying(16)` | no | — | CONFIDENTIAL | Proof used: local, pdt, sankhya, bootstrap or enrollment. | — | — |
+| `surface` | `character varying(16)` | no | — | CONFIDENTIAL | Where the session started: direct, pdt or sankhya. Never used for authorization. | — | — |
+| `assurance` | `character varying(8)` | no | — | CONFIDENTIAL | single or mfa; administrative operations require mfa. | — | — |
+| `refresh_hash` | `character(64)` | yes | — | RESTRICTED | SHA-256 of the current refresh credential. | Embedded or revoked session without refresh. | — |
+| `previous_refresh_hash` | `character(64)` | yes | — | RESTRICTED | SHA-256 of the previous refresh credential; presenting it revokes the session as reuse. | Not rotated yet. | — |
+| `auth_time` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Instant of the latest primary or step-up authentication; drives recent-authentication checks. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock creation instant. | — | — |
+| `last_seen_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Application-clock last refresh or validation. | — | — |
+| `idle_expires_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Application-clock idle expiry, extended on refresh but never past expires_at. | — | — |
+| `expires_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Application-clock absolute expiry. | — | — |
+| `revoked_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Revocation instant. | Not revoked. | — |
+| `revoked_reason` | `character varying(40)` | yes | — | CONFIDENTIAL | Allowlisted revocation reason code. | Not revoked. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_sessions_assurance_check` | `CHECK (((assurance)::text = ANY ((ARRAY['single'::character varying, 'mfa'::character varying])::text[])))` | Explicit assurance levels. |
+| `identity_sessions_expiry_check` | `CHECK (((idle_expires_at <= expires_at) AND (auth_time <= expires_at)))` | Idle expiry and authentication time cannot exceed the absolute expiry. |
+| `identity_sessions_method_check` | `CHECK (((method)::text = ANY ((ARRAY['local'::character varying, 'pdt'::character varying, 'sankhya'::character varying, 'bootstrap'::character varying, 'enrollment'::character varying])::text[])))` | Implemented sign-in methods. |
+| `identity_sessions_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Session belongs to its Person. |
+| `identity_sessions_pkey` | `PRIMARY KEY (id)` | Session identity. |
+| `identity_sessions_revocation_check` | `CHECK (((revoked_at IS NULL) = (revoked_reason IS NULL)))` | Revocation instant and reason exist together. |
+| `identity_sessions_surface_check` | `CHECK (((surface)::text = ANY ((ARRAY['direct'::character varying, 'pdt'::character varying, 'sankhya'::character varying])::text[])))` | Known access surfaces. |
+| `identity_sessions_expiry_idx` | `CREATE INDEX identity_sessions_expiry_idx ON public.identity_sessions USING btree (expires_at)` | Expired-session pruning. |
+| `identity_sessions_person_idx` | `CREATE INDEX identity_sessions_person_idx ON public.identity_sessions USING btree (person_id, created_at DESC)` | Per-Person session listing. |
+| `identity_sessions_previous_refresh_key` | `CREATE UNIQUE INDEX identity_sessions_previous_refresh_key ON public.identity_sessions USING btree (previous_refresh_hash)` | Reuse detection lookup. |
+| `identity_sessions_refresh_key` | `CREATE UNIQUE INDEX identity_sessions_refresh_key ON public.identity_sessions USING btree (refresh_hash)` | A refresh credential maps to one session. |
+
+## identity_role_assignments
+
+Internal IA-MNS roles assigned to a Person. owner is the principal administrator with full IA-MNS capability and administration, independent of Sankhya or PDT roles.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Assigned by bootstrap or an existing owner with recent strong authentication; the last active owner cannot be removed. Every change is audited.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Role holder. | — | — |
+| `role` | `character varying(40)` | no | — | CONFIDENTIAL | Internal role code; currently owner. | — | — |
+| `granted_by` | `uuid` | yes | — | CONFIDENTIAL | Owner Person who assigned the role. | Assigned by the server-side bootstrap flow. | — |
+| `granted_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock assignment instant. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_role_assignments_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Role belongs to its Person. |
+| `identity_role_assignments_pkey` | `PRIMARY KEY (person_id, role)` | A role is assigned once per Person. |
+| `identity_role_assignments_role_check` | `CHECK (((role)::text = 'owner'::text))` | Only defined internal roles. |
+| `identity_role_assignments_role_idx` | `CREATE INDEX identity_role_assignments_role_idx ON public.identity_role_assignments USING btree (role)` | Owner counting and listing. |
+
+## identity_capability_grants
+
+Explicit capability permissions granted to a Person by an owner, in addition to provider-policy grants derived from active links. The language model never creates grants.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Granted and revoked by owners with recent strong authentication; changes reach new access tokens within their 10-minute lifetime. Audited.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Grantee. | — | — |
+| `permission` | `character varying(80)` | no | — | CONFIDENTIAL | Registered capability permission such as sales:read; validated against the composed catalog. | — | — |
+| `granted_by` | `uuid` | yes | — | CONFIDENTIAL | Owner Person who granted it. | Granted by the server-side bootstrap flow. | — |
+| `granted_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock grant instant. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_capability_grants_permission_check` | `CHECK (((permission)::text ~ '^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$'::text))` | Permission naming convention. |
+| `identity_capability_grants_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Grant belongs to its Person. |
+| `identity_capability_grants_pkey` | `PRIMARY KEY (person_id, permission)` | A permission is granted once per Person. |
+
+## identity_tickets
+
+Short-lived single-use flow state addressed by the SHA-256 of a high-entropy secret: bootstrap, enrollment, reset and link invitations, pending second factor, pending TOTP setup, provisioning choice, profile consolidation, and pending PDT or Sankhya proofs (state, nonce, PKCE verifier).
+
+Owner: identity. Classification: RESTRICTED.
+
+Lifecycle: Consumed atomically once or expires (minutes; invitations up to 72 hours). Expired rows are pruned by the application after 7 days.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | CONFIDENTIAL | Ticket row UUID. | — | — |
+| `purpose` | `character varying(24)` | no | — | CONFIDENTIAL | Flow kind; a ticket is only accepted by its own purpose. | — | — |
+| `token_hash` | `character(64)` | no | — | RESTRICTED | SHA-256 of the secret presented by the browser or callback. | — | — |
+| `person_id` | `uuid` | yes | — | CONFIDENTIAL | Person the flow acts on. | The flow is not yet bound to a Person (sign-in, bootstrap or provisioning). | — |
+| `payload` | `jsonb` | no | `'{}'::jsonb` | RESTRICTED | Allowlisted flow state such as intent, surface, PKCE verifier, nonce or a verified external identity awaiting a choice. Never passwords. | — | — |
+| `created_by` | `uuid` | yes | — | CONFIDENTIAL | Owner Person who issued an invitation or reset. | Created by the Person's own flow or the bootstrap command. | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock creation instant. | — | — |
+| `expires_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Application-clock expiry. | — | — |
+| `consumed_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Single-use consumption instant. | Not consumed. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_tickets_expiry_check` | `CHECK ((expires_at > created_at))` | Expiry after creation. |
+| `identity_tickets_payload_check` | `CHECK ((jsonb_typeof(payload) = 'object'::text))` | Payload is a JSON object. |
+| `identity_tickets_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Optional Person binding. |
+| `identity_tickets_pkey` | `PRIMARY KEY (id)` | Ticket identity. |
+| `identity_tickets_purpose_check` | `CHECK (((purpose)::text = ANY ((ARRAY['bootstrap'::character varying, 'enrollment'::character varying, 'reset'::character varying, 'link_invitation'::character varying, 'mfa'::character varying, 'provision'::character varying, 'merge'::character varying, 'totp_setup'::character varying, 'pdt_login'::character varying, 'sankhya_login'::character varying])::text[])))` | Known flow purposes. |
+| `identity_tickets_expiry_idx` | `CREATE INDEX identity_tickets_expiry_idx ON public.identity_tickets USING btree (expires_at)` | Expired-ticket pruning. |
+| `identity_tickets_token_key` | `CREATE UNIQUE INDEX identity_tickets_token_key ON public.identity_tickets USING btree (token_hash)` | Secret lookup by hash. |
+
+## identity_used_assertions
+
+Replay protection for host identity assertions: SHA-256 of each accepted assertion jti until it expires.
+
+Owner: identity. Classification: INTERNAL.
+
+Lifecycle: Rows are pruned after their expiry.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `jti_hash` | `character(64)` | no | — | INTERNAL | SHA-256 of the assertion identifier. | — | — |
+| `expires_at` | `timestamp(3) with time zone` | no | — | INTERNAL | Assertion expiry; after it the jti cannot be replayed anyway. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_used_assertions_pkey` | `PRIMARY KEY (jti_hash)` | Each assertion is accepted once. |
+
+## identity_audit_events
+
+Append-only audit of security-relevant identity events: sign-in outcomes, provisioning, link and unlink, credential and factor changes, role and grant changes, session revocation and bootstrap.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Append-only for the runtime role. Retention requires an owner-approved policy before shared deployment (PH-09).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | CONFIDENTIAL | Event UUID. | — | — |
+| `occurred_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock event instant. | — | — |
+| `action` | `character varying(48)` | no | — | CONFIDENTIAL | Allowlisted dotted action code. | — | — |
+| `actor_person_id` | `uuid` | yes | — | CONFIDENTIAL | Person who performed the action. | Anonymous attempt or server-side bootstrap. | — |
+| `target_person_id` | `uuid` | yes | — | CONFIDENTIAL | Person affected by the action. | No Person resolved, for example a failed anonymous sign-in. | — |
+| `details` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Allowlisted non-secret metadata such as provider, permission, role or reason codes. Never credentials, tokens or free text. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_audit_events_action_check` | `CHECK (((action)::text ~ '^[a-z][a-z0-9_.]*$'::text))` | Action code format. |
+| `identity_audit_events_details_check` | `CHECK ((jsonb_typeof(details) = 'object'::text))` | Details are a JSON object. |
+| `identity_audit_events_pkey` | `PRIMARY KEY (id)` | Event identity. |
+| `identity_audit_events_recent_idx` | `CREATE INDEX identity_audit_events_recent_idx ON public.identity_audit_events USING btree (occurred_at DESC, id DESC)` | Recent audit listing. |
+| `identity_audit_events_target_idx` | `CREATE INDEX identity_audit_events_target_idx ON public.identity_audit_events USING btree (target_person_id, occurred_at DESC)` | Per-Person audit history. |

@@ -163,13 +163,16 @@ export async function buildDocumentation(sources) {
         ].includes(method)
       )
         continue;
-      const success = Object.entries(operation.responses).filter(([status]) =>
-        status.startsWith("2"),
+      // Browser navigation targets (for example sign-in callbacks) succeed with a redirect.
+      const success = Object.entries(operation.responses).filter(
+        ([status]) => status.startsWith("2") || status.startsWith("3"),
       );
       if (!operation.operationId || success.length === 0)
         fail(`missing operationId or success response: ${method} ${route}`);
+      // JSON by default; browser form targets declare their own media type.
       const requestSchema =
-        operation.requestBody?.content?.["application/json"]?.schema;
+        operation.requestBody?.content?.["application/json"]?.schema ??
+        Object.values(operation.requestBody?.content ?? {})[0]?.schema;
       const security = operation.security ?? openapi.security ?? [];
       const parameters = new Map();
       for (const parameter of [

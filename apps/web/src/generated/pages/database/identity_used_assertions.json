@@ -1,0 +1,37 @@
+{
+  "kind": "database",
+  "name": "identity_used_assertions",
+  "description": "Replay protection for host identity assertions: SHA-256 of each accepted assertion jti until it expires.",
+  "owner": "identity",
+  "classification": "INTERNAL",
+  "lifecycle": "Rows are pruned after their expiry.",
+  "columns": [
+    {
+      "Column": "jti_hash",
+      "PostgreSQL type": "character(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "SHA-256 of the assertion identifier.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Assertion expiry; after it the jti cannot be replayed anyway.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_used_assertions_pkey",
+      "Physical definition": "PRIMARY KEY (jti_hash)",
+      "Purpose": "Each assertion is accepted once."
+    }
+  ]
+}

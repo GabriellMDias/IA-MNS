@@ -1,0 +1,102 @@
+{
+  "kind": "database",
+  "name": "identity_persons",
+  "description": "An IA-MNS Person: the single internal identity that owns conversations, preferences, links, credentials, roles and grants, independent of the surface or method used to sign in.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Persons are never hard-deleted by the application; an owner disables them instead. Shared deployment requires an owner-approved retention policy (PH-09) before rollout.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Stable application principal UUID; issued as the access-token principal and conversation owner. Never derived from a provider identifier.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "display_name",
+      "PostgreSQL type": "character varying(120)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person-editable display name; initially copied from the first verified provider profile or chosen at enrollment. Not an identity key.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "status",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "'active'::character varying",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "active, disabled or merged. Disabled and merged Persons cannot authenticate and their sessions are revoked.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "merged_into",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person that absorbed this one through a proof-based or owner-approved consolidation; links, local credential, grants and conversations moved there.",
+      "Null meaning": "Not merged.",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock last profile or status change; informational, not an audit trail.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_persons_display_name_check",
+      "Physical definition": "CHECK ((length(btrim((display_name)::text)) > 0))",
+      "Purpose": "A display name is required."
+    },
+    {
+      "Object": "identity_persons_merge_check",
+      "Physical definition": "CHECK (((((status)::text = 'merged'::text) = (merged_into IS NOT NULL)) AND ((merged_into IS NULL) OR (merged_into <> id))))",
+      "Purpose": "Merged status and target exist together and a Person never merges into itself."
+    },
+    {
+      "Object": "identity_persons_merged_into_fkey",
+      "Physical definition": "FOREIGN KEY (merged_into) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE RESTRICT",
+      "Purpose": "A merged Person points to an existing Person; never deleted while referenced."
+    },
+    {
+      "Object": "identity_persons_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Immutable Person identity."
+    },
+    {
+      "Object": "identity_persons_status_check",
+      "Physical definition": "CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'disabled'::character varying, 'merged'::character varying])::text[])))",
+      "Purpose": "Explicit lifecycle states."
+    },
+    {
+      "Object": "identity_persons_display_name_idx",
+      "Physical definition": "CREATE INDEX identity_persons_display_name_idx ON public.identity_persons USING btree (display_name, id)",
+      "Purpose": "Bounded administrative listing ordered by name."
+    }
+  ]
+}

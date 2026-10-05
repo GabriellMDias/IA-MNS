@@ -27,6 +27,8 @@ export type ApiOperation = Readonly<{
     querystring?: TSchema;
     headers?: TSchema;
     body?: TSchema;
+    /** Request media type; JSON unless a browser form posts to the route. */
+    bodyContentType?: "application/json" | "application/x-www-form-urlencoded";
     response: Readonly<Record<number, TSchema>>;
   }>;
   expectedErrors?: readonly string[];

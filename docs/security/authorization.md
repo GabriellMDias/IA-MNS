@@ -4,7 +4,7 @@ This policy owns permission decisions for application actors. [Authentication](a
 
 ## Current implementation and ownership
 
-Each module owns its concrete authorization policy in its domain rules, enforced by its application operations and scoped database queries; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows owner/reviewer rules this way. This is not a repository-wide role engine or multi-tenant implementation.
+In IA-MNS, the identity module computes each Person's effective permissions from explicit owner grants of a composed catalog, a provider policy that may grant only read capabilities to Persons with an active link, and the internal `owner` role; it issues them as access-token scopes ([identity](../domains/identity.md#authorization), [ADR-0022](../adr/0022-own-the-ia-mns-identity-with-verified-external-links.md)). Modules still decide what each scope permits. Each module owns its concrete authorization policy in its domain rules, enforced by its application operations and scoped database queries; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows owner/reviewer rules this way. This is not a repository-wide role engine or multi-tenant implementation.
 
 Protected operations must have an identifiable policy owner. Keep business-security meaning near the owning domain; common infrastructure may provide evaluation, principal types, lookup, denial semantics, and audit hooks without becoming a central switch over all domain rules. Introduce shared abstractions, a permission registry, RBAC, ABAC, ReBAC, or row-level security only when actual requirements justify them. Significant choices need an ADR.
 

@@ -1,0 +1,172 @@
+{
+  "kind": "database",
+  "name": "identity_external_identities",
+  "description": "A link between a Person and one stable external account (PDT Connect identitySubject or Sankhya CODUSU) under a fixed issuer, created from a server-verified proof by the account holder or by an owner selecting the account in the Sankhya directory.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Removed explicitly by the Person (recent authentication, never the last sign-in method) or an owner, with an audit event. Cascades only if a Person were deleted, which the application never does.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Immutable link UUID used to address removal.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owning Person.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "provider",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "pdt or sankhya; selects the connector that proved the identity.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "issuer",
+      "PostgreSQL type": "character varying(300)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Fixed provider installation identifier from server configuration (PDT_IDENTITY_ISSUER or SANKHYA_IDENTITY_ISSUER); never taken from browser input.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "subject",
+      "PostgreSQL type": "character varying(200)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Stable provider subject: PDT identitySubject UUID or Sankhya CODUSU. Never a name or e-mail.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "label",
+      "PostgreSQL type": "character varying(200)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display snapshot of the provider account name at last verification; informational only.",
+      "Null meaning": "The provider supplied no display name.",
+      "Unit": "—"
+    },
+    {
+      "Column": "email",
+      "PostgreSQL type": "character varying(254)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Normalized e-mail reported by the provider for this account. Used only as a hint to ask for proof before provisioning a second Person; never as proof or merge criterion.",
+      "Null meaning": "The provider reported no e-mail.",
+      "Unit": "—"
+    },
+    {
+      "Column": "established_by",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "'proof'::character varying",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "proof: the account holder proved the account to IA-MNS; directory: an owner selected and attested the account from the Sankhya directory, validated server-side.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "linked_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner who attested a directory link.",
+      "Null meaning": "Established by the account holder's proof.",
+      "Unit": "—"
+    },
+    {
+      "Column": "linked_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock instant the link was proven and created.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "last_verified_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Application-clock instant of the latest successful proof through this link.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_external_identities_email_check",
+      "Physical definition": "CHECK (((email IS NULL) OR ((email)::text = lower(btrim((email)::text)))))",
+      "Purpose": "E-mail hints are stored normalized."
+    },
+    {
+      "Object": "identity_external_identities_established_check",
+      "Physical definition": "CHECK ((((established_by)::text = ANY ((ARRAY['proof'::character varying, 'directory'::character varying])::text[])) AND (((established_by)::text = 'proof'::text) OR (linked_by IS NOT NULL))))",
+      "Purpose": "Known establishment kinds; directory links name the attesting owner."
+    },
+    {
+      "Object": "identity_external_identities_issuer_check",
+      "Physical definition": "CHECK ((length((issuer)::text) > 0))",
+      "Purpose": "Issuer required."
+    },
+    {
+      "Object": "identity_external_identities_person_id_fkey",
+      "Physical definition": "FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Links belong to one Person."
+    },
+    {
+      "Object": "identity_external_identities_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Immutable link identity."
+    },
+    {
+      "Object": "identity_external_identities_provider_check",
+      "Physical definition": "CHECK (((provider)::text = ANY ((ARRAY['pdt'::character varying, 'sankhya'::character varying])::text[])))",
+      "Purpose": "Only implemented connectors."
+    },
+    {
+      "Object": "identity_external_identities_subject_check",
+      "Physical definition": "CHECK ((length((subject)::text) > 0))",
+      "Purpose": "Subject required."
+    },
+    {
+      "Object": "identity_external_identities_email_idx",
+      "Physical definition": "CREATE INDEX identity_external_identities_email_idx ON public.identity_external_identities USING btree (email)",
+      "Purpose": "Candidate lookup before automatic provisioning."
+    },
+    {
+      "Object": "identity_external_identities_person_provider_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_external_identities_person_provider_key ON public.identity_external_identities USING btree (person_id, provider, issuer)",
+      "Purpose": "A Person has at most one account per provider installation."
+    },
+    {
+      "Object": "identity_external_identities_subject_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_external_identities_subject_key ON public.identity_external_identities USING btree (provider, issuer, subject)",
+      "Purpose": "One external account maps to at most one Person; no silent duplication or merge."
+    }
+  ]
+}

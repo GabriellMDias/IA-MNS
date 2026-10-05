@@ -7,6 +7,8 @@
     "dev:lan": "tsx scripts/local-network.ts",
     "db:generate": "prisma generate",
     "db:local": "tsx scripts/local-database.ts",
+    "identity:local": "tsx scripts/local-identity.ts",
+    "identity:bootstrap": "node --env-file-if-exists=../../.env.local --import tsx scripts/identity-bootstrap.ts",
     "db:migrate:deploy": "prisma migrate deploy",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.build.json",

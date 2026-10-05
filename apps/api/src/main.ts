@@ -21,7 +21,12 @@ try {
   // Load Fastify, Prisma, and modules only after instrumentation is registered.
   const { createApp } = await import("./app.js");
   const { createDatabase, checkDatabase } = await import("./database.js");
-  const { createAccessTokenVerifier } = await import("./authentication.js");
+  const {
+    combineVerifiers,
+    createAccessTokenVerifier,
+    createLocalAccessTokenVerifier,
+    issuerPublicJwk,
+  } = await import("./authentication.js");
   const { activateModules } = await import("./module.js");
   const { apiModules } = await import("./modules.js");
   const database = config.databaseUrl
@@ -39,14 +44,33 @@ try {
     },
   };
   cleanup = () => withDeadline(resources.shutdown(), config.shutdownTimeoutMs);
+  // Trusted issuers: the in-process IA-MNS identity issuer and/or an external one.
+  const verifiers = [
+    ...(config.publicOrigin && config.identitySigningKey
+      ? [
+          createLocalAccessTokenVerifier({
+            issuer: config.publicOrigin,
+            audience: config.identityAudience,
+            keys: { keys: [issuerPublicJwk(config.identitySigningKey)] },
+          }),
+        ]
+      : []),
+    ...(config.tokenIssuer && config.tokenAudience && config.tokenJwksUrl
+      ? [
+          createAccessTokenVerifier({
+            issuer: config.tokenIssuer,
+            audience: config.tokenAudience,
+            jwksUrl: config.tokenJwksUrl,
+          }),
+        ]
+      : []),
+  ];
   const verifier =
-    config.tokenIssuer && config.tokenAudience && config.tokenJwksUrl
-      ? createAccessTokenVerifier({
-          issuer: config.tokenIssuer,
-          audience: config.tokenAudience,
-          jwksUrl: config.tokenJwksUrl,
-        })
-      : undefined;
+    verifiers.length === 0
+      ? undefined
+      : verifiers.length === 1
+        ? verifiers[0]
+        : combineVerifiers(verifiers);
   const modules = activateModules(
     apiModules,
     { database, verifier, config },

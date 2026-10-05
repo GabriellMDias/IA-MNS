@@ -1,0 +1,1074 @@
+{
+  "kind": "api",
+  "operationId": "getIdentityPerson",
+  "summary": "",
+  "description": "Owner: a Person's methods, links, grants, effective permissions, sessions, recent audit and the grantable catalog.",
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "method": "GET",
+  "path": "/identity/admin/persons/{personId}",
+  "tags": ["Identity"],
+  "authentication": "Bearer access token",
+  "parameters": [
+    {
+      "name": "personId",
+      "in": "path",
+      "required": true,
+      "schema": { "type": "string", "format": "uuid" },
+      "type": "string (uuid)",
+      "description": ""
+    }
+  ],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["person", "capabilities", "catalog", "audit"],
+            "properties": {
+              "person": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "displayName",
+                  "status",
+                  "owner",
+                  "grants",
+                  "permissions",
+                  "links",
+                  "local",
+                  "sessions"
+                ],
+                "properties": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "displayName": { "type": "string" },
+                  "status": {
+                    "anyOf": [
+                      { "type": "string", "const": "active" },
+                      { "type": "string", "const": "disabled" }
+                    ]
+                  },
+                  "owner": { "type": "boolean" },
+                  "grants": { "type": "array", "items": { "type": "string" } },
+                  "permissions": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "provider",
+                        "label",
+                        "establishedBy",
+                        "linkedAt",
+                        "lastVerifiedAt"
+                      ],
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "provider": {
+                          "anyOf": [
+                            { "type": "string", "const": "pdt" },
+                            { "type": "string", "const": "sankhya" }
+                          ]
+                        },
+                        "label": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        },
+                        "establishedBy": {
+                          "anyOf": [
+                            { "type": "string", "const": "proof" },
+                            { "type": "string", "const": "directory" }
+                          ]
+                        },
+                        "linkedAt": { "type": "string", "format": "date-time" },
+                        "lastVerifiedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "local": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "login",
+                          "totpEnabled",
+                          "recoveryCodesRemaining"
+                        ],
+                        "properties": {
+                          "login": { "type": "string" },
+                          "totpEnabled": { "type": "boolean" },
+                          "recoveryCodesRemaining": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      { "type": "null" }
+                    ]
+                  },
+                  "sessions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "method",
+                        "surface",
+                        "assurance",
+                        "createdAt",
+                        "lastSeenAt",
+                        "expiresAt",
+                        "current"
+                      ],
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "method": { "type": "string" },
+                        "surface": {
+                          "anyOf": [
+                            { "type": "string", "const": "direct" },
+                            { "type": "string", "const": "pdt" },
+                            { "type": "string", "const": "sankhya" }
+                          ]
+                        },
+                        "assurance": {
+                          "anyOf": [
+                            { "type": "string", "const": "single" },
+                            { "type": "string", "const": "mfa" }
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "lastSeenAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "current": { "type": "boolean" }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "capabilities": {
+                "type": "object",
+                "required": ["sankhyaDirectory", "linkInvitations"],
+                "properties": {
+                  "sankhyaDirectory": {
+                    "type": "boolean",
+                    "description": "Owners can select real Sankhya users from the ERP directory."
+                  },
+                  "linkInvitations": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        { "type": "string", "const": "pdt" },
+                        { "type": "string", "const": "sankhya" }
+                      ]
+                    },
+                    "description": "Providers whose sign-in can complete a link invitation."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "catalog": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "permission",
+                    "title",
+                    "access",
+                    "autoGrantProviders"
+                  ],
+                  "properties": {
+                    "permission": { "type": "string" },
+                    "title": { "type": "string" },
+                    "access": {
+                      "anyOf": [
+                        { "type": "string", "const": "read" },
+                        { "type": "string", "const": "write" },
+                        { "type": "string", "const": "sensitive" }
+                      ]
+                    },
+                    "autoGrantProviders": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          { "type": "string", "const": "pdt" },
+                          { "type": "string", "const": "sankhya" }
+                        ]
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "audit": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["action", "occurredAt", "byOwner", "details"],
+                  "properties": {
+                    "action": { "type": "string" },
+                    "occurredAt": { "type": "string", "format": "date-time" },
+                    "byOwner": { "type": "boolean" },
+                    "details": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^.*$": {
+                          "anyOf": [
+                            { "type": "string" },
+                            { "type": "number" },
+                            { "type": "boolean" },
+                            { "type": "null" }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["person", "capabilities", "catalog", "audit"],
+        "properties": {
+          "person": {
+            "type": "object",
+            "required": [
+              "id",
+              "displayName",
+              "status",
+              "owner",
+              "grants",
+              "permissions",
+              "links",
+              "local",
+              "sessions"
+            ],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "displayName": { "type": "string" },
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "active" },
+                  { "type": "string", "const": "disabled" }
+                ]
+              },
+              "owner": { "type": "boolean" },
+              "grants": { "type": "array", "items": { "type": "string" } },
+              "permissions": { "type": "array", "items": { "type": "string" } },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "provider",
+                    "label",
+                    "establishedBy",
+                    "linkedAt",
+                    "lastVerifiedAt"
+                  ],
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "provider": {
+                      "anyOf": [
+                        { "type": "string", "const": "pdt" },
+                        { "type": "string", "const": "sankhya" }
+                      ]
+                    },
+                    "label": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "establishedBy": {
+                      "anyOf": [
+                        { "type": "string", "const": "proof" },
+                        { "type": "string", "const": "directory" }
+                      ]
+                    },
+                    "linkedAt": { "type": "string", "format": "date-time" },
+                    "lastVerifiedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "local": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "login",
+                      "totpEnabled",
+                      "recoveryCodesRemaining"
+                    ],
+                    "properties": {
+                      "login": { "type": "string" },
+                      "totpEnabled": { "type": "boolean" },
+                      "recoveryCodesRemaining": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "sessions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "method",
+                    "surface",
+                    "assurance",
+                    "createdAt",
+                    "lastSeenAt",
+                    "expiresAt",
+                    "current"
+                  ],
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "method": { "type": "string" },
+                    "surface": {
+                      "anyOf": [
+                        { "type": "string", "const": "direct" },
+                        { "type": "string", "const": "pdt" },
+                        { "type": "string", "const": "sankhya" }
+                      ]
+                    },
+                    "assurance": {
+                      "anyOf": [
+                        { "type": "string", "const": "single" },
+                        { "type": "string", "const": "mfa" }
+                      ]
+                    },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "lastSeenAt": { "type": "string", "format": "date-time" },
+                    "expiresAt": { "type": "string", "format": "date-time" },
+                    "current": { "type": "boolean" }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "capabilities": {
+            "type": "object",
+            "required": ["sankhyaDirectory", "linkInvitations"],
+            "properties": {
+              "sankhyaDirectory": {
+                "type": "boolean",
+                "description": "Owners can select real Sankhya users from the ERP directory."
+              },
+              "linkInvitations": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    { "type": "string", "const": "pdt" },
+                    { "type": "string", "const": "sankhya" }
+                  ]
+                },
+                "description": "Providers whose sign-in can complete a link invitation."
+              }
+            },
+            "additionalProperties": false
+          },
+          "catalog": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "permission",
+                "title",
+                "access",
+                "autoGrantProviders"
+              ],
+              "properties": {
+                "permission": { "type": "string" },
+                "title": { "type": "string" },
+                "access": {
+                  "anyOf": [
+                    { "type": "string", "const": "read" },
+                    { "type": "string", "const": "write" },
+                    { "type": "string", "const": "sensitive" }
+                  ]
+                },
+                "autoGrantProviders": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      { "type": "string", "const": "pdt" },
+                      { "type": "string", "const": "sankhya" }
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "audit": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["action", "occurredAt", "byOwner", "details"],
+              "properties": {
+                "action": { "type": "string" },
+                "occurredAt": { "type": "string", "format": "date-time" },
+                "byOwner": { "type": "boolean" },
+                "details": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^.*$": {
+                      "anyOf": [
+                        { "type": "string" },
+                        { "type": "number" },
+                        { "type": "boolean" },
+                        { "type": "null" }
+                      ]
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "person", "type": "object", "required": true },
+        { "name": "person.id", "type": "string (uuid)", "required": true },
+        { "name": "person.displayName", "type": "string", "required": true },
+        {
+          "name": "person.status",
+          "type": "\"active\" | \"disabled\"",
+          "required": true
+        },
+        { "name": "person.owner", "type": "boolean", "required": true },
+        {
+          "name": "person.grants",
+          "type": "array of string",
+          "required": true
+        },
+        {
+          "name": "person.permissions",
+          "type": "array of string",
+          "required": true
+        },
+        { "name": "person.links", "type": "array of object", "required": true },
+        {
+          "name": "person.links[].id",
+          "type": "string (uuid)",
+          "required": true
+        },
+        {
+          "name": "person.links[].provider",
+          "type": "\"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        {
+          "name": "person.links[].label",
+          "type": "string | null",
+          "required": true
+        },
+        {
+          "name": "person.links[].establishedBy",
+          "type": "\"proof\" | \"directory\"",
+          "required": true
+        },
+        {
+          "name": "person.links[].linkedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.links[].lastVerifiedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        { "name": "person.local", "type": "object | null", "required": true },
+        {
+          "name": "person.sessions",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].id",
+          "type": "string (uuid)",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].method",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].surface",
+          "type": "\"direct\" | \"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].assurance",
+          "type": "\"single\" | \"mfa\"",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].createdAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].lastSeenAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].expiresAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].current",
+          "type": "boolean",
+          "required": true
+        },
+        { "name": "capabilities", "type": "object", "required": true },
+        {
+          "name": "capabilities.sankhyaDirectory",
+          "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "capabilities.linkInvitations",
+          "type": "array of \"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        { "name": "catalog", "type": "array of object", "required": true },
+        { "name": "catalog[].permission", "type": "string", "required": true },
+        { "name": "catalog[].title", "type": "string", "required": true },
+        {
+          "name": "catalog[].access",
+          "type": "\"read\" | \"write\" | \"sensitive\"",
+          "required": true
+        },
+        {
+          "name": "catalog[].autoGrantProviders",
+          "type": "array of \"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        { "name": "audit", "type": "array of object", "required": true },
+        { "name": "audit[].action", "type": "string", "required": true },
+        {
+          "name": "audit[].occurredAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        { "name": "audit[].byOwner", "type": "boolean", "required": true },
+        { "name": "audit[].details", "type": "object", "required": true }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

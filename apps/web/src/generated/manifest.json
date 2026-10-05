@@ -22,6 +22,113 @@
       "file": "pages/api/askSalesQuestion.json"
     },
     {
+      "id": "api/assignIdentityOwner",
+      "kind": "api",
+      "title": "assignIdentityOwner",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/admin/persons/{personId}/owner",
+      "method": "PUT",
+      "path": "/identity/admin/persons/{personId}/owner",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/assignIdentityOwner.json"
+    },
+    {
+      "id": "api/completeBootstrap",
+      "kind": "api",
+      "title": "completeBootstrap",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/bootstrap",
+      "method": "POST",
+      "path": "/identity/bootstrap",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/completeBootstrap.json"
+    },
+    {
+      "id": "api/completeEmbeddedSignIn",
+      "kind": "api",
+      "title": "completeEmbeddedSignIn",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/providers/{provider}/complete",
+      "method": "POST",
+      "path": "/identity/providers/{provider}/complete",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/completeEmbeddedSignIn.json"
+    },
+    {
+      "id": "api/completeInvitation",
+      "kind": "api",
+      "title": "completeInvitation",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/invitations/complete",
+      "method": "POST",
+      "path": "/identity/invitations/complete",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/completeInvitation.json"
+    },
+    {
+      "id": "api/completeMfa",
+      "kind": "api",
+      "title": "completeMfa",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/login/mfa",
+      "method": "POST",
+      "path": "/identity/login/mfa",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/completeMfa.json"
+    },
+    {
+      "id": "api/confirmTotpSetup",
+      "kind": "api",
+      "title": "confirmTotpSetup",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/me/totp/confirm",
+      "method": "POST",
+      "path": "/identity/me/totp/confirm",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/confirmTotpSetup.json"
+    },
+    {
       "id": "api/createAgentConversation",
       "kind": "api",
       "title": "createAgentConversation",
@@ -40,6 +147,42 @@
       "file": "pages/api/createAgentConversation.json"
     },
     {
+      "id": "api/createIdentityPerson",
+      "kind": "api",
+      "title": "createIdentityPerson",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/admin/persons",
+      "method": "POST",
+      "path": "/identity/admin/persons",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createIdentityPerson.json"
+    },
+    {
+      "id": "api/createProvisionedPerson",
+      "kind": "api",
+      "title": "createProvisionedPerson",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/provision/create",
+      "method": "POST",
+      "path": "/identity/provision/create",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createProvisionedPerson.json"
+    },
+    {
       "id": "api/deleteAgentConversation",
       "kind": "api",
       "title": "deleteAgentConversation",
@@ -55,6 +198,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/deleteAgentConversation.json"
+    },
+    {
+      "id": "api/disableTotp",
+      "kind": "api",
+      "title": "disableTotp",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/me/totp",
+      "method": "DELETE",
+      "path": "/identity/me/totp",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/disableTotp.json"
     },
     {
       "id": "api/forgetSalesConversation",
@@ -106,6 +266,57 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getAgentStatus.json"
+    },
+    {
+      "id": "api/getIdentityMe",
+      "kind": "api",
+      "title": "getIdentityMe",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/me",
+      "method": "GET",
+      "path": "/identity/me",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getIdentityMe.json"
+    },
+    {
+      "id": "api/getIdentityPerson",
+      "kind": "api",
+      "title": "getIdentityPerson",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/persons/{personId}",
+      "method": "GET",
+      "path": "/identity/admin/persons/{personId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getIdentityPerson.json"
+    },
+    {
+      "id": "api/getIdentityStatus",
+      "kind": "api",
+      "title": "getIdentityStatus",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/status",
+      "method": "GET",
+      "path": "/identity/status",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getIdentityStatus.json"
     },
     {
       "id": "api/getLiveness",
@@ -176,6 +387,131 @@
       "file": "pages/api/getStartupHealth.json"
     },
     {
+      "id": "api/grantIdentityPermission",
+      "kind": "api",
+      "title": "grantIdentityPermission",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/admin/persons/{personId}/grants/{permission}",
+      "method": "PUT",
+      "path": "/identity/admin/persons/{personId}/grants/{permission}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/grantIdentityPermission.json"
+    },
+    {
+      "id": "api/inspectInvitation",
+      "kind": "api",
+      "title": "inspectInvitation",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/invitations/inspect",
+      "method": "POST",
+      "path": "/identity/invitations/inspect",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/inspectInvitation.json"
+    },
+    {
+      "id": "api/inspectProvision",
+      "kind": "api",
+      "title": "inspectProvision",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/provision/inspect",
+      "method": "POST",
+      "path": "/identity/provision/inspect",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/inspectProvision.json"
+    },
+    {
+      "id": "api/issueEnrollmentInvitation",
+      "kind": "api",
+      "title": "issueEnrollmentInvitation",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/admin/persons/{personId}/enrollment",
+      "method": "POST",
+      "path": "/identity/admin/persons/{personId}/enrollment",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/issueEnrollmentInvitation.json"
+    },
+    {
+      "id": "api/issueLinkInvitation",
+      "kind": "api",
+      "title": "issueLinkInvitation",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/admin/persons/{personId}/link-invitations",
+      "method": "POST",
+      "path": "/identity/admin/persons/{personId}/link-invitations",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/issueLinkInvitation.json"
+    },
+    {
+      "id": "api/linkProvisionedIdentity",
+      "kind": "api",
+      "title": "linkProvisionedIdentity",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/provision/link",
+      "method": "POST",
+      "path": "/identity/provision/link",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/linkProvisionedIdentity.json"
+    },
+    {
+      "id": "api/linkSankhyaUser",
+      "kind": "api",
+      "title": "linkSankhyaUser",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/admin/persons/{personId}/links/sankhya",
+      "method": "POST",
+      "path": "/identity/admin/persons/{personId}/links/sankhya",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/linkSankhyaUser.json"
+    },
+    {
       "id": "api/listAgentConversations",
       "kind": "api",
       "title": "listAgentConversations",
@@ -191,6 +527,304 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/listAgentConversations.json"
+    },
+    {
+      "id": "api/listIdentityPersons",
+      "kind": "api",
+      "title": "listIdentityPersons",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/persons",
+      "method": "GET",
+      "path": "/identity/admin/persons",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listIdentityPersons.json"
+    },
+    {
+      "id": "api/loginLocal",
+      "kind": "api",
+      "title": "loginLocal",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/login/local",
+      "method": "POST",
+      "path": "/identity/login/local",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/loginLocal.json"
+    },
+    {
+      "id": "api/logout",
+      "kind": "api",
+      "title": "logout",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/logout",
+      "method": "POST",
+      "path": "/identity/logout",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/logout.json"
+    },
+    {
+      "id": "api/mergeIdentityPersons",
+      "kind": "api",
+      "title": "mergeIdentityPersons",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/admin/persons/{personId}/merge",
+      "method": "POST",
+      "path": "/identity/admin/persons/{personId}/merge",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/mergeIdentityPersons.json"
+    },
+    {
+      "id": "api/mergeProvenProfile",
+      "kind": "api",
+      "title": "mergeProvenProfile",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/merge",
+      "method": "POST",
+      "path": "/identity/merge",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/mergeProvenProfile.json"
+    },
+    {
+      "id": "api/pdtCallback",
+      "kind": "api",
+      "title": "pdtCallback",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/pdt/callback",
+      "method": "GET",
+      "path": "/identity/pdt/callback",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/pdtCallback.json"
+    },
+    {
+      "id": "api/reauthenticate",
+      "kind": "api",
+      "title": "reauthenticate",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/me/reauthenticate",
+      "method": "POST",
+      "path": "/identity/me/reauthenticate",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/reauthenticate.json"
+    },
+    {
+      "id": "api/refreshSession",
+      "kind": "api",
+      "title": "refreshSession",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/session/refresh",
+      "method": "POST",
+      "path": "/identity/session/refresh",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/refreshSession.json"
+    },
+    {
+      "id": "api/regenerateRecoveryCodes",
+      "kind": "api",
+      "title": "regenerateRecoveryCodes",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/me/recovery-codes",
+      "method": "POST",
+      "path": "/identity/me/recovery-codes",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/regenerateRecoveryCodes.json"
+    },
+    {
+      "id": "api/removeIdentityLink",
+      "kind": "api",
+      "title": "removeIdentityLink",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/me/links/{linkId}",
+      "method": "DELETE",
+      "path": "/identity/me/links/{linkId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/removeIdentityLink.json"
+    },
+    {
+      "id": "api/removeIdentityOwner",
+      "kind": "api",
+      "title": "removeIdentityOwner",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/admin/persons/{personId}/owner",
+      "method": "DELETE",
+      "path": "/identity/admin/persons/{personId}/owner",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/removeIdentityOwner.json"
+    },
+    {
+      "id": "api/removeIdentityPersonLink",
+      "kind": "api",
+      "title": "removeIdentityPersonLink",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/admin/persons/{personId}/links/{linkId}",
+      "method": "DELETE",
+      "path": "/identity/admin/persons/{personId}/links/{linkId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/removeIdentityPersonLink.json"
+    },
+    {
+      "id": "api/resetIdentityLocalCredential",
+      "kind": "api",
+      "title": "resetIdentityLocalCredential",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/admin/persons/{personId}/reset",
+      "method": "POST",
+      "path": "/identity/admin/persons/{personId}/reset",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/resetIdentityLocalCredential.json"
+    },
+    {
+      "id": "api/revokeIdentityPermission",
+      "kind": "api",
+      "title": "revokeIdentityPermission",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/admin/persons/{personId}/grants/{permission}",
+      "method": "DELETE",
+      "path": "/identity/admin/persons/{personId}/grants/{permission}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/revokeIdentityPermission.json"
+    },
+    {
+      "id": "api/revokeIdentityPersonSessions",
+      "kind": "api",
+      "title": "revokeIdentityPersonSessions",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/admin/persons/{personId}/sessions",
+      "method": "DELETE",
+      "path": "/identity/admin/persons/{personId}/sessions",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/revokeIdentityPersonSessions.json"
+    },
+    {
+      "id": "api/revokeIdentitySession",
+      "kind": "api",
+      "title": "revokeIdentitySession",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/me/sessions/{sessionId}",
+      "method": "DELETE",
+      "path": "/identity/me/sessions/{sessionId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/revokeIdentitySession.json"
+    },
+    {
+      "id": "api/sankhyaCallback",
+      "kind": "api",
+      "title": "sankhyaCallback",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/sankhya/callback",
+      "method": "POST",
+      "path": "/identity/sankhya/callback",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/sankhyaCallback.json"
     },
     {
       "id": "api/searchAgentConversations",
@@ -209,6 +843,95 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/searchAgentConversations.json"
+    },
+    {
+      "id": "api/searchSankhyaUsers",
+      "kind": "api",
+      "title": "searchSankhyaUsers",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/sankhya-users",
+      "method": "GET",
+      "path": "/identity/admin/sankhya-users",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/searchSankhyaUsers.json"
+    },
+    {
+      "id": "api/setIdentityPersonStatus",
+      "kind": "api",
+      "title": "setIdentityPersonStatus",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /identity/admin/persons/{personId}",
+      "method": "PATCH",
+      "path": "/identity/admin/persons/{personId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/setIdentityPersonStatus.json"
+    },
+    {
+      "id": "api/setLocalPassword",
+      "kind": "api",
+      "title": "setLocalPassword",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/me/password",
+      "method": "PUT",
+      "path": "/identity/me/password",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/setLocalPassword.json"
+    },
+    {
+      "id": "api/startProviderSignIn",
+      "kind": "api",
+      "title": "startProviderSignIn",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/providers/{provider}/start",
+      "method": "POST",
+      "path": "/identity/providers/{provider}/start",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/startProviderSignIn.json"
+    },
+    {
+      "id": "api/startTotpSetup",
+      "kind": "api",
+      "title": "startTotpSetup",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/me/totp",
+      "method": "POST",
+      "path": "/identity/me/totp",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/startTotpSetup.json"
     },
     {
       "id": "api/submitAgentTurn",
@@ -247,6 +970,24 @@
       "file": "pages/api/updateAgentConversation.json"
     },
     {
+      "id": "api/updateIdentityMe",
+      "kind": "api",
+      "title": "updateIdentityMe",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /identity/me",
+      "method": "PATCH",
+      "path": "/identity/me",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateIdentityMe.json"
+    },
+    {
       "id": "database/agent_conversations",
       "kind": "database",
       "title": "agent_conversations",
@@ -265,6 +1006,106 @@
       "summary": "One user message and its execution lifecycle, real progress, and versioned assistant outcome. Failed/interrupted turns retain no fabricated answer.",
       "headings": [],
       "file": "pages/database/agent_turns.json"
+    },
+    {
+      "id": "database/identity_audit_events",
+      "kind": "database",
+      "title": "identity_audit_events",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Append-only audit of security-relevant identity events: sign-in outcomes, provisioning, link and unlink, credential and factor changes, role and grant changes, session revocation and bootstrap.",
+      "headings": [],
+      "file": "pages/database/identity_audit_events.json"
+    },
+    {
+      "id": "database/identity_capability_grants",
+      "kind": "database",
+      "title": "identity_capability_grants",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Explicit capability permissions granted to a Person by an owner, in addition to provider-policy grants derived from active links. The language model never creates grants.",
+      "headings": [],
+      "file": "pages/database/identity_capability_grants.json"
+    },
+    {
+      "id": "database/identity_external_identities",
+      "kind": "database",
+      "title": "identity_external_identities",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A link between a Person and one stable external account (PDT Connect identitySubject or Sankhya CODUSU) under a fixed issuer, created from a server-verified proof by the account holder or by an owner selecting the account in the Sankhya directory.",
+      "headings": [],
+      "file": "pages/database/identity_external_identities.json"
+    },
+    {
+      "id": "database/identity_local_credentials",
+      "kind": "database",
+      "title": "identity_local_credentials",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Optional IA-MNS local sign-in: unique login, memory-hard password verifier, lockout state and encrypted TOTP secret for strong authentication.",
+      "headings": [],
+      "file": "pages/database/identity_local_credentials.json"
+    },
+    {
+      "id": "database/identity_persons",
+      "kind": "database",
+      "title": "identity_persons",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "An IA-MNS Person: the single internal identity that owns conversations, preferences, links, credentials, roles and grants, independent of the surface or method used to sign in.",
+      "headings": [],
+      "file": "pages/database/identity_persons.json"
+    },
+    {
+      "id": "database/identity_recovery_codes",
+      "kind": "database",
+      "title": "identity_recovery_codes",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Single-use second-factor recovery codes, stored only as SHA-256 hashes of high-entropy values shown once.",
+      "headings": [],
+      "file": "pages/database/identity_recovery_codes.json"
+    },
+    {
+      "id": "database/identity_role_assignments",
+      "kind": "database",
+      "title": "identity_role_assignments",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Internal IA-MNS roles assigned to a Person. owner is the principal administrator with full IA-MNS capability and administration, independent of Sankhya or PDT roles.",
+      "headings": [],
+      "file": "pages/database/identity_role_assignments.json"
+    },
+    {
+      "id": "database/identity_sessions",
+      "kind": "database",
+      "title": "identity_sessions",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Authenticated continuity for a Person: method, surface, assurance and expiry. Direct-URL sessions hold a rotating refresh credential (hash only); embedded sessions have none and renew through a new host proof.",
+      "headings": [],
+      "file": "pages/database/identity_sessions.json"
+    },
+    {
+      "id": "database/identity_tickets",
+      "kind": "database",
+      "title": "identity_tickets",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Short-lived single-use flow state addressed by the SHA-256 of a high-entropy secret: bootstrap, enrollment, reset and link invitations, pending second factor, pending TOTP setup, provisioning choice, profile consolidation, and pending PDT or Sankhya proofs (state, nonce, PKCE verifier).",
+      "headings": [],
+      "file": "pages/database/identity_tickets.json"
+    },
+    {
+      "id": "database/identity_used_assertions",
+      "kind": "database",
+      "title": "identity_used_assertions",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Replay protection for host identity assertions: SHA-256 of each accepted assertion jti until it expires.",
+      "headings": [],
+      "file": "pages/database/identity_used_assertions.json"
     },
     {
       "id": "components/ErrorNotice",
@@ -545,6 +1386,26 @@
       "summary": "IA-MNS was derived from Orion, whose source is licensed under Apache-2.0 (ADR-0016). That decision explicitly left the license of independently created project code to each…",
       "headings": [],
       "file": "pages/repository/docs/adr/0021-license-ia-mns-under-apache-2-0.json"
+    },
+    {
+      "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
+      "kind": "repository",
+      "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
+      "group": "Decisions",
+      "source": "docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links.md",
+      "summary": "IA-MNS is used by people who may have accounts in Sankhya Om, in PDT Connect, both, or neither. The owner requires one IA-MNS identity per person, reached through any of those…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links.json"
+    },
+    {
+      "id": "repository/docs/adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs",
+      "kind": "repository",
+      "title": "ADR-0023: Serve One Frontend to Three Surfaces with Host Identity Proofs",
+      "group": "Decisions",
+      "source": "docs/adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md",
+      "summary": "IA-MNS must be reachable at its own URL, inside PDT Connect and inside Sankhya Om without maintaining three frontends. Inside a host, the person is already authenticated there…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -835,6 +1696,16 @@
       "summary": "IA-MNS is MNS's corporate AI agent. Its product identity and conversational experience are independent of its first business capability. It can greet users, respond to…",
       "headings": [],
       "file": "pages/repository/docs/domains/corporate-agent.json"
+    },
+    {
+      "id": "repository/docs/domains/identity",
+      "kind": "repository",
+      "title": "IA-MNS Identity",
+      "group": "Domain guides",
+      "source": "docs/domains/identity.md",
+      "summary": "The identity API module (apps/api/src/features/identity/) owns who a person is in IA-MNS and what they may do. The web module (apps/web/src/features/identity/) owns sign-in,…",
+      "headings": [],
+      "file": "pages/repository/docs/domains/identity.json"
     },
     {
       "id": "repository/docs/domains/sales-chat",
@@ -1209,22 +2080,28 @@
   ],
   "search": {
     "shards": [
-      { "file": "search/0000.json", "count": 16, "kinds": ["api"] },
+      { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0001.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 15, "kinds": ["api"] },
+      { "file": "search/0003.json", "count": 14, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 14, "kinds": ["api", "database"] },
       {
-        "file": "search/0001.json",
-        "count": 61,
-        "kinds": ["api", "component", "database", "repository"]
+        "file": "search/0006.json",
+        "count": 81,
+        "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0002.json", "count": 109, "kinds": ["repository"] },
-      { "file": "search/0003.json", "count": 120, "kinds": ["repository"] },
-      { "file": "search/0004.json", "count": 166, "kinds": ["repository"] },
-      { "file": "search/0005.json", "count": 119, "kinds": ["repository"] },
-      { "file": "search/0006.json", "count": 122, "kinds": ["repository"] },
-      { "file": "search/0007.json", "count": 85, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 81, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 57, "kinds": ["repository"] }
+      { "file": "search/0007.json", "count": 108, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 129, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 167, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 118, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 121, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 85, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 98, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 96, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 18, "kinds": ["repository"] }
     ],
-    "count": 1042
+    "count": 1177
   }
 }

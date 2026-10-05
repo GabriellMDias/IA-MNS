@@ -1,0 +1,97 @@
+{
+  "kind": "database",
+  "name": "identity_audit_events",
+  "description": "Append-only audit of security-relevant identity events: sign-in outcomes, provisioning, link and unlink, credential and factor changes, role and grant changes, session revocation and bootstrap.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Append-only for the runtime role. Retention requires an owner-approved policy before shared deployment (PH-09).",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Event UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "occurred_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock event instant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "action",
+      "PostgreSQL type": "character varying(48)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Allowlisted dotted action code.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "actor_person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person who performed the action.",
+      "Null meaning": "Anonymous attempt or server-side bootstrap.",
+      "Unit": "—"
+    },
+    {
+      "Column": "target_person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person affected by the action.",
+      "Null meaning": "No Person resolved, for example a failed anonymous sign-in.",
+      "Unit": "—"
+    },
+    {
+      "Column": "details",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "'{}'::jsonb",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Allowlisted non-secret metadata such as provider, permission, role or reason codes. Never credentials, tokens or free text.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_audit_events_action_check",
+      "Physical definition": "CHECK (((action)::text ~ '^[a-z][a-z0-9_.]*$'::text))",
+      "Purpose": "Action code format."
+    },
+    {
+      "Object": "identity_audit_events_details_check",
+      "Physical definition": "CHECK ((jsonb_typeof(details) = 'object'::text))",
+      "Purpose": "Details are a JSON object."
+    },
+    {
+      "Object": "identity_audit_events_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Event identity."
+    },
+    {
+      "Object": "identity_audit_events_recent_idx",
+      "Physical definition": "CREATE INDEX identity_audit_events_recent_idx ON public.identity_audit_events USING btree (occurred_at DESC, id DESC)",
+      "Purpose": "Recent audit listing."
+    },
+    {
+      "Object": "identity_audit_events_target_idx",
+      "Physical definition": "CREATE INDEX identity_audit_events_target_idx ON public.identity_audit_events USING btree (target_person_id, occurred_at DESC)",
+      "Purpose": "Per-Person audit history."
+    }
+  ]
+}

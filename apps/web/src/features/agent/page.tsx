@@ -5,7 +5,12 @@ import {
   type CSSProperties,
   type FormEvent,
 } from "react";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearch,
+} from "@tanstack/react-router";
 import {
   useInfiniteQuery,
   useMutation,
@@ -17,6 +22,7 @@ import { ConversationSidebar, SidebarIcon } from "./sidebar.js";
 import { ConversationSearch } from "./search.js";
 import { SalesResults } from "../sales/results.js";
 import { useAgentSession } from "./session.js";
+import { useCredentials } from "../../credentials.js";
 import { newRequestId } from "./request-id.js";
 import {
   getAgentStatus,
@@ -75,7 +81,10 @@ export function AgentPage() {
   const params = useParams({ strict: false });
   const conversationId =
     "conversationId" in params ? params.conversationId : undefined;
-  const { token, setToken, sidebarExpanded, sidebarWidth } = useAgentSession();
+  const { token, setToken, managed, sidebarExpanded, sidebarWidth } =
+    useAgentSession();
+  const { requestSignIn } = useCredentials();
+  useEffect(() => requestSignIn(), [requestSignIn]);
   const [tokenInput, setTokenInput] = useState("");
   const [message, setMessage] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -490,7 +499,12 @@ export function AgentPage() {
             {update.error && <p role="alert">{failureText(update.error)}</p>}
           </form>
         </dialog>
-        {status.data?.accessMode === "token" && (
+        {managed && !token && (
+          <p className="agent-access" role="status">
+            <Link to="/entrar">Entre</Link> para conversar com o IA-MNS.
+          </p>
+        )}
+        {!managed && status.data?.accessMode === "token" && (
           <form className="agent-access" onSubmit={changeToken}>
             <label htmlFor="agent-token">Token de acesso</label>
             <input

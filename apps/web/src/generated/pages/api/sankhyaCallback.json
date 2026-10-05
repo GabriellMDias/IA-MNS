@@ -1,0 +1,56 @@
+{
+  "kind": "api",
+  "operationId": "sankhyaCallback",
+  "summary": "",
+  "description": "Form-post target of the Om identity add-on. Verifies the host assertion against pinned keys, the flow state and the browser binding cookie, then redirects into the web application.",
+  "security": [],
+  "components": {},
+  "method": "POST",
+  "path": "/identity/sankhya/callback",
+  "tags": ["Identity"],
+  "authentication": "None declared",
+  "parameters": [],
+  "request": {
+    "required": true,
+    "description": "",
+    "content": {
+      "application/x-www-form-urlencoded": {
+        "schema": {
+          "type": "object",
+          "required": ["assertion", "state"],
+          "properties": {
+            "assertion": { "type": "string", "maxLength": 4096 },
+            "state": { "type": "string", "maxLength": 200 }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "required": ["assertion", "state"],
+      "properties": {
+        "assertion": { "type": "string", "maxLength": 4096 },
+        "state": { "type": "string", "maxLength": 200 }
+      },
+      "additionalProperties": false
+    },
+    "fields": [
+      {
+        "name": "assertion",
+        "type": "string (max length 4096)",
+        "required": true
+      },
+      { "name": "state", "type": "string (max length 200)", "required": true }
+    ]
+  },
+  "responses": [
+    {
+      "status": "303",
+      "description": "Redirect",
+      "content": {},
+      "schema": null,
+      "fields": []
+    }
+  ]
+}

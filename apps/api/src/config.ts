@@ -37,6 +37,43 @@ export const serverConfigSchema = Type.Object(
     devAccessToken: Type.Optional(Type.String({ pattern: "^[a-f0-9]{64}$" })),
     devAccessOrigin: Type.Optional(Type.String({ minLength: 1 })),
     devAccessExpiresAt: Type.Optional(Type.Integer({ minimum: 1 })),
+    publicOrigin: Type.Optional(Type.String({ minLength: 1 })),
+    identitySigningKey: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9_-]{40,400}$" }),
+    ),
+    identityEncryptionKey: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9_-]{43}$" }),
+    ),
+    identityAudience: Type.String({ pattern: "^[A-Za-z0-9._:-]{1,100}$" }),
+    providerGrants: Type.Optional(
+      Type.String({ minLength: 1, maxLength: 1000 }),
+    ),
+    pdtBaseUrl: Type.Optional(Type.String({ minLength: 1 })),
+    pdtIssuer: Type.Optional(Type.String({ minLength: 1 })),
+    pdtClientId: Type.Optional(
+      Type.String({ pattern: "^[a-zA-Z0-9_-]{1,64}$" }),
+    ),
+    pdtClientSecret: Type.Optional(Type.String({ minLength: 32 })),
+    pdtRedirectUri: Type.Optional(Type.String({ minLength: 1 })),
+    pdtEmbedOrigin: Type.Optional(Type.String({ minLength: 1 })),
+    sankhyaIdentityIssuer: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9._:/-]{3,200}$" }),
+    ),
+    sankhyaIdentityKeys: Type.Optional(
+      Type.String({ minLength: 2, maxLength: 20000 }),
+    ),
+    sankhyaIdentityAuthorizeUrl: Type.Optional(Type.String({ minLength: 1 })),
+    sankhyaEmbedOrigin: Type.Optional(Type.String({ minLength: 1 })),
+    sankhyaDirectoryView: Type.Optional(
+      Type.String({
+        pattern:
+          "^[A-Za-z][A-Za-z0-9_$#]{0,127}(\\.[A-Za-z][A-Za-z0-9_$#]{0,127})?$",
+      }),
+    ),
+    sankhyaSessionTrust: Type.Union([
+      Type.Literal("pending"),
+      Type.Literal("approved"),
+    ]),
   },
   { additionalProperties: false },
 );
@@ -311,6 +348,208 @@ export const configReference = Object.freeze([
     visibility: "server",
     classification: "INTERNAL",
   },
+  {
+    key: "publicOrigin",
+    name: "IA_MNS_PUBLIC_ORIGIN",
+    type: "exact origin",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Browser origin of the IA-MNS web application; token issuer and redirect target for sign-in flows. HTTPS in production; enables identity together with the signing and encryption keys.",
+  },
+  {
+    key: "identitySigningKey",
+    name: "IA_MNS_IDENTITY_SIGNING_KEY",
+    type: "base64url PKCS#8 DER P-256 private key",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Signs IA-MNS access tokens (ES256). Generate with pnpm identity:keys; never browser configuration.",
+  },
+  {
+    key: "identityEncryptionKey",
+    name: "IA_MNS_IDENTITY_ENCRYPTION_KEY",
+    type: "base64url 32-byte key",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "AES-256-GCM key for TOTP secrets at rest. Rotation requires re-enrollment of second factors.",
+  },
+  {
+    key: "identityAudience",
+    name: "IA_MNS_IDENTITY_AUDIENCE",
+    type: "nonempty identifier",
+    required: false,
+    default: "ia-mns-api",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose: "Audience of IA-MNS access tokens.",
+  },
+  {
+    key: "providerGrants",
+    name: "IA_MNS_PROVIDER_GRANTS",
+    type: "none | comma list of provider:permission",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Optional narrowing of automatic read grants by provider link; unset uses the composed capability defaults, none disables them.",
+  },
+  {
+    key: "pdtBaseUrl",
+    name: "PDT_IDENTITY_BASE_URL",
+    type: "HTTPS origin",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "PDT Connect origin serving the identity contract; configure with issuer, client and redirect URI.",
+  },
+  {
+    key: "pdtIssuer",
+    name: "PDT_IDENTITY_ISSUER",
+    type: "HTTPS URL",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Exact PDT_IDENTITY_ISSUER of the PDT installation; link issuer for PDT identities.",
+  },
+  {
+    key: "pdtClientId",
+    name: "PDT_IDENTITY_CLIENT_ID",
+    type: "1..64 letters, digits, _ or -",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose: "IA-MNS client id registered in PDT_IDENTITY_CLIENTS.",
+  },
+  {
+    key: "pdtClientSecret",
+    name: "PDT_IDENTITY_CLIENT_SECRET",
+    type: "32+ characters",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "IA-MNS client secret for the PDT contract; PDT stores only its SHA-256.",
+  },
+  {
+    key: "pdtRedirectUri",
+    name: "PDT_IDENTITY_REDIRECT_URI",
+    type: "HTTPS URL",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Exact callback registered in PDT; the browser-visible URL of GET /identity/pdt/callback.",
+  },
+  {
+    key: "pdtEmbedOrigin",
+    name: "PDT_EMBED_ORIGIN",
+    type: "exact origin",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Only PDT origin allowed to host the embedded IA-MNS and exchange bridge messages.",
+  },
+  {
+    key: "sankhyaIdentityIssuer",
+    name: "SANKHYA_IDENTITY_ISSUER",
+    type: "stable identifier",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Fixed identifier of the Sankhya installation: issuer of CODUSU links (owner directory association) and expected in Om host assertions.",
+  },
+  {
+    key: "sankhyaIdentityKeys",
+    name: "SANKHYA_IDENTITY_KEYS",
+    type: "JWKS JSON of public keys",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Pinned public keys of the Om identity add-on (RS256/ES256). Private key material is rejected.",
+  },
+  {
+    key: "sankhyaIdentityAuthorizeUrl",
+    name: "SANKHYA_IDENTITY_AUTHORIZE_URL",
+    type: "HTTPS URL",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Om add-on page that mints an assertion for the direct-URL sign-in.",
+  },
+  {
+    key: "sankhyaEmbedOrigin",
+    name: "SANKHYA_EMBED_ORIGIN",
+    type: "exact origin",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Only Om origin allowed to host the embedded IA-MNS and exchange bridge messages.",
+  },
+  {
+    key: "sankhyaDirectoryView",
+    name: "SANKHYA_DIRECTORY_VIEW",
+    type: "Oracle view name (optionally SCHEMA.VIEW)",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Read-only Sankhya user view (CODUSU, NOMEUSU, NOMEUSUCPLT, EMAIL, DTLIMACESSO) that lets owners associate real Sankhya users; unset disables the directory (PH-08).",
+  },
+  {
+    key: "sankhyaSessionTrust",
+    name: "SANKHYA_SESSION_TRUST",
+    type: "pending | approved",
+    required: false,
+    default: "pending",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Human gate for Om-session sign-in in production (PH-11); production refuses the Sankhya connector until approved.",
+  },
 ] as const satisfies readonly ConfigMetadata[]);
 
 export function isPrivateIpv4(value: string): boolean {
@@ -334,6 +573,191 @@ function numberFromEnv(value: string | undefined, fallback: number): number {
   return Number(value);
 }
 
+function optional<K extends string>(key: K, value: string | undefined) {
+  return value === undefined ? {} : ({ [key]: value } as Record<K, string>);
+}
+
+const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"];
+
+/** HTTPS everywhere; plain HTTP only for loopback outside production. */
+function secureUrl(
+  value: string,
+  environment: string,
+  kind: "origin" | "url",
+  name: string,
+): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`Invalid API configuration: ${name}`);
+  }
+  const httpAllowed =
+    environment !== "production" && loopbackHosts.includes(parsed.hostname);
+  if (
+    !(
+      parsed.protocol === "https:" ||
+      (parsed.protocol === "http:" && httpAllowed)
+    ) ||
+    parsed.username ||
+    parsed.password ||
+    parsed.hash ||
+    (kind === "origin" && parsed.origin !== value)
+  )
+    throw new Error(`Invalid API configuration: ${name}`);
+}
+
+const privateJwkFields = ["d", "p", "q", "dp", "dq", "qi", "k"];
+
+function validateIdentity(candidate: Static<typeof serverConfigSchema>): void {
+  const environment = candidate.environment;
+  const core = [
+    candidate.publicOrigin,
+    candidate.identitySigningKey,
+    candidate.identityEncryptionKey,
+  ];
+  if (
+    core.some((value) => value !== undefined) &&
+    core.some((value) => value === undefined)
+  )
+    throw new Error(
+      "Invalid API configuration: incomplete identity configuration",
+    );
+  const enabled = candidate.publicOrigin !== undefined;
+  if (enabled && candidate.localAccess)
+    throw new Error(
+      "Invalid API configuration: IA_MNS_LOCAL_ACCESS cannot be combined with identity sign-in",
+    );
+  if (enabled) {
+    secureUrl(
+      candidate.publicOrigin!,
+      environment,
+      "origin",
+      "IA_MNS_PUBLIC_ORIGIN",
+    );
+    if (
+      Buffer.from(candidate.identityEncryptionKey!, "base64url").length !== 32
+    )
+      throw new Error("Invalid API configuration: identity encryption key");
+  }
+  const pdt = [
+    candidate.pdtBaseUrl,
+    candidate.pdtIssuer,
+    candidate.pdtClientId,
+    candidate.pdtClientSecret,
+    candidate.pdtRedirectUri,
+  ];
+  if (
+    pdt.some((value) => value !== undefined) ||
+    candidate.pdtEmbedOrigin !== undefined
+  ) {
+    if (!enabled || pdt.some((value) => value === undefined))
+      throw new Error(
+        "Invalid API configuration: incomplete PDT identity configuration",
+      );
+    secureUrl(
+      candidate.pdtBaseUrl!,
+      environment,
+      "origin",
+      "PDT_IDENTITY_BASE_URL",
+    );
+    secureUrl(candidate.pdtIssuer!, environment, "url", "PDT_IDENTITY_ISSUER");
+    secureUrl(
+      candidate.pdtRedirectUri!,
+      environment,
+      "url",
+      "PDT_IDENTITY_REDIRECT_URI",
+    );
+    if (candidate.pdtEmbedOrigin !== undefined)
+      secureUrl(
+        candidate.pdtEmbedOrigin,
+        environment,
+        "origin",
+        "PDT_EMBED_ORIGIN",
+      );
+  }
+  if (candidate.sankhyaIdentityIssuer !== undefined && !enabled)
+    throw new Error(
+      "Invalid API configuration: incomplete Sankhya identity configuration",
+    );
+  if (
+    candidate.sankhyaDirectoryView !== undefined &&
+    (!candidate.sankhyaIdentityIssuer ||
+      !candidate.sankhyaUser ||
+      !candidate.sankhyaPassword ||
+      !candidate.sankhyaConnectString)
+  )
+    throw new Error(
+      "Invalid API configuration: SANKHYA_DIRECTORY_VIEW requires SANKHYA_IDENTITY_ISSUER and the Sankhya connection",
+    );
+  // The Om session connector is separate from the issuer: the directory alone
+  // never signs anyone in, so only the connector is gated by PH-11.
+  const sankhyaConnector = [
+    candidate.sankhyaIdentityKeys,
+    candidate.sankhyaIdentityAuthorizeUrl,
+    candidate.sankhyaEmbedOrigin,
+  ].some((value) => value !== undefined);
+  if (sankhyaConnector) {
+    if (
+      !enabled ||
+      !candidate.sankhyaIdentityIssuer ||
+      !candidate.sankhyaIdentityKeys
+    )
+      throw new Error(
+        "Invalid API configuration: incomplete Sankhya identity configuration",
+      );
+    let keys: unknown;
+    try {
+      keys = JSON.parse(candidate.sankhyaIdentityKeys);
+    } catch {
+      throw new Error("Invalid API configuration: SANKHYA_IDENTITY_KEYS");
+    }
+    const list =
+      typeof keys === "object" && keys !== null
+        ? (keys as { keys?: unknown }).keys
+        : undefined;
+    if (
+      !Array.isArray(list) ||
+      list.length === 0 ||
+      list.some(
+        (key: unknown) =>
+          typeof key !== "object" ||
+          key === null ||
+          !["RSA", "EC"].includes(String((key as { kty?: unknown }).kty)) ||
+          privateJwkFields.some((field) => field in key),
+      )
+    )
+      throw new Error(
+        "Invalid API configuration: SANKHYA_IDENTITY_KEYS must contain public keys only",
+      );
+    if (candidate.sankhyaIdentityAuthorizeUrl !== undefined)
+      secureUrl(
+        candidate.sankhyaIdentityAuthorizeUrl,
+        environment,
+        "url",
+        "SANKHYA_IDENTITY_AUTHORIZE_URL",
+      );
+    if (candidate.sankhyaEmbedOrigin !== undefined)
+      secureUrl(
+        candidate.sankhyaEmbedOrigin,
+        environment,
+        "origin",
+        "SANKHYA_EMBED_ORIGIN",
+      );
+    if (
+      environment === "production" &&
+      candidate.sankhyaSessionTrust !== "approved"
+    )
+      throw new Error(
+        "Invalid API configuration: Sankhya session sign-in requires SANKHYA_SESSION_TRUST=approved after PH-11",
+      );
+  }
+  if (candidate.providerGrants !== undefined && !enabled)
+    throw new Error(
+      "Invalid API configuration: provider grants require identity",
+    );
+}
+
 export function parseServerConfig(
   env: Readonly<Record<string, string | undefined>>,
 ): ServerConfig {
@@ -349,6 +773,26 @@ export function parseServerConfig(
       ? {}
       : { devAccessExpiresAt: Number(env.IA_MNS_DEV_ACCESS_EXPIRES_AT) }),
     openaiModel: env.OPENAI_MODEL ?? "gpt-6.1-sol",
+    identityAudience: env.IA_MNS_IDENTITY_AUDIENCE ?? "ia-mns-api",
+    sankhyaSessionTrust: env.SANKHYA_SESSION_TRUST ?? "pending",
+    ...optional("publicOrigin", env.IA_MNS_PUBLIC_ORIGIN),
+    ...optional("identitySigningKey", env.IA_MNS_IDENTITY_SIGNING_KEY),
+    ...optional("identityEncryptionKey", env.IA_MNS_IDENTITY_ENCRYPTION_KEY),
+    ...optional("providerGrants", env.IA_MNS_PROVIDER_GRANTS),
+    ...optional("pdtBaseUrl", env.PDT_IDENTITY_BASE_URL),
+    ...optional("pdtIssuer", env.PDT_IDENTITY_ISSUER),
+    ...optional("pdtClientId", env.PDT_IDENTITY_CLIENT_ID),
+    ...optional("pdtClientSecret", env.PDT_IDENTITY_CLIENT_SECRET),
+    ...optional("pdtRedirectUri", env.PDT_IDENTITY_REDIRECT_URI),
+    ...optional("pdtEmbedOrigin", env.PDT_EMBED_ORIGIN),
+    ...optional("sankhyaIdentityIssuer", env.SANKHYA_IDENTITY_ISSUER),
+    ...optional("sankhyaIdentityKeys", env.SANKHYA_IDENTITY_KEYS),
+    ...optional(
+      "sankhyaIdentityAuthorizeUrl",
+      env.SANKHYA_IDENTITY_AUTHORIZE_URL,
+    ),
+    ...optional("sankhyaEmbedOrigin", env.SANKHYA_EMBED_ORIGIN),
+    ...optional("sankhyaDirectoryView", env.SANKHYA_DIRECTORY_VIEW),
     localAccess: env.IA_MNS_LOCAL_ACCESS === "true",
     ...(env.OPENAI_API_KEY === undefined
       ? {}
@@ -390,6 +834,7 @@ export function parseServerConfig(
   if (!Value.Check(serverConfigSchema, candidate)) {
     throw new Error("Invalid API configuration");
   }
+  validateIdentity(candidate);
   if (
     env.IA_MNS_LOCAL_ACCESS !== undefined &&
     !["true", "false"].includes(env.IA_MNS_LOCAL_ACCESS)
@@ -414,6 +859,7 @@ export function parseServerConfig(
       candidate.environment === "production" ||
       candidate.localAccess ||
       !["127.0.0.1", "::1"].includes(candidate.host) ||
+      candidate.publicOrigin ||
       candidate.tokenIssuer ||
       candidate.tokenAudience ||
       candidate.tokenJwksUrl

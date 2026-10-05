@@ -30,3 +30,20 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `IA_MNS_DEV_ACCESS_TOKEN` | 64 lowercase hexadecimal characters | no | — | server | RESTRICTED | yes | Temporary bearer for an owner-controlled LAN test; non-production loopback API only, paired with origin and expiration. Never browser configuration. |
 | `IA_MNS_DEV_ACCESS_ORIGIN` | private IPv4 HTTP origin | no | — | server | INTERNAL | no | Exact browser origin for the temporary LAN test; no credentials, path or wildcard. |
 | `IA_MNS_DEV_ACCESS_EXPIRES_AT` | Unix timestamp in seconds | no | — | server | INTERNAL | no | Absolute temporary bearer expiry; at most two hours after startup. Checked on every request, not renewed. |
+| `IA_MNS_PUBLIC_ORIGIN` | exact origin | no | — | server | INTERNAL | no | Browser origin of the IA-MNS web application; token issuer and redirect target for sign-in flows. HTTPS in production; enables identity together with the signing and encryption keys. |
+| `IA_MNS_IDENTITY_SIGNING_KEY` | base64url PKCS#8 DER P-256 private key | no | — | server | RESTRICTED | yes | Signs IA-MNS access tokens (ES256). Generate with pnpm identity:keys; never browser configuration. |
+| `IA_MNS_IDENTITY_ENCRYPTION_KEY` | base64url 32-byte key | no | — | server | RESTRICTED | yes | AES-256-GCM key for TOTP secrets at rest. Rotation requires re-enrollment of second factors. |
+| `IA_MNS_IDENTITY_AUDIENCE` | nonempty identifier | no | `ia-mns-api` | server | INTERNAL | no | Audience of IA-MNS access tokens. |
+| `IA_MNS_PROVIDER_GRANTS` | none \| comma list of provider:permission | no | — | server | INTERNAL | no | Optional narrowing of automatic read grants by provider link; unset uses the composed capability defaults, none disables them. |
+| `PDT_IDENTITY_BASE_URL` | HTTPS origin | no | — | server | INTERNAL | no | PDT Connect origin serving the identity contract; configure with issuer, client and redirect URI. |
+| `PDT_IDENTITY_ISSUER` | HTTPS URL | no | — | server | INTERNAL | no | Exact PDT_IDENTITY_ISSUER of the PDT installation; link issuer for PDT identities. |
+| `PDT_IDENTITY_CLIENT_ID` | 1..64 letters, digits, _ or - | no | — | server | INTERNAL | no | IA-MNS client id registered in PDT_IDENTITY_CLIENTS. |
+| `PDT_IDENTITY_CLIENT_SECRET` | 32+ characters | no | — | server | RESTRICTED | yes | IA-MNS client secret for the PDT contract; PDT stores only its SHA-256. |
+| `PDT_IDENTITY_REDIRECT_URI` | HTTPS URL | no | — | server | INTERNAL | no | Exact callback registered in PDT; the browser-visible URL of GET /identity/pdt/callback. |
+| `PDT_EMBED_ORIGIN` | exact origin | no | — | server | INTERNAL | no | Only PDT origin allowed to host the embedded IA-MNS and exchange bridge messages. |
+| `SANKHYA_IDENTITY_ISSUER` | stable identifier | no | — | server | INTERNAL | no | Fixed identifier of the Sankhya installation: issuer of CODUSU links (owner directory association) and expected in Om host assertions. |
+| `SANKHYA_IDENTITY_KEYS` | JWKS JSON of public keys | no | — | server | INTERNAL | no | Pinned public keys of the Om identity add-on (RS256/ES256). Private key material is rejected. |
+| `SANKHYA_IDENTITY_AUTHORIZE_URL` | HTTPS URL | no | — | server | INTERNAL | no | Om add-on page that mints an assertion for the direct-URL sign-in. |
+| `SANKHYA_EMBED_ORIGIN` | exact origin | no | — | server | INTERNAL | no | Only Om origin allowed to host the embedded IA-MNS and exchange bridge messages. |
+| `SANKHYA_DIRECTORY_VIEW` | Oracle view name (optionally SCHEMA.VIEW) | no | — | server | INTERNAL | no | Read-only Sankhya user view (CODUSU, NOMEUSU, NOMEUSUCPLT, EMAIL, DTLIMACESSO) that lets owners associate real Sankhya users; unset disables the directory (PH-08). |
+| `SANKHYA_SESSION_TRUST` | pending \| approved | no | `pending` | server | INTERNAL | no | Human gate for Om-session sign-in in production (PH-11); production refuses the Sankhya connector until approved. |

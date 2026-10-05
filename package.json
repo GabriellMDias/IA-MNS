@@ -12,6 +12,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,yaml,yml}\" \".*.mjs\"",
     "db:generate": "pnpm -C apps/api db:generate",
     "db:local": "pnpm -C apps/api db:local",
+    "identity:local": "pnpm -C apps/api identity:local",
+    "identity:bootstrap": "pnpm -C apps/api identity:bootstrap",
     "dev:lan": "pnpm -C apps/api dev:lan",
     "lint": "eslint .",
     "typecheck": "pnpm db:generate && tsc --noEmit && pnpm -C apps/api typecheck && pnpm -C packages/sdk typecheck && pnpm -C apps/web typecheck",
