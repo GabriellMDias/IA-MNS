@@ -1,4 +1,13 @@
-import { createRemoteJWKSet, errors, jwtVerify } from "jose";
+import { createHash, createPrivateKey, createPublicKey } from "node:crypto";
+import {
+  createLocalJWKSet,
+  createRemoteJWKSet,
+  errors,
+  jwtVerify,
+  type JSONWebKeySet,
+  type JWK,
+  type JWTVerifyGetKey,
+} from "jose";
 
 /** Provider-independent identity established by a verified access token. */
 export interface VerifiedPrincipal {
@@ -6,6 +15,8 @@ export interface VerifiedPrincipal {
   id: string;
   /** Issuer-granted scopes; modules map them to their own capabilities. */
   scopes: ReadonlySet<string>;
+  /** Issuer session identifier when the issuer provides one (`sid`). */
+  sessionId?: string;
 }
 
 export interface AccessTokenVerifier {
@@ -27,7 +38,37 @@ export function createAccessTokenVerifier(config: {
   audience: string;
   jwksUrl: string;
 }): AccessTokenVerifier {
-  const keys = createRemoteJWKSet(new URL(config.jwksUrl));
+  return verifierFor(config, createRemoteJWKSet(new URL(config.jwksUrl)));
+}
+
+/** Same contract for an in-process issuer whose public keys are known locally. */
+export function createLocalAccessTokenVerifier(config: {
+  issuer: string;
+  audience: string;
+  keys: JSONWebKeySet;
+}): AccessTokenVerifier {
+  return verifierFor(config, createLocalJWKSet(config.keys));
+}
+
+/** Tries each trusted issuer; a token is accepted only by its own issuer's keys. */
+export function combineVerifiers(
+  verifiers: readonly AccessTokenVerifier[],
+): AccessTokenVerifier {
+  return {
+    async verify(authorization) {
+      for (const verifier of verifiers) {
+        const principal = await verifier.verify(authorization);
+        if (principal) return principal;
+      }
+      return null;
+    },
+  };
+}
+
+function verifierFor(
+  config: { issuer: string; audience: string },
+  keys: JWTVerifyGetKey,
+): AccessTokenVerifier {
   return {
     async verify(authorization) {
       if (!authorization || !/^Bearer [^\s]+$/i.test(authorization))
@@ -58,6 +99,9 @@ export function createAccessTokenVerifier(config: {
         return {
           id,
           scopes: new Set(payload.scope.split(" ").filter(Boolean)),
+          ...(typeof payload.sid === "string" && uuid.test(payload.sid)
+            ? { sessionId: payload.sid }
+            : {}),
         };
       } catch (error) {
         // Reject invalid credentials normally. Key retrieval, malformed trusted
@@ -76,5 +120,43 @@ export function createAccessTokenVerifier(config: {
         throw new AuthenticationUnavailableError(error);
       }
     },
+  };
+}
+
+/**
+ * Public verification key of the in-process IA-MNS issuer, derived from its
+ * configured P-256 signing key (base64url PKCS#8 DER). `kid` is the RFC 7638
+ * thumbprint, so the issuer and the verifier agree without sharing state.
+ */
+export function issuerPublicJwk(signingKey: string): JWK & { kid: string } {
+  const privateKey = createPrivateKey({
+    key: Buffer.from(signingKey, "base64url"),
+    format: "der",
+    type: "pkcs8",
+  });
+  if (
+    privateKey.asymmetricKeyType !== "ec" ||
+    privateKey.asymmetricKeyDetails?.namedCurve !== "prime256v1"
+  )
+    throw new Error(
+      "Invalid API configuration: identity signing key must be P-256",
+    );
+  const jwk = createPublicKey(privateKey).export({ format: "jwk" }) as {
+    crv: string;
+    kty: string;
+    x: string;
+    y: string;
+  };
+  const thumbprint = createHash("sha256")
+    .update(JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y }))
+    .digest("base64url");
+  return {
+    kty: jwk.kty,
+    crv: jwk.crv,
+    x: jwk.x,
+    y: jwk.y,
+    kid: thumbprint,
+    alg: "ES256",
+    use: "sig",
   };
 }

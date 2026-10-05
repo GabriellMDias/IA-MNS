@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md",
+  "title": "ADR-0023: Serve One Frontend to Three Surfaces with Host Identity Proofs",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-04</p>\n<h2 id=\"context\">Context</h2>\n<p>IA-MNS must be reachable at its own URL, inside PDT Connect and inside Sankhya Om without maintaining three frontends. Inside a host, the person is already authenticated there and must not sign in again, yet IA-MNS must never trust an identifier supplied by the browser. Modern browsers block or partition third-party cookies and storage in iframes, and framing must not weaken clickjacking protection. A disposable proof of concept on 2026-10-04 confirmed in Chrome 154, with third-party cookies blocked, that an in-memory session with a host handshake works, that <code>localStorage</code> throws inside a third-party frame, that <code>frame-ancestors</code> blocks other origins, and that a cross-site form post back from the Om requires a <code>SameSite=None</code> binding cookie.</p>\n<p>An internal review of the current Om deployment found that its session transport and cookie protections do not yet meet the conditions required to trust it as an authentication source (details are kept outside this public repository). The PDT contract v1 already lets an authenticated PDT page obtain an authorization code for a registered client through its <code>authorize</code> endpoint, which returns the redirect URL as JSON.</p>\n<h2 id=\"decision\">Decision</h2>\n<ul>\n<li><strong>One build, three surfaces.</strong> The same SPA serves <code>/</code> (direct), <code>/embed/pdt</code> and <code>/embed/sankhya</code>. The embedded prefix becomes the router basepath, so all routes and reloads stay inside it. The surface is recorded on the session for audit only and never affects identity or authorization.</li>\n<li><strong>Framing policy.</strong> Every response carries <code>frame-ancestors 'none'</code> except <code>/embed/*</code>, which allows only the configured host origins (<code>PDT_EMBED_ORIGIN</code>, <code>SANKHYA_EMBED_ORIGIN</code>). Hosts render IA-MNS in an iframe; IA-MNS code never runs in a host origin.</li>\n<li><strong>Host bridge protocol v1.</strong> The frame starts a pending server flow and asks its parent, with <code>postMessage</code> to the exact host origin, for a proof bound to that flow. Messages are accepted only from that origin and the parent window. Only opaque proofs travel: a PDT authorization code (the host calls PDT's existing <code>authorize</code> endpoint with its own client and callback configuration) or a Sankhya assertion. IA-MNS redeems or verifies the proof server-side. The embedded session lives in memory; renewal and reload repeat the handshake; no cookies or browser storage are needed.</li>\n<li><strong>Direct URL.</strong> &quot;Entrar com PDT Connect&quot; uses the PDT contract redirect with state, PKCE and a <code>SameSite=Lax</code> browser-binding cookie. &quot;Entrar com Sankhya&quot; redirects to an Om add-on page that, if the Om session is valid, form-posts a short assertion back; its binding cookie is <code>SameSite=None; Secure</code>. An IA-MNS local account is always available.</li>\n<li><strong>Sankhya proof.</strong> An IA-MNS add-on inside the Om reads the authenticated user from the server-side session and signs a JWS (RS256/ES256, <code>iss</code> = fixed installation id, <code>sub</code> = CODUSU, <code>aud</code> = IA-MNS, flow <code>nonce</code>, <code>jti</code>, lifetime ≤ 120 s). IA-MNS pins the public keys, enforces single use, and links by <code>(issuer, CODUSU)</code>. The connector boundary is mechanism-independent; the legacy credential login remains only a documented fallback and is not implemented.</li>\n<li><strong>Trust gate.</strong> Production refuses the Sankhya session connector until <code>SANKHYA_SESSION_TRUST=approved</code> is set after the Om security conditions are met (HTTPS only with HSTS, <code>Secure</code>/<code>SameSite=Lax</code> session cookie, HTTPS redirects, no direct public HTTP exposure, private or encrypted proxy-to-Om hop). The add-on must mint only for requests that arrived through the HTTPS name.</li>\n</ul>\n<h2 id=\"rationale\">Rationale</h2>\n<p>Iframes give origin isolation and let every IA-MNS change reach all surfaces at once. Server-verified proofs make identity independent of what the browser claims; origin checks on <code>postMessage</code> are defense in depth, not the security basis. Avoiding cookies in embedded mode removes the dependence on third-party cookie policy. Using the PDT contract unchanged keeps PDT authoritative and requires only a host page in PDT. An Om session is an acceptable authentication source only when its transport and cookie are protected, hence the explicit gate.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"separate-frontends-or-components-injected-into-each-host\">Separate frontends or components injected into each host</h3>\n<p>Rejected: duplicated maintenance, and injected code would run with the host's privileges, dependencies and CSP.</p>\n<h3 id=\"third-party-or-partitioned-cookies-for-embedded-sessions\">Third-party or partitioned cookies for embedded sessions</h3>\n<p>Rejected as a requirement: browser behavior varies and is changing; in-memory sessions with a host handshake work under all tested policies.</p>\n<h3 id=\"legacy-sankhya-credential-login-as-the-primary-sankhya-method\">Legacy Sankhya credential login as the primary Sankhya method</h3>\n<p>Not chosen: the password would pass through IA-MNS and the service is no longer in Sankhya's documentation. It remains a fallback that, if ever used, must call the Om only through HTTPS or a private network.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>One application, history and authorization regardless of where IA-MNS is opened.</li>\n<li>No credentials or session cookies in embedded hosts; clickjacking stays blocked for everything except the declared hosts.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Each host needs a small, reviewed host component (PDT page; Om add-on with its signing key), deployed and maintained outside this repository.</li>\n<li>Production web hosting must reproduce the per-path <code>frame-ancestors</code> policy.</li>\n<li>Embedded sessions are short and re-handshake every 10 minutes and on reload.</li>\n<li>Sankhya sign-in stays unavailable in production until the Om infrastructure is fixed.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<p>The Om hardening, the PDT homologation client and host page, and the Om add-on and its key custody are human actions. The Om add-on key must be stored outside component sources editable by ordinary BI authors; anyone able to publish code inside the Om could impersonate Sankhya users, which matches their existing power inside Sankhya.</p>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/domains/identity\">Identity domain</a></li>\n<li><a href=\"/docs/repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links\">ADR-0022</a>, <a href=\"/docs/repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary\">ADR-0012</a></li>\n<li><a href=\"https://ajuda.sankhya.com.br/hc/pt-br/articles/360044982114\" rel=\"noreferrer noopener\">Sankhya external access guidance (reverse proxy with TLS)</a></li>\n<li><a href=\"/docs/repository/docs/project/human-actions\">Project human actions</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs",
+      "text": "ADR-0023: Serve One Frontend to Three Surfaces with Host Identity Proofs",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "separate-frontends-or-components-injected-into-each-host",
+      "text": "Separate frontends or components injected into each host",
+      "level": 3
+    },
+    {
+      "id": "third-party-or-partitioned-cookies-for-embedded-sessions",
+      "text": "Third-party or partitioned cookies for embedded sessions",
+      "level": 3
+    },
+    {
+      "id": "legacy-sankhya-credential-login-as-the-primary-sankhya-method",
+      "text": "Legacy Sankhya credential login as the primary Sankhya method",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

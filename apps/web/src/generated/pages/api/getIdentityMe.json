@@ -1,0 +1,971 @@
+{
+  "kind": "api",
+  "operationId": "getIdentityMe",
+  "summary": "",
+  "description": "The signed-in Person: profile, sign-in methods, links, effective permissions and active sessions.",
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "method": "GET",
+  "path": "/identity/me",
+  "tags": ["Identity"],
+  "authentication": "Bearer access token",
+  "parameters": [],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["person", "session", "linkableProviders"],
+            "properties": {
+              "person": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "displayName",
+                  "status",
+                  "owner",
+                  "grants",
+                  "permissions",
+                  "links",
+                  "local",
+                  "sessions"
+                ],
+                "properties": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "displayName": { "type": "string" },
+                  "status": {
+                    "anyOf": [
+                      { "type": "string", "const": "active" },
+                      { "type": "string", "const": "disabled" }
+                    ]
+                  },
+                  "owner": { "type": "boolean" },
+                  "grants": { "type": "array", "items": { "type": "string" } },
+                  "permissions": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "links": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "provider",
+                        "label",
+                        "establishedBy",
+                        "linkedAt",
+                        "lastVerifiedAt"
+                      ],
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "provider": {
+                          "anyOf": [
+                            { "type": "string", "const": "pdt" },
+                            { "type": "string", "const": "sankhya" }
+                          ]
+                        },
+                        "label": {
+                          "anyOf": [{ "type": "string" }, { "type": "null" }]
+                        },
+                        "establishedBy": {
+                          "anyOf": [
+                            { "type": "string", "const": "proof" },
+                            { "type": "string", "const": "directory" }
+                          ]
+                        },
+                        "linkedAt": { "type": "string", "format": "date-time" },
+                        "lastVerifiedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "local": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "login",
+                          "totpEnabled",
+                          "recoveryCodesRemaining"
+                        ],
+                        "properties": {
+                          "login": { "type": "string" },
+                          "totpEnabled": { "type": "boolean" },
+                          "recoveryCodesRemaining": {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      { "type": "null" }
+                    ]
+                  },
+                  "sessions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "method",
+                        "surface",
+                        "assurance",
+                        "createdAt",
+                        "lastSeenAt",
+                        "expiresAt",
+                        "current"
+                      ],
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "method": { "type": "string" },
+                        "surface": {
+                          "anyOf": [
+                            { "type": "string", "const": "direct" },
+                            { "type": "string", "const": "pdt" },
+                            { "type": "string", "const": "sankhya" }
+                          ]
+                        },
+                        "assurance": {
+                          "anyOf": [
+                            { "type": "string", "const": "single" },
+                            { "type": "string", "const": "mfa" }
+                          ]
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "lastSeenAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "current": { "type": "boolean" }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "session": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "method",
+                  "surface",
+                  "assurance",
+                  "authenticatedAt"
+                ],
+                "properties": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "method": { "type": "string" },
+                  "surface": {
+                    "anyOf": [
+                      { "type": "string", "const": "direct" },
+                      { "type": "string", "const": "pdt" },
+                      { "type": "string", "const": "sankhya" }
+                    ]
+                  },
+                  "assurance": {
+                    "anyOf": [
+                      { "type": "string", "const": "single" },
+                      { "type": "string", "const": "mfa" }
+                    ]
+                  },
+                  "authenticatedAt": { "type": "string", "format": "date-time" }
+                },
+                "additionalProperties": false
+              },
+              "linkableProviders": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    { "type": "string", "const": "pdt" },
+                    { "type": "string", "const": "sankhya" }
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["person", "session", "linkableProviders"],
+        "properties": {
+          "person": {
+            "type": "object",
+            "required": [
+              "id",
+              "displayName",
+              "status",
+              "owner",
+              "grants",
+              "permissions",
+              "links",
+              "local",
+              "sessions"
+            ],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "displayName": { "type": "string" },
+              "status": {
+                "anyOf": [
+                  { "type": "string", "const": "active" },
+                  { "type": "string", "const": "disabled" }
+                ]
+              },
+              "owner": { "type": "boolean" },
+              "grants": { "type": "array", "items": { "type": "string" } },
+              "permissions": { "type": "array", "items": { "type": "string" } },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "provider",
+                    "label",
+                    "establishedBy",
+                    "linkedAt",
+                    "lastVerifiedAt"
+                  ],
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "provider": {
+                      "anyOf": [
+                        { "type": "string", "const": "pdt" },
+                        { "type": "string", "const": "sankhya" }
+                      ]
+                    },
+                    "label": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "establishedBy": {
+                      "anyOf": [
+                        { "type": "string", "const": "proof" },
+                        { "type": "string", "const": "directory" }
+                      ]
+                    },
+                    "linkedAt": { "type": "string", "format": "date-time" },
+                    "lastVerifiedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "local": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "login",
+                      "totpEnabled",
+                      "recoveryCodesRemaining"
+                    ],
+                    "properties": {
+                      "login": { "type": "string" },
+                      "totpEnabled": { "type": "boolean" },
+                      "recoveryCodesRemaining": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "sessions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "method",
+                    "surface",
+                    "assurance",
+                    "createdAt",
+                    "lastSeenAt",
+                    "expiresAt",
+                    "current"
+                  ],
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "method": { "type": "string" },
+                    "surface": {
+                      "anyOf": [
+                        { "type": "string", "const": "direct" },
+                        { "type": "string", "const": "pdt" },
+                        { "type": "string", "const": "sankhya" }
+                      ]
+                    },
+                    "assurance": {
+                      "anyOf": [
+                        { "type": "string", "const": "single" },
+                        { "type": "string", "const": "mfa" }
+                      ]
+                    },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "lastSeenAt": { "type": "string", "format": "date-time" },
+                    "expiresAt": { "type": "string", "format": "date-time" },
+                    "current": { "type": "boolean" }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "session": {
+            "type": "object",
+            "required": [
+              "id",
+              "method",
+              "surface",
+              "assurance",
+              "authenticatedAt"
+            ],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "method": { "type": "string" },
+              "surface": {
+                "anyOf": [
+                  { "type": "string", "const": "direct" },
+                  { "type": "string", "const": "pdt" },
+                  { "type": "string", "const": "sankhya" }
+                ]
+              },
+              "assurance": {
+                "anyOf": [
+                  { "type": "string", "const": "single" },
+                  { "type": "string", "const": "mfa" }
+                ]
+              },
+              "authenticatedAt": { "type": "string", "format": "date-time" }
+            },
+            "additionalProperties": false
+          },
+          "linkableProviders": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                { "type": "string", "const": "pdt" },
+                { "type": "string", "const": "sankhya" }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "person", "type": "object", "required": true },
+        { "name": "person.id", "type": "string (uuid)", "required": true },
+        { "name": "person.displayName", "type": "string", "required": true },
+        {
+          "name": "person.status",
+          "type": "\"active\" | \"disabled\"",
+          "required": true
+        },
+        { "name": "person.owner", "type": "boolean", "required": true },
+        {
+          "name": "person.grants",
+          "type": "array of string",
+          "required": true
+        },
+        {
+          "name": "person.permissions",
+          "type": "array of string",
+          "required": true
+        },
+        { "name": "person.links", "type": "array of object", "required": true },
+        {
+          "name": "person.links[].id",
+          "type": "string (uuid)",
+          "required": true
+        },
+        {
+          "name": "person.links[].provider",
+          "type": "\"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        {
+          "name": "person.links[].label",
+          "type": "string | null",
+          "required": true
+        },
+        {
+          "name": "person.links[].establishedBy",
+          "type": "\"proof\" | \"directory\"",
+          "required": true
+        },
+        {
+          "name": "person.links[].linkedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.links[].lastVerifiedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        { "name": "person.local", "type": "object | null", "required": true },
+        {
+          "name": "person.sessions",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].id",
+          "type": "string (uuid)",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].method",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].surface",
+          "type": "\"direct\" | \"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].assurance",
+          "type": "\"single\" | \"mfa\"",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].createdAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].lastSeenAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].expiresAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.sessions[].current",
+          "type": "boolean",
+          "required": true
+        },
+        { "name": "session", "type": "object", "required": true },
+        { "name": "session.id", "type": "string (uuid)", "required": true },
+        { "name": "session.method", "type": "string", "required": true },
+        {
+          "name": "session.surface",
+          "type": "\"direct\" | \"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        {
+          "name": "session.assurance",
+          "type": "\"single\" | \"mfa\"",
+          "required": true
+        },
+        {
+          "name": "session.authenticatedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "linkableProviders",
+          "type": "array of \"pdt\" | \"sankhya\"",
+          "required": true
+        }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

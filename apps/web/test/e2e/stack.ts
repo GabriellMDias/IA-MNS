@@ -296,11 +296,13 @@ export async function startWeb({
   apiUrl,
   identityUrl,
   port,
+  env = {},
   secrets = [],
 }: {
   apiUrl: string;
   identityUrl?: string;
   port?: number;
+  env?: Readonly<Record<string, string>>;
   secrets?: readonly string[];
 }): Promise<
   Stoppable & { url: string; child: ChildProcess; service: WatchedService }
@@ -320,6 +322,7 @@ export async function startWeb({
       cwd: webRoot,
       env: {
         ...process.env,
+        ...env,
         ORION_WEB_API_TARGET: apiUrl,
         ...(identityUrl
           ? { ORION_WEB_LOCAL_IDENTITY_TARGET: identityUrl }

@@ -1,0 +1,48 @@
+{
+  "kind": "api",
+  "operationId": "pdtCallback",
+  "summary": "",
+  "description": "PDT Connect redirect target. Validates state, issuer and the browser binding cookie, redeems the code server-side and redirects into the web application. The query is never logged.",
+  "security": [],
+  "components": {},
+  "method": "GET",
+  "path": "/identity/pdt/callback",
+  "tags": ["Identity"],
+  "authentication": "None declared",
+  "parameters": [
+    {
+      "name": "code",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "maxLength": 200 },
+      "type": "string (max length 200)",
+      "description": ""
+    },
+    {
+      "name": "state",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "maxLength": 200 },
+      "type": "string (max length 200)",
+      "description": ""
+    },
+    {
+      "name": "iss",
+      "in": "query",
+      "required": false,
+      "schema": { "type": "string", "maxLength": 500 },
+      "type": "string (max length 500)",
+      "description": ""
+    }
+  ],
+  "request": null,
+  "responses": [
+    {
+      "status": "303",
+      "description": "Redirect",
+      "content": {},
+      "schema": null,
+      "fields": []
+    }
+  ]
+}

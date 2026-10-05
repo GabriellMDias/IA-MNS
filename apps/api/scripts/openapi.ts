@@ -28,6 +28,17 @@ function asSchema(value: object): Schema {
   return value as Schema;
 }
 function response(schema: unknown, status: string) {
+  // Browser navigation targets answer with a redirect and no JSON body.
+  if (status.startsWith("3"))
+    return {
+      description: "Redirect",
+      headers: {
+        Location: {
+          description: "Same-origin web application route.",
+          schema: { type: "string" },
+        },
+      },
+    };
   return {
     description: "Response",
     ...(status === "429"
@@ -129,7 +140,11 @@ export async function generateOpenApi(
         ? {
             requestBody: {
               required: true,
-              content: { "application/json": { schema: schema.body } },
+              content: {
+                [schema.bodyContentType ?? "application/json"]: {
+                  schema: schema.body,
+                },
+              },
             },
           }
         : {}),

@@ -1,0 +1,82 @@
+{
+  "kind": "database",
+  "name": "identity_recovery_codes",
+  "description": "Single-use second-factor recovery codes, stored only as SHA-256 hashes of high-entropy values shown once.",
+  "owner": "identity",
+  "classification": "RESTRICTED",
+  "lifecycle": "Regenerated sets replace previous codes; used codes stay marked. Deleted with a TOTP reset or the Person.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Immutable code row UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owning Person.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "code_hash",
+      "PostgreSQL type": "character(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "SHA-256 of the recovery code.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock issue instant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "used_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Instant the code was consumed.",
+      "Null meaning": "Not used.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_recovery_codes_person_id_fkey",
+      "Physical definition": "FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Codes belong to one Person."
+    },
+    {
+      "Object": "identity_recovery_codes_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Immutable code identity."
+    },
+    {
+      "Object": "identity_recovery_codes_hash_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_recovery_codes_hash_key ON public.identity_recovery_codes USING btree (code_hash)",
+      "Purpose": "A code hash is unique."
+    },
+    {
+      "Object": "identity_recovery_codes_person_idx",
+      "Physical definition": "CREATE INDEX identity_recovery_codes_person_idx ON public.identity_recovery_codes USING btree (person_id)",
+      "Purpose": "Per-Person code lookup."
+    }
+  ]
+}

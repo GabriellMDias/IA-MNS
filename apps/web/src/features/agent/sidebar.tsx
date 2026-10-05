@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { ThemeToggle } from "../../theme.js";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ThemeMenuItem, ThemeToggle } from "../../theme.js";
+import {
+  useAccountMenu,
+  useModuleNavigation,
+} from "../../module-navigation.js";
 import { useAgentSession } from "./session.js";
 import type {
   Conversation,
@@ -177,6 +181,9 @@ type Props = {
   onMore: () => void;
 };
 export function ConversationSidebar(props: Props) {
+  const navigation = useModuleNavigation();
+  const AccountMenu = useAccountMenu();
+  const navigate = useNavigate();
   const { sidebarExpanded, setSidebarExpanded, sidebarWidth, setSidebarWidth } =
     useAgentSession();
   const drawer = useRef<HTMLDialogElement>(null);
@@ -212,6 +219,19 @@ export function ConversationSidebar(props: Props) {
   }, [sidebarWidth, setSidebarWidth]);
   const resize = (width: number) =>
     setSidebarWidth(Math.round(Math.max(240, Math.min(maxWidth(), width))));
+  // Without an account menu (or a signed-in person) these stay visible.
+  const shellEntries = (
+    <>
+      {navigation.map((Item, index) => (
+        <Item key={index} />
+      ))}
+      <Link to="/docs" aria-label="Documentação" title="Documentação">
+        <Icon kind="docs" />
+        <span className="agent-sidebar-text">Documentação</span>
+      </Link>
+      <ThemeToggle />
+    </>
+  );
   const content = (
     <>
       <div className="agent-sidebar-title">
@@ -334,11 +354,28 @@ export function ConversationSidebar(props: Props) {
         )}
       </nav>
       <nav className="agent-sidebar-bottom" aria-label="Aplicação">
-        <Link to="/docs" aria-label="Documentação" title="Documentação">
-          <Icon kind="docs" />
-          <span className="agent-sidebar-text">Documentação</span>
-        </Link>
-        <ThemeToggle />
+        {AccountMenu ? (
+          <AccountMenu
+            collapsed={!expanded}
+            items={
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="account-menu-item"
+                  onClick={() => void navigate({ to: "/docs" })}
+                >
+                  <Icon kind="docs" />
+                  <span>Documentação</span>
+                </button>
+                <ThemeMenuItem />
+              </>
+            }
+            fallback={shellEntries}
+          />
+        ) : (
+          shellEntries
+        )}
       </nav>
     </>
   );

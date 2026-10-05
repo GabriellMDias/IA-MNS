@@ -355,3 +355,24 @@ export class AgentRepository {
     });
   }
 }
+
+/**
+ * Moves a Person's conversations to another Person inside the identity
+ * consolidation transaction. Refuses while any turn is in flight so a running
+ * turn never finishes under a different owner.
+ */
+export async function transferConversations(
+  tx: Prisma.TransactionClient,
+  from: string,
+  to: string,
+): Promise<"transferred" | "busy"> {
+  const rows = await tx.$queryRaw<{ active_turn_id: string | null }[]>`
+    SELECT active_turn_id FROM agent_conversations
+    WHERE owner = ${from} ORDER BY id FOR UPDATE`;
+  if (rows.some((row) => row.active_turn_id !== null)) return "busy";
+  await tx.agentConversation.updateMany({
+    where: { owner: from },
+    data: { owner: to },
+  });
+  return "transferred";
+}

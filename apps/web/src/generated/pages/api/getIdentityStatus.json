@@ -1,0 +1,123 @@
+{
+  "kind": "api",
+  "operationId": "getIdentityStatus",
+  "summary": "",
+  "description": "Available sign-in methods and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations.",
+  "security": [],
+  "components": {},
+  "method": "GET",
+  "path": "/identity/status",
+  "tags": ["Identity"],
+  "authentication": "None declared",
+  "parameters": [],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": [
+              "configured",
+              "methods",
+              "sankhyaSessionTrust",
+              "embedHosts"
+            ],
+            "properties": {
+              "configured": { "type": "boolean" },
+              "methods": {
+                "type": "object",
+                "required": ["local", "pdt", "sankhya"],
+                "properties": {
+                  "local": { "type": "boolean" },
+                  "pdt": { "type": "boolean" },
+                  "sankhya": { "type": "boolean" }
+                },
+                "additionalProperties": false
+              },
+              "sankhyaSessionTrust": {
+                "anyOf": [
+                  { "type": "string", "const": "pending" },
+                  { "type": "string", "const": "approved" }
+                ]
+              },
+              "embedHosts": {
+                "type": "object",
+                "required": ["pdt", "sankhya"],
+                "properties": {
+                  "pdt": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "sankhya": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": [
+          "configured",
+          "methods",
+          "sankhyaSessionTrust",
+          "embedHosts"
+        ],
+        "properties": {
+          "configured": { "type": "boolean" },
+          "methods": {
+            "type": "object",
+            "required": ["local", "pdt", "sankhya"],
+            "properties": {
+              "local": { "type": "boolean" },
+              "pdt": { "type": "boolean" },
+              "sankhya": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          },
+          "sankhyaSessionTrust": {
+            "anyOf": [
+              { "type": "string", "const": "pending" },
+              { "type": "string", "const": "approved" }
+            ]
+          },
+          "embedHosts": {
+            "type": "object",
+            "required": ["pdt", "sankhya"],
+            "properties": {
+              "pdt": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "sankhya": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "configured", "type": "boolean", "required": true },
+        { "name": "methods", "type": "object", "required": true },
+        { "name": "methods.local", "type": "boolean", "required": true },
+        { "name": "methods.pdt", "type": "boolean", "required": true },
+        { "name": "methods.sankhya", "type": "boolean", "required": true },
+        {
+          "name": "sankhyaSessionTrust",
+          "type": "\"pending\" | \"approved\"",
+          "required": true
+        },
+        { "name": "embedHosts", "type": "object", "required": true },
+        { "name": "embedHosts.pdt", "type": "string | null", "required": true },
+        {
+          "name": "embedHosts.sankhya",
+          "type": "string | null",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

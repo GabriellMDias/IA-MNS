@@ -322,6 +322,24 @@ test("missing or duplicate operation IDs and unowned components fail generation"
   );
 });
 
+test("operations need a success or redirect response", async () => {
+  const withResponses = async (responses) => {
+    const changed = new Map(sources);
+    const openapi = JSON.parse(changed.get("docs/generated/api/openapi.json"));
+    const [operation] = Object.values(openapi.paths).flatMap((methods) =>
+      Object.values(methods),
+    );
+    operation.responses = responses;
+    changed.set("docs/generated/api/openapi.json", JSON.stringify(openapi));
+    return buildDocumentation(changed);
+  };
+  await assert.rejects(
+    withResponses({ 400: { description: "Response" } }),
+    /success response/,
+  );
+  await withResponses({ 303: { description: "Redirect" } });
+});
+
 test("feature components retain ownership and reject unsafe or nonexistent sources", async () => {
   const rootMetadataPath = "apps/web/src/components.docs.json";
   const featureMetadataPath =

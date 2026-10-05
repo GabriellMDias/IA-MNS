@@ -1,0 +1,207 @@
+{
+  "kind": "database",
+  "name": "identity_sessions",
+  "description": "Authenticated continuity for a Person: method, surface, assurance and expiry. Direct-URL sessions hold a rotating refresh credential (hash only); embedded sessions have none and renew through a new host proof.",
+  "owner": "identity",
+  "classification": "RESTRICTED",
+  "lifecycle": "Expire at idle or absolute limits; revoked on logout, Person disable, credential reset, refresh reuse, or explicit revocation. Expired rows are pruned by the application after 7 days.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Session UUID; carried as the access-token sid claim.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Authenticated Person.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "method",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Proof used: local, pdt, sankhya, bootstrap or enrollment.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "surface",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Where the session started: direct, pdt or sankhya. Never used for authorization.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "assurance",
+      "PostgreSQL type": "character varying(8)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "single or mfa; administrative operations require mfa.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "refresh_hash",
+      "PostgreSQL type": "character(64)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "SHA-256 of the current refresh credential.",
+      "Null meaning": "Embedded or revoked session without refresh.",
+      "Unit": "—"
+    },
+    {
+      "Column": "previous_refresh_hash",
+      "PostgreSQL type": "character(64)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "SHA-256 of the previous refresh credential; presenting it revokes the session as reuse.",
+      "Null meaning": "Not rotated yet.",
+      "Unit": "—"
+    },
+    {
+      "Column": "auth_time",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Instant of the latest primary or step-up authentication; drives recent-authentication checks.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "last_seen_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Application-clock last refresh or validation.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "idle_expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Application-clock idle expiry, extended on refresh but never past expires_at.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "expires_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Application-clock absolute expiry.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "revoked_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Revocation instant.",
+      "Null meaning": "Not revoked.",
+      "Unit": "—"
+    },
+    {
+      "Column": "revoked_reason",
+      "PostgreSQL type": "character varying(40)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Allowlisted revocation reason code.",
+      "Null meaning": "Not revoked.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_sessions_assurance_check",
+      "Physical definition": "CHECK (((assurance)::text = ANY ((ARRAY['single'::character varying, 'mfa'::character varying])::text[])))",
+      "Purpose": "Explicit assurance levels."
+    },
+    {
+      "Object": "identity_sessions_expiry_check",
+      "Physical definition": "CHECK (((idle_expires_at <= expires_at) AND (auth_time <= expires_at)))",
+      "Purpose": "Idle expiry and authentication time cannot exceed the absolute expiry."
+    },
+    {
+      "Object": "identity_sessions_method_check",
+      "Physical definition": "CHECK (((method)::text = ANY ((ARRAY['local'::character varying, 'pdt'::character varying, 'sankhya'::character varying, 'bootstrap'::character varying, 'enrollment'::character varying])::text[])))",
+      "Purpose": "Implemented sign-in methods."
+    },
+    {
+      "Object": "identity_sessions_person_id_fkey",
+      "Physical definition": "FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Session belongs to its Person."
+    },
+    {
+      "Object": "identity_sessions_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Session identity."
+    },
+    {
+      "Object": "identity_sessions_revocation_check",
+      "Physical definition": "CHECK (((revoked_at IS NULL) = (revoked_reason IS NULL)))",
+      "Purpose": "Revocation instant and reason exist together."
+    },
+    {
+      "Object": "identity_sessions_surface_check",
+      "Physical definition": "CHECK (((surface)::text = ANY ((ARRAY['direct'::character varying, 'pdt'::character varying, 'sankhya'::character varying])::text[])))",
+      "Purpose": "Known access surfaces."
+    },
+    {
+      "Object": "identity_sessions_expiry_idx",
+      "Physical definition": "CREATE INDEX identity_sessions_expiry_idx ON public.identity_sessions USING btree (expires_at)",
+      "Purpose": "Expired-session pruning."
+    },
+    {
+      "Object": "identity_sessions_person_idx",
+      "Physical definition": "CREATE INDEX identity_sessions_person_idx ON public.identity_sessions USING btree (person_id, created_at DESC)",
+      "Purpose": "Per-Person session listing."
+    },
+    {
+      "Object": "identity_sessions_previous_refresh_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_sessions_previous_refresh_key ON public.identity_sessions USING btree (previous_refresh_hash)",
+      "Purpose": "Reuse detection lookup."
+    },
+    {
+      "Object": "identity_sessions_refresh_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_sessions_refresh_key ON public.identity_sessions USING btree (refresh_hash)",
+      "Purpose": "A refresh credential maps to one session."
+    }
+  ]
+}

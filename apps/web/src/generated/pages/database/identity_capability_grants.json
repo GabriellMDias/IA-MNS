@@ -1,0 +1,67 @@
+{
+  "kind": "database",
+  "name": "identity_capability_grants",
+  "description": "Explicit capability permissions granted to a Person by an owner, in addition to provider-policy grants derived from active links. The language model never creates grants.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Granted and revoked by owners with recent strong authentication; changes reach new access tokens within their 10-minute lifetime. Audited.",
+  "columns": [
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Grantee.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "permission",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Registered capability permission such as sales:read; validated against the composed catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "granted_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner Person who granted it.",
+      "Null meaning": "Granted by the server-side bootstrap flow.",
+      "Unit": "—"
+    },
+    {
+      "Column": "granted_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock grant instant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_capability_grants_permission_check",
+      "Physical definition": "CHECK (((permission)::text ~ '^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$'::text))",
+      "Purpose": "Permission naming convention."
+    },
+    {
+      "Object": "identity_capability_grants_person_id_fkey",
+      "Physical definition": "FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Grant belongs to its Person."
+    },
+    {
+      "Object": "identity_capability_grants_pkey",
+      "Physical definition": "PRIMARY KEY (person_id, permission)",
+      "Purpose": "A permission is granted once per Person."
+    }
+  ]
+}

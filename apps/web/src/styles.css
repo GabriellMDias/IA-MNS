@@ -335,3 +335,29 @@ button:disabled {
   flex-wrap: wrap;
   margin: 0.8rem 0 1.2rem;
 }
+
+/* Entries of a menu contributed by any module (for example the account menu). */
+[role="menu"] .account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+[role="menu"] .account-menu-item:hover,
+[role="menu"] .account-menu-item:focus-visible {
+  background: var(--selected);
+}
+[role="menu"] .account-menu-item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
