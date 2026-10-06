@@ -1,26 +1,39 @@
+import { noTrace, type TraceRecorder } from "../../ai/trace.js";
 import {
   answerFor,
   assembleResult,
   businessToday,
-  validateQuery,
-  type SalesQuery,
   type SalesResult,
 } from "./domain.js";
+import { describeAnalysis } from "./analysis.js";
+import {
+  advance,
+  recordExchange,
+  type Clarification,
+  type SalesConversationState,
+} from "./conversation-state.js";
 import { Conversations } from "./conversations.js";
-import type { SalesPlanner } from "./planner.js";
+import {
+  salesInterpreterVersion,
+  type SalesInterpreter,
+} from "./interpreter.js";
 import type { SalesReader } from "./oracle.js";
 import { SalesFailure } from "./errors.js";
 
-const clarificationQuestions = {
+const clarificationQuestions: Readonly<Record<Clarification, string>> = {
   period: "Qual período você quer consultar?",
+  period_limit:
+    "Uma consulta pode abranger no máximo 366 dias. Qual período você quer consultar?",
   product: "Qual produto ou descrição você quer consultar?",
-  metric: "Você quer consultar valor líquido, quantidade ou peso vendido?",
+  measure: "Você quer consultar valor líquido, quantidade ou peso vendido?",
   comparison: "Com qual período você quer comparar as vendas?",
   context:
     "Ainda não há uma consulta anterior. Informe o produto, o período e o que deseja medir.",
   ambiguous:
     "Pode detalhar o produto, o período e o que deseja medir? Sua pergunta tem mais de uma interpretação.",
-} as const;
+};
+const unsupportedMessage =
+  "Ainda não consigo atender essa consulta. Posso ajudar com valor líquido, quantidade e peso vendido, por período ou produto.";
 
 export type SalesReply = {
   conversationId: string;
@@ -29,6 +42,7 @@ export type SalesReply = {
   result: SalesResult | null;
   suggestions: string[];
 };
+export type SalesTurn = { reply: SalesReply; state: SalesConversationState };
 export type SalesActor = Readonly<{ id: string; canReadSales: boolean }>;
 export function authorizeSales(actor: SalesActor): void {
   if (!actor.canReadSales || !actor.id)
@@ -36,17 +50,17 @@ export function authorizeSales(actor: SalesActor): void {
 }
 export class SalesChat {
   private active = 0;
-  private readonly planner: SalesPlanner;
+  private readonly interpreter: SalesInterpreter;
   private readonly reader: SalesReader;
   readonly conversations: Conversations;
   private readonly now: () => Date;
   constructor(
-    planner: SalesPlanner,
+    interpreter: SalesInterpreter,
     reader: SalesReader,
     conversations = new Conversations(),
     now: () => Date = () => new Date(),
   ) {
-    this.planner = planner;
+    this.interpreter = interpreter;
     this.reader = reader;
     this.conversations = conversations;
     this.now = now;
@@ -64,107 +78,115 @@ export class SalesChat {
     const session = this.conversations.acquire(actor.id, conversationId);
     this.active++;
     try {
-      const reply = await this.execute(
+      const turn = await this.execute(
         message,
         session.id,
-        {
-          questions: session.questions,
-          clarifications: session.clarifications,
-          previousQuery: session.previousQuery,
-        },
+        session.state,
         signal,
       );
-      this.conversations.release(
-        session,
-        message,
-        reply.result?.query,
-        reply.result ? "" : reply.message,
-      );
-      return reply;
+      this.conversations.release(session, turn.state);
+      return turn.reply;
     } finally {
       if (session.busy) this.conversations.release(session);
       this.active--;
     }
   }
+  /**
+   * Interprets one message against the structured conversation state, then
+   * clarifies, rejects, or executes the compiled plan. Only the returned
+   * state may replace the caller's state; a failure leaves it unchanged.
+   */
   async execute(
     message: string,
     conversationId: string,
-    context: {
-      questions: readonly string[];
-      clarifications: readonly string[];
-      previousQuery: SalesQuery | null;
-    },
+    state: SalesConversationState,
     signal: AbortSignal,
     progress: (
       stage: "interpreting_sales" | "querying_sales" | "organizing",
     ) => Promise<void> = () => Promise.resolve(),
-  ): Promise<SalesReply> {
+    trace: TraceRecorder = noTrace,
+  ): Promise<SalesTurn> {
     await progress("interpreting_sales");
     const today = businessToday(this.now());
-    const plan = await this.planner.plan(
-      {
-        message,
-        questions: [...context.questions],
-        clarifications: [...context.clarifications],
-        previousQuery: context.previousQuery,
-        today,
-      },
+    trace.note("sales", { interpreter: salesInterpreterVersion });
+    trace.content("sales", { today, stateBefore: state });
+    const interpretation = await this.interpreter.interpret(
+      { message, state, today },
       signal,
+      trace,
     );
     signal.throwIfAborted();
-    if (plan.action !== "query") {
-      const kind = plan.action === "clarify" ? "clarification" : "unsupported";
+    const step = advance(state, interpretation, message, today);
+    trace.content("sales", { interpretation });
+    trace.note("sales", {
+      decision: interpretation.decision,
+      relation: interpretation.relation,
+      appliedRelation: step.notes.relation,
+      issues: step.notes.issues,
+      missing: step.notes.missing,
+      periodKind: step.notes.periodKind,
+      outcome: step.kind,
+      clarification: step.kind === "clarify" ? step.clarification : null,
+      unsupportedReason: interpretation.unsupportedReason,
+    });
+    if (step.kind !== "execute") {
+      const kind = step.kind === "clarify" ? "clarification" : "unsupported";
       const text =
-        kind === "clarification"
-          ? clarificationQuestions[
-              plan.clarification === "context" && context.previousQuery
-                ? "ambiguous"
-                : plan.clarification!
-            ]
-          : "Ainda não consigo atender essa consulta. Posso ajudar com valor líquido, quantidade e peso vendido, por período ou produto.";
+        step.kind === "clarify"
+          ? clarificationQuestions[step.clarification]
+          : unsupportedMessage;
+      const next = recordExchange(step.state, {
+        user: message,
+        reply: kind,
+        text,
+      });
+      trace.content("sales", { stateAfter: next });
       return {
-        conversationId: conversationId,
-        kind,
-        message: text,
-        result: null,
-        suggestions: [],
+        reply: {
+          conversationId,
+          kind,
+          message: text,
+          result: null,
+          suggestions: [],
+        },
+        state: next,
       };
     }
-    const query: SalesQuery = validateQuery(
-      {
-        productSearch: plan.productSearch,
-        startDate: plan.startDate!,
-        endDate: plan.endDate!,
-        metric: plan.metric,
-        groupBy: plan.groupBy,
-        comparison: plan.comparison,
-      },
-      today,
-    );
+    const query = step.query;
     await progress("querying_sales");
     const data = await this.reader.read(query, signal);
     signal.throwIfAborted();
     await progress("organizing");
     const result = assembleResult(query, data.current, data.previous);
+    const next = recordExchange(step.state, {
+      user: message,
+      reply: "answer",
+      text: describeAnalysis(step.spec, query),
+    });
+    trace.content("sales", { query, stateAfter: next });
+    trace.note("sales", { resultRows: result.rows.length });
     return {
-      conversationId: conversationId,
-      kind: "answer",
-      message: answerFor(result),
-      result,
-      suggestions: [
-        ...(query.comparison === "none"
-          ? ["E comparado ao mesmo período do ano passado?"]
-          : []),
-        ...(query.metric === "net_value"
-          ? [
-              "Qual foi a quantidade vendida nesse período?",
-              "E o peso vendido?",
-            ]
-          : ["Qual foi o valor líquido vendido?"]),
-        ...(query.groupBy !== "product"
-          ? ["Detalhe por produto nesse período."]
-          : []),
-      ].slice(0, 3),
+      reply: {
+        conversationId,
+        kind: "answer",
+        message: answerFor(result),
+        result,
+        suggestions: [
+          ...(query.comparison === "none"
+            ? ["E comparado ao mesmo período do ano passado?"]
+            : []),
+          ...(query.metric === "net_value"
+            ? [
+                "Qual foi a quantidade vendida nesse período?",
+                "E o peso vendido?",
+              ]
+            : ["Qual foi o valor líquido vendido?"]),
+          ...(query.groupBy !== "product"
+            ? ["Detalhe por produto nesse período."]
+            : []),
+        ].slice(0, 3),
+      },
+      state: next,
     };
   }
   forget(actor: SalesActor, conversationId: string) {

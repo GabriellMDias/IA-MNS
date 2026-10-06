@@ -359,7 +359,7 @@
                     },
                     {
                       "type": "object",
-                      "required": ["kind", "challenge"],
+                      "required": ["kind", "challenge", "rememberDeviceDays"],
                       "properties": {
                         "kind": {
                           "type": "string",
@@ -367,6 +367,26 @@
                         },
                         "challenge": {
                           "type": "string"
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": ["kind", "challenge"],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "mfa_enrollment_required"
+                        },
+                        "challenge": {
+                          "type": "string",
+                          "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
                         }
                       },
                       "additionalProperties": false
@@ -821,7 +841,7 @@
     "/identity/login/mfa": {
       "post": {
         "operationId": "completeMfa",
-        "description": "Complete a local sign-in with a TOTP code or a single-use recovery code.",
+        "description": "Complete a local sign-in with a TOTP code or a single-use recovery code. When the policy offers it, `rememberDevice` lets this browser skip the code at later sign-ins (HttpOnly cookie).",
         "tags": ["Identity"],
         "parameters": [],
         "requestBody": {
@@ -840,6 +860,9 @@
                     "type": "string",
                     "minLength": 6,
                     "maxLength": 16
+                  },
+                  "rememberDevice": {
+                    "type": "boolean"
                   }
                 },
                 "additionalProperties": false
@@ -883,7 +906,7 @@
                     },
                     {
                       "type": "object",
-                      "required": ["kind", "challenge"],
+                      "required": ["kind", "challenge", "rememberDeviceDays"],
                       "properties": {
                         "kind": {
                           "type": "string",
@@ -891,6 +914,26 @@
                         },
                         "challenge": {
                           "type": "string"
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": ["kind", "challenge"],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "mfa_enrollment_required"
+                        },
+                        "challenge": {
+                          "type": "string",
+                          "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
                         }
                       },
                       "additionalProperties": false
@@ -1342,10 +1385,10 @@
         }
       }
     },
-    "/identity/session/refresh": {
+    "/identity/login/mfa-enrollment": {
       "post": {
-        "operationId": "refreshSession",
-        "description": "Rotate the direct-URL refresh cookie and return a new access token. Reuse of a rotated credential revokes the session.",
+        "operationId": "startSignInMfaEnrollment",
+        "description": "When the policy requires a second factor the account lacks, start its setup after the password. Returns the secret once.",
         "tags": ["Identity"],
         "parameters": [],
         "requestBody": {
@@ -1354,7 +1397,739 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "properties": {},
+                "required": ["challenge"],
+                "properties": {
+                  "challenge": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{32,128}$"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["setup", "secret", "otpauthUri"],
+                  "properties": {
+                    "setup": {
+                      "type": "string"
+                    },
+                    "secret": {
+                      "type": "string"
+                    },
+                    "otpauthUri": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/identity/login/mfa-enrollment/confirm": {
+      "post": {
+        "operationId": "confirmSignInMfaEnrollment",
+        "description": "Confirm the second factor set up during sign-in: enables it, returns single-use recovery codes once and opens a strong session.",
+        "tags": ["Identity"],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["challenge", "setup", "code"],
+                "properties": {
+                  "challenge": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{32,128}$"
+                  },
+                  "setup": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{32,128}$"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 16
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["recoveryCodes", "accessToken", "expiresIn"],
+                  "properties": {
+                    "recoveryCodes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 10,
+                      "maxItems": 10
+                    },
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "expiresIn": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/identity/session/refresh": {
+      "post": {
+        "operationId": "refreshSession",
+        "description": "Rotate the direct-URL refresh cookie and return a new access token. `active` reports user activity since the last renewal; only activity postpones the inactivity deadline. A concurrent renewal by another tab within a short grace window gets a token without rotation; later reuse of a rotated credential revokes the session.",
+        "tags": ["Identity"],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "active": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
                 "additionalProperties": false
               }
             }
@@ -2672,7 +3447,7 @@
                     },
                     {
                       "type": "object",
-                      "required": ["kind", "challenge"],
+                      "required": ["kind", "challenge", "rememberDeviceDays"],
                       "properties": {
                         "kind": {
                           "type": "string",
@@ -2680,6 +3455,26 @@
                         },
                         "challenge": {
                           "type": "string"
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": ["kind", "challenge"],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "mfa_enrollment_required"
+                        },
+                        "challenge": {
+                          "type": "string",
+                          "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
                         }
                       },
                       "additionalProperties": false
@@ -3589,7 +4384,7 @@
                     },
                     {
                       "type": "object",
-                      "required": ["kind", "challenge"],
+                      "required": ["kind", "challenge", "rememberDeviceDays"],
                       "properties": {
                         "kind": {
                           "type": "string",
@@ -3597,6 +4392,26 @@
                         },
                         "challenge": {
                           "type": "string"
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": ["kind", "challenge"],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "mfa_enrollment_required"
+                        },
+                        "challenge": {
+                          "type": "string",
+                          "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
                         }
                       },
                       "additionalProperties": false
@@ -4112,7 +4927,7 @@
                     },
                     {
                       "type": "object",
-                      "required": ["kind", "challenge"],
+                      "required": ["kind", "challenge", "rememberDeviceDays"],
                       "properties": {
                         "kind": {
                           "type": "string",
@@ -4120,6 +4935,26 @@
                         },
                         "challenge": {
                           "type": "string"
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": ["kind", "challenge"],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "mfa_enrollment_required"
+                        },
+                        "challenge": {
+                          "type": "string",
+                          "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
                         }
                       },
                       "additionalProperties": false
@@ -4635,7 +5470,7 @@
                     },
                     {
                       "type": "object",
-                      "required": ["kind", "challenge"],
+                      "required": ["kind", "challenge", "rememberDeviceDays"],
                       "properties": {
                         "kind": {
                           "type": "string",
@@ -4643,6 +5478,26 @@
                         },
                         "challenge": {
                           "type": "string"
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": ["kind", "challenge"],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "mfa_enrollment_required"
+                        },
+                        "challenge": {
+                          "type": "string",
+                          "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
                         }
                       },
                       "additionalProperties": false
@@ -5565,7 +6420,7 @@
                     },
                     {
                       "type": "object",
-                      "required": ["kind", "challenge"],
+                      "required": ["kind", "challenge", "rememberDeviceDays"],
                       "properties": {
                         "kind": {
                           "type": "string",
@@ -5573,6 +6428,26 @@
                         },
                         "challenge": {
                           "type": "string"
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": ["kind", "challenge"],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "mfa_enrollment_required"
+                        },
+                        "challenge": {
+                          "type": "string",
+                          "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
                         }
                       },
                       "additionalProperties": false
@@ -6106,7 +6981,7 @@
                     },
                     {
                       "type": "object",
-                      "required": ["kind", "challenge"],
+                      "required": ["kind", "challenge", "rememberDeviceDays"],
                       "properties": {
                         "kind": {
                           "type": "string",
@@ -6114,6 +6989,26 @@
                         },
                         "challenge": {
                           "type": "string"
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "required": ["kind", "challenge"],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "mfa_enrollment_required"
+                        },
+                        "challenge": {
+                          "type": "string",
+                          "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
                         }
                       },
                       "additionalProperties": false
@@ -6583,7 +7478,12 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["person", "session", "linkableProviders"],
+                  "required": [
+                    "person",
+                    "rememberedDevices",
+                    "session",
+                    "linkableProviders"
+                  ],
                   "properties": {
                     "person": {
                       "type": "object",
@@ -6795,6 +7695,11 @@
                         }
                       },
                       "additionalProperties": false
+                    },
+                    "rememberedDevices": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Browsers currently remembered to skip the second factor."
                     },
                     "session": {
                       "type": "object",
@@ -9709,6 +10614,344 @@
                     "ok": {
                       "type": "boolean",
                       "const": true
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/identity/me/remembered-devices": {
+      "delete": {
+        "operationId": "forgetRememberedDevices",
+        "description": "Stop skipping the second factor on every browser remembered for the signed-in Person.",
+        "tags": ["Identity"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["forgotten"],
+                  "properties": {
+                    "forgotten": {
+                      "type": "integer",
+                      "minimum": 0
                     }
                   },
                   "additionalProperties": false
@@ -13860,6 +15103,1071 @@
                     "ok": {
                       "type": "boolean",
                       "const": true
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/identity/admin/security-policy": {
+      "get": {
+        "operationId": "getSecurityPolicy",
+        "description": "Owner: the authentication policy as configured and as enforced (production never lets administrators skip the second factor), its defaults, limits, the settings that reduce security and recent changes.",
+        "tags": ["Identity"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "configured",
+                    "effective",
+                    "defaults",
+                    "limits",
+                    "production",
+                    "warnings",
+                    "updatedAt",
+                    "updatedBy",
+                    "history"
+                  ],
+                  "properties": {
+                    "configured": {
+                      "type": "object",
+                      "required": [
+                        "sessionMaxMinutes",
+                        "idleTimeoutMinutes",
+                        "recentAuthMinutes",
+                        "adminRecentAuthMinutes",
+                        "mfaRequirement",
+                        "rememberDeviceDays"
+                      ],
+                      "properties": {
+                        "sessionMaxMinutes": {
+                          "type": "integer",
+                          "description": "Longest a direct session lasts from sign-in."
+                        },
+                        "idleTimeoutMinutes": {
+                          "type": "integer",
+                          "description": "Longest a direct session survives without user activity."
+                        },
+                        "recentAuthMinutes": {
+                          "type": "integer",
+                          "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+                        },
+                        "adminRecentAuthMinutes": {
+                          "type": "integer",
+                          "description": "How long a strong sign-in or confirmation allows administrative changes."
+                        },
+                        "mfaRequirement": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "everyone"
+                            },
+                            {
+                              "type": "string",
+                              "const": "administrators"
+                            },
+                            {
+                              "type": "string",
+                              "const": "none"
+                            }
+                          ],
+                          "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "effective": {
+                      "type": "object",
+                      "required": [
+                        "sessionMaxMinutes",
+                        "idleTimeoutMinutes",
+                        "recentAuthMinutes",
+                        "adminRecentAuthMinutes",
+                        "mfaRequirement",
+                        "rememberDeviceDays"
+                      ],
+                      "properties": {
+                        "sessionMaxMinutes": {
+                          "type": "integer",
+                          "description": "Longest a direct session lasts from sign-in."
+                        },
+                        "idleTimeoutMinutes": {
+                          "type": "integer",
+                          "description": "Longest a direct session survives without user activity."
+                        },
+                        "recentAuthMinutes": {
+                          "type": "integer",
+                          "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+                        },
+                        "adminRecentAuthMinutes": {
+                          "type": "integer",
+                          "description": "How long a strong sign-in or confirmation allows administrative changes."
+                        },
+                        "mfaRequirement": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "everyone"
+                            },
+                            {
+                              "type": "string",
+                              "const": "administrators"
+                            },
+                            {
+                              "type": "string",
+                              "const": "none"
+                            }
+                          ],
+                          "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "defaults": {
+                      "type": "object",
+                      "required": [
+                        "sessionMaxMinutes",
+                        "idleTimeoutMinutes",
+                        "recentAuthMinutes",
+                        "adminRecentAuthMinutes",
+                        "mfaRequirement",
+                        "rememberDeviceDays"
+                      ],
+                      "properties": {
+                        "sessionMaxMinutes": {
+                          "type": "integer",
+                          "description": "Longest a direct session lasts from sign-in."
+                        },
+                        "idleTimeoutMinutes": {
+                          "type": "integer",
+                          "description": "Longest a direct session survives without user activity."
+                        },
+                        "recentAuthMinutes": {
+                          "type": "integer",
+                          "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+                        },
+                        "adminRecentAuthMinutes": {
+                          "type": "integer",
+                          "description": "How long a strong sign-in or confirmation allows administrative changes."
+                        },
+                        "mfaRequirement": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "const": "everyone"
+                            },
+                            {
+                              "type": "string",
+                              "const": "administrators"
+                            },
+                            {
+                              "type": "string",
+                              "const": "none"
+                            }
+                          ],
+                          "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+                        },
+                        "rememberDeviceDays": {
+                          "type": "integer",
+                          "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "limits": {
+                      "type": "object",
+                      "required": [
+                        "sessionMaxMinutes",
+                        "idleTimeoutMinutes",
+                        "recentAuthMinutes",
+                        "adminRecentAuthMinutes",
+                        "rememberDeviceDays"
+                      ],
+                      "properties": {
+                        "sessionMaxMinutes": {
+                          "type": "object",
+                          "required": ["min", "max", "recommendedMax"],
+                          "properties": {
+                            "min": {
+                              "type": "integer"
+                            },
+                            "max": {
+                              "type": "integer"
+                            },
+                            "recommendedMax": {
+                              "type": "integer"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "idleTimeoutMinutes": {
+                          "type": "object",
+                          "required": ["min", "max", "recommendedMax"],
+                          "properties": {
+                            "min": {
+                              "type": "integer"
+                            },
+                            "max": {
+                              "type": "integer"
+                            },
+                            "recommendedMax": {
+                              "type": "integer"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "recentAuthMinutes": {
+                          "type": "object",
+                          "required": ["min", "max", "recommendedMax"],
+                          "properties": {
+                            "min": {
+                              "type": "integer"
+                            },
+                            "max": {
+                              "type": "integer"
+                            },
+                            "recommendedMax": {
+                              "type": "integer"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "adminRecentAuthMinutes": {
+                          "type": "object",
+                          "required": ["min", "max", "recommendedMax"],
+                          "properties": {
+                            "min": {
+                              "type": "integer"
+                            },
+                            "max": {
+                              "type": "integer"
+                            },
+                            "recommendedMax": {
+                              "type": "integer"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "rememberDeviceDays": {
+                          "type": "object",
+                          "required": ["min", "max", "recommendedMax"],
+                          "properties": {
+                            "min": {
+                              "type": "integer"
+                            },
+                            "max": {
+                              "type": "integer"
+                            },
+                            "recommendedMax": {
+                              "type": "integer"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "production": {
+                      "type": "boolean"
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "updatedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "updatedBy": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "history": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["occurredAt", "actorName", "details"],
+                        "properties": {
+                          "occurredAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "actorName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "details": {
+                            "type": "object",
+                            "patternProperties": {
+                              "^.*$": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Response",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a bounded retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["error"],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": ["code", "message", "requestId"],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "pattern": "^[A-Z][A-Z0-9_]*$"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "traceId": {
+                          "type": "string"
+                        },
+                        "errorId": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateSecurityPolicy",
+        "description": "Owner: change the authentication policy (strong, recent authentication). Values outside the limits are refused; settings that significantly reduce security require `acknowledgeReducedSecurity`. Open direct sessions follow the new durations immediately. Audited with previous and new values.",
+        "tags": ["Identity"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sessionMaxMinutes",
+                  "idleTimeoutMinutes",
+                  "recentAuthMinutes",
+                  "adminRecentAuthMinutes",
+                  "mfaRequirement",
+                  "rememberDeviceDays"
+                ],
+                "properties": {
+                  "sessionMaxMinutes": {
+                    "type": "integer",
+                    "description": "Longest a direct session lasts from sign-in."
+                  },
+                  "idleTimeoutMinutes": {
+                    "type": "integer",
+                    "description": "Longest a direct session survives without user activity."
+                  },
+                  "recentAuthMinutes": {
+                    "type": "integer",
+                    "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+                  },
+                  "adminRecentAuthMinutes": {
+                    "type": "integer",
+                    "description": "How long a strong sign-in or confirmation allows administrative changes."
+                  },
+                  "mfaRequirement": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": "everyone"
+                      },
+                      {
+                        "type": "string",
+                        "const": "administrators"
+                      },
+                      {
+                        "type": "string",
+                        "const": "none"
+                      }
+                    ],
+                    "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+                  },
+                  "rememberDeviceDays": {
+                    "type": "integer",
+                    "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+                  },
+                  "acknowledgeReducedSecurity": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["endedSessions", "currentSessionEnded"],
+                  "properties": {
+                    "endedSessions": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "currentSessionEnded": {
+                      "type": "boolean"
                     }
                   },
                   "additionalProperties": false

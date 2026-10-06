@@ -29,6 +29,11 @@ export const serverConfigSchema = Type.Object(
     tokenJwksUrl: Type.Optional(Type.String({ minLength: 1 })),
     openaiApiKey: Type.Optional(Type.String({ minLength: 1 })),
     openaiModel: Type.String({ minLength: 1, maxLength: 100 }),
+    aiTrace: Type.Union([
+      Type.Literal("off"),
+      Type.Literal("metadata"),
+      Type.Literal("content"),
+    ]),
     sankhyaUser: Type.Optional(Type.String({ minLength: 1 })),
     sankhyaPassword: Type.Optional(Type.String({ minLength: 1 })),
     sankhyaConnectString: Type.Optional(Type.String({ minLength: 1 })),
@@ -248,6 +253,18 @@ export const configReference = Object.freeze([
     default: "gpt-6.1-sol",
     secret: false,
     purpose: "Responses API model supporting strict function calling.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
+    key: "aiTrace",
+    name: "IA_MNS_AI_TRACE",
+    type: "off | metadata | content",
+    default: "metadata",
+    secret: false,
+    purpose:
+      "AI turn tracing: metadata logs allowlisted decisions, timings and token counts without user content; content also stores confidential interpretation traces with each turn and is refused in production until PH-09.",
     required: false,
     visibility: "server",
     classification: "INTERNAL",
@@ -773,6 +790,7 @@ export function parseServerConfig(
       ? {}
       : { devAccessExpiresAt: Number(env.IA_MNS_DEV_ACCESS_EXPIRES_AT) }),
     openaiModel: env.OPENAI_MODEL ?? "gpt-6.1-sol",
+    aiTrace: env.IA_MNS_AI_TRACE ?? "metadata",
     identityAudience: env.IA_MNS_IDENTITY_AUDIENCE ?? "ia-mns-api",
     sankhyaSessionTrust: env.SANKHYA_SESSION_TRUST ?? "pending",
     ...optional("publicOrigin", env.IA_MNS_PUBLIC_ORIGIN),
@@ -835,6 +853,12 @@ export function parseServerConfig(
     throw new Error("Invalid API configuration");
   }
   validateIdentity(candidate);
+  // Confidential AI content traces need an approved shared retention and
+  // access policy before any production use (PH-09).
+  if (candidate.environment === "production" && candidate.aiTrace === "content")
+    throw new Error(
+      "Invalid API configuration: content AI tracing is not approved for production",
+    );
   if (
     env.IA_MNS_LOCAL_ACCESS !== undefined &&
     !["true", "false"].includes(env.IA_MNS_LOCAL_ACCESS)

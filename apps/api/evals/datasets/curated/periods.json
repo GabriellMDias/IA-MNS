@@ -1,0 +1,304 @@
+{
+  "version": 1,
+  "description": "Single-turn period interpretation resolved against the Sao Paulo business date, including unqueryable periods.",
+  "cases": [
+    {
+      "id": "period/current-year-to-date",
+      "title": "This year means year to date",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendemos este ano?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "period": {
+                "kind": "current",
+                "unit": "year"
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": null,
+              "startDate": "2026-01-01",
+              "endDate": "2026-10-05",
+              "metric": "net_value",
+              "groupBy": "total",
+              "comparison": "none"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "period/last-three-months-completed",
+      "title": "Last three months are the completed months before the current one",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Vendas dos últimos 3 meses",
+          "fixture": {
+            "interpretation": {
+              "period": {
+                "kind": "last",
+                "unit": "month",
+                "count": 3,
+                "includeCurrent": false
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "startDate": "2026-07-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "period/last-three-months-including-current",
+      "title": "Including the current month is explicit",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Vendas dos últimos 3 meses, contando este mês",
+          "fixture": {
+            "interpretation": {
+              "period": {
+                "kind": "last",
+                "unit": "month",
+                "count": 3,
+                "includeCurrent": true
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "startDate": "2026-08-01",
+              "endDate": "2026-10-05"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "period/yesterday",
+      "title": "Yesterday is one complete day",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi ontem?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "period": {
+                "kind": "previous",
+                "unit": "day"
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "startDate": "2026-10-04",
+              "endDate": "2026-10-04"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "period/explicit-range-with-product",
+      "title": "Explicit dates become an inclusive range",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period", "product"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Vendas de maçã entre 10/08/2026 e 20/08/2026",
+          "fixture": {
+            "interpretation": {
+              "filters": {
+                "product": "maçã"
+              },
+              "period": {
+                "kind": "range",
+                "startDate": "2026-08-10",
+                "endDate": "2026-08-20"
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-08-10",
+              "endDate": "2026-08-20"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "period/previous-year",
+      "title": "Last year is the complete previous calendar year",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendemos no ano passado?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "period": {
+                "kind": "previous",
+                "unit": "year"
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "startDate": "2025-01-01",
+              "endDate": "2025-12-31"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "period/month-with-explicit-year",
+      "title": "A month with an explicit year",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Vendas de julho de 2025",
+          "fixture": {
+            "interpretation": {
+              "period": {
+                "kind": "month",
+                "month": 7,
+                "year": 2025
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "startDate": "2025-07-01",
+              "endDate": "2025-07-31"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "period/last-two-weeks",
+      "title": "Weeks count as seven days including today",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Vendas das últimas 2 semanas",
+          "fixture": {
+            "interpretation": {
+              "period": {
+                "kind": "last",
+                "unit": "day",
+                "count": 14,
+                "includeCurrent": true
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "startDate": "2026-09-22",
+              "endDate": "2026-10-05"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "period/future-month-asks-again",
+      "title": "A requested period that has not started is asked again",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period", "clarification"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi em novembro de 2026?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "period": {
+                "kind": "month",
+                "month": 11,
+                "year": 2026
+              }
+            }
+          },
+          "expect": {
+            "kind": "clarification",
+            "clarification": "period"
+          }
+        }
+      ],
+      "notes": "Revised after the 2026-10-05 live evaluation: the earlier wording asked for a forecast, which is unsupported scope (see unsupported/sales-forecast), not a period clarification."
+    },
+    {
+      "id": "period/over-limit-explains-limit",
+      "title": "A period beyond 366 days explains the limit",
+      "status": "active",
+      "source": "curated",
+      "tags": ["period", "clarification"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Vendas dos últimos 24 meses",
+          "fixture": {
+            "interpretation": {
+              "period": {
+                "kind": "last",
+                "unit": "month",
+                "count": 24,
+                "includeCurrent": false
+              }
+            }
+          },
+          "expect": {
+            "kind": "clarification",
+            "clarification": "period_limit"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1198 @@
+{
+  "kind": "api",
+  "operationId": "getSecurityPolicy",
+  "summary": "",
+  "description": "Owner: the authentication policy as configured and as enforced (production never lets administrators skip the second factor), its defaults, limits, the settings that reduce security and recent changes.",
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "method": "GET",
+  "path": "/identity/admin/security-policy",
+  "tags": ["Identity"],
+  "authentication": "Bearer access token",
+  "parameters": [],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": [
+              "configured",
+              "effective",
+              "defaults",
+              "limits",
+              "production",
+              "warnings",
+              "updatedAt",
+              "updatedBy",
+              "history"
+            ],
+            "properties": {
+              "configured": {
+                "type": "object",
+                "required": [
+                  "sessionMaxMinutes",
+                  "idleTimeoutMinutes",
+                  "recentAuthMinutes",
+                  "adminRecentAuthMinutes",
+                  "mfaRequirement",
+                  "rememberDeviceDays"
+                ],
+                "properties": {
+                  "sessionMaxMinutes": {
+                    "type": "integer",
+                    "description": "Longest a direct session lasts from sign-in."
+                  },
+                  "idleTimeoutMinutes": {
+                    "type": "integer",
+                    "description": "Longest a direct session survives without user activity."
+                  },
+                  "recentAuthMinutes": {
+                    "type": "integer",
+                    "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+                  },
+                  "adminRecentAuthMinutes": {
+                    "type": "integer",
+                    "description": "How long a strong sign-in or confirmation allows administrative changes."
+                  },
+                  "mfaRequirement": {
+                    "anyOf": [
+                      { "type": "string", "const": "everyone" },
+                      { "type": "string", "const": "administrators" },
+                      { "type": "string", "const": "none" }
+                    ],
+                    "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+                  },
+                  "rememberDeviceDays": {
+                    "type": "integer",
+                    "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "effective": {
+                "type": "object",
+                "required": [
+                  "sessionMaxMinutes",
+                  "idleTimeoutMinutes",
+                  "recentAuthMinutes",
+                  "adminRecentAuthMinutes",
+                  "mfaRequirement",
+                  "rememberDeviceDays"
+                ],
+                "properties": {
+                  "sessionMaxMinutes": {
+                    "type": "integer",
+                    "description": "Longest a direct session lasts from sign-in."
+                  },
+                  "idleTimeoutMinutes": {
+                    "type": "integer",
+                    "description": "Longest a direct session survives without user activity."
+                  },
+                  "recentAuthMinutes": {
+                    "type": "integer",
+                    "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+                  },
+                  "adminRecentAuthMinutes": {
+                    "type": "integer",
+                    "description": "How long a strong sign-in or confirmation allows administrative changes."
+                  },
+                  "mfaRequirement": {
+                    "anyOf": [
+                      { "type": "string", "const": "everyone" },
+                      { "type": "string", "const": "administrators" },
+                      { "type": "string", "const": "none" }
+                    ],
+                    "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+                  },
+                  "rememberDeviceDays": {
+                    "type": "integer",
+                    "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "defaults": {
+                "type": "object",
+                "required": [
+                  "sessionMaxMinutes",
+                  "idleTimeoutMinutes",
+                  "recentAuthMinutes",
+                  "adminRecentAuthMinutes",
+                  "mfaRequirement",
+                  "rememberDeviceDays"
+                ],
+                "properties": {
+                  "sessionMaxMinutes": {
+                    "type": "integer",
+                    "description": "Longest a direct session lasts from sign-in."
+                  },
+                  "idleTimeoutMinutes": {
+                    "type": "integer",
+                    "description": "Longest a direct session survives without user activity."
+                  },
+                  "recentAuthMinutes": {
+                    "type": "integer",
+                    "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+                  },
+                  "adminRecentAuthMinutes": {
+                    "type": "integer",
+                    "description": "How long a strong sign-in or confirmation allows administrative changes."
+                  },
+                  "mfaRequirement": {
+                    "anyOf": [
+                      { "type": "string", "const": "everyone" },
+                      { "type": "string", "const": "administrators" },
+                      { "type": "string", "const": "none" }
+                    ],
+                    "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+                  },
+                  "rememberDeviceDays": {
+                    "type": "integer",
+                    "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "limits": {
+                "type": "object",
+                "required": [
+                  "sessionMaxMinutes",
+                  "idleTimeoutMinutes",
+                  "recentAuthMinutes",
+                  "adminRecentAuthMinutes",
+                  "rememberDeviceDays"
+                ],
+                "properties": {
+                  "sessionMaxMinutes": {
+                    "type": "object",
+                    "required": ["min", "max", "recommendedMax"],
+                    "properties": {
+                      "min": { "type": "integer" },
+                      "max": { "type": "integer" },
+                      "recommendedMax": { "type": "integer" }
+                    },
+                    "additionalProperties": false
+                  },
+                  "idleTimeoutMinutes": {
+                    "type": "object",
+                    "required": ["min", "max", "recommendedMax"],
+                    "properties": {
+                      "min": { "type": "integer" },
+                      "max": { "type": "integer" },
+                      "recommendedMax": { "type": "integer" }
+                    },
+                    "additionalProperties": false
+                  },
+                  "recentAuthMinutes": {
+                    "type": "object",
+                    "required": ["min", "max", "recommendedMax"],
+                    "properties": {
+                      "min": { "type": "integer" },
+                      "max": { "type": "integer" },
+                      "recommendedMax": { "type": "integer" }
+                    },
+                    "additionalProperties": false
+                  },
+                  "adminRecentAuthMinutes": {
+                    "type": "object",
+                    "required": ["min", "max", "recommendedMax"],
+                    "properties": {
+                      "min": { "type": "integer" },
+                      "max": { "type": "integer" },
+                      "recommendedMax": { "type": "integer" }
+                    },
+                    "additionalProperties": false
+                  },
+                  "rememberDeviceDays": {
+                    "type": "object",
+                    "required": ["min", "max", "recommendedMax"],
+                    "properties": {
+                      "min": { "type": "integer" },
+                      "max": { "type": "integer" },
+                      "recommendedMax": { "type": "integer" }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              },
+              "production": { "type": "boolean" },
+              "warnings": { "type": "array", "items": { "type": "string" } },
+              "updatedAt": {
+                "anyOf": [
+                  { "type": "string", "format": "date-time" },
+                  { "type": "null" }
+                ]
+              },
+              "updatedBy": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
+              "history": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["occurredAt", "actorName", "details"],
+                  "properties": {
+                    "occurredAt": { "type": "string", "format": "date-time" },
+                    "actorName": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "details": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^.*$": {
+                          "anyOf": [
+                            { "type": "string" },
+                            { "type": "number" },
+                            { "type": "boolean" },
+                            { "type": "null" }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": [
+          "configured",
+          "effective",
+          "defaults",
+          "limits",
+          "production",
+          "warnings",
+          "updatedAt",
+          "updatedBy",
+          "history"
+        ],
+        "properties": {
+          "configured": {
+            "type": "object",
+            "required": [
+              "sessionMaxMinutes",
+              "idleTimeoutMinutes",
+              "recentAuthMinutes",
+              "adminRecentAuthMinutes",
+              "mfaRequirement",
+              "rememberDeviceDays"
+            ],
+            "properties": {
+              "sessionMaxMinutes": {
+                "type": "integer",
+                "description": "Longest a direct session lasts from sign-in."
+              },
+              "idleTimeoutMinutes": {
+                "type": "integer",
+                "description": "Longest a direct session survives without user activity."
+              },
+              "recentAuthMinutes": {
+                "type": "integer",
+                "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+              },
+              "adminRecentAuthMinutes": {
+                "type": "integer",
+                "description": "How long a strong sign-in or confirmation allows administrative changes."
+              },
+              "mfaRequirement": {
+                "anyOf": [
+                  { "type": "string", "const": "everyone" },
+                  { "type": "string", "const": "administrators" },
+                  { "type": "string", "const": "none" }
+                ],
+                "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+              },
+              "rememberDeviceDays": {
+                "type": "integer",
+                "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+              }
+            },
+            "additionalProperties": false
+          },
+          "effective": {
+            "type": "object",
+            "required": [
+              "sessionMaxMinutes",
+              "idleTimeoutMinutes",
+              "recentAuthMinutes",
+              "adminRecentAuthMinutes",
+              "mfaRequirement",
+              "rememberDeviceDays"
+            ],
+            "properties": {
+              "sessionMaxMinutes": {
+                "type": "integer",
+                "description": "Longest a direct session lasts from sign-in."
+              },
+              "idleTimeoutMinutes": {
+                "type": "integer",
+                "description": "Longest a direct session survives without user activity."
+              },
+              "recentAuthMinutes": {
+                "type": "integer",
+                "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+              },
+              "adminRecentAuthMinutes": {
+                "type": "integer",
+                "description": "How long a strong sign-in or confirmation allows administrative changes."
+              },
+              "mfaRequirement": {
+                "anyOf": [
+                  { "type": "string", "const": "everyone" },
+                  { "type": "string", "const": "administrators" },
+                  { "type": "string", "const": "none" }
+                ],
+                "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+              },
+              "rememberDeviceDays": {
+                "type": "integer",
+                "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+              }
+            },
+            "additionalProperties": false
+          },
+          "defaults": {
+            "type": "object",
+            "required": [
+              "sessionMaxMinutes",
+              "idleTimeoutMinutes",
+              "recentAuthMinutes",
+              "adminRecentAuthMinutes",
+              "mfaRequirement",
+              "rememberDeviceDays"
+            ],
+            "properties": {
+              "sessionMaxMinutes": {
+                "type": "integer",
+                "description": "Longest a direct session lasts from sign-in."
+              },
+              "idleTimeoutMinutes": {
+                "type": "integer",
+                "description": "Longest a direct session survives without user activity."
+              },
+              "recentAuthMinutes": {
+                "type": "integer",
+                "description": "How long a sign-in or confirmation allows sensitive changes to one's own account."
+              },
+              "adminRecentAuthMinutes": {
+                "type": "integer",
+                "description": "How long a strong sign-in or confirmation allows administrative changes."
+              },
+              "mfaRequirement": {
+                "anyOf": [
+                  { "type": "string", "const": "everyone" },
+                  { "type": "string", "const": "administrators" },
+                  { "type": "string", "const": "none" }
+                ],
+                "description": "Who must use a second factor with an IA-MNS password; none is refused in production."
+              },
+              "rememberDeviceDays": {
+                "type": "integer",
+                "description": "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production)."
+              }
+            },
+            "additionalProperties": false
+          },
+          "limits": {
+            "type": "object",
+            "required": [
+              "sessionMaxMinutes",
+              "idleTimeoutMinutes",
+              "recentAuthMinutes",
+              "adminRecentAuthMinutes",
+              "rememberDeviceDays"
+            ],
+            "properties": {
+              "sessionMaxMinutes": {
+                "type": "object",
+                "required": ["min", "max", "recommendedMax"],
+                "properties": {
+                  "min": { "type": "integer" },
+                  "max": { "type": "integer" },
+                  "recommendedMax": { "type": "integer" }
+                },
+                "additionalProperties": false
+              },
+              "idleTimeoutMinutes": {
+                "type": "object",
+                "required": ["min", "max", "recommendedMax"],
+                "properties": {
+                  "min": { "type": "integer" },
+                  "max": { "type": "integer" },
+                  "recommendedMax": { "type": "integer" }
+                },
+                "additionalProperties": false
+              },
+              "recentAuthMinutes": {
+                "type": "object",
+                "required": ["min", "max", "recommendedMax"],
+                "properties": {
+                  "min": { "type": "integer" },
+                  "max": { "type": "integer" },
+                  "recommendedMax": { "type": "integer" }
+                },
+                "additionalProperties": false
+              },
+              "adminRecentAuthMinutes": {
+                "type": "object",
+                "required": ["min", "max", "recommendedMax"],
+                "properties": {
+                  "min": { "type": "integer" },
+                  "max": { "type": "integer" },
+                  "recommendedMax": { "type": "integer" }
+                },
+                "additionalProperties": false
+              },
+              "rememberDeviceDays": {
+                "type": "object",
+                "required": ["min", "max", "recommendedMax"],
+                "properties": {
+                  "min": { "type": "integer" },
+                  "max": { "type": "integer" },
+                  "recommendedMax": { "type": "integer" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "production": { "type": "boolean" },
+          "warnings": { "type": "array", "items": { "type": "string" } },
+          "updatedAt": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ]
+          },
+          "updatedBy": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["occurredAt", "actorName", "details"],
+              "properties": {
+                "occurredAt": { "type": "string", "format": "date-time" },
+                "actorName": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "details": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^.*$": {
+                      "anyOf": [
+                        { "type": "string" },
+                        { "type": "number" },
+                        { "type": "boolean" },
+                        { "type": "null" }
+                      ]
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "configured", "type": "object", "required": true },
+        {
+          "name": "configured.sessionMaxMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "configured.idleTimeoutMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "configured.recentAuthMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "configured.adminRecentAuthMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "configured.mfaRequirement",
+          "type": "\"everyone\" | \"administrators\" | \"none\"",
+          "required": true
+        },
+        {
+          "name": "configured.rememberDeviceDays",
+          "type": "integer",
+          "required": true
+        },
+        { "name": "effective", "type": "object", "required": true },
+        {
+          "name": "effective.sessionMaxMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "effective.idleTimeoutMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "effective.recentAuthMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "effective.adminRecentAuthMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "effective.mfaRequirement",
+          "type": "\"everyone\" | \"administrators\" | \"none\"",
+          "required": true
+        },
+        {
+          "name": "effective.rememberDeviceDays",
+          "type": "integer",
+          "required": true
+        },
+        { "name": "defaults", "type": "object", "required": true },
+        {
+          "name": "defaults.sessionMaxMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "defaults.idleTimeoutMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "defaults.recentAuthMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "defaults.adminRecentAuthMinutes",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "defaults.mfaRequirement",
+          "type": "\"everyone\" | \"administrators\" | \"none\"",
+          "required": true
+        },
+        {
+          "name": "defaults.rememberDeviceDays",
+          "type": "integer",
+          "required": true
+        },
+        { "name": "limits", "type": "object", "required": true },
+        {
+          "name": "limits.sessionMaxMinutes",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "limits.sessionMaxMinutes.min",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.sessionMaxMinutes.max",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.sessionMaxMinutes.recommendedMax",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.idleTimeoutMinutes",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "limits.idleTimeoutMinutes.min",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.idleTimeoutMinutes.max",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.idleTimeoutMinutes.recommendedMax",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.recentAuthMinutes",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "limits.recentAuthMinutes.min",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.recentAuthMinutes.max",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.recentAuthMinutes.recommendedMax",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.adminRecentAuthMinutes",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "limits.adminRecentAuthMinutes.min",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.adminRecentAuthMinutes.max",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.adminRecentAuthMinutes.recommendedMax",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.rememberDeviceDays",
+          "type": "object",
+          "required": true
+        },
+        {
+          "name": "limits.rememberDeviceDays.min",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.rememberDeviceDays.max",
+          "type": "integer",
+          "required": true
+        },
+        {
+          "name": "limits.rememberDeviceDays.recommendedMax",
+          "type": "integer",
+          "required": true
+        },
+        { "name": "production", "type": "boolean", "required": true },
+        { "name": "warnings", "type": "array of string", "required": true },
+        {
+          "name": "updatedAt",
+          "type": "string (date-time) | null",
+          "required": true
+        },
+        { "name": "updatedBy", "type": "string | null", "required": true },
+        { "name": "history", "type": "array of object", "required": true },
+        {
+          "name": "history[].occurredAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "history[].actorName",
+          "type": "string | null",
+          "required": true
+        },
+        { "name": "history[].details", "type": "object", "required": true }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

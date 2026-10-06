@@ -1,0 +1,147 @@
+{
+  "kind": "database",
+  "name": "identity_security_policies",
+  "description": "The single owner-administered authentication policy: session lifetime, inactivity timeout, recent-authentication windows, second-factor requirement and remembered browsers. Absent row means the built-in secure defaults.",
+  "owner": "identity",
+  "classification": "INTERNAL",
+  "lifecycle": "One row, updated in place by owners with strong recent authentication; every change is recorded in identity_audit_events with previous and new values.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "smallint",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Singleton key; always 1.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "session_max_minutes",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Longest a direct-URL session lasts from sign-in, whatever the activity.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "idle_timeout_minutes",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Longest a direct-URL session survives without user activity reported by the browser.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "recent_auth_minutes",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "How long a sign-in or confirmation allows sensitive changes to the person's own account without confirming again.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "admin_recent_auth_minutes",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "How long a strong sign-in or confirmation allows administrative changes without confirming again.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "mfa_requirement",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Who must use a second factor with IA-MNS passwords: everyone, administrators, or none (never applied in production).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "remember_device_days",
+      "PostgreSQL type": "smallint",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Days a browser that completed the second factor skips it at sign-in; 0 asks at every sign-in. Owners are remembered only while the second factor is optional, which production never allows.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner who last changed the policy.",
+      "Null meaning": "Never changed by a person.",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "Database-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_security_policies_admin_recent_check",
+      "Physical definition": "CHECK (((admin_recent_auth_minutes >= 5) AND (admin_recent_auth_minutes <= 240)))",
+      "Purpose": "Administrative confirmation window between 5 minutes and 4 hours."
+    },
+    {
+      "Object": "identity_security_policies_idle_check",
+      "Physical definition": "CHECK ((((idle_timeout_minutes >= 15) AND (idle_timeout_minutes <= 10080)) AND (idle_timeout_minutes <= session_max_minutes)))",
+      "Purpose": "Inactivity timeout between 15 minutes and 7 days, never longer than the session."
+    },
+    {
+      "Object": "identity_security_policies_mfa_check",
+      "Physical definition": "CHECK (((mfa_requirement)::text = ANY ((ARRAY['everyone'::character varying, 'administrators'::character varying, 'none'::character varying])::text[])))",
+      "Purpose": "Known second-factor requirements."
+    },
+    {
+      "Object": "identity_security_policies_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Singleton policy."
+    },
+    {
+      "Object": "identity_security_policies_recent_check",
+      "Physical definition": "CHECK ((((recent_auth_minutes >= 5) AND (recent_auth_minutes <= 1440)) AND (recent_auth_minutes <= session_max_minutes)))",
+      "Purpose": "Account confirmation window between 5 minutes and 24 hours, never longer than the session."
+    },
+    {
+      "Object": "identity_security_policies_remember_check",
+      "Physical definition": "CHECK (((remember_device_days >= 0) AND (remember_device_days <= 90)))",
+      "Purpose": "Remembered browsers last at most 90 days."
+    },
+    {
+      "Object": "identity_security_policies_session_check",
+      "Physical definition": "CHECK (((session_max_minutes >= 60) AND (session_max_minutes <= 43200)))",
+      "Purpose": "Session lifetime between one hour and 30 days."
+    },
+    {
+      "Object": "identity_security_policies_singleton_check",
+      "Physical definition": "CHECK ((id = 1))",
+      "Purpose": "Only one policy row exists."
+    },
+    {
+      "Object": "identity_security_policies_updated_by_fkey",
+      "Physical definition": "FOREIGN KEY (updated_by) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE RESTRICT",
+      "Purpose": "The last editor is an existing Person."
+    }
+  ]
+}

@@ -37,6 +37,9 @@
 | `IDENTITY_SESSION_NOT_FOUND` | 404 | not_found | no | The session was not found. |
 | `IDENTITY_WEAK_PASSWORD` | 400 | validation | no | Use at least 12 characters that do not contain the login. |
 | `IDENTITY_UNKNOWN_PERMISSION` | 400 | validation | no | The permission is not registered. |
+| `IDENTITY_POLICY_INVALID` | 400 | validation | no | The authentication policy is outside the allowed limits. |
+| `IDENTITY_POLICY_NOT_ALLOWED` | 409 | conflict | no | Production always requires a second factor for administrators. |
+| `IDENTITY_POLICY_CONFIRMATION_REQUIRED` | 409 | conflict | no | Confirm that this policy significantly reduces security. |
 | `IDENTITY_TOTP_REQUIRED` | 409 | conflict | no | Set up a second factor first. |
 | `IDENTITY_DIRECTORY_UNAVAILABLE` | 503 | availability | no | The Sankhya user directory is not configured. |
 | `IDENTITY_EXTERNAL_ACCOUNT_NOT_FOUND` | 404 | not_found | no | The external account was not found. |

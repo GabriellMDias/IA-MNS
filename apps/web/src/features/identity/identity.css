@@ -403,3 +403,86 @@
   gap: 10px;
   padding: 8px 10px;
 }
+
+/* ---------- administration tabs and authentication policy ---------- */
+.identity-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.identity-tabs a {
+  padding: 10px 14px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+.identity-tabs a.is-active {
+  border-bottom-color: var(--accent);
+  color: var(--ink);
+}
+.identity-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+}
+.identity-check input {
+  margin-top: 3px;
+}
+.identity-policy {
+  max-width: 720px;
+}
+.identity-policy-field {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+.identity-policy-field legend,
+.identity-policy-field > label {
+  font-weight: 600;
+}
+.identity-policy-field select {
+  max-width: 340px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--input);
+  color: var(--ink);
+  font: inherit;
+}
+.identity-policy-field .identity-hint {
+  margin: 0;
+}
+.identity-policy-banner {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+  font-size: 14px;
+}
+.identity-policy-warning {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--error-border);
+  border-radius: 4px;
+  background: var(--error-bg);
+  color: var(--error-ink);
+  font-size: 13px;
+}
+.identity-policy-summary {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--error-border);
+  border-radius: 10px;
+  background: var(--error-bg);
+  color: var(--error-ink);
+}
+.identity-policy-summary p {
+  margin: 0;
+}

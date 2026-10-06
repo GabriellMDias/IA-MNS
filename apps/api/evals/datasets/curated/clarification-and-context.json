@@ -1,0 +1,564 @@
+{
+  "version": 1,
+  "description": "Multi-turn clarification and retained context: pending requests answered by later messages, interjections and recorded faulty readings.",
+  "cases": [
+    {
+      "id": "pending/period-answered-with-current-month",
+      "title": "A period-only reply completes the pending product request",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "period", "known-bug"],
+      "today": "2026-10-05",
+      "notes": "Reported failure: after asking for the period, the answer was not associated with the pending sales request.",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "clarification",
+            "clarification": "period",
+            "state": {
+              "pending": {
+                "awaiting": ["period"],
+                "measure": "net_value",
+                "filters": { "product": "maçã" }
+              }
+            }
+          }
+        },
+        {
+          "user": "Este mês",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "period": { "kind": "current", "unit": "month" }
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-10-01",
+              "endDate": "2026-10-05",
+              "metric": "net_value",
+              "groupBy": "total",
+              "comparison": "none"
+            },
+            "state": {
+              "pending": null,
+              "active": { "filters": { "product": "maçã" } }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/period-answered-with-named-month",
+      "title": "A month name completes the pending request",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Setembro",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "period": { "kind": "month", "month": 9 }
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30",
+              "metric": "net_value"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/period-answered-with-last-days",
+      "title": "A relative day range completes a quantity request",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "period", "measure"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quantas unidades de banana eu vendi?",
+          "fixture": {
+            "interpretation": {
+              "measure": "quantity",
+              "filters": { "product": "banana" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Nos últimos 30 dias",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "period": {
+                "kind": "last",
+                "unit": "day",
+                "count": 30,
+                "includeCurrent": true
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "banana",
+              "startDate": "2026-09-06",
+              "endDate": "2026-10-05",
+              "metric": "quantity"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/answer-also-changes-measure",
+      "title": "The answer supplies the period and changes the measure",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "period", "measure"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "No mês passado, em peso",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "measure": "weight",
+              "period": { "kind": "previous", "unit": "month" }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30",
+              "metric": "weight"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/month-without-year-is-latest-past",
+      "title": "A month after the current one resolves to the previous year",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de uva?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "uva" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Dezembro",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "period": { "kind": "month", "month": 12 }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "uva",
+              "startDate": "2025-12-01",
+              "endDate": "2025-12-31"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/user-changes-subject",
+      "title": "A new request instead of the answer drops the pending product",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "constraints"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Na verdade, quero o total de todos os produtos de ontem",
+          "fixture": {
+            "interpretation": {
+              "relation": "new",
+              "measure": "net_value",
+              "filters": { "product": null },
+              "period": { "kind": "previous", "unit": "day" }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": null,
+              "startDate": "2026-10-04",
+              "endDate": "2026-10-04"
+            },
+            "state": { "pending": null }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/social-interjection-keeps-request",
+      "title": "A social message between question and answer keeps the request open",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "routing"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Ah, obrigado!",
+          "fixture": { "route": { "intent": "thanks", "capabilityId": null } },
+          "expect": {
+            "route": "thanks",
+            "kind": "conversation",
+            "state": { "pending": { "awaiting": ["period"] } }
+          }
+        },
+        {
+          "user": "Setembro",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "period": { "kind": "month", "month": 9 }
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/unsupported-request-keeps-request",
+      "title": "An unsupported request between question and answer keeps the request open",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "unsupported"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Dá para separar por vendedor?",
+          "fixture": {
+            "interpretation": {
+              "decision": "unsupported",
+              "relation": "answer_pending",
+              "unsupportedReason": "dimension"
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "unavailable",
+            "state": { "pending": { "awaiting": ["period"] } }
+          }
+        },
+        {
+          "user": "Tudo bem. Setembro, então",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "period": { "kind": "month", "month": 9 }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/answer-without-period-asks-again",
+      "title": "A reply that adds a measure but no period asks for the period again",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "measure"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Em quantidade",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "measure": "quantity"
+            }
+          },
+          "expect": {
+            "kind": "clarification",
+            "clarification": "period",
+            "state": {
+              "pending": {
+                "awaiting": ["period"],
+                "measure": "quantity",
+                "filters": { "product": "maçã" }
+              }
+            }
+          }
+        },
+        {
+          "user": "Agosto",
+          "fixture": {
+            "interpretation": {
+              "relation": "answer_pending",
+              "period": { "kind": "month", "month": 8 }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-08-01",
+              "endDate": "2026-08-31",
+              "metric": "quantity"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pending/restated-question-with-period",
+      "title": "Restating the question with only a period keeps the pending product",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "period"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Quanto vendi no mês passado?",
+          "fixture": {
+            "interpretation": {
+              "relation": "new",
+              "measure": "net_value",
+              "period": { "kind": "previous", "unit": "month" }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "known-bug/bare-period-read-as-new-request",
+      "title": "A bare period mislabeled as a new request still completes the pending request",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "multi-turn", "known-bug", "robustness"],
+      "today": "2026-10-05",
+      "notes": "Records the faulty interpreter reading behind the reported failure: relation=new with only the period. State normalization must still complete the pending request.",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Este mês",
+          "fixture": {
+            "interpretation": {
+              "relation": "new",
+              "period": { "kind": "current", "unit": "month" }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-10-01",
+              "endDate": "2026-10-05"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "known-bug/router-cannot-place-bare-period",
+      "title": "A bare period the router marks unavailable reaches the waiting capability",
+      "status": "active",
+      "source": "curated",
+      "tags": [
+        "clarification",
+        "multi-turn",
+        "known-bug",
+        "routing",
+        "robustness"
+      ],
+      "today": "2026-10-05",
+      "notes": "Records the faulty router reading behind the reported failure: without the clarification context, a bare period was not recognized as a sales follow-up.",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" }
+            }
+          },
+          "expect": { "kind": "clarification", "clarification": "period" }
+        },
+        {
+          "user": "Setembro",
+          "fixture": {
+            "route": { "intent": "unavailable", "capabilityId": null },
+            "interpretation": {
+              "relation": "answer_pending",
+              "period": { "kind": "month", "month": 9 }
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "context/refine-without-analysis",
+      "title": "A follow-up without an earlier analysis asks for context",
+      "status": "active",
+      "source": "curated",
+      "tags": ["clarification", "context"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "E no ano passado?",
+          "fixture": {
+            "interpretation": {
+              "relation": "refine",
+              "comparison": "previous_year"
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "clarification",
+            "clarification": "context"
+          }
+        }
+      ]
+    }
+  ]
+}

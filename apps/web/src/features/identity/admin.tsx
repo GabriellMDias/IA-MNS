@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminUnlink,
@@ -20,6 +20,7 @@ import {
   type SankhyaUsers,
 } from "./api.js";
 import { useIdentityStart } from "./session.js";
+import { SecurityPolicyPanel } from "./security-policy.js";
 import { identityMessage, isFailure } from "./messages.js";
 
 const providerName: Record<Provider, string> = {
@@ -264,6 +265,8 @@ function CreatePerson({
 }
 
 function Admin({ token }: { token: string }) {
+  const search = useSearch({ strict: false });
+  const security = search.secao === "seguranca";
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -292,73 +295,96 @@ function Admin({ token }: { token: string }) {
       <p>
         <Link to="/">← Voltar para as conversas</Link>
       </p>
-      <h1>Administração de pessoas</h1>
-      <div className="identity-admin">
-        <section aria-label="Pessoas">
-          <label htmlFor="identity-person-search">Buscar pessoa</label>
-          <input
-            id="identity-person-search"
-            value={query}
-            maxLength={120}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <ul className="identity-list identity-people">
-            {persons.data?.items.map((person) => (
-              <li key={person.id}>
-                <button
-                  className={selected === person.id ? "is-selected" : ""}
-                  onClick={() => setSelected(person.id)}
-                >
-                  <strong>{person.displayName}</strong>
-                  <span>
-                    {[
-                      person.login,
-                      ...person.providers.map((item) => providerName[item]),
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                    {person.owner ? " · administrador" : ""}
-                    {person.status === "disabled" ? " · desativada" : ""}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <CreatePerson
-            token={token}
-            capabilities={capabilities}
-            onCreated={(personId, created) => {
-              setSelected(personId);
-              setInvites(created);
-            }}
-          />
-          {invites.length > 0 && (
-            <div className="identity-card" role="status">
-              <p>
-                Envie cada convite de uso único (válido por 72 horas) à pessoa
-                por um canal seguro:
-              </p>
-              <ul className="identity-list">
-                {invites.map((invite) => (
-                  <li key={invite.url}>
+      <h1>Administração</h1>
+      <nav className="identity-tabs" aria-label="Seções da administração">
+        {/* Both tabs share the route, so the active one follows the search. */}
+        <Link
+          to="/admin"
+          search={{}}
+          activeOptions={{ exact: true, includeSearch: true }}
+          className={security ? undefined : "is-active"}
+        >
+          Pessoas
+        </Link>
+        <Link
+          to="/admin"
+          search={{ secao: "seguranca" }}
+          activeOptions={{ exact: true, includeSearch: true }}
+          className={security ? "is-active" : undefined}
+        >
+          Autenticação e segurança
+        </Link>
+      </nav>
+      {security ? (
+        <SecurityPolicyPanel token={token} />
+      ) : (
+        <div className="identity-admin">
+          <section aria-label="Pessoas">
+            <label htmlFor="identity-person-search">Buscar pessoa</label>
+            <input
+              id="identity-person-search"
+              value={query}
+              maxLength={120}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            <ul className="identity-list identity-people">
+              {persons.data?.items.map((person) => (
+                <li key={person.id}>
+                  <button
+                    className={selected === person.id ? "is-selected" : ""}
+                    onClick={() => setSelected(person.id)}
+                  >
+                    <strong>{person.displayName}</strong>
                     <span>
-                      {invite.label}: <code>{invite.url}</code>
+                      {[
+                        person.login,
+                        ...person.providers.map((item) => providerName[item]),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      {person.owner ? " · administrador" : ""}
+                      {person.status === "disabled" ? " · desativada" : ""}
                     </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <CreatePerson
+              token={token}
+              capabilities={capabilities}
+              onCreated={(personId, created) => {
+                setSelected(personId);
+                setInvites(created);
+              }}
+            />
+            {invites.length > 0 && (
+              <div className="identity-card" role="status">
+                <p>
+                  Envie cada convite de uso único (válido por 72 horas) à pessoa
+                  por um canal seguro:
+                </p>
+                <ul className="identity-list">
+                  {invites.map((invite) => (
+                    <li key={invite.url}>
+                      <span>
+                        {invite.label}: <code>{invite.url}</code>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+          {selected && (
+            <PersonDetail
+              token={token}
+              personId={selected}
+              onInvite={(invite) => setInvites([invite])}
+              onMerged={setSelected}
+            />
           )}
-        </section>
-        {selected && (
-          <PersonDetail
-            token={token}
-            personId={selected}
-            onInvite={(invite) => setInvites([invite])}
-            onMerged={setSelected}
-          />
-        )}
-      </div>
+        </div>
+      )}
     </main>
   );
 }

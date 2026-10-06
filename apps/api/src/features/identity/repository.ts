@@ -8,7 +8,11 @@ import type {
   SessionMethod,
   Surface,
 } from "./domain.js";
-import { lockoutMs } from "./domain.js";
+import {
+  lockoutMs,
+  type MfaRequirement,
+  type SecurityPolicy,
+} from "./domain.js";
 
 type Json = Prisma.InputJsonValue;
 const json = (value: unknown): Json =>
@@ -20,6 +24,7 @@ export type TicketPurpose =
   | "reset"
   | "link_invitation"
   | "mfa"
+  | "mfa_enrollment"
   | "provision"
   | "merge"
   | "totp_setup"
@@ -611,6 +616,7 @@ export class IdentityRepository {
         assurance: input.assurance,
         refreshHash: input.refreshHash,
         authTime: input.now,
+        createdAt: input.now,
         lastSeenAt: input.now,
         idleExpiresAt: input.idleExpiresAt,
         expiresAt: input.expiresAt,
@@ -655,39 +661,77 @@ export class IdentityRepository {
    * Rotates a refresh credential atomically. Presenting an already-rotated
    * credential revokes the session (theft/reuse signal).
    */
-  async rotateRefresh(
-    refreshHash: string,
-    nextHash: string,
-    now: Date,
-    idleMs: number,
-  ): Promise<
-    { result: "rotated"; sessionId: string } | { result: "reused" | "invalid" }
+  /**
+   * Rotates a refresh credential. Only user activity reported by the browser
+   * extends the inactivity deadline. Presenting the credential that was just
+   * replaced, within `graceMs`, is a concurrent refresh of the same browser
+   * (another tab or a duplicated request): it gets the session without a new
+   * rotation. Any later presentation of a replaced credential is reuse and
+   * revokes the session.
+   */
+  async rotateRefresh(input: {
+    refreshHash: string;
+    nextHash: string;
+    now: Date;
+    idleMs: number;
+    active: boolean;
+    graceMs: number;
+  }): Promise<
+    | { result: "rotated" | "raced"; sessionId: string; expiresAt: Date }
+    | { result: "reused" | "invalid" }
   > {
-    const rows = await this.database.$queryRaw<{ id: string }[]>`
+    const { now } = input;
+    const rows = await this.database.$queryRaw<
+      { id: string; expires_at: Date }[]
+    >`
       UPDATE identity_sessions SET
         previous_refresh_hash = refresh_hash,
-        refresh_hash = ${nextHash},
-        last_seen_at = ${now},
-        idle_expires_at = LEAST(expires_at, ${new Date(now.getTime() + idleMs)}::timestamptz)
+        refresh_hash = ${input.nextHash},
+        refresh_rotated_at = ${now},
+        last_seen_at = CASE WHEN ${input.active} THEN ${now}::timestamptz ELSE last_seen_at END,
+        idle_expires_at = CASE WHEN ${input.active}
+          THEN LEAST(expires_at, ${new Date(now.getTime() + input.idleMs)}::timestamptz)
+          ELSE idle_expires_at END
       FROM identity_persons p
-      WHERE identity_sessions.refresh_hash = ${refreshHash}
+      WHERE identity_sessions.refresh_hash = ${input.refreshHash}
         AND identity_sessions.revoked_at IS NULL
         AND identity_sessions.expires_at > ${now}
         AND identity_sessions.idle_expires_at > ${now}
         AND p.id = identity_sessions.person_id AND p.status = 'active'
-      RETURNING identity_sessions.id`;
-    if (rows[0]) return { result: "rotated", sessionId: rows[0].id };
-    const reused = await this.database.identitySession.updateMany({
-      where: { previousRefreshHash: refreshHash, revokedAt: null },
+      RETURNING identity_sessions.id, identity_sessions.expires_at`;
+    if (rows[0])
+      return {
+        result: "rotated",
+        sessionId: rows[0].id,
+        expiresAt: rows[0].expires_at,
+      };
+    const previous = await this.database.identitySession.findFirst({
+      where: { previousRefreshHash: input.refreshHash, revokedAt: null },
+      include: { person: { select: { status: true } } },
+    });
+    if (!previous) return { result: "invalid" };
+    if (
+      previous.refreshRotatedAt &&
+      previous.refreshRotatedAt.getTime() > now.getTime() - input.graceMs &&
+      previous.expiresAt > now &&
+      previous.idleExpiresAt > now &&
+      previous.person.status === "active"
+    )
+      return {
+        result: "raced",
+        sessionId: previous.id,
+        expiresAt: previous.expiresAt,
+      };
+    await this.database.identitySession.updateMany({
+      where: { id: previous.id, revokedAt: null },
       data: {
         revokedAt: now,
         revokedReason: "refresh_reuse",
         refreshHash: null,
       },
     });
-    return { result: reused.count ? "reused" : "invalid" };
+    return { result: "reused" };
   }
-
   async stepUp(sessionId: string, assurance: Assurance, now: Date) {
     await this.database.identitySession.update({
       where: { id: sessionId },
@@ -944,6 +988,122 @@ export class IdentityRepository {
       });
   }
 
+  // ---------- Authentication policy ----------
+  async policy(): Promise<
+    (SecurityPolicy & { updatedBy: string | null; updatedAt: Date }) | null
+  > {
+    const row = await this.database.identitySecurityPolicy.findUnique({
+      where: { id: 1 },
+    });
+    return row
+      ? {
+          sessionMaxMinutes: row.sessionMaxMinutes,
+          idleTimeoutMinutes: row.idleTimeoutMinutes,
+          recentAuthMinutes: row.recentAuthMinutes,
+          adminRecentAuthMinutes: row.adminRecentAuthMinutes,
+          mfaRequirement: row.mfaRequirement as MfaRequirement,
+          rememberDeviceDays: row.rememberDeviceDays,
+          updatedBy: row.updatedBy,
+          updatedAt: row.updatedAt,
+        }
+      : null;
+  }
+
+  /**
+   * Stores the policy and re-derives the deadlines of open direct sessions
+   * from their sign-in and last activity, so a change applies to them at once.
+   * Returns how many open sessions the new deadlines ended.
+   */
+  async savePolicy(
+    policy: SecurityPolicy,
+    actor: string,
+    now: Date,
+  ): Promise<{ ended: number }> {
+    return this.database.$transaction(async (tx) => {
+      const data = {
+        sessionMaxMinutes: policy.sessionMaxMinutes,
+        idleTimeoutMinutes: policy.idleTimeoutMinutes,
+        recentAuthMinutes: policy.recentAuthMinutes,
+        adminRecentAuthMinutes: policy.adminRecentAuthMinutes,
+        mfaRequirement: policy.mfaRequirement,
+        rememberDeviceDays: policy.rememberDeviceDays,
+        updatedBy: actor,
+        updatedAt: now,
+      };
+      await tx.identitySecurityPolicy.upsert({
+        where: { id: 1 },
+        create: { id: 1, ...data },
+        update: data,
+      });
+      const before = await tx.identitySession.count({
+        where: {
+          surface: "direct",
+          revokedAt: null,
+          expiresAt: { gt: now },
+          idleExpiresAt: { gt: now },
+        },
+      });
+      await tx.$executeRaw`
+        UPDATE identity_sessions SET
+          expires_at = GREATEST(created_at + make_interval(mins => ${policy.sessionMaxMinutes}), auth_time),
+          idle_expires_at = LEAST(
+            GREATEST(created_at + make_interval(mins => ${policy.sessionMaxMinutes}), auth_time),
+            last_seen_at + make_interval(mins => ${policy.idleTimeoutMinutes}))
+        WHERE surface = 'direct' AND revoked_at IS NULL
+          AND expires_at > ${now} AND idle_expires_at > ${now}`;
+      const after = await tx.identitySession.count({
+        where: {
+          surface: "direct",
+          revokedAt: null,
+          expiresAt: { gt: now },
+          idleExpiresAt: { gt: now },
+        },
+      });
+      return { ended: before - after };
+    });
+  }
+
+  // ---------- Remembered browsers ----------
+  async rememberDevice(personId: string, tokenHash: string, now: Date) {
+    await this.database.identityTrustedDevice.create({
+      data: {
+        id: randomUUID(),
+        personId,
+        tokenHash,
+        createdAt: now,
+        lastUsedAt: now,
+      },
+    });
+  }
+
+  /** A remembered browser of this Person created after `since`, if any. */
+  async useRememberedDevice(
+    personId: string,
+    tokenHash: string,
+    since: Date,
+    now: Date,
+  ): Promise<boolean> {
+    const used = await this.database.identityTrustedDevice.updateMany({
+      where: { personId, tokenHash, revokedAt: null, createdAt: { gt: since } },
+      data: { lastUsedAt: now },
+    });
+    return used.count > 0;
+  }
+
+  async rememberedDevices(personId: string, since: Date): Promise<number> {
+    return this.database.identityTrustedDevice.count({
+      where: { personId, revokedAt: null, createdAt: { gt: since } },
+    });
+  }
+
+  async forgetDevices(personId: string, now: Date): Promise<number> {
+    const forgotten = await this.database.identityTrustedDevice.updateMany({
+      where: { personId, revokedAt: null },
+      data: { revokedAt: now },
+    });
+    return forgotten.count;
+  }
+
   // ---------- Tickets ----------
   async createTicket(input: {
     purpose: TicketPurpose;
@@ -998,13 +1158,19 @@ export class IdentityRepository {
   async peekTicket(purpose: TicketPurpose, tokenHash: string, now: Date) {
     const row = await this.database.identityTicket.findFirst({
       where: { tokenHash, purpose, consumedAt: null, expiresAt: { gt: now } },
-      select: { personId: true, payload: true, createdBy: true },
+      select: {
+        personId: true,
+        payload: true,
+        createdBy: true,
+        expiresAt: true,
+      },
     });
     return row
       ? {
           personId: row.personId,
           payload: row.payload as Record<string, unknown>,
           createdBy: row.createdBy,
+          expiresAt: row.expiresAt,
         }
       : null;
   }
@@ -1067,6 +1233,33 @@ export class IdentityRepository {
     });
   }
 
+  /** Recent events of one action, with the acting Person's name. */
+  async auditByAction(action: string, limit: number) {
+    const rows = await this.database.identityAuditEvent.findMany({
+      where: { action },
+      orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+      take: limit,
+    });
+    const actors = await this.database.identityPerson.findMany({
+      where: {
+        id: {
+          in: rows
+            .map((row) => row.actorPersonId)
+            .filter((id): id is string => id !== null),
+        },
+      },
+      select: { id: true, displayName: true },
+    });
+    const names = new Map(actors.map((item) => [item.id, item.displayName]));
+    return rows.map((row) => ({
+      occurredAt: row.occurredAt,
+      actorName: row.actorPersonId
+        ? (names.get(row.actorPersonId) ?? null)
+        : null,
+      details: row.details as Record<string, string | number | boolean | null>,
+    }));
+  }
+
   async auditFor(personId: string, limit = 50) {
     return this.database.identityAuditEvent.findMany({
       where: {
@@ -1088,6 +1281,19 @@ export class IdentityRepository {
       }),
       this.database.identityUsedAssertion.deleteMany({
         where: { expiresAt: { lt: now } },
+      }),
+      // Remembered browsers never outlive the 90-day policy maximum.
+      this.database.identityTrustedDevice.deleteMany({
+        where: {
+          OR: [
+            { revokedAt: { lt: cutoff } },
+            {
+              createdAt: {
+                lt: new Date(now.getTime() - 90 * 24 * 3600_000),
+              },
+            },
+          ],
+        },
       }),
     ]);
   }

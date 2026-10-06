@@ -5,24 +5,25 @@ import { createApp } from "../src/app.js";
 import { parseServerConfig } from "../src/config.js";
 import { SalesChat } from "../src/features/sales/application.js";
 import { Conversations } from "../src/features/sales/conversations.js";
+import { emptySalesState } from "../src/features/sales/conversation-state.js";
 import { createSalesModule } from "../src/features/sales/module.js";
 import { SalesFailure } from "../src/features/sales/errors.js";
-import type { SalesPlanner, SalesPlan } from "../src/features/sales/planner.js";
+import type { SalesInterpreter } from "../src/features/sales/interpreter.js";
 import type { SalesReader } from "../src/features/sales/oracle.js";
 import type { AccessTokenVerifier } from "../src/authentication.js";
+import { interpretation } from "../evals/fixtures.js";
 
-const plan: SalesPlan = {
-  action: "query",
-  productSearch: "maçã",
-  startDate: "2026-07-01",
-  endDate: "2026-09-30",
-  metric: "net_value",
+// Today is 2026-10-01 in Sao Paulo: the last three completed months are July
+// to September. No product filter, so any message grounds this reading.
+const lastThreeMonths = interpretation({
+  measure: "net_value",
+  period: { kind: "last", unit: "month", count: 3, includeCurrent: false },
   groupBy: "month",
-  comparison: "none",
-  clarification: null,
-};
+});
 function fixture() {
-  const planner: SalesPlanner = { plan: vi.fn(() => Promise.resolve(plan)) };
+  const interpreter: SalesInterpreter = {
+    interpret: vi.fn(() => Promise.resolve(lastThreeMonths)),
+  };
   const reader: SalesReader = {
     read: vi.fn(() =>
       Promise.resolve({
@@ -39,18 +40,18 @@ function fixture() {
     close: vi.fn(() => Promise.resolve()),
   };
   const chat = new SalesChat(
-    planner,
+    interpreter,
     reader,
     new Conversations(),
     () => new Date("2026-10-01T15:00:00Z"),
   );
-  return { planner, reader, chat };
+  return { interpreter, reader, chat };
 }
 const signal = () => new AbortController().signal;
 const actor = (id: string) => ({ id, canReadSales: true });
 describe("trusted conversation context", () => {
   it("enforces the capability before provider work at the application boundary", async () => {
-    const { chat, planner, reader } = fixture();
+    const { chat, interpreter, reader } = fixture();
     const denied = { id: "alice", canReadSales: false };
     try {
       await expect(
@@ -59,21 +60,34 @@ describe("trusted conversation context", () => {
       expect(() => chat.forget(denied, "missing")).toThrow(
         "SALES_ACCESS_DENIED",
       );
-      expect(planner.plan).not.toHaveBeenCalled();
+      expect(interpreter.interpret).not.toHaveBeenCalled();
       expect(reader.read).not.toHaveBeenCalled();
     } finally {
       await chat.close();
     }
   });
-  it("uses the last successful query, isolates actors and rejects concurrent turns", async () => {
-    const { chat, planner } = fixture();
+  it("uses the last executed plan, isolates actors and rejects concurrent turns", async () => {
+    const { chat, interpreter, reader } = fixture();
     try {
+      vi.mocked(interpreter.interpret).mockResolvedValueOnce(
+        interpretation({
+          measure: "net_value",
+          filters: { product: "maçã" },
+          period: { kind: "last", unit: "month", count: 3 },
+          groupBy: "month",
+        }),
+      );
       const first = await chat.ask(
         actor("alice"),
         "Quanto vendi de maçã?",
         undefined,
         signal(),
       );
+      expect(first.result?.query).toMatchObject({
+        productSearch: "maçã",
+        startDate: "2026-07-01",
+        endDate: "2026-09-30",
+      });
       await expect(
         chat.ask(
           actor("bob"),
@@ -82,18 +96,26 @@ describe("trusted conversation context", () => {
           signal(),
         ),
       ).rejects.toThrow("SALES_CONVERSATION_EXPIRED");
-      await chat.ask(
+      vi.mocked(interpreter.interpret).mockResolvedValueOnce(
+        interpretation({ relation: "refine", comparison: "previous_year" }),
+      );
+      const compared = await chat.ask(
         actor("alice"),
         "E comparado ao ano passado?",
         first.conversationId,
         signal(),
       );
-      expect(vi.mocked(planner.plan).mock.calls[1][0].previousQuery).toEqual(
-        first.result!.query,
-      );
-      expect(vi.mocked(planner.plan).mock.calls[1][0].questions).toEqual([
+      const input = vi.mocked(interpreter.interpret).mock.calls[1][0];
+      expect(input.state.active?.query).toEqual(first.result!.query);
+      expect(input.state.transcript.map((item) => item.user)).toEqual([
         "Quanto vendi de maçã?",
       ]);
+      // The refinement retains the product, period and grouping it does not change.
+      expect(vi.mocked(reader.read).mock.calls[1][0]).toEqual({
+        ...first.result!.query,
+        comparison: "previous_year",
+      });
+      expect(compared.kind).toBe("answer");
       const locked = chat.conversations.acquire("alice", first.conversationId);
       await expect(
         chat.ask(
@@ -108,16 +130,12 @@ describe("trusted conversation context", () => {
       await chat.close();
     }
   });
-  it("clarifies without querying and preserves context after provider failure", async () => {
-    const { chat, planner, reader } = fixture();
+  it("asks for a missing period without querying and preserves state after provider failure", async () => {
+    const { chat, interpreter, reader } = fixture();
     try {
-      vi.mocked(planner.plan).mockResolvedValueOnce({
-        ...plan,
-        action: "clarify",
-        startDate: null,
-        endDate: null,
-        clarification: "period",
-      });
+      vi.mocked(interpreter.interpret).mockResolvedValueOnce(
+        interpretation({ measure: "net_value" }),
+      );
       const reply = await chat.ask(
         actor("alice"),
         "Quanto vendi?",
@@ -127,6 +145,12 @@ describe("trusted conversation context", () => {
       expect(reply.kind).toBe("clarification");
       expect(reply.message).toBe("Qual período você quer consultar?");
       expect(reader.read).not.toHaveBeenCalled();
+      vi.mocked(interpreter.interpret).mockResolvedValueOnce(
+        interpretation({
+          relation: "answer_pending",
+          period: { kind: "month", month: 7 },
+        }),
+      );
       vi.mocked(reader.read).mockRejectedValueOnce(
         new SalesFailure("SALES_PROVIDER_UNAVAILABLE"),
       );
@@ -140,17 +164,26 @@ describe("trusted conversation context", () => {
         signal(),
       );
       expect(recovered.kind).toBe("answer");
-      expect(vi.mocked(planner.plan).mock.calls[2][0].questions).toEqual([
-        "Quanto vendi?",
+      const retained = vi.mocked(interpreter.interpret).mock.calls[2][0].state;
+      expect(retained.transcript).toEqual([
+        {
+          user: "Quanto vendi?",
+          reply: "clarification",
+          text: "Qual período você quer consultar?",
+        },
       ]);
-      expect(vi.mocked(planner.plan).mock.calls[2][0].clarifications).toEqual([
-        "Qual período você quer consultar?",
-      ]);
-      expect(recovered.message).toContain("250,75");
-      vi.mocked(planner.plan).mockResolvedValueOnce({
-        ...plan,
-        action: "unsupported",
+      expect(retained.pending).toMatchObject({
+        awaiting: ["period"],
+        clarification: "period",
+        draft: { measure: "net_value", period: null },
       });
+      expect(recovered.message).toContain("250,75");
+      vi.mocked(interpreter.interpret).mockResolvedValueOnce(
+        interpretation({
+          decision: "unsupported",
+          unsupportedReason: "operation",
+        }),
+      );
       expect(
         (
           await chat.ask(
@@ -166,23 +199,87 @@ describe("trusted conversation context", () => {
       await chat.close();
     }
   });
+  it("completes the pending request when the next message only supplies the period", async () => {
+    const { chat, interpreter, reader } = fixture();
+    try {
+      vi.mocked(interpreter.interpret)
+        .mockResolvedValueOnce(
+          interpretation({
+            measure: "net_value",
+            filters: { product: "maçã" },
+          }),
+        )
+        // The model misreads the bare period as a new request; the state
+        // still recognizes it as the awaited answer.
+        .mockResolvedValueOnce(
+          interpretation({ period: { kind: "current", unit: "month" } }),
+        );
+      const question = await chat.ask(
+        actor("alice"),
+        "Quanto vendi de maçã?",
+        undefined,
+        signal(),
+      );
+      expect(question.message).toBe("Qual período você quer consultar?");
+      const answer = await chat.ask(
+        actor("alice"),
+        "Este mês",
+        question.conversationId,
+        signal(),
+      );
+      expect(answer.kind).toBe("answer");
+      expect(vi.mocked(reader.read).mock.calls[0][0]).toEqual({
+        productSearch: "maçã",
+        startDate: "2026-10-01",
+        endDate: "2026-10-01",
+        metric: "net_value",
+        groupBy: "total",
+        comparison: "none",
+      });
+    } finally {
+      await chat.close();
+    }
+  });
+  it("asks for the product instead of querying a filter the user never wrote", async () => {
+    const { chat, interpreter, reader } = fixture();
+    try {
+      vi.mocked(interpreter.interpret).mockResolvedValueOnce(
+        interpretation({
+          filters: { product: "pera" },
+          period: { kind: "previous", unit: "month" },
+        }),
+      );
+      const reply = await chat.ask(
+        actor("alice"),
+        "Quanto vendi no mês passado?",
+        undefined,
+        signal(),
+      );
+      expect(reply.message).toBe(
+        "Qual produto ou descrição você quer consultar?",
+      );
+      expect(reader.read).not.toHaveBeenCalled();
+    } finally {
+      await chat.close();
+    }
+  });
   it("expires idle context, caps turns and deletes owned conversations", () => {
     let now = 0;
     const store = new Conversations(() => now);
     try {
       const item = store.acquire("alice");
-      store.release(item, "Question");
+      store.release(item, emptySalesState);
       now = 1800000;
       expect(() => store.acquire("alice", item.id)).toThrow(
         "SALES_CONVERSATION_EXPIRED",
       );
       const current = store.acquire("alice");
-      store.release(current, "Question");
+      store.release(current, emptySalesState);
       expect(() => store.remove("bob", current.id)).toThrow(
         "SALES_CONVERSATION_EXPIRED",
       );
       for (let i = 0; i < 11; i++)
-        store.release(store.acquire("alice", current.id), "Question");
+        store.release(store.acquire("alice", current.id), emptySalesState);
       expect(() => store.acquire("alice", current.id)).toThrow(
         "SALES_CONVERSATION_EXPIRED",
       );
@@ -192,29 +289,41 @@ describe("trusted conversation context", () => {
       store.close();
     }
   });
-  it("does not claim that trusted context is absent when a query already succeeded", async () => {
-    const { chat, planner, reader } = fixture();
+  it("asks for context only when no analysis exists to refine", async () => {
+    const { chat, interpreter, reader } = fixture();
     try {
-      const first = await chat.ask(
+      vi.mocked(interpreter.interpret).mockResolvedValueOnce(
+        interpretation({ relation: "refine", comparison: "previous_year" }),
+      );
+      const empty = await chat.ask(
         actor("alice"),
-        "Vendas de maçã em julho",
+        "E naquele período?",
         undefined,
         signal(),
       );
-      vi.mocked(planner.plan).mockResolvedValueOnce({
-        ...plan,
-        action: "clarify",
-        clarification: "context",
-      });
-      const reply = await chat.ask(
+      expect(empty.message).toContain("não há uma consulta anterior");
+      expect(reader.read).not.toHaveBeenCalled();
+      const first = await chat.ask(
         actor("alice"),
-        "E naquele período?",
+        "Vendas dos últimos três meses",
+        empty.conversationId,
+        signal(),
+      );
+      vi.mocked(interpreter.interpret).mockResolvedValueOnce(
+        interpretation({ relation: "refine", groupBy: "product" }),
+      );
+      const refined = await chat.ask(
+        actor("alice"),
+        "Quais produtos?",
         first.conversationId,
         signal(),
       );
-      expect(reply.kind).toBe("clarification");
-      expect(reply.message).not.toContain("não há uma consulta anterior");
-      expect(reader.read).toHaveBeenCalledOnce();
+      expect(refined.kind).toBe("answer");
+      expect(refined.message).not.toContain("não há uma consulta anterior");
+      expect(vi.mocked(reader.read).mock.calls[1][0]).toMatchObject({
+        startDate: "2026-07-01",
+        groupBy: "product",
+      });
     } finally {
       await chat.close();
     }
@@ -390,7 +499,7 @@ describe("sales HTTP authorization and errors", () => {
     }
   });
   it("accepts only deliberate loopback access and rejects invalid bodies before provider calls", async () => {
-    const { app, planner } = await api(true);
+    const { app, interpreter } = await api(true);
     try {
       const request = {
         method: "POST" as const,
@@ -426,7 +535,7 @@ describe("sales HTTP authorization and errors", () => {
           })
         ).statusCode,
       ).toBe(400);
-      expect(planner.plan).not.toHaveBeenCalled();
+      expect(interpreter.interpret).not.toHaveBeenCalled();
       expect((await app.inject(request)).statusCode).toBe(200);
       for (let i = 0; i < 14; i++) await app.inject(request);
       const limited = await app.inject(request);

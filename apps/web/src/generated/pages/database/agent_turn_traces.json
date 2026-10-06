@@ -1,0 +1,77 @@
+{
+  "kind": "database",
+  "name": "agent_turn_traces",
+  "description": "Optional content-level AI trace of one turn, written only when IA_MNS_AI_TRACE=content: model/prompt identifiers, timings and token counts, routing and interpretation decisions, structured conversation state before and after, and the executed query filters. Never result rows, response prose, credentials or provider payloads. Used to reproduce failures and derive evaluation candidates.",
+  "owner": "agent",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Written in the same transaction as the turn outcome and deleted by cascade with its turn or conversation. The runtime role can only append and read. Content capture is refused in production until the shared-deployment retention and access policy (PH-09) approves it. No automatic expiry is implemented.",
+  "columns": [
+    {
+      "Column": "turn_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Traced turn; one trace per turn, deleted with it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "conversation_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owning conversation of the traced turn, for conversation-scoped export and cascade deletion.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "captured_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock instant the trace was stored with the turn outcome.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "trace",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Version 1 trace object: allowlisted metadata plus confidential interpretation content, bounded to 256 KB with content omitted rather than truncated beyond it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "agent_turn_traces_conversation_id_fkey",
+      "Physical definition": "FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Conversation deletion removes its traces."
+    },
+    {
+      "Object": "agent_turn_traces_pkey",
+      "Physical definition": "PRIMARY KEY (turn_id)",
+      "Purpose": "One trace per turn."
+    },
+    {
+      "Object": "agent_turn_traces_trace_check",
+      "Physical definition": "CHECK ((jsonb_typeof(trace) = 'object'::text))",
+      "Purpose": "Trace must be a JSON object."
+    },
+    {
+      "Object": "agent_turn_traces_turn_id_fkey",
+      "Physical definition": "FOREIGN KEY (turn_id) REFERENCES agent_turns(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Trace lifecycle follows its turn; cascade on deletion."
+    },
+    {
+      "Object": "agent_turn_traces_conversation_idx",
+      "Physical definition": "CREATE INDEX agent_turn_traces_conversation_idx ON public.agent_turn_traces USING btree (conversation_id)",
+      "Purpose": "Conversation-scoped trace export."
+    }
+  ]
+}

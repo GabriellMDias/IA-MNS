@@ -66,6 +66,12 @@ export default {
       { path: "^apps/api/src/features/" },
     ),
     error(
+      "no-runtime-to-verification",
+      "API runtime code must not depend on its tests or evaluation tooling; they depend on the runtime.",
+      { path: "^apps/api/src/" },
+      { path: "^apps/api/(test|evals)/" },
+    ),
+    error(
       "no-domain-to-infrastructure",
       "Domain code must stay independent of HTTP, persistence, and infrastructure adapters.",
       { path: "^(apps|packages)/.+/domain(/|\\.[cm]?[jt]sx?$)" },

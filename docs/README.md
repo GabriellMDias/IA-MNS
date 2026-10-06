@@ -16,6 +16,8 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | Task | Authoritative policy |
 | --- | --- |
 | Understand IA-MNS as a corporate agent and extend its capability registry | [Corporate agent](domains/corporate-agent.md), [sales capability](domains/sales-chat.md) |
+| Change how messages are interpreted, conversation state, the analytical plan, model calls or AI tracing | [AI interpretation](architecture/ai-interpretation.md), [ADR-0024](adr/0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md) |
+| Evaluate AI behavior, add regression cases, compare prompts or models, generate or simulate scenarios | [AI evaluation](architecture/ai-evaluation.md) |
 | Sign-in, Persons, external links (PDT Connect, Sankhya), embedded surfaces, permissions and administration | [Identity](domains/identity.md), [ADR-0022](adr/0022-own-the-ia-mns-identity-with-verified-external-links.md), [ADR-0023](adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) |
 | Execute or track implementation work | The implementation plan linked from the README's [Current state](../README.md#current-state) |
 | Start a new project from Orion, check its provenance, or upgrade its Orion baseline | [Start and upgrade a project from Orion](project-derivation.md) |

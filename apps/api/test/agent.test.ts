@@ -17,7 +17,10 @@ import type { AgentCapability } from "../src/features/agent/capabilities.js";
 import { SalesChat } from "../src/features/sales/application.js";
 import { createSalesCapability } from "../src/features/sales/capability.js";
 import { SalesFailure } from "../src/features/sales/errors.js";
-import type { SalesPlanner } from "../src/features/sales/planner.js";
+import type { SalesInterpreter } from "../src/features/sales/interpreter.js";
+import { createOpenAiModel } from "../src/ai/openai.js";
+import { interpretation } from "../evals/fixtures.js";
+import { captureCandidate } from "../evals/capture.js";
 const actor = { id: "alice", permissions: new Set(["sales:read"]) };
 it("persists owned conversation organization, literal search, favorite pagination and archive context", async () => {
   await withMigratedDatabase(async (runtimeUrl) => {
@@ -329,18 +332,16 @@ it("restores validated sales filters independently of social turns, emits real s
         Promise.resolve({ intent: "capability", capabilityId: "sales" }),
       ),
     };
-    const planner: SalesPlanner = {
-      plan: vi.fn<SalesPlanner["plan"]>(() =>
-        Promise.resolve({
-          action: "query",
-          productSearch: "maçã",
-          startDate: "2026-07-01",
-          endDate: "2026-09-30",
-          metric: "net_value",
-          groupBy: "month",
-          comparison: "none",
-          clarification: null,
-        }),
+    const planner: SalesInterpreter = {
+      interpret: vi.fn<SalesInterpreter["interpret"]>(() =>
+        Promise.resolve(
+          interpretation({
+            measure: "net_value",
+            filters: { product: "maçã" },
+            period: { kind: "last", unit: "month", count: 3 },
+            groupBy: "month",
+          }),
+        ),
       ),
     };
     const reader = {
@@ -437,10 +438,11 @@ it("restores validated sales filters independently of social turns, emits real s
         () => "INTERNAL_ERROR",
       );
       await completed(repository, actor.id, conversation.id);
-      expect(vi.mocked(planner.plan).mock.calls[2][0].previousQuery).toEqual(
+      const restored = vi.mocked(planner.interpret).mock.calls[2][0].state;
+      expect(restored.active?.query).toEqual(
         first.turns[0].reply?.result?.query,
       );
-      expect(vi.mocked(planner.plan).mock.calls[2][0].questions).toEqual([
+      expect(restored.transcript.map((item) => item.user)).toEqual([
         "Vendas de maçã",
       ]);
       vi.mocked(router.route).mockResolvedValueOnce({
@@ -720,13 +722,20 @@ it.each([
     try {
       await expect(
         createAgentPlanner(
-          parseServerConfig({
-            ORION_ENV: "test",
-            OPENAI_API_KEY: "synthetic-key",
-          }),
+          createOpenAiModel(
+            parseServerConfig({
+              ORION_ENV: "test",
+              OPENAI_API_KEY: "synthetic-key",
+            }),
+          ),
           [],
         ).route(
-          { message: "Hello", history: [], lastCapabilityId: null },
+          {
+            message: "Hello",
+            transcript: [],
+            lastCapabilityId: null,
+            pending: null,
+          },
           new AbortController().signal,
         ),
       ).rejects.toThrow("AGENT_PROVIDER_UNAVAILABLE");
@@ -736,3 +745,179 @@ it.each([
     }
   },
 );
+it("stores content traces with their turns, logs only metadata and deletes traces with the conversation", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const database = createDatabase(runtimeUrl);
+    const repository = new AgentRepository(database);
+    const router: AgentPlanner = {
+      route: vi.fn<AgentPlanner["route"]>(() =>
+        Promise.resolve({ intent: "capability", capabilityId: "sales" }),
+      ),
+    };
+    const interpreter: SalesInterpreter = {
+      interpret: vi
+        .fn<SalesInterpreter["interpret"]>()
+        .mockResolvedValueOnce(
+          interpretation({ filters: { product: "maçã-sigilosa" } }),
+        )
+        .mockResolvedValueOnce(
+          interpretation({ period: { kind: "previous", unit: "month" } }),
+        ),
+    };
+    const reader = {
+      read: vi.fn(() =>
+        Promise.resolve({
+          current: {
+            rows: [
+              { period: "total", product: null, unit: "BRL", value: "987.65" },
+            ],
+            products: [],
+            missingWeight: false,
+          },
+          previous: null,
+        }),
+      ),
+      close: async () => {},
+    };
+    const config = parseServerConfig({
+      ORION_ENV: "test",
+      IA_MNS_LOCAL_ACCESS: "true",
+      IA_MNS_AI_TRACE: "content",
+    });
+    const agent = new CorporateAgent(
+      repository,
+      router,
+      [
+        createSalesCapability(
+          config,
+          new SalesChat(
+            interpreter,
+            reader,
+            undefined,
+            () => new Date("2026-10-05T15:00:00Z"),
+          ),
+        ),
+      ],
+      { traceLevel: "content" },
+    );
+    let logs = "";
+    const logger = pino(
+      {},
+      new Writable({
+        write(chunk: Buffer, _encoding, done) {
+          logs += chunk.toString();
+          done();
+        },
+      }),
+    );
+    const module = createAgentModule(() => [], agent).activate({ config });
+    const { app } = createApp(logger, undefined, { modules: [module] });
+    const headers = { "x-ia-mns-client": "web" };
+    try {
+      const id = (
+        await app.inject({
+          method: "POST",
+          url: "/agent/conversations",
+          headers,
+          payload: {},
+        })
+      ).json<{ id: string }>().id;
+      for (const message of ["Quanto vendi de maçã-sigilosa?", "Mês passado"]) {
+        await app.inject({
+          method: "POST",
+          url: `/agent/conversations/${id}/turns`,
+          headers,
+          payload: { message, requestId: randomUUID() },
+        });
+        await completed(repository, "local-developer", id);
+      }
+      const detail = await repository.detail("local-developer", id);
+      expect(detail.turns.map((turn) => turn.reply?.kind)).toEqual([
+        "clarification",
+        "answer",
+      ]);
+      // The bare period completed the pending request without losing its product.
+      expect(reader.read).toHaveBeenCalledWith(
+        expect.objectContaining({
+          productSearch: "maçã-sigilosa",
+          startDate: "2026-09-01",
+        }),
+        expect.anything(),
+      );
+      const traces = await database.agentTurnTrace.findMany({
+        where: { conversationId: id },
+        orderBy: { capturedAt: "asc" },
+      });
+      expect(traces.map((item) => item.turnId)).toEqual(
+        detail.turns.map((turn) => turn.id),
+      );
+      const second = traces[1].trace as {
+        notes: { sales: Record<string, unknown> };
+        content: { sales: Record<string, unknown> };
+      };
+      expect(second.notes.sales).toMatchObject({
+        relation: "new",
+        appliedRelation: "answer_pending",
+        issues: ["new_completes_pending"],
+      });
+      expect(second.content.sales.stateBefore).toMatchObject({
+        pending: { awaiting: ["period"] },
+      });
+      expect(JSON.stringify(traces)).not.toContain("987");
+      // A traced failure becomes an unreviewed candidate reproducing it.
+      const candidate = await captureCandidate(database, detail.turns[1].id);
+      expect(candidate).toMatchObject({
+        status: "candidate",
+        source: "trace",
+        today: "2026-10-05",
+        provenance: { reviewed: false, turnId: detail.turns[1].id },
+        turns: [
+          {
+            user: "Quanto vendi de maçã-sigilosa?",
+            expect: {
+              route: "sales",
+              kind: "clarification",
+              clarification: "period",
+            },
+          },
+          {
+            user: "Mês passado",
+            expect: {
+              kind: "answer",
+              query: {
+                productSearch: "maçã-sigilosa",
+                startDate: "2026-09-01",
+              },
+            },
+          },
+        ],
+      });
+      expect(candidate.context?.sales).toMatchObject({
+        pending: null,
+        transcript: [],
+      });
+      expect(logs).toContain("ai_turn_traced");
+      expect(logs).toContain("new_completes_pending");
+      expect(logs).not.toContain("sigilosa");
+      expect(logs).not.toContain("987");
+      await expect(
+        database.$executeRaw`UPDATE agent_turn_traces SET trace = '{}'::jsonb`,
+      ).rejects.toThrow();
+      expect(
+        (
+          await app.inject({
+            method: "DELETE",
+            url: `/agent/conversations/${id}`,
+            headers,
+          })
+        ).statusCode,
+      ).toBe(200);
+      expect(
+        await database.agentTurnTrace.count({ where: { conversationId: id } }),
+      ).toBe(0);
+    } finally {
+      await app.close();
+      await database.$disconnect();
+    }
+  });
+}, 120000);

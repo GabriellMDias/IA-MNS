@@ -34,6 +34,10 @@ const text = (value: unknown) =>
   typeof value === "string" ? value.slice(0, 80) : undefined;
 const loginSearch = (search: Record<string, unknown>): { erro?: string } =>
   text(search.erro) ? { erro: text(search.erro) } : {};
+const adminSearch = (
+  search: Record<string, unknown>,
+): { secao?: "seguranca" } =>
+  search.secao === "seguranca" ? { secao: "seguranca" } : {};
 const accountSearch = (
   search: Record<string, unknown>,
 ): {
@@ -138,6 +142,7 @@ const identityRoutes = [
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/admin",
+    validateSearch: adminSearch,
     component: () => (
       <RequireSignIn>
         <LazyAdminPage />

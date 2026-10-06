@@ -98,8 +98,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Complete a local sign-in with a TOTP code or a single-use recovery code. */
+        /** @description Complete a local sign-in with a TOTP code or a single-use recovery code. When the policy offers it, `rememberDevice` lets this browser skip the code at later sign-ins (HttpOnly cookie). */
         post: operations["completeMfa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/login/mfa-enrollment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description When the policy requires a second factor the account lacks, start its setup after the password. Returns the secret once. */
+        post: operations["startSignInMfaEnrollment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/login/mfa-enrollment/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Confirm the second factor set up during sign-in: enables it, returns single-use recovery codes once and opens a strong session. */
+        post: operations["confirmSignInMfaEnrollment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -115,7 +149,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Rotate the direct-URL refresh cookie and return a new access token. Reuse of a rotated credential revokes the session. */
+        /** @description Rotate the direct-URL refresh cookie and return a new access token. `active` reports user activity since the last renewal; only activity postpones the inactivity deadline. A concurrent renewal by another tab within a short grace window gets a token without rotation; later reuse of a rotated credential revokes the session. */
         post: operations["refreshSession"];
         delete?: never;
         options?: never;
@@ -448,6 +482,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/identity/me/remembered-devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Stop skipping the second factor on every browser remembered for the signed-in Person. */
+        delete: operations["forgetRememberedDevices"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/identity/me/sessions/{sessionId}": {
         parameters: {
             query?: never;
@@ -580,6 +631,24 @@ export interface paths {
         put?: never;
         /** @description Owner: consolidate another Person of the same individual into this one. Links, the local credential (when this Person has none), grants and conversations move; the other Person stops signing in. Not for owners or overlapping providers. Audited. */
         post: operations["mergeIdentityPersons"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/security-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Owner: the authentication policy as configured and as enforced (production never lets administrators skip the second factor), its defaults, limits, the settings that reduce security and recent changes. */
+        get: operations["getSecurityPolicy"];
+        /** @description Owner: change the authentication policy (strong, recent authentication). Values outside the limits are refused; settings that significantly reduce security require `acknowledgeReducedSecurity`. Open direct sessions follow the new durations immediately. Audited with previous and new values. */
+        put: operations["updateSecurityPolicy"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -989,6 +1058,13 @@ export interface operations {
                         /** @constant */
                         kind: "mfa_required";
                         challenge: string;
+                        /** @description Days this browser may skip the code after it is confirmed; 0 means the option is not offered. */
+                        rememberDeviceDays: number;
+                    } | {
+                        /** @constant */
+                        kind: "mfa_enrollment_required";
+                        /** @description Single-use enrollment challenge: the policy requires a second factor this account has not set up. */
+                        challenge: string;
                     } | {
                         /** @constant */
                         kind: "provision_required";
@@ -1164,6 +1240,7 @@ export interface operations {
                 "application/json": {
                     challenge: string;
                     code: string;
+                    rememberDevice?: boolean;
                 };
             };
         };
@@ -1184,6 +1261,13 @@ export interface operations {
                     } | {
                         /** @constant */
                         kind: "mfa_required";
+                        challenge: string;
+                        /** @description Days this browser may skip the code after it is confirmed; 0 means the option is not offered. */
+                        rememberDeviceDays: number;
+                    } | {
+                        /** @constant */
+                        kind: "mfa_enrollment_required";
+                        /** @description Single-use enrollment challenge: the policy requires a second factor this account has not set up. */
                         challenge: string;
                     } | {
                         /** @constant */
@@ -1348,6 +1432,344 @@ export interface operations {
             };
         };
     };
+    startSignInMfaEnrollment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    challenge: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        setup: string;
+                        secret: string;
+                        otpauthUri: string;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    confirmSignInMfaEnrollment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    challenge: string;
+                    setup: string;
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recoveryCodes: string[];
+                        accessToken: string;
+                        expiresIn: number;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     refreshSession: {
         parameters: {
             query?: never;
@@ -1357,7 +1779,10 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>;
+                "application/json": {
+                    /** @default true */
+                    active?: boolean;
+                };
             };
         };
         responses: {
@@ -1951,6 +2376,13 @@ export interface operations {
                         /** @constant */
                         kind: "mfa_required";
                         challenge: string;
+                        /** @description Days this browser may skip the code after it is confirmed; 0 means the option is not offered. */
+                        rememberDeviceDays: number;
+                    } | {
+                        /** @constant */
+                        kind: "mfa_enrollment_required";
+                        /** @description Single-use enrollment challenge: the policy requires a second factor this account has not set up. */
+                        challenge: string;
                     } | {
                         /** @constant */
                         kind: "provision_required";
@@ -2315,6 +2747,13 @@ export interface operations {
                         /** @constant */
                         kind: "mfa_required";
                         challenge: string;
+                        /** @description Days this browser may skip the code after it is confirmed; 0 means the option is not offered. */
+                        rememberDeviceDays: number;
+                    } | {
+                        /** @constant */
+                        kind: "mfa_enrollment_required";
+                        /** @description Single-use enrollment challenge: the policy requires a second factor this account has not set up. */
+                        challenge: string;
                     } | {
                         /** @constant */
                         kind: "provision_required";
@@ -2510,6 +2949,13 @@ export interface operations {
                         /** @constant */
                         kind: "mfa_required";
                         challenge: string;
+                        /** @description Days this browser may skip the code after it is confirmed; 0 means the option is not offered. */
+                        rememberDeviceDays: number;
+                    } | {
+                        /** @constant */
+                        kind: "mfa_enrollment_required";
+                        /** @description Single-use enrollment challenge: the policy requires a second factor this account has not set up. */
+                        challenge: string;
                     } | {
                         /** @constant */
                         kind: "provision_required";
@@ -2704,6 +3150,13 @@ export interface operations {
                     } | {
                         /** @constant */
                         kind: "mfa_required";
+                        challenge: string;
+                        /** @description Days this browser may skip the code after it is confirmed; 0 means the option is not offered. */
+                        rememberDeviceDays: number;
+                    } | {
+                        /** @constant */
+                        kind: "mfa_enrollment_required";
+                        /** @description Single-use enrollment challenge: the policy requires a second factor this account has not set up. */
                         challenge: string;
                     } | {
                         /** @constant */
@@ -3071,6 +3524,13 @@ export interface operations {
                         /** @constant */
                         kind: "mfa_required";
                         challenge: string;
+                        /** @description Days this browser may skip the code after it is confirmed; 0 means the option is not offered. */
+                        rememberDeviceDays: number;
+                    } | {
+                        /** @constant */
+                        kind: "mfa_enrollment_required";
+                        /** @description Single-use enrollment challenge: the policy requires a second factor this account has not set up. */
+                        challenge: string;
                     } | {
                         /** @constant */
                         kind: "provision_required";
@@ -3268,6 +3728,13 @@ export interface operations {
                     } | {
                         /** @constant */
                         kind: "mfa_required";
+                        challenge: string;
+                        /** @description Days this browser may skip the code after it is confirmed; 0 means the option is not offered. */
+                        rememberDeviceDays: number;
+                    } | {
+                        /** @constant */
+                        kind: "mfa_enrollment_required";
+                        /** @description Single-use enrollment challenge: the policy requires a second factor this account has not set up. */
                         challenge: string;
                     } | {
                         /** @constant */
@@ -3487,6 +3954,8 @@ export interface operations {
                                 current: boolean;
                             }[];
                         };
+                        /** @description Browsers currently remembered to skip the second factor. */
+                        rememberedDevices: number;
                         session: {
                             /** Format: uuid */
                             id: string;
@@ -4823,6 +5292,166 @@ export interface operations {
                     "application/json": {
                         /** @constant */
                         ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    forgetRememberedDevices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        forgotten: number;
                     };
                 };
             };
@@ -6575,6 +7204,425 @@ export interface operations {
                     "application/json": {
                         /** @constant */
                         ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getSecurityPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        configured: {
+                            /** @description Longest a direct session lasts from sign-in. */
+                            sessionMaxMinutes: number;
+                            /** @description Longest a direct session survives without user activity. */
+                            idleTimeoutMinutes: number;
+                            /** @description How long a sign-in or confirmation allows sensitive changes to one's own account. */
+                            recentAuthMinutes: number;
+                            /** @description How long a strong sign-in or confirmation allows administrative changes. */
+                            adminRecentAuthMinutes: number;
+                            /** @description Who must use a second factor with an IA-MNS password; none is refused in production. */
+                            mfaRequirement: "everyone" | "administrators" | "none";
+                            /** @description Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production). */
+                            rememberDeviceDays: number;
+                        };
+                        effective: {
+                            /** @description Longest a direct session lasts from sign-in. */
+                            sessionMaxMinutes: number;
+                            /** @description Longest a direct session survives without user activity. */
+                            idleTimeoutMinutes: number;
+                            /** @description How long a sign-in or confirmation allows sensitive changes to one's own account. */
+                            recentAuthMinutes: number;
+                            /** @description How long a strong sign-in or confirmation allows administrative changes. */
+                            adminRecentAuthMinutes: number;
+                            /** @description Who must use a second factor with an IA-MNS password; none is refused in production. */
+                            mfaRequirement: "everyone" | "administrators" | "none";
+                            /** @description Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production). */
+                            rememberDeviceDays: number;
+                        };
+                        defaults: {
+                            /** @description Longest a direct session lasts from sign-in. */
+                            sessionMaxMinutes: number;
+                            /** @description Longest a direct session survives without user activity. */
+                            idleTimeoutMinutes: number;
+                            /** @description How long a sign-in or confirmation allows sensitive changes to one's own account. */
+                            recentAuthMinutes: number;
+                            /** @description How long a strong sign-in or confirmation allows administrative changes. */
+                            adminRecentAuthMinutes: number;
+                            /** @description Who must use a second factor with an IA-MNS password; none is refused in production. */
+                            mfaRequirement: "everyone" | "administrators" | "none";
+                            /** @description Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production). */
+                            rememberDeviceDays: number;
+                        };
+                        limits: {
+                            sessionMaxMinutes: {
+                                min: number;
+                                max: number;
+                                recommendedMax: number;
+                            };
+                            idleTimeoutMinutes: {
+                                min: number;
+                                max: number;
+                                recommendedMax: number;
+                            };
+                            recentAuthMinutes: {
+                                min: number;
+                                max: number;
+                                recommendedMax: number;
+                            };
+                            adminRecentAuthMinutes: {
+                                min: number;
+                                max: number;
+                                recommendedMax: number;
+                            };
+                            rememberDeviceDays: {
+                                min: number;
+                                max: number;
+                                recommendedMax: number;
+                            };
+                        };
+                        production: boolean;
+                        warnings: string[];
+                        updatedAt: string | null;
+                        updatedBy: string | null;
+                        history: {
+                            /** Format: date-time */
+                            occurredAt: string;
+                            actorName: string | null;
+                            details: {
+                                [key: string]: string | number | boolean | null;
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    updateSecurityPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Longest a direct session lasts from sign-in. */
+                    sessionMaxMinutes: number;
+                    /** @description Longest a direct session survives without user activity. */
+                    idleTimeoutMinutes: number;
+                    /** @description How long a sign-in or confirmation allows sensitive changes to one's own account. */
+                    recentAuthMinutes: number;
+                    /** @description How long a strong sign-in or confirmation allows administrative changes. */
+                    adminRecentAuthMinutes: number;
+                    /** @description Who must use a second factor with an IA-MNS password; none is refused in production. */
+                    mfaRequirement: "everyone" | "administrators" | "none";
+                    /** @description Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production). */
+                    rememberDeviceDays: number;
+                    acknowledgeReducedSecurity?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        endedSessions: number;
+                        currentSessionEnded: boolean;
                     };
                 };
             };

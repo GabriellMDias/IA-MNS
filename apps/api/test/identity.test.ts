@@ -496,6 +496,18 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
       expect(rotated.statusCode).toBe(200);
       const nextCookie = String(rotated.headers["set-cookie"]).split(";")[0];
       expect(nextCookie).not.toBe(cookie);
+      // Another tab renewing with the same credential moments later is not an
+      // attack: it gets a token and keeps the cookie the first tab received.
+      const raced = await post(
+        app,
+        "/identity/session/refresh",
+        {},
+        { cookie, ...web },
+      );
+      expect(raced.statusCode).toBe(200);
+      expect(raced.headers["set-cookie"]).toBeUndefined();
+      // After the grace window the replaced credential is reuse: the session ends.
+      clock.now += 31_000;
       expect(
         (await post(app, "/identity/session/refresh", {}, { cookie, ...web }))
           .statusCode,
@@ -1544,6 +1556,488 @@ it("binds direct-URL provider callbacks to the browser and redirects without exp
           )
         ).json(),
       ).toEqual({ kind: "linked", provider: "sankhya" });
+    } finally {
+      await app.close();
+      await database.$disconnect();
+    }
+  });
+}, 180_000);
+
+it("lets owners administer the authentication policy and applies it to sessions, inactivity and the second factor", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const { app, database, clock, pdt, service } = await setup(runtimeUrl);
+    try {
+      const passphrase = "uma frase de acesso segura";
+      const step = () => Math.floor(clock.now / 30_000);
+      const cookieOf = (response: { headers: Record<string, unknown> }) =>
+        cookies(response)
+          .find((item) => item.startsWith("ia-mns-session="))!
+          .split(";")[0];
+
+      // ---- an owner with a second factor ----
+      const boot = await post(app, "/identity/bootstrap", {
+        token: await service.createBootstrapTicket(false),
+        displayName: "Dona",
+        login: "dona",
+        password: passphrase,
+      });
+      const ownerCookie = cookieOf(boot);
+      const setupTotp = (
+        await post(
+          app,
+          "/identity/me/totp",
+          {},
+          bearer(boot.json<{ accessToken: string }>().accessToken),
+        )
+      ).json<{ setup: string; secret: string }>();
+      const ownerSecret = base32Decode(setupTotp.secret);
+      const owner = (
+        await post(
+          app,
+          "/identity/me/totp/confirm",
+          { setup: setupTotp.setup, code: totpCode(ownerSecret, step()) },
+          bearer(boot.json<{ accessToken: string }>().accessToken),
+        )
+      ).json<{ accessToken: string }>().accessToken;
+      const readPolicy = (token: string) =>
+        app.inject({
+          method: "GET",
+          url: "/identity/admin/security-policy",
+          headers: bearer(token),
+        });
+      const writePolicy = (token: string, payload: object) =>
+        app.inject({
+          method: "PUT",
+          url: "/identity/admin/security-policy",
+          headers: bearer(token),
+          payload,
+        });
+
+      // ---- secure defaults, readable only by owners ----
+      const initial = (await readPolicy(owner)).json<{
+        configured: Record<string, unknown>;
+        effective: Record<string, unknown>;
+        production: boolean;
+        warnings: string[];
+        updatedAt: string | null;
+      }>();
+      const defaults = {
+        sessionMaxMinutes: 720,
+        idleTimeoutMinutes: 120,
+        recentAuthMinutes: 10,
+        adminRecentAuthMinutes: 30,
+        mfaRequirement: "administrators",
+        rememberDeviceDays: 0,
+      };
+      expect(initial).toMatchObject({
+        configured: defaults,
+        effective: defaults,
+        production: false,
+        warnings: [],
+        updatedAt: null,
+      });
+      const visitor = (await embeddedPdt(app, pdt, randomUUID())).json<{
+        accessToken: string;
+      }>().accessToken;
+      expect((await readPolicy(visitor)).json<ErrorBody>().error.code).toBe(
+        "IDENTITY_ACCESS_DENIED",
+      );
+      expect(
+        (await writePolicy(visitor, defaults)).json<ErrorBody>().error.code,
+      ).toBe("IDENTITY_ACCESS_DENIED");
+
+      // ---- hard limits, and explicit acknowledgement of reduced security ----
+      for (const invalid of [
+        { ...defaults, sessionMaxMinutes: 10 },
+        { ...defaults, idleTimeoutMinutes: 800 },
+        { ...defaults, recentAuthMinutes: 2 },
+        { ...defaults, adminRecentAuthMinutes: 600 },
+        { ...defaults, rememberDeviceDays: 365 },
+      ])
+        expect(
+          (await writePolicy(owner, invalid)).json<ErrorBody>().error.code,
+        ).toBe("IDENTITY_POLICY_INVALID");
+      const permissive = {
+        sessionMaxMinutes: 30 * 24 * 60,
+        idleTimeoutMinutes: 7 * 24 * 60,
+        recentAuthMinutes: 24 * 60,
+        adminRecentAuthMinutes: 240,
+        mfaRequirement: "administrators",
+        rememberDeviceDays: 30,
+      };
+      expect(
+        (await writePolicy(owner, permissive)).json<ErrorBody>().error.code,
+      ).toBe("IDENTITY_POLICY_CONFIRMATION_REQUIRED");
+      expect(
+        (
+          await writePolicy(owner, {
+            ...permissive,
+            acknowledgeReducedSecurity: true,
+          })
+        ).json(),
+      ).toEqual({ endedSessions: 0, currentSessionEnded: false });
+      const changed = (await readPolicy(owner)).json<{
+        configured: Record<string, unknown>;
+        warnings: string[];
+        updatedBy: string;
+        history: { actorName: string; details: Record<string, unknown> }[];
+      }>();
+      expect(changed.configured).toEqual(permissive);
+      expect(changed.warnings.sort()).toEqual([
+        "adminRecentAuthMinutes",
+        "idleTimeoutMinutes",
+        "recentAuthMinutes",
+        "sessionMaxMinutes",
+      ]);
+      expect(changed.updatedBy).toBe("Dona");
+      expect(changed.history[0]).toMatchObject({
+        actorName: "Dona",
+        details: {
+          sessionMaxMinutesFrom: 720,
+          sessionMaxMinutesTo: 43200,
+          rememberDeviceDaysFrom: 0,
+          rememberDeviceDaysTo: 30,
+          reducedSecurity: true,
+        },
+      });
+
+      // ---- open sessions follow the new duration at once ----
+      const ownerSession = await database.identitySession.findFirstOrThrow({
+        where: { method: "bootstrap" },
+      });
+      expect(
+        ownerSession.expiresAt.getTime() - ownerSession.createdAt.getTime(),
+      ).toBe(30 * 24 * 3600_000);
+
+      // ---- a person required to use a second factor sets it up at sign-in ----
+      const enrollment = (
+        await post(
+          app,
+          "/identity/admin/persons",
+          { displayName: "Bia", localInvitation: true },
+          bearer(owner),
+        )
+      ).json<{ enrollmentToken: string }>().enrollmentToken;
+      await post(app, "/identity/invitations/complete", {
+        purpose: "enrollment",
+        token: enrollment,
+        login: "bia",
+        password: passphrase,
+      });
+      expect(
+        (
+          await writePolicy(owner, {
+            ...permissive,
+            mfaRequirement: "everyone",
+            acknowledgeReducedSecurity: true,
+          })
+        ).statusCode,
+      ).toBe(200);
+      const required = (
+        await post(app, "/identity/login/local", {
+          login: "bia",
+          password: passphrase,
+        })
+      ).json<{ kind: string; challenge: string }>();
+      expect(required.kind).toBe("mfa_enrollment_required");
+      const biaSetup = (
+        await post(app, "/identity/login/mfa-enrollment", {
+          challenge: required.challenge,
+        })
+      ).json<{ setup: string; secret: string }>();
+      const biaSecret = base32Decode(biaSetup.secret);
+      const enrolled = await post(
+        app,
+        "/identity/login/mfa-enrollment/confirm",
+        {
+          challenge: required.challenge,
+          setup: biaSetup.setup,
+          code: totpCode(biaSecret, step()),
+        },
+      );
+      expect(enrolled.statusCode).toBe(200);
+      expect(
+        enrolled.json<{ recoveryCodes: string[] }>().recoveryCodes,
+      ).toHaveLength(10);
+      const bia = enrolled.json<{ accessToken: string }>().accessToken;
+      // A password set from an invitation also waits for the authenticator.
+      const invitedLater = (
+        await post(
+          app,
+          "/identity/admin/persons",
+          { displayName: "Caio", localInvitation: true },
+          bearer(owner),
+        )
+      ).json<{ enrollmentToken: string }>().enrollmentToken;
+      expect(
+        (
+          await post(app, "/identity/invitations/complete", {
+            purpose: "enrollment",
+            token: invitedLater,
+            login: "caio",
+            password: passphrase,
+          })
+        ).json<{ kind: string }>().kind,
+      ).toBe("mfa_enrollment_required");
+      // While the policy requires it, the factor cannot be removed.
+      expect(
+        (
+          await app.inject({
+            method: "DELETE",
+            url: "/identity/me/totp",
+            headers: bearer(bia),
+          })
+        ).json<ErrorBody>().error.code,
+      ).toBe("IDENTITY_TOTP_REQUIRED");
+
+      // ---- remembered browsers skip the code, never for owners ----
+      clock.now += 31_000;
+      const challenged = (
+        await post(app, "/identity/login/local", {
+          login: "bia",
+          password: passphrase,
+        })
+      ).json<{ kind: string; challenge: string; rememberDeviceDays: number }>();
+      expect(challenged).toMatchObject({
+        kind: "mfa_required",
+        rememberDeviceDays: 30,
+      });
+      const remembered = await post(
+        app,
+        "/identity/login/mfa",
+        {
+          challenge: challenged.challenge,
+          code: totpCode(biaSecret, step()),
+          rememberDevice: true,
+        },
+        { ...web, origin: ORIGIN },
+      );
+      const device = cookies(remembered).find((item) =>
+        item.startsWith("ia-mns-device="),
+      )!;
+      expect(device).toMatch(/HttpOnly; SameSite=Strict; Max-Age=2592000$/);
+      const again = await post(
+        app,
+        "/identity/login/local",
+        { login: "bia", password: passphrase },
+        { cookie: device.split(";")[0], ...web, origin: ORIGIN },
+      );
+      expect(again.json<{ kind: string }>().kind).toBe("authenticated");
+      expect(
+        (
+          await app.inject({
+            method: "GET",
+            url: "/identity/me",
+            headers: bearer(again.json<{ accessToken: string }>().accessToken),
+          })
+        ).json<{ rememberedDevices: number }>().rememberedDevices,
+      ).toBe(1);
+      expect(
+        (
+          await post(app, "/identity/login/local", {
+            login: "dona",
+            password: passphrase,
+          })
+        ).json(),
+      ).toMatchObject({ kind: "mfa_required", rememberDeviceDays: 0 });
+      // Forgetting browsers brings the code back.
+      expect(
+        (
+          await app.inject({
+            method: "DELETE",
+            url: "/identity/me/remembered-devices",
+            headers: bearer(bia),
+          })
+        ).json(),
+      ).toEqual({ forgotten: 1 });
+      expect(
+        (
+          await post(
+            app,
+            "/identity/login/local",
+            { login: "bia", password: passphrase },
+            { cookie: device.split(";")[0], ...web, origin: ORIGIN },
+          )
+        ).json<{ kind: string }>().kind,
+      ).toBe("mfa_required");
+
+      // ---- outside production, an optional second factor lets owners be remembered too ----
+      expect(
+        (
+          await writePolicy(owner, {
+            ...permissive,
+            mfaRequirement: "none",
+            acknowledgeReducedSecurity: true,
+          })
+        ).statusCode,
+      ).toBe(200);
+      clock.now += 31_000;
+      const ownerChallenge = (
+        await post(app, "/identity/login/local", {
+          login: "dona",
+          password: passphrase,
+        })
+      ).json<{ kind: string; challenge: string; rememberDeviceDays: number }>();
+      expect(ownerChallenge).toMatchObject({
+        kind: "mfa_required",
+        rememberDeviceDays: 30,
+      });
+      const ownerRemembered = await post(
+        app,
+        "/identity/login/mfa",
+        {
+          challenge: ownerChallenge.challenge,
+          code: totpCode(ownerSecret, step()),
+          rememberDevice: true,
+        },
+        { ...web, origin: ORIGIN },
+      );
+      const ownerDevice = cookies(ownerRemembered)
+        .find((item) => item.startsWith("ia-mns-device="))!
+        .split(";")[0];
+      // Signing out and in again on this browser asks only for the password.
+      const ownerWithoutCode = await post(
+        app,
+        "/identity/login/local",
+        { login: "dona", password: passphrase },
+        { cookie: ownerDevice, ...web, origin: ORIGIN },
+      );
+      expect(ownerWithoutCode.json<{ kind: string }>().kind).toBe(
+        "authenticated",
+      );
+      expect(
+        (
+          await readPolicy(
+            ownerWithoutCode.json<{ accessToken: string }>().accessToken,
+          )
+        ).statusCode,
+      ).toBe(200);
+      // Requiring the factor for administrators again ends that shortcut.
+      expect(
+        (
+          await writePolicy(owner, {
+            ...permissive,
+            mfaRequirement: "administrators",
+          })
+        ).statusCode,
+      ).toBe(200);
+      expect(
+        (
+          await post(
+            app,
+            "/identity/login/local",
+            { login: "dona", password: passphrase },
+            { cookie: ownerDevice, ...web, origin: ORIGIN },
+          )
+        ).json(),
+      ).toMatchObject({ kind: "mfa_required", rememberDeviceDays: 0 });
+
+      // ---- inactivity: only reported activity postpones the deadline ----
+      expect(
+        (
+          await writePolicy(owner, {
+            ...defaults,
+            sessionMaxMinutes: 24 * 60,
+            idleTimeoutMinutes: 15,
+          })
+        ).statusCode,
+      ).toBe(200);
+      clock.now += 31_000;
+      const biaLogin = (
+        await post(app, "/identity/login/local", {
+          login: "bia",
+          password: passphrase,
+        })
+      ).json<{ challenge: string }>();
+      const active = await post(app, "/identity/login/mfa", {
+        challenge: biaLogin.challenge,
+        code: totpCode(biaSecret, step()),
+      });
+      let biaCookie = cookieOf(active);
+      const renew = async (activity: boolean) => {
+        const response = await post(
+          app,
+          "/identity/session/refresh",
+          { active: activity },
+          { cookie: biaCookie, ...web },
+        );
+        if (response.statusCode === 200) biaCookie = cookieOf(response);
+        return response.statusCode;
+      };
+      clock.now += 10 * 60_000;
+      expect(await renew(true)).toBe(200);
+      clock.now += 10 * 60_000;
+      expect(await renew(false)).toBe(200);
+      clock.now += 6 * 60_000;
+      // 16 minutes without activity: the session ended.
+      expect(await renew(true)).toBe(401);
+
+      // ---- shortening the duration ends sessions that are already too old ----
+      const ownerLogin = async () => {
+        clock.now += 31_000;
+        const first = (
+          await post(app, "/identity/login/local", {
+            login: "dona",
+            password: passphrase,
+          })
+        ).json<{ challenge: string }>();
+        const done = await post(app, "/identity/login/mfa", {
+          challenge: first.challenge,
+          code: totpCode(ownerSecret, step()),
+        });
+        return {
+          token: done.json<{ accessToken: string }>().accessToken,
+          cookie: cookieOf(done),
+        };
+      };
+      const relaxed = await ownerLogin();
+      expect(
+        (
+          await writePolicy(relaxed.token, {
+            ...defaults,
+            sessionMaxMinutes: 24 * 60,
+            idleTimeoutMinutes: 8 * 60,
+          })
+        ).statusCode,
+      ).toBe(200);
+      clock.now += 2 * 3600_000;
+      const current = await ownerLogin();
+      const shortened = (
+        await writePolicy(current.token, {
+          ...defaults,
+          sessionMaxMinutes: 60,
+          idleTimeoutMinutes: 15,
+        })
+      ).json<{ endedSessions: number; currentSessionEnded: boolean }>();
+      expect(shortened.endedSessions).toBeGreaterThanOrEqual(1);
+      expect(shortened.currentSessionEnded).toBe(false);
+      // The two-hour-old session is over; the new one continues.
+      expect(
+        (
+          await post(
+            app,
+            "/identity/session/refresh",
+            {},
+            { cookie: relaxed.cookie, ...web },
+          )
+        ).statusCode,
+      ).toBe(401);
+      expect(
+        (
+          await post(
+            app,
+            "/identity/session/refresh",
+            {},
+            { cookie: current.cookie, ...web },
+          )
+        ).statusCode,
+      ).toBe(200);
+      expect(ownerCookie).not.toBe(current.cookie);
+      expect(
+        await database.identityAuditEvent.count({
+          where: { action: "policy.updated" },
+        }),
+      ).toBe(7);
     } finally {
       await app.close();
       await database.$disconnect();

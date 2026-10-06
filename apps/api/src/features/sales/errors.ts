@@ -49,7 +49,8 @@ export const salesErrors = defineErrors({
 export class SalesFailure extends Error {
   readonly code: keyof typeof salesErrors;
   readonly boundary?: Readonly<
-    | { provider: "openai"; stage: "interpretation" }
+    // The model provider name is a fixed adapter identifier, never input.
+    | { provider: string; stage: "interpretation" }
     | { provider: "oracle"; stage: "connection" | "query" | "cleanup" }
   >;
   constructor(

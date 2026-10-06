@@ -34,6 +34,9 @@ export const identityCodes = new Set([
   "IDENTITY_EXTERNAL_ACCOUNT_INACTIVE",
   "IDENTITY_MERGE_NOT_ALLOWED",
   "IDENTITY_MERGE_BUSY",
+  "IDENTITY_POLICY_INVALID",
+  "IDENTITY_POLICY_NOT_ALLOWED",
+  "IDENTITY_POLICY_CONFIRMATION_REQUIRED",
 ]);
 const web = { "x-ia-mns-client": "web" };
 const timeout = () => AbortSignal.timeout(15_000);
@@ -52,6 +55,8 @@ export type Me = Json<"/identity/me", "get">;
 export type PersonList = Json<"/identity/admin/persons", "get">;
 export type PersonDetail = Json<"/identity/admin/persons/{personId}", "get">;
 export type Provision = Json<"/identity/provision/inspect", "post">;
+export type SecurityPolicyView = Json<"/identity/admin/security-policy", "get">;
+export type SecurityPolicy = SecurityPolicyView["configured"];
 export type SankhyaUsers = Json<"/identity/admin/sankhya-users", "get">;
 export type Provider = "pdt" | "sankhya";
 export type Intent = "login" | "link" | "reauth" | "invite";
@@ -69,26 +74,57 @@ export async function loginLocal(
 ) {
   return unwrap(
     await apiClient().POST("/identity/login/local", {
+      // Same-origin marker: lets the API recognize a remembered browser.
+      headers: web,
       body: { login, password, surface },
       signal: timeout(),
     }),
     identityCodes,
   );
 }
-export async function completeMfa(challenge: string, code: string) {
+export async function completeMfa(
+  challenge: string,
+  code: string,
+  rememberDevice = false,
+) {
   return unwrap(
     await apiClient().POST("/identity/login/mfa", {
-      body: { challenge, code },
+      headers: web,
+      body: { challenge, code, ...(rememberDevice ? { rememberDevice } : {}) },
       signal: timeout(),
     }),
     identityCodes,
   );
 }
-export async function refreshSession() {
+export async function startSignInEnrollment(challenge: string) {
+  return unwrap(
+    await apiClient().POST("/identity/login/mfa-enrollment", {
+      body: { challenge },
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+export async function confirmSignInEnrollment(
+  challenge: string,
+  setup: string,
+  code: string,
+) {
+  return unwrap(
+    await apiClient().POST("/identity/login/mfa-enrollment/confirm", {
+      headers: web,
+      body: { challenge, setup, code },
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+/** `active`: the person used the page since the last renewal. */
+export async function refreshSession(active = true) {
   return unwrap(
     await apiClient().POST("/identity/session/refresh", {
       headers: web,
-      body: {},
+      body: { active },
       signal: timeout(),
     }),
     identityCodes,
@@ -296,6 +332,36 @@ export async function unlink(token: string, linkId: string) {
   return unwrap(
     await apiClient(token).DELETE("/identity/me/links/{linkId}", {
       params: { path: { linkId } },
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+export async function forgetRememberedDevices(token: string) {
+  return unwrap(
+    await apiClient(token).DELETE("/identity/me/remembered-devices", {
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+export async function getSecurityPolicy(token: string, signal?: AbortSignal) {
+  return unwrap(
+    await apiClient(token).GET("/identity/admin/security-policy", { signal }),
+    identityCodes,
+  );
+}
+export async function updateSecurityPolicy(
+  token: string,
+  policy: SecurityPolicy,
+  acknowledgeReducedSecurity: boolean,
+) {
+  return unwrap(
+    await apiClient(token).PUT("/identity/admin/security-policy", {
+      body: {
+        ...policy,
+        ...(acknowledgeReducedSecurity ? { acknowledgeReducedSecurity } : {}),
+      },
       signal: timeout(),
     }),
     identityCodes,

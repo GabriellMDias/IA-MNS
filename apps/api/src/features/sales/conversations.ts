@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
-import type { SalesQuery } from "./domain.js";
+import {
+  emptySalesState,
+  type SalesConversationState,
+} from "./conversation-state.js";
 import { SalesFailure } from "./errors.js";
 
 type Conversation = {
   id: string;
   owner: string;
-  questions: string[];
-  clarifications: string[];
-  previousQuery: SalesQuery | null;
+  state: SalesConversationState;
+  turns: number;
   touched: number;
   busy: boolean;
 };
@@ -33,9 +35,8 @@ export class Conversations {
       const item = {
         id: randomUUID(),
         owner,
-        questions: [],
-        clarifications: [],
-        previousQuery: null,
+        state: emptySalesState,
+        turns: 0,
         touched: this.clock(),
         busy: true,
       };
@@ -43,26 +44,21 @@ export class Conversations {
       return item;
     }
     const item = this.items.get(id);
-    if (!item || item.owner !== owner || item.questions.length >= 12)
+    if (!item || item.owner !== owner || item.turns >= 12)
       throw new SalesFailure("SALES_CONVERSATION_EXPIRED");
     if (item.busy) throw new SalesFailure("SALES_CONVERSATION_BUSY");
     item.busy = true;
     return item;
   }
-  release(
-    item: Conversation,
-    message?: string,
-    query?: SalesQuery,
-    clarification = "",
-  ) {
-    if (message) {
-      item.questions.push(message);
-      item.clarifications.push(clarification);
+  /** A completed turn counts and replaces the state; a failed turn keeps it. */
+  release(item: Conversation, completed?: SalesConversationState) {
+    if (completed) {
+      item.turns++;
+      item.state = completed;
     }
-    if (query) item.previousQuery = query;
     item.busy = false;
     item.touched = this.clock();
-    if (item.questions.length === 0) this.items.delete(item.id);
+    if (item.turns === 0) this.items.delete(item.id);
   }
   remove(owner: string, id: string) {
     const item = this.items.get(id);

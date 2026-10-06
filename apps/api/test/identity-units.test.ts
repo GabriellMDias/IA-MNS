@@ -35,7 +35,15 @@ import {
 import { PdtFailure, PdtIdentityClient } from "../src/features/identity/pdt.js";
 import { AccessTokenIssuer } from "../src/features/identity/tokens.js";
 import { escapeLike } from "../src/features/identity/sankhya-directory.js";
-import { normalizeEmail } from "../src/features/identity/domain.js";
+import {
+  defaultSecurityPolicy,
+  effectivePolicy,
+  normalizeEmail,
+  policyProblems,
+  policyWarnings,
+  rememberDeviceDaysFor,
+  secondFactorRequired,
+} from "../src/features/identity/domain.js";
 import { signingKey } from "./identity-helpers.js";
 
 const catalog: PermissionDescriptor[] = [
@@ -187,6 +195,112 @@ describe("identity policy", () => {
     expect([4, 5, 6, 30].map(lockoutMs)).toEqual([
       0, 60_000, 120_000, 3_600_000,
     ]);
+  });
+});
+
+describe("authentication policy", () => {
+  it("accepts the secure defaults and reports nothing to warn about", () => {
+    expect(policyProblems(defaultSecurityPolicy, true)).toEqual([]);
+    expect(policyWarnings(defaultSecurityPolicy)).toEqual([]);
+  });
+
+  it("refuses values outside the hard limits and inconsistent windows", () => {
+    const base = { ...defaultSecurityPolicy };
+    expect(
+      policyProblems(
+        { ...base, sessionMaxMinutes: 59, idleTimeoutMinutes: 15 },
+        false,
+      ),
+    ).toEqual(["out_of_range"]);
+    expect(policyProblems({ ...base, rememberDeviceDays: 1.5 }, false)).toEqual(
+      ["out_of_range"],
+    );
+    expect(
+      policyProblems(
+        { ...base, sessionMaxMinutes: 60, idleTimeoutMinutes: 120 },
+        false,
+      ),
+    ).toEqual(["idle_exceeds_session"]);
+    expect(
+      policyProblems(
+        {
+          ...base,
+          sessionMaxMinutes: 60,
+          idleTimeoutMinutes: 15,
+          recentAuthMinutes: 61,
+        },
+        false,
+      ),
+    ).toEqual(["recent_exceeds_session"]);
+  });
+
+  it("never lets production administrators skip the second factor", () => {
+    const optional = {
+      ...defaultSecurityPolicy,
+      mfaRequirement: "none" as const,
+    };
+    expect(policyProblems(optional, false)).toEqual([]);
+    expect(policyProblems(optional, true)).toEqual(["mfa_none_in_production"]);
+    expect(policyWarnings(optional)).toEqual(["mfaRequirement"]);
+    // A permissive policy stored elsewhere is still enforced safely in production.
+    expect(effectivePolicy(optional, true).mfaRequirement).toBe(
+      "administrators",
+    );
+    expect(effectivePolicy(optional, false).mfaRequirement).toBe("none");
+  });
+
+  it("warns about each setting beyond its recommendation", () => {
+    expect(
+      policyWarnings({
+        sessionMaxMinutes: 25 * 60,
+        idleTimeoutMinutes: 9 * 60,
+        recentAuthMinutes: 61,
+        adminRecentAuthMinutes: 61,
+        mfaRequirement: "everyone",
+        rememberDeviceDays: 31,
+      }).sort(),
+    ).toEqual([
+      "adminRecentAuthMinutes",
+      "idleTimeoutMinutes",
+      "recentAuthMinutes",
+      "rememberDeviceDays",
+      "sessionMaxMinutes",
+    ]);
+  });
+
+  it("remembers owners' browsers only while the second factor is optional", () => {
+    const policy = (
+      mfaRequirement: "everyone" | "administrators" | "none",
+    ) => ({
+      ...defaultSecurityPolicy,
+      mfaRequirement,
+      rememberDeviceDays: 30,
+    });
+    expect(rememberDeviceDaysFor(policy("administrators"), false, true)).toBe(
+      30,
+    );
+    expect(rememberDeviceDaysFor(policy("administrators"), true, true)).toBe(0);
+    expect(rememberDeviceDaysFor(policy("everyone"), true, true)).toBe(0);
+    expect(rememberDeviceDaysFor(policy("none"), true, true)).toBe(30);
+    // Never inside a host page.
+    expect(rememberDeviceDaysFor(policy("none"), false, false)).toBe(0);
+    // Production enforces "none" as "administrators": owners are asked again.
+    expect(
+      rememberDeviceDaysFor(effectivePolicy(policy("none"), true), true, true),
+    ).toBe(0);
+  });
+
+  it("requires a second factor according to the requirement and the role", () => {
+    const policy = (
+      mfaRequirement: "everyone" | "administrators" | "none",
+    ) => ({
+      ...defaultSecurityPolicy,
+      mfaRequirement,
+    });
+    expect(secondFactorRequired(policy("everyone"), false)).toBe(true);
+    expect(secondFactorRequired(policy("administrators"), true)).toBe(true);
+    expect(secondFactorRequired(policy("administrators"), false)).toBe(false);
+    expect(secondFactorRequired(policy("none"), true)).toBe(false);
   });
 });
 

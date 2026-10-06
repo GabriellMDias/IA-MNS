@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "description": "Synthetic employee goals for model-driven simulation. Success is the final executed query matching the target exactly (product compared accent/case-insensitively).",
+  "goals": [
+    {
+      "id": "goal/apple-this-month",
+      "description": "Você quer saber o valor vendido de maçã neste mês, até hoje.",
+      "style": "terse",
+      "today": "2026-10-05",
+      "target": {
+        "productSearch": "maçã",
+        "startDate": "2026-10-01",
+        "endDate": "2026-10-05",
+        "metric": "net_value",
+        "groupBy": "total",
+        "comparison": "none"
+      }
+    },
+    {
+      "id": "goal/banana-quantity-last-30-days",
+      "description": "Você quer saber a quantidade vendida de banana nos últimos 30 dias.",
+      "style": "incremental",
+      "today": "2026-10-05",
+      "target": {
+        "productSearch": "banana",
+        "startDate": "2026-09-06",
+        "endDate": "2026-10-05",
+        "metric": "quantity",
+        "groupBy": "total",
+        "comparison": "none"
+      }
+    },
+    {
+      "id": "goal/grape-weight-september",
+      "description": "Você quer saber quantos quilos de uva foram vendidos em setembro.",
+      "style": "terse",
+      "today": "2026-10-05",
+      "target": {
+        "productSearch": "uva",
+        "startDate": "2026-09-01",
+        "endDate": "2026-09-30",
+        "metric": "weight",
+        "groupBy": "total",
+        "comparison": "none"
+      }
+    },
+    {
+      "id": "goal/all-products-last-month",
+      "description": "Você quer o valor total vendido de todos os produtos no mês passado.",
+      "style": "verbose",
+      "today": "2026-10-05",
+      "target": {
+        "productSearch": null,
+        "startDate": "2026-09-01",
+        "endDate": "2026-09-30",
+        "metric": "net_value",
+        "groupBy": "total",
+        "comparison": "none"
+      }
+    },
+    {
+      "id": "goal/apple-monthly-previous-year",
+      "description": "Você quer ver as vendas de maçã mês a mês nos últimos 3 meses completos, comparadas com o mesmo período do ano anterior.",
+      "style": "verbose",
+      "today": "2026-10-05",
+      "target": {
+        "productSearch": "maçã",
+        "startDate": "2026-07-01",
+        "endDate": "2026-09-30",
+        "metric": "net_value",
+        "groupBy": "month",
+        "comparison": "previous_year"
+      }
+    },
+    {
+      "id": "goal/orange-yesterday",
+      "description": "Você quer saber quanto foi vendido de laranja ontem.",
+      "style": "incremental",
+      "today": "2026-10-05",
+      "target": {
+        "productSearch": "laranja",
+        "startDate": "2026-10-04",
+        "endDate": "2026-10-04",
+        "metric": "net_value",
+        "groupBy": "total",
+        "comparison": "none"
+      }
+    }
+  ]
+}

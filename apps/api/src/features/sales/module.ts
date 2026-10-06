@@ -18,7 +18,8 @@ import {
   deleteOperation,
   statusOperation,
 } from "./contracts.js";
-import { createOpenAiPlanner } from "./planner.js";
+import { createOpenAiModel } from "../../ai/openai.js";
+import { createModelInterpreter } from "./interpreter.js";
 import { createOracleReader } from "./oracle.js";
 
 const respond = errorResponder({ ...coreErrors, ...salesErrors });
@@ -61,7 +62,7 @@ export function createSalesModule(
         supplied ??
         (configured
           ? new SalesChat(
-              createOpenAiPlanner(config),
+              createModelInterpreter(createOpenAiModel(config)),
               createOracleReader(config),
             )
           : undefined);

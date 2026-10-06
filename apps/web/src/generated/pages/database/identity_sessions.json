@@ -102,7 +102,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "CONFIDENTIAL",
-      "Meaning": "Application-clock last refresh or validation.",
+      "Meaning": "Application-clock last user activity reported by the browser (or sign-in); the inactivity deadline is derived from it.",
       "Null meaning": "—",
       "Unit": "—"
     },
@@ -144,6 +144,16 @@
       "Classification": "CONFIDENTIAL",
       "Meaning": "Allowlisted revocation reason code.",
       "Null meaning": "Not revoked.",
+      "Unit": "—"
+    },
+    {
+      "Column": "refresh_rotated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When the refresh credential last rotated. A request presenting the immediately previous credential within a short grace window is a concurrent refresh of the same browser and receives an access token without rotation; later presentations are treated as reuse and revoke the session.",
+      "Null meaning": "Never rotated.",
       "Unit": "—"
     }
   ],

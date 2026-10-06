@@ -4,7 +4,7 @@ This policy owns safe data selection and sanitization for logs, traces, metrics,
 
 ## Current implementation and ownership
 
-[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) governs the selected foundation. The API has [Pino field redaction](../../apps/api/src/logging.ts), [allowlisted trace/metric export](../../apps/api/src/telemetry.ts), and [safe HTTP/error diagnostics](../../apps/api/src/app.ts). These local controls do not establish a universal schema-driven redaction engine or prove that every future SDK/platform default is safe. The API runtime documentation and [validation inventory](../validation.md) identify current implementation and checks.
+[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) governs the selected foundation. The API has [Pino field redaction](../../apps/api/src/logging.ts), [allowlisted trace/metric export](../../apps/api/src/telemetry.ts), and [safe HTTP/error diagnostics](../../apps/api/src/app.ts). AI turn tracing follows the same rules: its default metadata level logs only allowlisted decisions, codes, timings and token counts, and confidential interpretation content is stored, when explicitly enabled, with the conversation rather than in telemetry ([AI tracing](../architecture/ai-interpretation.md#ai-tracing-and-observability)). These local controls do not establish a universal schema-driven redaction engine or prove that every future SDK/platform default is safe. The API runtime documentation and [validation inventory](../validation.md) identify current implementation and checks.
 
 ## Default deny for payload capture
 

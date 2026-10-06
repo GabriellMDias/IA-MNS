@@ -15,6 +15,8 @@ The Fastify API runtime provides configuration, structured logging and tracing, 
 | Prisma schema, schema meaning, and runtime grants | [`prisma/schema/`](prisma/schema/schema.prisma), `prisma/metadata/`, `prisma/runtime-grants/`, reviewed `prisma/migrations/` |
 | Generated references | [`generate-references.ts`](scripts/generate-references.ts), [`openapi.ts`](scripts/openapi.ts), [`database-reference.ts`](scripts/database-reference.ts) |
 | Process smokes | [`scripts/smoke.mjs`](scripts/smoke.mjs) and module smokes in `scripts/smoke/` |
+| Structured-model port, OpenAI adapter and AI trace levels | [`src/ai/`](src/ai/model.ts) ([AI interpretation](../../docs/architecture/ai-interpretation.md)) |
+| AI evaluation datasets, harness, reports and CLI | [`evals/`](evals/cli.ts) ([AI evaluation](../../docs/architecture/ai-evaluation.md)) |
 
 ## Modules
 
@@ -38,6 +40,7 @@ From the repository root:
 | Generate ignored Prisma client | `pnpm -C apps/api db:generate` |
 | Apply committed migrations to the configured database | `pnpm -C apps/api db:migrate:deploy` |
 | Check API behavior/types | `pnpm -C apps/api test` and `pnpm -C apps/api typecheck` |
+| Evaluate AI behavior (scripted by default; `--subject model` uses the live provider) | `pnpm eval run` |
 | Emit/start API | `pnpm -C apps/api build`, then `pnpm -C apps/api start` |
 | Intentionally regenerate tracked API/database/configuration/error references | `pnpm -C apps/api references:write` |
 | Check current API/database/SDK references without editing them | `pnpm references:check` |

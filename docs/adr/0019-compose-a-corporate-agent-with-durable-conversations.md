@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-10-01
-**Extended by:** [ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md) for explicit authenticated temporary phone testing; ordinary loopback development and production controls remain valid.
+**Extended by:** [ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md) for explicit authenticated temporary phone testing; ordinary loopback development and production controls remain valid. [ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md) for structured capability conversation state, pending-request routing and AI tracing.
 **Supersedes:** [ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md), only the sales-specific product identity and temporary conversation decision. Controlled sales execution and deterministic financial answers remain valid.
 
 ## Context

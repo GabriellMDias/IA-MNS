@@ -52,6 +52,21 @@ test("flat domain modules cannot import their transport or persistence adapters"
   }
 });
 
+test("API runtime cannot import its tests or evaluation tooling, which may import the runtime", async () => {
+  const result = await inspect({
+    "apps/api/src/features/example/application.ts":
+      'import "../../../evals/fixtures.js"; import "../../../test/helpers.js";',
+    "apps/api/evals/fixtures.ts": 'import "../src/features/example/domain.js";',
+    "apps/api/test/helpers.ts": "export {};",
+    "apps/api/src/features/example/domain.ts": "export {};",
+  });
+  const violations = result.summary.violations.filter(
+    ({ rule }) => rule.name === "no-runtime-to-verification",
+  );
+  assert.equal(violations.length, 2);
+  assert.ok(violations.every(({ from }) => from.startsWith("apps/api/src/")));
+});
+
 test("browser runtime and SDK reject Node builtins while build tooling can use them", async () => {
   const result = await inspect({
     "apps/web/src/unsafe.ts": 'import "node:fs";',

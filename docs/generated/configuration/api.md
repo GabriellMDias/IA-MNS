@@ -22,6 +22,7 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `ORION_TOKEN_JWKS_URL` | http(s) URL | no | — | server | INTERNAL | no | Trusted issuer public-key endpoint. |
 | `OPENAI_API_KEY` | nonempty string | no | — | server | RESTRICTED | yes | Dedicated IA-MNS project key; required for agent routing and capability interpretation. |
 | `OPENAI_MODEL` | model identifier | no | `gpt-6.1-sol` | server | INTERNAL | no | Responses API model supporting strict function calling. |
+| `IA_MNS_AI_TRACE` | off \| metadata \| content | no | `metadata` | server | INTERNAL | no | AI turn tracing: metadata logs allowlisted decisions, timings and token counts without user content; content also stores confidential interpretation traces with each turn and is refused in production until PH-09. |
 | `SANKHYA_DB_USER` | nonempty string | no | — | server | RESTRICTED | yes | Oracle account with CREATE SESSION and only SELECT grants on the sales reference tables. |
 | `SANKHYA_DB_PASSWORD` | nonempty string | no | — | server | RESTRICTED | yes | Restricted Oracle account password; configure with user and connect string. |
 | `SANKHYA_DB_CONNECT_STRING` | Oracle connect descriptor | no | — | server | RESTRICTED | yes | Oracle Easy Connect or full descriptor, without embedded credentials. |

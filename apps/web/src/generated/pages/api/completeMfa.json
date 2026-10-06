@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "completeMfa",
   "summary": "",
-  "description": "Complete a local sign-in with a TOTP code or a single-use recovery code.",
+  "description": "Complete a local sign-in with a TOTP code or a single-use recovery code. When the policy offers it, `rememberDevice` lets this browser skip the code at later sign-ins (HttpOnly cookie).",
   "security": [],
   "components": {},
   "method": "POST",
@@ -23,7 +23,8 @@
               "type": "string",
               "pattern": "^[A-Za-z0-9_-]{32,128}$"
             },
-            "code": { "type": "string", "minLength": 6, "maxLength": 16 }
+            "code": { "type": "string", "minLength": 6, "maxLength": 16 },
+            "rememberDevice": { "type": "boolean" }
           },
           "additionalProperties": false
         }
@@ -34,7 +35,8 @@
       "required": ["challenge", "code"],
       "properties": {
         "challenge": { "type": "string", "pattern": "^[A-Za-z0-9_-]{32,128}$" },
-        "code": { "type": "string", "minLength": 6, "maxLength": 16 }
+        "code": { "type": "string", "minLength": 6, "maxLength": 16 },
+        "rememberDevice": { "type": "boolean" }
       },
       "additionalProperties": false
     },
@@ -48,7 +50,8 @@
         "name": "code",
         "type": "string (min length 6, max length 16)",
         "required": true
-      }
+      },
+      { "name": "rememberDevice", "type": "boolean", "required": false }
     ]
   },
   "responses": [
@@ -75,10 +78,30 @@
               },
               {
                 "type": "object",
-                "required": ["kind", "challenge"],
+                "required": ["kind", "challenge", "rememberDeviceDays"],
                 "properties": {
                   "kind": { "type": "string", "const": "mfa_required" },
-                  "challenge": { "type": "string" }
+                  "challenge": { "type": "string" },
+                  "rememberDeviceDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": ["kind", "challenge"],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "mfa_enrollment_required"
+                  },
+                  "challenge": {
+                    "type": "string",
+                    "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
+                  }
                 },
                 "additionalProperties": false
               },
@@ -182,10 +205,27 @@
           },
           {
             "type": "object",
-            "required": ["kind", "challenge"],
+            "required": ["kind", "challenge", "rememberDeviceDays"],
             "properties": {
               "kind": { "type": "string", "const": "mfa_required" },
-              "challenge": { "type": "string" }
+              "challenge": { "type": "string" },
+              "rememberDeviceDays": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["kind", "challenge"],
+            "properties": {
+              "kind": { "type": "string", "const": "mfa_enrollment_required" },
+              "challenge": {
+                "type": "string",
+                "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
+              }
             },
             "additionalProperties": false
           },

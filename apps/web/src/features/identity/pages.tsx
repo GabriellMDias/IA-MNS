@@ -1,20 +1,23 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import {
   completeBootstrap,
   completeInvitation,
+  confirmSignInEnrollment,
   confirmTotp,
   inspectInvitation,
   inspectProvision,
   provisionCreate,
   provisionLink,
   startProvider,
+  startSignInEnrollment,
   startTotp,
   type Intent,
   type Provider,
 } from "./api.js";
 import { LocalSignIn, useIdentityStart } from "./session.js";
+import { TotpEnrollment } from "./totp.js";
 import { codeMessage, identityMessage } from "./messages.js";
 
 const providerName: Record<Provider, string> = {
@@ -395,7 +398,7 @@ export function LinkInvitationPage() {
   );
 }
 
-/** Mandatory or optional TOTP enrollment; shows recovery codes once. */
+/** Optional or owner-required TOTP enrollment for the signed-in Person. */
 export function TotpSetup({
   token,
   onDone,
@@ -403,102 +406,12 @@ export function TotpSetup({
   token: string;
   onDone: (accessToken: string, expiresIn: number) => void;
 }) {
-  const [setup, setSetup] = useState<{
-    setup: string;
-    secret: string;
-    otpauthUri: string;
-  } | null>(null);
-  const [code, setCode] = useState("");
-  const [codes, setCodes] = useState<string[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [next, setNext] = useState<{
-    accessToken: string;
-    expiresIn: number;
-  } | null>(null);
-  if (codes && next)
-    return (
-      <section className="identity-card" aria-labelledby="identity-codes-title">
-        <h2 id="identity-codes-title">Códigos de recuperação</h2>
-        <p>
-          Guarde estes códigos em local seguro. Cada um pode ser usado uma única
-          vez se você perder o aplicativo. Eles não serão exibidos novamente.
-        </p>
-        <ul className="identity-codes">
-          {codes.map((item) => (
-            <li key={item}>
-              <code>{item}</code>
-            </li>
-          ))}
-        </ul>
-        <button onClick={() => onDone(next.accessToken, next.expiresIn)}>
-          Já guardei os códigos
-        </button>
-      </section>
-    );
   return (
-    <section className="identity-card" aria-labelledby="identity-totp-title">
-      <h2 id="identity-totp-title">Verificação em duas etapas</h2>
-      {!setup ? (
-        <button
-          onClick={() =>
-            void (async () => {
-              setError(null);
-              try {
-                setSetup(await startTotp(token));
-              } catch (failure) {
-                setError(identityMessage(failure));
-              }
-            })()
-          }
-        >
-          Configurar aplicativo autenticador
-        </button>
-      ) : (
-        <form
-          className="identity-form"
-          onSubmit={(event: FormEvent) =>
-            void (async () => {
-              event.preventDefault();
-              setError(null);
-              try {
-                const result = await confirmTotp(
-                  token,
-                  setup.setup,
-                  code.trim(),
-                );
-                setCodes(result.recoveryCodes);
-                setNext({
-                  accessToken: result.accessToken,
-                  expiresIn: result.expiresIn,
-                });
-              } catch (failure) {
-                setError(identityMessage(failure));
-              }
-            })()
-          }
-        >
-          <p>
-            Adicione a conta no aplicativo autenticador (por exemplo, Microsoft
-            ou Google Authenticator) usando a chave abaixo ou{" "}
-            <a href={setup.otpauthUri}>este link no celular</a>.
-          </p>
-          <p>
-            Chave: <code data-testid="totp-secret">{setup.secret}</code>
-          </p>
-          <label htmlFor="identity-totp-code">Código de 6 dígitos</label>
-          <input
-            id="identity-totp-code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            required
-          />
-          <button>Ativar</button>
-        </form>
-      )}
-      {error && <p role="alert">{error}</p>}
-    </section>
+    <TotpEnrollment
+      start={() => startTotp(token)}
+      confirm={(setup, code) => confirmTotp(token, setup, code)}
+      onDone={onDone}
+    />
   );
 }
 
@@ -663,6 +576,7 @@ export function InvitationPage() {
         window.location.pathname,
       );
   }, []);
+  const [enrollment, setEnrollment] = useState<string | null>(null);
   const [name, setName] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (!invitation) return setName(null);
@@ -685,7 +599,26 @@ export function InvitationPage() {
           administrador.
         </p>
       )}
-      {name !== null && name !== undefined && invitation && (
+      {enrollment && (
+        <>
+          <p role="status">
+            Acesso criado. A política do IA-MNS exige a verificação em duas
+            etapas: configure o aplicativo autenticador para entrar.
+          </p>
+          <TotpEnrollment
+            autoStart
+            start={() => startSignInEnrollment(enrollment)}
+            confirm={(setup, code) =>
+              confirmSignInEnrollment(enrollment, setup, code)
+            }
+            onDone={(accessToken, expiresIn) => {
+              identity.accept(accessToken, expiresIn);
+              void navigate({ to: "/conta" });
+            }}
+          />
+        </>
+      )}
+      {!enrollment && name !== null && name !== undefined && invitation && (
         <>
           {name && <p>Olá, {name}. Defina seu usuário e senha do IA-MNS.</p>}
           <CredentialForm
@@ -697,7 +630,9 @@ export function InvitationPage() {
                 login: input.login,
                 password: input.password,
               });
-              if (outcome.kind === "authenticated") {
+              if (outcome.kind === "mfa_enrollment_required")
+                setEnrollment(outcome.challenge);
+              else if (outcome.kind === "authenticated") {
                 identity.accept(outcome.accessToken, outcome.expiresIn);
                 void navigate({ to: "/conta" });
               }

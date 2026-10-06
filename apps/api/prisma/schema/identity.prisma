@@ -14,6 +14,8 @@ model IdentityPerson {
   roles              IdentityRoleAssignment[]
   grants             IdentityCapabilityGrant[]
   tickets            IdentityTicket[]
+  trustedDevices     IdentityTrustedDevice[]
+  policyUpdates      IdentitySecurityPolicy[]
   @@index([displayName, id], map: "identity_persons_display_name_idx")
   @@map("identity_persons")
 }
@@ -78,6 +80,7 @@ model IdentitySession {
   expiresAt           DateTime  @map("expires_at") @db.Timestamptz(3)
   revokedAt           DateTime? @map("revoked_at") @db.Timestamptz(3)
   revokedReason       String?   @map("revoked_reason") @db.VarChar(40)
+  refreshRotatedAt    DateTime? @map("refresh_rotated_at") @db.Timestamptz(3)
   @@index([personId, createdAt(sort: Desc)], map: "identity_sessions_person_idx")
   @@index([expiresAt], map: "identity_sessions_expiry_idx")
   @@map("identity_sessions")
@@ -135,4 +138,30 @@ model IdentityAuditEvent {
   @@index([targetPersonId, occurredAt(sort: Desc)], map: "identity_audit_events_target_idx")
   @@index([occurredAt(sort: Desc), id(sort: Desc)], map: "identity_audit_events_recent_idx")
   @@map("identity_audit_events")
+}
+
+model IdentitySecurityPolicy {
+  id                     Int      @id @default(1) @db.SmallInt
+  sessionMaxMinutes      Int      @map("session_max_minutes")
+  idleTimeoutMinutes     Int      @map("idle_timeout_minutes")
+  recentAuthMinutes      Int      @map("recent_auth_minutes")
+  adminRecentAuthMinutes Int      @map("admin_recent_auth_minutes")
+  mfaRequirement         String   @map("mfa_requirement") @db.VarChar(16)
+  rememberDeviceDays     Int      @map("remember_device_days") @db.SmallInt
+  updatedBy              String?  @map("updated_by") @db.Uuid
+  updater                IdentityPerson? @relation(fields: [updatedBy], references: [id], onDelete: Restrict)
+  updatedAt              DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  @@map("identity_security_policies")
+}
+
+model IdentityTrustedDevice {
+  id         String    @id @db.Uuid
+  personId   String    @map("person_id") @db.Uuid
+  person     IdentityPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique(map: "identity_trusted_devices_token_key") @map("token_hash") @db.Char(64)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt DateTime  @default(now()) @map("last_used_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  @@index([personId], map: "identity_trusted_devices_person_idx")
+  @@map("identity_trusted_devices")
 }

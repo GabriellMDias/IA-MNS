@@ -1,9 +1,24 @@
-import type { AgentCapability, AgentReply } from "./capabilities.js";
-import type { AgentPlanner, AgentRoute } from "./planner.js";
+import type { AiTraceLevel, TraceRecorder } from "../../ai/trace.js";
+import type {
+  AgentCapability,
+  AgentReply,
+  ProgressStage,
+} from "./capabilities.js";
+import {
+  agentRouterVersion,
+  type AgentPlanner,
+  type AgentRoute,
+} from "./planner.js";
 import { AgentRepository } from "./prisma-repository.js";
 import { AgentFailure } from "./errors.js";
+import {
+  TurnTrace,
+  type TurnOutcome,
+  type TurnTraceMetadata,
+} from "./trace.js";
 export type AgentActor = { id: string; permissions: ReadonlySet<string> };
 type ReportFailure = (error: unknown, turnId: string) => string;
+type ObserveTrace = (trace: TurnTraceMetadata, turnId: string) => void;
 function conversationalReply(
   intent: AgentRoute["intent"],
   capabilities: readonly AgentCapability[],
@@ -37,6 +52,139 @@ function conversationalReply(
       : [],
   };
 }
+
+type AgentContext = {
+  lastCapabilityId: string | null;
+  pending: { capabilityId: string; awaiting: string[] } | null;
+};
+// Version 1 stored only the last capability; version 2 adds the capability
+// that awaits an answer. Unknown capabilities are ignored, never trusted.
+function agentContext(
+  saved: unknown,
+  capabilities: readonly AgentCapability[],
+): AgentContext {
+  const value =
+    saved && typeof saved === "object"
+      ? (saved as { lastCapabilityId?: unknown; pending?: unknown })
+      : {};
+  const known = (id: unknown): id is string =>
+    typeof id === "string" && capabilities.some((item) => item.id === id);
+  const pending = value.pending as
+    { capabilityId?: unknown; awaiting?: unknown } | null | undefined;
+  return {
+    lastCapabilityId: known(value.lastCapabilityId)
+      ? value.lastCapabilityId
+      : null,
+    pending:
+      pending &&
+      known(pending.capabilityId) &&
+      Array.isArray(pending.awaiting) &&
+      pending.awaiting.length <= 8 &&
+      pending.awaiting.every(
+        (item) => typeof item === "string" && item.length <= 40,
+      )
+        ? {
+            capabilityId: pending.capabilityId,
+            awaiting: pending.awaiting as string[],
+          }
+        : null,
+  };
+}
+
+export type TurnInput = Readonly<{
+  actor: AgentActor;
+  message: string;
+  history: readonly { question: string; reply: AgentReply }[];
+  contexts: Readonly<Record<string, unknown>>;
+  signal: AbortSignal;
+  progress: (stage: ProgressStage) => Promise<void>;
+  trace: TraceRecorder;
+}>;
+
+/**
+ * One turn of agent orchestration, independent of persistence: route, check
+ * permission, dispatch, and return the reply with the next contexts. While a
+ * capability awaits an answer, a message the router cannot place is offered
+ * to that capability, whose own boundary rejects unsupported requests.
+ */
+export async function runAgentTurn(
+  planner: AgentPlanner,
+  capabilities: readonly AgentCapability[],
+  input: TurnInput,
+): Promise<{ reply: AgentReply; contexts: Record<string, unknown> }> {
+  const { actor, history, signal, trace } = input;
+  const permitted = capabilities.filter((item) =>
+    actor.permissions.has(item.permission),
+  );
+  const saved = agentContext(input.contexts._agent, capabilities);
+  trace.content("agent", { contextBefore: input.contexts._agent ?? null });
+  const lastCapabilityId =
+    saved.lastCapabilityId ??
+    history.findLast((item) => item.reply.capabilityId !== null)?.reply
+      .capabilityId ??
+    null;
+  const route = await planner.route(
+    {
+      message: input.message,
+      transcript: history.slice(-12).map((item) => ({
+        user: item.question,
+        // Answers carry business figures; only their existence is shared.
+        assistant:
+          item.reply.kind === "answer"
+            ? `[Resposta de ${item.reply.capabilityId ?? "capacidade"} entregue]`
+            : item.reply.message,
+      })),
+      lastCapabilityId,
+      pending: saved.pending,
+    },
+    signal,
+    trace,
+  );
+  signal.throwIfAborted();
+  const override =
+    route.intent === "unavailable" &&
+    saved.pending !== null &&
+    permitted.some((item) => item.id === saved.pending!.capabilityId);
+  const capabilityId = override
+    ? saved.pending!.capabilityId
+    : route.intent === "capability"
+      ? route.capabilityId
+      : null;
+  trace.note("agent", {
+    router: agentRouterVersion,
+    intent: route.intent,
+    capabilityId,
+    pendingCapabilityId: saved.pending?.capabilityId ?? null,
+    routeOverride: override ? "pending_capability" : null,
+  });
+  const contexts: Record<string, unknown> = { ...input.contexts };
+  if (capabilityId === null)
+    return { reply: conversationalReply(route.intent, permitted), contexts };
+  const capability = capabilities.find((item) => item.id === capabilityId);
+  if (!capability) throw new AgentFailure("AGENT_PROVIDER_UNAVAILABLE");
+  if (!actor.permissions.has(capability.permission))
+    throw new AgentFailure("AGENT_ACCESS_DENIED");
+  const outcome = await capability.execute({
+    message: input.message,
+    history,
+    context: contexts[capability.id] ?? null,
+    signal,
+    progress: input.progress,
+    trace,
+  });
+  if (outcome.reply.capabilityId !== capability.id)
+    throw new Error("Invalid capability reply identity");
+  contexts[capability.id] = outcome.context;
+  contexts._agent = {
+    version: 2,
+    lastCapabilityId: capability.id,
+    pending: outcome.awaiting?.length
+      ? { capabilityId: capability.id, awaiting: [...outcome.awaiting] }
+      : null,
+  };
+  return { reply: outcome.reply, contexts };
+}
+
 export class CorporateAgent {
   private readonly running = new Map<
     string,
@@ -47,14 +195,17 @@ export class CorporateAgent {
   readonly repository: AgentRepository;
   private readonly planner: AgentPlanner | undefined;
   readonly capabilities: readonly AgentCapability[];
+  private readonly traceLevel: AiTraceLevel;
   constructor(
     repository: AgentRepository,
     planner: AgentPlanner | undefined,
     capabilities: readonly AgentCapability[],
+    options: { traceLevel?: AiTraceLevel } = {},
   ) {
     this.repository = repository;
     this.planner = planner;
     this.capabilities = capabilities;
+    this.traceLevel = options.traceLevel ?? "off";
     if (capabilities.some((item) => !/^[a-z][a-z0-9_]{0,79}$/.test(item.id)))
       throw new Error("Invalid agent capability identifier");
     if (
@@ -68,6 +219,7 @@ export class CorporateAgent {
     requestId: string,
     question: string,
     reportFailure: ReportFailure,
+    observe?: ObserveTrace,
   ) {
     if (!this.planner) throw new AgentFailure("AGENT_NOT_CONFIGURED");
     if (this.closing || this.running.size + this.accepting >= 3)
@@ -93,6 +245,7 @@ export class CorporateAgent {
       claimed,
       controller.signal,
       reportFailure,
+      observe,
     ).finally(() => {
       clearTimeout(timeout);
       this.running.delete(claimed.turn.id);
@@ -106,7 +259,18 @@ export class CorporateAgent {
     claimed: Awaited<ReturnType<AgentRepository["claim"]>>,
     signal: AbortSignal,
     reportFailure: ReportFailure,
+    observe: ObserveTrace | undefined,
   ) {
+    const trace = new TurnTrace(this.traceLevel);
+    let observed = false;
+    // One observation per turn; a later persistence failure is reported
+    // through the failure diagnostic instead.
+    const conclude = (outcome: TurnOutcome) => {
+      if (this.traceLevel !== "off" && !observed)
+        observe?.(trace.metadata(outcome), claimed.turn.id);
+      observed = true;
+      return trace.record(outcome);
+    };
     try {
       const progress = async (
         stage: Parameters<AgentRepository["progress"]>[1],
@@ -115,70 +279,40 @@ export class CorporateAgent {
         await this.repository.progress(claimed.turn.id, stage);
       };
       await progress("thinking");
-      const permitted = this.capabilities.filter((item) =>
-        actor.permissions.has(item.permission),
-      );
       const history = claimed.history
         .filter((item) => item.reply !== null)
         .map((item) => ({ question: item.question, reply: item.reply! }));
-      const savedAgent =
-        claimed.contexts &&
-        typeof claimed.contexts === "object" &&
-        !Array.isArray(claimed.contexts)
-          ? (claimed.contexts._agent as
-              { lastCapabilityId?: unknown } | undefined)
-          : undefined;
-      const lastCapabilityId =
-        (typeof savedAgent?.lastCapabilityId === "string" &&
-        this.capabilities.some(
-          (item) => item.id === savedAgent.lastCapabilityId,
-        )
-          ? savedAgent.lastCapabilityId
-          : null) ??
-        history.findLast((item) => item.reply.capabilityId !== null)?.reply
-          .capabilityId ??
-        null;
-      const route = await this.planner!.route(
-        {
-          message: claimed.turn.question,
-          history: history.map((item) => item.question),
-          lastCapabilityId,
-        },
-        signal,
-      );
-      signal.throwIfAborted();
       const contexts =
         claimed.contexts &&
         typeof claimed.contexts === "object" &&
         !Array.isArray(claimed.contexts)
-          ? ({ ...claimed.contexts } as Record<string, unknown>)
+          ? (claimed.contexts as Record<string, unknown>)
           : {};
-      let reply: AgentReply;
-      if (route.intent === "capability") {
-        const capability = this.capabilities.find(
-          (item) => item.id === route.capabilityId,
-        );
-        if (!capability) throw new AgentFailure("AGENT_PROVIDER_UNAVAILABLE");
-        if (!actor.permissions.has(capability.permission))
-          throw new AgentFailure("AGENT_ACCESS_DENIED");
-        const outcome = await capability.execute({
+      const { reply, contexts: next } = await runAgentTurn(
+        this.planner!,
+        this.capabilities,
+        {
+          actor,
           message: claimed.turn.question,
           history,
-          context: contexts[capability.id] ?? null,
+          contexts,
           signal,
           progress,
-        });
-        if (outcome.reply.capabilityId !== capability.id)
-          throw new Error("Invalid capability reply identity");
-        reply = outcome.reply;
-        contexts[capability.id] = outcome.context;
-        contexts._agent = { version: 1, lastCapabilityId: capability.id };
-      } else reply = conversationalReply(route.intent, permitted);
+          trace,
+        },
+      );
       signal.throwIfAborted();
-      await this.repository.finish(actor.id, conversationId, claimed.turn.id, {
-        reply,
-        contexts,
-      });
+      await this.repository.finish(
+        actor.id,
+        conversationId,
+        claimed.turn.id,
+        { reply, contexts: next },
+        conclude({
+          kind: reply.kind,
+          capabilityId: reply.capabilityId,
+          failureCode: null,
+        }),
+      );
     } catch (error) {
       const code = reportFailure(error, claimed.turn.id);
       try {
@@ -187,6 +321,7 @@ export class CorporateAgent {
           conversationId,
           claimed.turn.id,
           { failureCode: code },
+          conclude({ kind: "failed", capabilityId: null, failureCode: code }),
         );
       } catch (persistenceError) {
         reportFailure(persistenceError, claimed.turn.id);

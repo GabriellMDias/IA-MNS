@@ -3,6 +3,7 @@ import { Link, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   disableTotp,
+  forgetRememberedDevices,
   getMe,
   mergeProven,
   reauthenticate,
@@ -372,6 +373,24 @@ function Account({ token }: { token: string }) {
                 Desativar
               </button>
             )}
+          </div>
+        )}
+        {data.rememberedDevices > 0 && (
+          <div className="identity-actions">
+            <span>
+              {data.rememberedDevices === 1
+                ? "1 navegador não pede o código ao entrar."
+                : `${data.rememberedDevices} navegadores não pedem o código ao entrar.`}
+            </span>
+            <button
+              className="identity-secondary"
+              disabled={action.isPending}
+              onClick={() =>
+                action.mutate(() => forgetRememberedDevices(token))
+              }
+            >
+              Voltar a pedir o código em todos
+            </button>
           </div>
         )}
         {codes && (

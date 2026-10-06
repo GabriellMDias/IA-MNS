@@ -151,6 +151,24 @@ export const identityErrors = {
     retryable: false,
     message: "The permission is not registered.",
   },
+  IDENTITY_POLICY_INVALID: {
+    status: 400,
+    category: "validation",
+    retryable: false,
+    message: "The authentication policy is outside the allowed limits.",
+  },
+  IDENTITY_POLICY_NOT_ALLOWED: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message: "Production always requires a second factor for administrators.",
+  },
+  IDENTITY_POLICY_CONFIRMATION_REQUIRED: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message: "Confirm that this policy significantly reduces security.",
+  },
   IDENTITY_TOTP_REQUIRED: {
     status: 409,
     category: "conflict",

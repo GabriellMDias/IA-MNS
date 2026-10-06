@@ -1,0 +1,45 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0025-administer-the-authentication-policy-within-fixed-safeguards.md",
+  "title": "ADR-0025: Administer the Authentication Policy within Fixed Safeguards",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-05\n<strong>Extends:</strong> <a href=\"/docs/repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links\">ADR-0022</a> (sessions, recent authentication and the principal administrator). Its identity model, issuer, link rules and refresh rotation remain valid; this record makes their durations and second-factor rules administrable and refines reuse detection for concurrent renewals.</p>\n<h2 id=\"context\">Context</h2>\n<p>ADR-0022 fixed direct sessions at 12 hours (2 hours idle), recent authentication at 10 minutes (30 for administration), and a second factor only for administration. The owner needs to relax these values in development and tighten them again for production from the administration screen, without code or deployment changes and without understanding tokens. The same review found that two renewals presenting the same refresh credential at once (React development double effects, several tabs, or a reload during a renewal) were treated as credential reuse and revoked the session about ten minutes later, which forced a new sign-in with the second factor. Inactivity was also extended by background renewals of an open tab, so an unattended page never became inactive.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>The identity module owns an <strong>authentication policy</strong> stored as one database row (<code>identity_security_policies</code>) and administered by owners at <code>/admin</code> (<code>GET</code>/<code>PUT /identity/admin/security-policy</code>):</p>\n<ul>\n<li>session maximum duration, inactivity timeout, the recent-authentication window for one's own account and for administration, who must use a second factor with an IA-MNS password (<code>everyone</code>, <code>administrators</code>, or <code>none</code>), and how many days a browser that completed the second factor may skip it;</li>\n<li>without a row the built-in defaults apply; they equal the previous fixed values;</li>\n<li>every value has hard limits enforced by the service and again by database checks; values beyond a recommended maximum, or <code>none</code>, are reported as reducing security and must be acknowledged explicitly when saved; changes are audited with previous and new values;</li>\n<li>a saved policy re-derives the deadlines of open direct sessions from their sign-in and last activity, so it applies at once in both directions; second-factor rules apply at the next sign-in, except that administration checks the current rule on every request.</li>\n</ul>\n<p>Fixed safeguards that the policy cannot change:</p>\n<ul>\n<li>production never lets administrators skip the second factor: saving <code>none</code> is refused there, and a stored <code>none</code> is enforced as <code>administrators</code>;</li>\n<li>owners cannot remove their own second factor; unless a non-production policy says <code>none</code>, they are never offered a remembered browser and administer only from a session confirmed with the second factor (with <code>none</code>, a development owner may be remembered like anyone else, keeping the factor enrolled for when the production policy returns);</li>\n<li>a person whose policy requires a second factor cannot sign in with the password alone or remove the factor; the password only opens the enrollment;</li>\n<li>access tokens stay 10 minutes and embedded sessions renew through host proofs; one-time tickets, provider flows, invitations, lockout, refresh rotation and audit keep their fixed lifetimes and rules.</li>\n</ul>\n<p>Session renewal is made robust and activity-based: the browser serializes renewals across tabs and reports whether the person interacted since the last renewal; only activity postpones the inactivity deadline; the API answers a renewal that presents the credential replaced in the last 30 seconds with a token for the same session and no new credential, and treats later presentations as reuse.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>A single row in the identity module keeps the policy next to the sessions it governs, is read once per short cache period, and is changed through the same audited, strongly authenticated administration as people and permissions. Environment variables would need redeployments and could not show the administrator the consequences. Re-deriving open sessions avoids a confusing period in which old sessions follow old rules. Hard limits and the production floor keep a permissive development choice from silently reaching production, while still allowing the owner to choose comfortable values. The grace window is short and limited to the immediately previous credential of a live session, so stolen-credential detection is preserved for any later reuse.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"configuration-through-environment-variables\">Configuration through environment variables</h3>\n<p>Rejected: changes would require restarts and deployment access, the owner asked to manage them in administration, and a development value could be copied into production unnoticed.</p>\n<h3 id=\"per-person-or-per-role-policies\">Per-person or per-role policies</h3>\n<p>Not adopted now: one policy plus fixed owner safeguards covers the request with much less to review. Role-specific policies can be added on the same storage if needed.</p>\n<h3 id=\"longer-access-tokens-instead-of-renewals\">Longer access tokens instead of renewals</h3>\n<p>Rejected: other modules accept access tokens until they expire, so long tokens would delay revocation and permission changes. Sessions stay long through renewals instead.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Development can use long sessions and an optional second factor; production policy is restored from administration, with administrators' second factor guaranteed.</li>\n<li>Unexpected sign-outs caused by concurrent renewals are removed, and inactivity reflects what the person does.</li>\n<li>Remembered browsers reduce repeated codes for ordinary accounts without weakening administrators.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>More security-relevant state is administrable, so an owner can still choose a weaker (but bounded and acknowledged) policy.</li>\n<li>Other API instances follow a policy change within the 15-second cache; access tokens already issued remain valid for up to 10 minutes.</li>\n<li>Remembered browsers rely on a long-lived HttpOnly cookie on that device.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>Additive migration <code>202610050002_identity_security_policy</code> (policy row, remembered browsers, refresh rotation time, sign-in enrollment tickets); without a row the previous behavior continues.</li>\n<li>Before production, an owner reviews the policy at <code>/admin</code> (Autenticação e segurança).</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/domains/identity#authentication-policy\">Identity domain</a></li>\n<li><a href=\"/docs/repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links\">ADR-0022</a>, <a href=\"/docs/repository/docs/adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary\">ADR-0012</a></li>\n<li><a href=\"/docs/repository/docs/security/authentication\">Authentication policy</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0025-administer-the-authentication-policy-within-fixed-safeguards",
+      "text": "ADR-0025: Administer the Authentication Policy within Fixed Safeguards",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "configuration-through-environment-variables",
+      "text": "Configuration through environment variables",
+      "level": 3
+    },
+    {
+      "id": "per-person-or-per-role-policies",
+      "text": "Per-person or per-role policies",
+      "level": 3
+    },
+    {
+      "id": "longer-access-tokens-instead-of-renewals",
+      "text": "Longer access tokens instead of renewals",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

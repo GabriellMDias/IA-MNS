@@ -5,7 +5,8 @@ import { createAgentModule } from "./features/agent/module.js";
 import { createSalesCapability } from "./features/sales/capability.js";
 import { providersConfigured } from "./features/sales/module.js";
 import { SalesChat } from "./features/sales/application.js";
-import { createOpenAiPlanner } from "./features/sales/planner.js";
+import { createModelInterpreter } from "./features/sales/interpreter.js";
+import { createOpenAiModel } from "./ai/openai.js";
 import { createOracleReader } from "./features/sales/oracle.js";
 import {
   createIdentityModule,
@@ -22,7 +23,7 @@ function salesService(resources: ModuleResources): SalesChat | undefined {
   let service = salesServices.get(config);
   if (!service) {
     service = new SalesChat(
-      createOpenAiPlanner(config),
+      createModelInterpreter(createOpenAiModel(config)),
       createOracleReader(config),
     );
     salesServices.set(config, service);

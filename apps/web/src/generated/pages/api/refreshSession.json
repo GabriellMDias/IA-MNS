@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "refreshSession",
   "summary": "",
-  "description": "Rotate the direct-URL refresh cookie and return a new access token. Reuse of a rotated credential revokes the session.",
+  "description": "Rotate the direct-URL refresh cookie and return a new access token. `active` reports user activity since the last renewal; only activity postpones the inactivity deadline. A concurrent renewal by another tab within a short grace window gets a token without rotation; later reuse of a rotated credential revokes the session.",
   "security": [],
   "components": {},
   "method": "POST",
@@ -17,17 +17,17 @@
       "application/json": {
         "schema": {
           "type": "object",
-          "properties": {},
+          "properties": { "active": { "type": "boolean", "default": true } },
           "additionalProperties": false
         }
       }
     },
     "schema": {
       "type": "object",
-      "properties": {},
+      "properties": { "active": { "type": "boolean", "default": true } },
       "additionalProperties": false
     },
-    "fields": []
+    "fields": [{ "name": "active", "type": "boolean", "required": false }]
   },
   "responses": [
     {

@@ -63,10 +63,30 @@
               },
               {
                 "type": "object",
-                "required": ["kind", "challenge"],
+                "required": ["kind", "challenge", "rememberDeviceDays"],
                 "properties": {
                   "kind": { "type": "string", "const": "mfa_required" },
-                  "challenge": { "type": "string" }
+                  "challenge": { "type": "string" },
+                  "rememberDeviceDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "required": ["kind", "challenge"],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "mfa_enrollment_required"
+                  },
+                  "challenge": {
+                    "type": "string",
+                    "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
+                  }
                 },
                 "additionalProperties": false
               },
@@ -170,10 +190,27 @@
           },
           {
             "type": "object",
-            "required": ["kind", "challenge"],
+            "required": ["kind", "challenge", "rememberDeviceDays"],
             "properties": {
               "kind": { "type": "string", "const": "mfa_required" },
-              "challenge": { "type": "string" }
+              "challenge": { "type": "string" },
+              "rememberDeviceDays": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Days this browser may skip the code after it is confirmed; 0 means the option is not offered."
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["kind", "challenge"],
+            "properties": {
+              "kind": { "type": "string", "const": "mfa_enrollment_required" },
+              "challenge": {
+                "type": "string",
+                "description": "Single-use enrollment challenge: the policy requires a second factor this account has not set up."
+              }
             },
             "additionalProperties": false
           },

@@ -15,8 +15,15 @@ import type { SankhyaDirectory, SankhyaUser } from "./sankhya-directory.js";
 import { IdentityFailure } from "./errors.js";
 import {
   ADMIN_PERMISSION,
+  defaultSecurityPolicy,
   effectivePermissions,
+  effectivePolicy,
   lifetimes,
+  policyLimits,
+  policyProblems,
+  policyWarnings,
+  rememberDeviceDaysFor,
+  secondFactorRequired,
   normalizeDisplayName,
   normalizeLogin,
   passwordProblem,
@@ -24,6 +31,7 @@ import {
   type PermissionDescriptor,
   type Provider,
   type ProviderGrant,
+  type SecurityPolicy,
   type SessionMethod,
   type Surface,
 } from "./domain.js";
@@ -59,6 +67,10 @@ export type Authenticated = {
   linked: Provider | null;
   /** The sign-in proved a suggested profile during a pending first access. */
   resumeFirstAccess: boolean;
+  /** Absolute end of a direct session (refresh cookie lifetime). */
+  sessionExpiresAt: Date | null;
+  /** New remembered-browser token, delivered only as an HttpOnly cookie. */
+  rememberDevice: { token: string; days: number } | null;
 };
 /**
  * Why a first access stopped before creating a Person: another active Person
@@ -68,7 +80,13 @@ export type Authenticated = {
 export type ProvisionReason = "candidate" | "signed_in";
 export type FlowOutcome =
   | Authenticated
-  | { kind: "mfa_required"; challenge: string }
+  | {
+      kind: "mfa_required";
+      challenge: string;
+      /** Days this browser may be remembered after the code; 0 = not offered. */
+      rememberDeviceDays: number;
+    }
+  | { kind: "mfa_enrollment_required"; challenge: string }
   | {
       kind: "provision_required";
       ticket: string;
@@ -113,7 +131,9 @@ export class IdentityService {
   private readonly encryptionKey: Buffer;
   readonly providers: IdentityProviders;
   private readonly transfer: OwnershipTransfer;
+  private readonly production: boolean;
   private readonly now: Clock;
+  private policyCache: { value: SecurityPolicy; at: number } | null = null;
   constructor(
     repository: IdentityRepository,
     issuer: AccessTokenIssuer,
@@ -122,6 +142,7 @@ export class IdentityService {
     encryptionKey: Buffer,
     providers: IdentityProviders,
     transfer: OwnershipTransfer,
+    production: boolean,
     now: Clock = () => new Date(),
   ) {
     this.repository = repository;
@@ -131,7 +152,36 @@ export class IdentityService {
     this.encryptionKey = encryptionKey;
     this.providers = providers;
     this.transfer = transfer;
+    this.production = production;
     this.now = now;
+  }
+
+  // ---------------- authentication policy ----------------
+  /**
+   * The enforced authentication policy (stored or default, with production
+   * guarantees). Cached briefly; a change made through this process applies
+   * at once, other API instances follow within the cache period.
+   */
+  async securityPolicy(): Promise<SecurityPolicy> {
+    const at = Date.now();
+    if (this.policyCache && at - this.policyCache.at < 15_000)
+      return this.policyCache.value;
+    const stored = await this.repository.policy();
+    const value = effectivePolicy(
+      stored
+        ? {
+            sessionMaxMinutes: stored.sessionMaxMinutes,
+            idleTimeoutMinutes: stored.idleTimeoutMinutes,
+            recentAuthMinutes: stored.recentAuthMinutes,
+            adminRecentAuthMinutes: stored.adminRecentAuthMinutes,
+            mfaRequirement: stored.mfaRequirement,
+            rememberDeviceDays: stored.rememberDeviceDays,
+          }
+        : defaultSecurityPolicy,
+      this.production,
+    );
+    this.policyCache = { value, at };
+    return value;
   }
 
   /** Whether people can sign in (prove an account) with this provider. */
@@ -166,6 +216,15 @@ export class IdentityService {
     const now = this.now();
     const direct = surface === "direct";
     const refreshToken = direct ? randomSecret() : null;
+    // Direct sessions follow the administrable policy; embedded sessions stay
+    // short and renew silently through a new host proof.
+    const policy = await this.securityPolicy();
+    const absoluteMs = direct
+      ? policy.sessionMaxMinutes * 60_000
+      : lifetimes.embeddedSessionMs;
+    const idleMs = direct
+      ? Math.min(policy.idleTimeoutMinutes * 60_000, absoluteMs)
+      : lifetimes.embeddedSessionMs;
     const session = await this.repository.createSession({
       personId,
       method,
@@ -173,18 +232,8 @@ export class IdentityService {
       assurance,
       refreshHash: refreshToken ? sha256(refreshToken) : null,
       now,
-      expiresAt: new Date(
-        now.getTime() +
-          (direct
-            ? lifetimes.directSessionAbsoluteMs
-            : lifetimes.embeddedSessionMs),
-      ),
-      idleExpiresAt: new Date(
-        now.getTime() +
-          (direct
-            ? lifetimes.directSessionIdleMs
-            : lifetimes.embeddedSessionMs),
-      ),
+      expiresAt: new Date(now.getTime() + absoluteMs),
+      idleExpiresAt: new Date(now.getTime() + idleMs),
     });
     await this.repository.audit("session.started", personId, personId, {
       method,
@@ -195,6 +244,7 @@ export class IdentityService {
       ...(await this.tokenFor(session)),
       refreshToken,
       provisioned,
+      sessionExpiresAt: direct ? session.expiresAt : null,
     };
   }
 
@@ -217,6 +267,8 @@ export class IdentityService {
       provisioned: false,
       linked: null,
       resumeFirstAccess: false,
+      sessionExpiresAt: null,
+      rememberDevice: null,
     };
   }
 
@@ -236,21 +288,34 @@ export class IdentityService {
     return session;
   }
 
-  async refresh(refreshToken: string): Promise<Authenticated> {
+  /**
+   * Renews a direct session. `active` reports user activity since the last
+   * renewal; only activity postpones the inactivity deadline. A concurrent
+   * renewal by another tab of the same browser receives a token without a new
+   * credential (`refreshToken: null`); the browser keeps the winner's cookie.
+   */
+  async refresh(refreshToken: string, active = true): Promise<Authenticated> {
     const next = randomSecret();
-    const rotated = await this.repository.rotateRefresh(
-      sha256(refreshToken),
-      sha256(next),
-      this.now(),
-      lifetimes.directSessionIdleMs,
-    );
-    if (rotated.result !== "rotated") {
+    const policy = await this.securityPolicy();
+    const rotated = await this.repository.rotateRefresh({
+      refreshHash: sha256(refreshToken),
+      nextHash: sha256(next),
+      now: this.now(),
+      idleMs: policy.idleTimeoutMinutes * 60_000,
+      active,
+      graceMs: lifetimes.refreshRaceGraceMs,
+    });
+    if (!("sessionId" in rotated)) {
       if (rotated.result === "reused")
         await this.repository.audit("session.refresh_reuse", null, null, {});
       throw new IdentityFailure("IDENTITY_INVALID_CREDENTIALS");
     }
     const session = await this.activeSession(rotated.sessionId);
-    return { ...(await this.tokenFor(session)), refreshToken: next };
+    return {
+      ...(await this.tokenFor(session)),
+      refreshToken: rotated.result === "rotated" ? next : null,
+      sessionExpiresAt: rotated.expiresAt,
+    };
   }
 
   /** The Person signed in on this browser (direct-surface refresh cookie), if any. */
@@ -276,11 +341,20 @@ export class IdentityService {
       );
   }
 
-  private requireRecent(
+  /**
+   * Sensitive changes need a sign-in or confirmation within the policy window:
+   * `account` for one's own credentials and links, `admin` for administration.
+   */
+  private async requireRecent(
     session: SessionRecord,
-    windowMs: number = lifetimes.recentAuthenticationMs,
+    kind: "account" | "admin" = "account",
   ) {
-    if (this.now().getTime() - session.authTime.getTime() > windowMs)
+    const policy = await this.securityPolicy();
+    const minutes =
+      kind === "admin"
+        ? policy.adminRecentAuthMinutes
+        : policy.recentAuthMinutes;
+    if (this.now().getTime() - session.authTime.getTime() > minutes * 60_000)
       throw new IdentityFailure("IDENTITY_RECENT_AUTHENTICATION_REQUIRED");
   }
 
@@ -289,6 +363,7 @@ export class IdentityService {
     loginInput: string,
     password: string,
     surface: Surface,
+    rememberedDevice?: string,
   ): Promise<FlowOutcome> {
     const login = normalizeLogin(loginInput);
     const credential = login
@@ -318,7 +393,31 @@ export class IdentityService {
       );
       throw new IdentityFailure("IDENTITY_INVALID_CREDENTIALS");
     }
+    const policy = await this.securityPolicy();
+    const owner = await this.isOwner(credential.personId);
     if (credential.totpEnabledAt) {
+      const rememberDays = this.rememberDays(policy, owner, surface);
+      if (
+        rememberDays > 0 &&
+        rememberedDevice &&
+        (await this.repository.useRememberedDevice(
+          credential.personId,
+          sha256(rememberedDevice),
+          new Date(now.getTime() - rememberDays * 24 * 3600_000),
+          now,
+        ))
+      ) {
+        await this.repository.recordSuccess(credential.personId);
+        await this.repository.audit(
+          "login.remembered_device",
+          credential.personId,
+          credential.personId,
+          {},
+        );
+        // A remembered browser skips the code but is not a strong session:
+        // second-factor management still asks for the code.
+        return this.open(credential.personId, "local", surface, "single");
+      }
       const challenge = randomSecret();
       await this.repository.createTicket({
         purpose: "mfa",
@@ -327,10 +426,138 @@ export class IdentityService {
         payload: { surface },
         expiresAt: new Date(now.getTime() + lifetimes.mfaTicketMs),
       });
-      return { kind: "mfa_required", challenge };
+      return {
+        kind: "mfa_required",
+        challenge,
+        rememberDeviceDays: rememberDays,
+      };
+    }
+    if (secondFactorRequired(policy, owner)) {
+      // The policy requires a second factor this person has not set up yet:
+      // the password alone opens no session, only the enrollment.
+      const challenge = randomSecret();
+      await this.repository.createTicket({
+        purpose: "mfa_enrollment",
+        tokenHash: sha256(challenge),
+        personId: credential.personId,
+        payload: { surface },
+        expiresAt: new Date(now.getTime() + lifetimes.totpSetupMs),
+      });
+      return { kind: "mfa_enrollment_required", challenge };
     }
     await this.repository.recordSuccess(credential.personId);
     return this.open(credential.personId, "local", surface, "single");
+  }
+
+  private async isOwner(personId: string): Promise<boolean> {
+    return Boolean(
+      (await this.repository.snapshot(personId))?.roles.includes("owner"),
+    );
+  }
+
+  private rememberDays(
+    policy: SecurityPolicy,
+    owner: boolean,
+    surface: Surface,
+  ): number {
+    return rememberDeviceDaysFor(policy, owner, surface === "direct");
+  }
+
+  /** Sign-in enrollment required by the policy: returns the secret once. */
+  async startSignInEnrollment(challenge: string) {
+    const now = this.now();
+    const ticket = await this.repository.peekTicket(
+      "mfa_enrollment",
+      sha256(challenge),
+      now,
+    );
+    if (!ticket?.personId) throw new IdentityFailure("IDENTITY_FLOW_EXPIRED");
+    const credential = await this.repository.credentialOf(ticket.personId);
+    if (!credential || credential.totpEnabledAt)
+      throw new IdentityFailure("IDENTITY_FLOW_EXPIRED");
+    const secret = newTotpSecret();
+    const setup = randomSecret();
+    await this.repository.createTicket({
+      purpose: "totp_setup",
+      tokenHash: sha256(setup),
+      personId: ticket.personId,
+      payload: {
+        sealed: seal(this.encryptionKey, secret),
+        enrollment: sha256(challenge),
+      },
+      expiresAt: ticket.expiresAt,
+    });
+    return {
+      setup,
+      secret: base32Encode(secret),
+      otpauthUri: otpauthUri(secret, credential.login),
+    };
+  }
+
+  /** Confirms the enrollment code, enables the factor and opens a strong session. */
+  async completeSignInEnrollment(
+    challenge: string,
+    setup: string,
+    code: string,
+  ) {
+    const now = this.now();
+    const enrollment = await this.repository.peekTicket(
+      "mfa_enrollment",
+      sha256(challenge),
+      now,
+    );
+    const pending = await this.repository.peekTicket(
+      "totp_setup",
+      sha256(setup),
+      now,
+    );
+    if (
+      !enrollment?.personId ||
+      !pending ||
+      pending.personId !== enrollment.personId ||
+      pending.payload.enrollment !== sha256(challenge)
+    )
+      throw new IdentityFailure("IDENTITY_FLOW_EXPIRED");
+    const sealed = String(pending.payload.sealed);
+    const step = matchTotp(
+      unseal(this.encryptionKey, sealed),
+      code.trim(),
+      now.getTime(),
+      null,
+    );
+    if (step === null) throw new IdentityFailure("IDENTITY_INVALID_CODE");
+    const consumed = await this.repository.consumeTicket(
+      "mfa_enrollment",
+      sha256(challenge),
+      now,
+    );
+    if (
+      !consumed ||
+      !(await this.repository.consumeTicket("totp_setup", sha256(setup), now))
+    )
+      throw new IdentityFailure("IDENTITY_FLOW_EXPIRED");
+    const personId = enrollment.personId;
+    const codes = recoveryCodes();
+    await this.repository.enableTotp(
+      personId,
+      sealed,
+      step,
+      codes.map((item) => sha256(normalizeRecoveryCode(item))),
+      now,
+    );
+    await this.repository.recordSuccess(personId);
+    await this.repository.audit("mfa.enabled", personId, personId, {
+      atSignIn: true,
+    });
+    return {
+      recoveryCodes: codes,
+      ...(await this.open(
+        personId,
+        "local",
+        surfaceOf(consumed.payload.surface),
+        "mfa",
+      )),
+    };
   }
 
   /** Verifies a TOTP or single-use recovery code for a Person. */
@@ -371,7 +598,11 @@ export class IdentityService {
     return used;
   }
 
-  async completeMfa(challenge: string, code: string): Promise<Authenticated> {
+  async completeMfa(
+    challenge: string,
+    code: string,
+    rememberDevice = false,
+  ): Promise<Authenticated> {
     const now = this.now();
     const ticket = await this.repository.peekTicket(
       "mfa",
@@ -399,12 +630,28 @@ export class IdentityService {
     );
     if (!consumed) throw new IdentityFailure("IDENTITY_FLOW_EXPIRED");
     await this.repository.recordSuccess(ticket.personId);
-    return this.open(
+    const surface = surfaceOf(consumed.payload.surface);
+    const authenticated = await this.open(
       ticket.personId,
       "local",
-      surfaceOf(consumed.payload.surface),
+      surface,
       "mfa",
     );
+    const days = this.rememberDays(
+      await this.securityPolicy(),
+      await this.isOwner(ticket.personId),
+      surface,
+    );
+    if (!rememberDevice || days === 0) return authenticated;
+    const token = randomSecret();
+    await this.repository.rememberDevice(ticket.personId, sha256(token), now);
+    await this.repository.audit(
+      "mfa.device_remembered",
+      ticket.personId,
+      ticket.personId,
+      { days },
+    );
+    return { ...authenticated, rememberDevice: { token, days } };
   }
 
   /** Step-up for local credentials: password plus second factor when enrolled. */
@@ -814,7 +1061,7 @@ export class IdentityService {
         );
         return { kind: "reauthenticated" };
       }
-      this.requireRecent(session);
+      await this.requireRecent(session);
       if (existing && existing.person.id !== personId) {
         // The person proved both profiles. Offer consolidation only when the other
         // profile holds nothing but this account; anything else needs the owner.
@@ -988,7 +1235,7 @@ export class IdentityService {
     sessionId: string,
   ): Promise<FlowOutcome> {
     const session = await this.activeSession(sessionId);
-    this.requireRecent(session);
+    await this.requireRecent(session);
     const ticket = await this.repository.consumeTicket(
       "provision",
       sha256(ticketValue),
@@ -1021,7 +1268,7 @@ export class IdentityService {
     sessionId: string,
   ): Promise<{ kind: "linked"; provider: Provider }> {
     const session = await this.activeSession(sessionId);
-    this.requireRecent(session);
+    await this.requireRecent(session);
     const ticket = await this.repository.peekTicket(
       "merge",
       sha256(ticketValue),
@@ -1190,6 +1437,24 @@ export class IdentityService {
       ticket.personId,
       {},
     );
+    // When the policy requires a second factor, the new password opens no
+    // session until the authenticator is set up, as at any other sign-in.
+    if (
+      secondFactorRequired(
+        await this.securityPolicy(),
+        snapshot.roles.includes("owner"),
+      )
+    ) {
+      const challenge = randomSecret();
+      await this.repository.createTicket({
+        purpose: "mfa_enrollment",
+        tokenHash: sha256(challenge),
+        personId: ticket.personId,
+        payload: { surface: "direct" },
+        expiresAt: new Date(this.now().getTime() + lifetimes.totpSetupMs),
+      });
+      return { kind: "mfa_enrollment_required" as const, challenge };
+    }
     return this.open(ticket.personId, "enrollment", "direct", "single");
   }
 
@@ -1198,7 +1463,14 @@ export class IdentityService {
     const session = await this.activeSession(sessionId);
     const snapshot = await this.repository.snapshot(session.personId);
     if (!snapshot) throw new IdentityFailure("IDENTITY_PERSON_NOT_FOUND");
+    const policy = await this.securityPolicy();
     return {
+      rememberedDevices: await this.repository.rememberedDevices(
+        session.personId,
+        new Date(
+          this.now().getTime() - policy.rememberDeviceDays * 24 * 3600_000,
+        ),
+      ),
       session,
       snapshot,
       permissions: this.permissionsOf(snapshot),
@@ -1227,7 +1499,7 @@ export class IdentityService {
     loginInput: string | undefined,
   ) {
     const session = await this.activeSession(sessionId);
-    this.requireRecent(session);
+    await this.requireRecent(session);
     const credential = await this.repository.credentialOf(session.personId);
     const now = this.now();
     if (credential) {
@@ -1244,6 +1516,7 @@ export class IdentityService {
         now,
         session.id,
       );
+      await this.repository.forgetDevices(session.personId, now);
       await this.repository.audit(
         "credential.password_changed",
         session.personId,
@@ -1271,7 +1544,7 @@ export class IdentityService {
 
   async startTotpSetup(sessionId: string) {
     const session = await this.activeSession(sessionId);
-    this.requireRecent(session);
+    await this.requireRecent(session);
     const credential = await this.repository.credentialOf(session.personId);
     if (!credential)
       throw new IdentityFailure("IDENTITY_LOCAL_CREDENTIAL_REQUIRED");
@@ -1343,13 +1616,16 @@ export class IdentityService {
 
   async disableTotp(sessionId: string) {
     const session = await this.activeSession(sessionId);
-    this.requireRecent(session);
+    await this.requireRecent(session);
     if (session.assurance !== "mfa")
       throw new IdentityFailure("IDENTITY_STRONG_AUTHENTICATION_REQUIRED");
     const snapshot = await this.repository.snapshot(session.personId);
     if (snapshot?.roles.includes("owner"))
       throw new IdentityFailure("IDENTITY_ACCESS_DENIED");
+    if (secondFactorRequired(await this.securityPolicy(), false))
+      throw new IdentityFailure("IDENTITY_TOTP_REQUIRED");
     await this.repository.disableTotp(session.personId);
+    await this.repository.forgetDevices(session.personId, this.now());
     await this.repository.stepUp(session.id, "single", session.authTime);
     await this.repository.audit(
       "mfa.disabled",
@@ -1361,7 +1637,7 @@ export class IdentityService {
 
   async regenerateRecoveryCodes(sessionId: string) {
     const session = await this.activeSession(sessionId);
-    this.requireRecent(session);
+    await this.requireRecent(session);
     if (session.assurance !== "mfa")
       throw new IdentityFailure("IDENTITY_STRONG_AUTHENTICATION_REQUIRED");
     const codes = recoveryCodes();
@@ -1380,7 +1656,7 @@ export class IdentityService {
 
   async unlink(sessionId: string, linkId: string) {
     const session = await this.activeSession(sessionId);
-    this.requireRecent(session);
+    await this.requireRecent(session);
     const removed = await this.repository.removeLink(
       session.personId,
       linkId,
@@ -1426,10 +1702,14 @@ export class IdentityService {
     const snapshot = await this.repository.snapshot(session.personId);
     if (!snapshot?.roles.includes("owner"))
       throw new IdentityFailure("IDENTITY_ACCESS_DENIED");
-    if (session.assurance !== "mfa")
+    // Administration needs a session confirmed with the second factor unless a
+    // non-production policy turned the requirement off.
+    if (
+      (await this.securityPolicy()).mfaRequirement !== "none" &&
+      session.assurance !== "mfa"
+    )
       throw new IdentityFailure("IDENTITY_STRONG_AUTHENTICATION_REQUIRED");
-    if (mutation)
-      this.requireRecent(session, lifetimes.adminRecentAuthenticationMs);
+    if (mutation) await this.requireRecent(session, "admin");
     return session;
   }
 
@@ -1847,6 +2127,7 @@ export class IdentityService {
       "credential_reset",
       this.now(),
     );
+    await this.repository.forgetDevices(personId, this.now());
     const token = await this.invitation("reset", personId, session.personId);
     await this.repository.audit(
       "credential.reset_issued",
@@ -1872,6 +2153,105 @@ export class IdentityService {
       { count },
     );
     return count;
+  }
+
+  /** Stops skipping the second factor on every browser of the signed-in Person. */
+  async forgetRememberedDevices(sessionId: string) {
+    const session = await this.activeSession(sessionId);
+    const count = await this.repository.forgetDevices(
+      session.personId,
+      this.now(),
+    );
+    await this.repository.audit(
+      "mfa.devices_forgotten",
+      session.personId,
+      session.personId,
+      { count },
+    );
+    return count;
+  }
+
+  /** Owner view of the authentication policy, its limits and recent changes. */
+  async securityPolicyView(sessionId: string) {
+    await this.requireOwner(sessionId, false);
+    const stored = await this.repository.policy();
+    const configured: SecurityPolicy = stored
+      ? {
+          sessionMaxMinutes: stored.sessionMaxMinutes,
+          idleTimeoutMinutes: stored.idleTimeoutMinutes,
+          recentAuthMinutes: stored.recentAuthMinutes,
+          adminRecentAuthMinutes: stored.adminRecentAuthMinutes,
+          mfaRequirement: stored.mfaRequirement,
+          rememberDeviceDays: stored.rememberDeviceDays,
+        }
+      : { ...defaultSecurityPolicy };
+    const updater = stored?.updatedBy
+      ? await this.repository.snapshot(stored.updatedBy)
+      : null;
+    return {
+      configured,
+      effective: effectivePolicy(configured, this.production),
+      defaults: { ...defaultSecurityPolicy },
+      limits: policyLimits,
+      production: this.production,
+      warnings: policyWarnings(configured),
+      updatedAt: stored?.updatedAt ?? null,
+      updatedBy: updater?.displayName ?? null,
+      history: await this.repository.auditByAction("policy.updated", 10),
+    };
+  }
+
+  /**
+   * Owner change of the authentication policy. Values outside the hard bounds
+   * and an optional second factor in production are refused; settings that
+   * significantly reduce security must be acknowledged explicitly. Open direct
+   * sessions follow the new durations at once.
+   */
+  async updateSecurityPolicy(
+    sessionId: string,
+    input: SecurityPolicy,
+    acknowledgeReducedSecurity: boolean,
+  ) {
+    const session = await this.requireOwner(sessionId, true);
+    const problems = policyProblems(input, this.production);
+    if (problems.includes("mfa_none_in_production"))
+      throw new IdentityFailure("IDENTITY_POLICY_NOT_ALLOWED");
+    if (problems.length) throw new IdentityFailure("IDENTITY_POLICY_INVALID");
+    const before = (await this.repository.policy()) ?? defaultSecurityPolicy;
+    const warnings = policyWarnings(input);
+    const newlyReduced = warnings.filter(
+      (field) => !policyWarnings(before).includes(field),
+    );
+    if (newlyReduced.length && !acknowledgeReducedSecurity)
+      throw new IdentityFailure("IDENTITY_POLICY_CONFIRMATION_REQUIRED");
+    const now = this.now();
+    const { ended } = await this.repository.savePolicy(
+      input,
+      session.personId,
+      now,
+    );
+    this.policyCache = null;
+    const details: Record<string, string | number | boolean | null> = {
+      reducedSecurity: warnings.length > 0,
+      endedSessions: ended,
+    };
+    for (const key of Object.keys(input) as (keyof SecurityPolicy)[])
+      if (before[key] !== input[key]) {
+        details[`${key}From`] = before[key];
+        details[`${key}To`] = input[key];
+      }
+    await this.repository.audit(
+      "policy.updated",
+      session.personId,
+      null,
+      details,
+    );
+    const current = await this.repository.session(session.id);
+    return {
+      endedSessions: ended,
+      currentSessionEnded:
+        !current || current.expiresAt <= now || current.idleExpiresAt <= now,
+    };
   }
 
   async prune() {

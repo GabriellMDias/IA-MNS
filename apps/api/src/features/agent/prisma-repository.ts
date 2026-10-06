@@ -318,6 +318,7 @@ export class AgentRepository {
     id: string,
     turnId: string,
     outcome: { reply: AgentReply; contexts: unknown } | { failureCode: string },
+    trace: unknown = null,
   ) {
     await this.locked(owner, id, async (tx, item) => {
       if (item.activeTurnId !== turnId)
@@ -343,6 +344,12 @@ export class AgentRepository {
             : { state: "failed", failureCode: outcome.failureCode }),
         },
       });
+      // Content-level AI traces share the turn lifecycle: written with its
+      // outcome and removed by conversation deletion.
+      if (trace !== null)
+        await tx.agentTurnTrace.create({
+          data: { turnId, conversationId: id, trace: json(trace) },
+        });
       await tx.agentConversation.update({
         where: { id },
         data: {
