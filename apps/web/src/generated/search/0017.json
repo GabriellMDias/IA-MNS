@@ -666,6 +666,78 @@
     "text": "Derived projects and unreleased commits\nA project may be described as derived from `Orion v1.0.0` when its recorded initialization commit equals that tag's target, or as having a `v1.0.0` foundation baseline when its recorded baseline equals the target. Its [manifest](../.orion/project.json) still stores the corresponding SHA, with no required semantic-version field. Tags neither change the [baseline-recording safety rules](project-derivation.md#upgrade-to-a-newer-orion-revision) nor replace normal Git ancestry, reviewed merge commits, and validation for upgrades.\nTo determine whether a recorded commit has a semantic version, inspect stable tags in the canonical Orion repository and compare their resolved commit SHAs with the recorded SHA (for example, `git rev-list -n 1 v1.0.0` in an Orion clone with the tag). The derived project's `orion-upstream` deliberately does not fetch tags, so use a separate Orion clone or the canonical repository's tag view. A nearby or ancestral tag does not name an untagged baseline.\nThe latest stable tag identifies the latest released human-readable version. Later commits on `main` are unreleased foundation revisions; a project can deliberately use one by its SHA. The next semantic version is assigned only when another release point is tagged. Ordinary merges require no new tag.\n"
   },
   {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "IA-MNS Visual Identity",
+    "anchor": "ia-mns-visual-identity",
+    "text": "IA-MNS Visual Identity\n[Documentation index](README.md) · [Web identity assets](../apps/web/README.md#identity) · [Global styles](../apps/web/src/styles.css) · [Corporate agent](domains/corporate-agent.md)\nIA-MNS is MNS's corporate AI agent, so its identity belongs to the MNS family: the MNS blue field, bold white letters, and the red wedge that fills the lower counter of the \"N\" in the MNS logo. IA-MNS has its own marks drawn from those elements; it does not reproduce the MNS corporate logo. This document owns the colors, logos, and usage rules. The [web guide](../apps/web/README.md#identity) owns where the files live and how the derived touch icon is regenerated.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Brand colors",
+    "anchor": "brand-colors",
+    "text": "Brand colors\nSampled from the MNS logo. They are the same in both display themes and are exposed as `--brand-blue` and `--brand-red` in [`styles.css`](../apps/web/src/styles.css).\nName\nValue\nRole\nMNS blue\n`#2B3E84`\nLogo field and lettering, light-theme accent (buttons, avatars, charts).\nMNS red\n`#EC1C24`\nSignature only: the wedge in the logos and a few thin decorative details.\nWhite\n`#FFFFFF`\nLogo bubble, lettering on blue, text on accent surfaces.\nRed is a signature, not a state. It never fills buttons, links, text, or status messages; errors use the `--error-*` tokens, a deeper red on a pale background, so a failure is never confused with branding. Current red details are limited to the logos, the 3-pixel line under the documentation header, and the current-page indicator in the documentation navigation.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Logos",
+    "anchor": "logos",
+    "text": "Logos\nAll files are SVG in [`apps/web/src/assets`](../apps/web/src/assets/brand-mark.svg) except the derived touch icon.\n![IA-MNS horizontal lockup](../apps/web/src/assets/brand-lockup.svg)\nFile\nUse\nMinimum size\n[`brand-mark.svg`](../apps/web/src/assets/brand-mark.svg)\nSymbol: \"IA\" in a white speech bubble on an MNS blue tile, with the red wedge as the bubble's tail. App icon, sidebar, chat welcome, loading screen, documentation header and navigation, source of the touch icon.\n28 px\n[`brand-favicon.svg`](../apps/web/src/assets/brand-favicon.svg)\nSmall-size symbol: the same bubble and wedge without letters, drawn on a 32-unit grid. Browser favicon and the 20-pixel label on assistant replies.\n16 px, up to 24 px\n[`brand-lockup.svg`](../apps/web/src/assets/brand-lockup.svg)\nHorizontal lockup: symbol and the drawn `IA-MNS` wordmark in MNS blue, whose \"N\" keeps the red lower counter of the MNS logo. Light backgrounds; sign-in screen in the light theme.\n24 px high\n[`brand-lockup-reverse.svg`](../apps/web/src/assets/brand-lockup-reverse.svg)\nThe same lockup with a white wordmark. MNS blue or dark backgrounds; sign-in screen in the dark theme.\n24 px high\n[`brand-touch-icon.png`](../apps/web/src/assets/brand-touch-icon.png)\n180×180 raster of `brand-mark.svg` on MNS blue for Apple home screens. Derived; never edited by hand.\n—\nBelow 28 pixels the letters inside the symbol stop being legible, which is why the favicon variant exists. The lockups embed the symbol's drawing; keep them in step with `brand-mark.svg`.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Construction",
+    "anchor": "construction",
+    "text": "Construction\n**Tile**: square with a 28/128 corner radius and a subtle diagonal gradient (`#3349A0` to `#25387A`) that recalls the light sweep of the MNS background.\n**Bubble and wedge**: the tail is a right triangle with a vertical left edge and a diagonal hypotenuse, the MNS wedge turned to point down. It sits behind the bubble so only the part outside it shows.\n**Wordmark**: heavy grotesque letters drawn as paths (cap height 56 units, stems about 15 units), so the logo renders the same everywhere without a font dependency. Only the \"N\" carries red.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Usage rules",
+    "anchor": "usage-rules",
+    "text": "Usage rules\nKeep clear space of at least a quarter of the symbol's height around every logo.\nDo not recolor, outline, rotate, stretch, add shadows to, or redraw the marks; do not typeset the wordmark in another font.\nUse `brand-lockup.svg` only on light backgrounds and `brand-lockup-reverse.svg` only on MNS blue or dark ones. The symbol carries its own blue tile and works on both.\nWhere a screen shows a logo next to live text that names the product, the image is decorative (`alt=\"\"`). A lockup that stands alone has `alt=\"IA-MNS\"`.\nArtwork made for one theme uses the global `theme-light-only` and `theme-dark-only` classes so only the matching variant is displayed and exposed to assistive technology.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Interface palette",
+    "anchor": "interface-palette",
+    "text": "Interface palette\nThe web application reads colors only from the custom properties in [`styles.css`](../apps/web/src/styles.css); feature styles must use these tokens rather than literal colors. The light theme is white and cool gray with MNS blue as the accent. The dark theme is a deep navy derived from MNS blue, with a light periwinkle accent and dark text on it, because MNS blue itself is too dark to carry text or focus on a dark surface.\nToken\nLight\nDark\nRole\n`--canvas`\n`#F4F6FA`\n`#0B1020`\nPage background behind cards.\n`--surface`\n`#FFFFFF`\n`#111830`\nMain surfaces: chat, cards, dialogs.\n`--surface-muted`\n`#EEF1F7`\n`#172039`\nSidebar, user message bubbles, table headers.\n`--input`\n`#FFFFFF`\n`#1B2543`\nText fields and the composer.\n`--ink`\n`#172140`\n`#E8EBF5`\nPrimary text.\n`--muted`\n`#4D5775`\n`#A9B2CC`\nSecondary text, placeholders.\n`--border`\n`#DADFEA`\n`#2A3454`\nDividers and card outlines.\n`--border-strong`\n`#8A94AE`\n`#66729A`\nField and button outlines (at least 3:1 against surfaces).\n`--accent`\n`#2B3E84`\n`#9FB2F4`\nPrimary buttons, send button, avatars, chart bars, active tabs.\n`--accent-hover`\n`#22326A`\n`#BCCBF8`\nHover state of accent buttons.\n`--on-accent`\n`#FFFFFF`\n`#0F1733`\nText and icons on the accent.\n`--selected`\n`#E2E8F5`\n`#222D50`\nHover and selected rows.\n`--link`\n`#2A4BB0`\n`#A9BCF8`\nLinks and eyebrows.\n`--focus`\n`#3557C2`\n`#A9BCF8`\nFocus outlines.\n`--header`\n`#22326A`\n`#0E1530`\nDocumentation header.\n`--on-header` / `--on-header-muted`\n`#FFFFFF` / `#C3CDEB`\n`#FFFFFF` / `#B9C3E2`\nText on the documentation header.\n`--shadow`\n8% navy\n35% black\nCard and menu shadows.\n`--error-ink` / `--error-bg` / `--error-border`\n`#9B1C24` / `#FDEFEF` / `#EDB5B8`\n`#FFB3B6` / `#3A1823` / `#8E3A47`\nErrors and warnings that need attention.\nEvery text pair above meets WCAG 2.2 AA (4.5:1) in both themes; the lowest is `--muted` on `--selected`, at 5.8:1 in the light theme. Keep that margin when changing a value, and recheck the automated accessibility journeys in [validation](validation.md).\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Typography",
+    "anchor": "typography",
+    "text": "Typography\nInterface text uses `Inter, ui-sans-serif, system-ui, sans-serif`; no web font is downloaded, so the operating system's interface font usually renders. Where the product name appears as live text next to the symbol, it is set at weight 800 to echo the heavy wordmark. The drawn wordmark in the lockups is artwork, not text.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Changing the identity",
+    "anchor": "changing-the-identity",
+    "text": "Changing the identity\nEdit the SVG sources in `apps/web/src/assets`, keeping the lockups in step with the symbol.\nRegenerate the touch icon as described in the [web guide](../apps/web/README.md#identity).\nChange interface colors only through the tokens in `styles.css`, verify contrast in both themes, and review desktop and mobile screens in light and dark.\nUpdate this document in the same change.\n"
+  },
+  {
     "id": "repository/packages/sdk/AGENTS",
     "title": "SDK-local Instructions",
     "group": "Agent instructions",
@@ -700,23 +772,5 @@
     "heading": "Current state",
     "anchor": "current-state",
     "text": "Current state\nThis repository was initialized on 2026-10-01 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It retains the foundation's architecture, policies, tooling, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). It composes the corporate agent and sales modules, PostgreSQL conversation persistence, grounded social responses, actual execution progress, and light/dark themes. Existing deterministic sales results and read-only Oracle access remain in place. Sales interpretation keeps structured conversation state, so answers to clarification questions complete the pending request; curated multi-turn evaluation cases gate every change, and live-model evaluation, trace capture and synthetic scenarios are opt-in tools ([AI interpretation](docs/architecture/ai-interpretation.md), [AI evaluation](docs/architecture/ai-evaluation.md)). [Local setup](docs/setup.md#corporate-agent-and-local-postgresql) provisions Docker PostgreSQL and starts the application. Live OpenAI/Oracle interpretation and original-SQL reconciliation passed on 2026-10-01 using the existing owner-authorized key; [verification](docs/project/live-sales-verification.md) records the earlier provider repair. IA-MNS has its own identity ([identity](docs/domains/identity.md)): one Person per individual, reachable through an IA-MNS account (password and authenticator app), PDT Connect or Sankhya, with the same conversations and permissions whether opened directly or embedded in PDT Connect or the Sankhya Om. People who use PDT Connect or Sankhya get their profile automatically at first access; there is no public account creation, and owners create and associate everyone else. The PDT connector awaits a homologation installation, and Sankhya sign-in awaits the Om security hardening and identity add-on; production refuses Sankhya sign-in until approved. A dedicated SELECT-only Oracle account, unit confirmation, production deployment and shared-deployment lifecycle remain owner actions. No new ERP domains or actions are implemented. The repository is published at https://github.com/GabriellMDias/IA-MNS. Its `main` branch requires pull requests and the `Orion required gate` check, Renovate is enabled, and the applicable GitHub security controls are on.\nThe [corporate agent verification](docs/project/corporate-agent-verification.md) records current real-provider, persistence and gate evidence. The [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "IA-MNS",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Start here",
-    "anchor": "start-here",
-    "text": "Start here\nTask\nEntry point\nFind the policy for a change\n[Documentation task index](docs/README.md)\nUnderstand contributor and agent obligations\n[Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)\nUnderstand architecture and code placement\n[Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)\nAdd a product capability\n[API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation)\nFind a selected technology or its rationale\n[Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)\nDetermine available verification\n[Validation](docs/validation.md)\nReproduce the local workflow\n[Development setup](docs/setup.md)\nExplore local guides, architecture, API routes, data, and components\n[Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data)\nFind outstanding work or required owner decisions\nThe plan and human actions linked from [Current state](#current-state)\nInspect provenance or adopt a newer Orion revision\n[Project derivation](docs/project-derivation.md)\nCreate an operational procedure\n[Runbooks](docs/runbooks/README.md)\nAccepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate.\nDirectory trees in architecture documents describe intended responsibilities, not proof that those directories exist. The physical repository takes precedence over illustrations. English is the canonical repository language; product localization is separate.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "IA-MNS",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "License",
-    "anchor": "license",
-    "text": "License\nIA-MNS is licensed under the [Apache License 2.0](LICENSE), which covers both the project's own work and the material inherited from Orion. [ADR-0021](docs/adr/0021-license-ia-mns-under-apache-2-0.md) records the decision. The repository is public. Never commit credentials, local configuration, or confidential business data.\n"
   }
 ]

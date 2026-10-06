@@ -19,6 +19,8 @@ import {
 import { LocalSignIn, useIdentityStart } from "./session.js";
 import { TotpEnrollment } from "./totp.js";
 import { codeMessage, identityMessage } from "./messages.js";
+import brandLockup from "../../assets/brand-lockup.svg";
+import brandLockupReverse from "../../assets/brand-lockup-reverse.svg";
 
 const providerName: Record<Provider, string> = {
   pdt: "PDT Connect",
@@ -122,10 +124,20 @@ export function AuthLayout({
     <main className="identity-page identity-auth">
       <div className="identity-auth-card">
         <div className="identity-auth-brand">
-          <span className="identity-auth-mark" aria-hidden="true">
-            M
-          </span>
-          <span>IA-MNS</span>
+          <img
+            className="theme-light-only"
+            src={brandLockup}
+            alt="IA-MNS"
+            width="178"
+            height="40"
+          />
+          <img
+            className="theme-dark-only"
+            src={brandLockupReverse}
+            alt="IA-MNS"
+            width="178"
+            height="40"
+          />
         </div>
         <h1>{title}</h1>
         {subtitle && <p className="identity-auth-subtitle">{subtitle}</p>}

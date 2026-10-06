@@ -41,6 +41,7 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | Change backend execution or regenerate derived references | [Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md) |
 | Run or extend the current API feature | [API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json) |
 | Run or extend the web workflow or generated SDK | [Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts) |
+| Change IA-MNS colors, logos, or other visual identity | [Visual identity](visual-identity.md), [web identity assets](../apps/web/README.md#identity) |
 | Change the SDK public surface or generated types | [SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md) |
 
 ## APIs and data

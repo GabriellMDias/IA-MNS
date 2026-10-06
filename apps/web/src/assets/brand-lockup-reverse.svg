@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 392 88">
+  <!-- Horizontal lockup for MNS blue or dark backgrounds: white wordmark. -->
+  <svg width="88" height="88" viewBox="0 0 128 128">
+    <!-- Same drawing as brand-mark.svg; keep both in step. -->
+    <defs>
+      <linearGradient id="lockup-reverse-tile" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#3349A0" />
+        <stop offset="1" stop-color="#25387A" />
+      </linearGradient>
+    </defs>
+    <rect width="128" height="128" rx="28" fill="url(#lockup-reverse-tile)" />
+    <path d="M36 77H64L36 111Z" fill="#EC1C24" />
+    <rect x="22" y="23" width="84" height="60" rx="18" fill="#FFFFFF" />
+    <path
+      fill="#2B3E84"
+      fill-rule="evenodd"
+      d="M40 38H50V68H40Z
+         M56 68L67 38H77L88 68H79L76.8 62H67.2L65 68Z
+         M72 48.9L74.97 57H69.03Z"
+    />
+  </svg>
+  <!-- Wordmark, cap height 56: I, A, hyphen, M, N (red lower counter as in MNS), S. -->
+  <g transform="translate(110 16)">
+    <path
+      fill="#FFFFFF"
+      fill-rule="evenodd"
+      d="M0 0H15V56H0Z
+         M18 56L37 0H59L78 56H62L58.95 47H37.05L34 56Z
+         M48 14.7L55.22 36H40.78Z
+         M77 25H97V35H77Z
+         M103 56V0H126L136 30L146 0H169V56H154V20L142.5 56H129.5L118 20V56Z
+         M174 0H191L214 28.75V0H230V56H214L190 26V56H174Z"
+    />
+    <path fill="#EC1C24" d="M190 26L214 56H190Z" />
+    <path
+      fill="none"
+      stroke="#FFFFFF"
+      stroke-width="14"
+      d="M274 13.9A16.5 10.5 0 0 0 258.5 7A16.5 10.5 0 0 0 242 17.5
+         A16.5 10.5 0 0 0 258.5 28A16.5 10.5 0 0 1 275 38.5
+         A16.5 10.5 0 0 1 258.5 49A16.5 10.5 0 0 1 243 42.1"
+    />
+  </g>
+</svg>

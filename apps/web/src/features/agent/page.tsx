@@ -19,6 +19,8 @@ import {
 } from "@tanstack/react-query";
 import { ApiFailure } from "../../api-client.js";
 import { ConversationSidebar, SidebarIcon } from "./sidebar.js";
+import brandMark from "../../assets/brand-mark.svg";
+import brandFavicon from "../../assets/brand-favicon.svg";
 import { ConversationSearch } from "./search.js";
 import { SalesResults } from "../sales/results.js";
 import { useAgentSession } from "./session.js";
@@ -342,7 +344,7 @@ export function AgentPage() {
         <div className="agent-user-message">{turn.question}</div>
         <article className="agent-assistant-message">
           <div className="agent-assistant-label">
-            <span aria-hidden="true">✦</span> IA-MNS
+            <img src={brandFavicon} alt="" width="20" height="20" /> IA-MNS
           </div>
           {turn.state === "running" ? (
             <div className="agent-progress" role="status">
@@ -549,6 +551,13 @@ export function AgentPage() {
           )}
           {turns.length === 0 && !conversationId && (
             <div className="agent-welcome">
+              <img
+                className="agent-welcome-mark"
+                src={brandMark}
+                alt=""
+                width="56"
+                height="56"
+              />
               <h2>Como posso ajudar hoje?</h2>
               <div className="agent-examples">
                 {[

@@ -1,4 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect x="8" y="8" width="112" height="112" rx="30" fill="#205a47" />
-  <path d="M31 91V37H44L64 66L84 37H97V91H83V61L64 87L45 61V91Z" fill="#f3f7ed" />
+  <!-- IA-MNS symbol: "IA" in a speech bubble whose tail is the MNS red wedge. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3349A0" />
+      <stop offset="1" stop-color="#25387A" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#tile)" />
+  <path d="M36 77H64L36 111Z" fill="#EC1C24" />
+  <rect x="22" y="23" width="84" height="60" rx="18" fill="#FFFFFF" />
+  <path
+    fill="#2B3E84"
+    fill-rule="evenodd"
+    d="M40 38H50V68H40Z
+       M56 68L67 38H77L88 68H79L76.8 62H67.2L65 68Z
+       M72 48.9L74.97 57H69.03Z"
+  />
 </svg>

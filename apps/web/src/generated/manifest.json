@@ -2206,6 +2206,16 @@
       "file": "pages/repository/docs/versioning.json"
     },
     {
+      "id": "repository/docs/visual-identity",
+      "kind": "repository",
+      "title": "IA-MNS Visual Identity",
+      "group": "Project guides",
+      "source": "docs/visual-identity.md",
+      "summary": "IA-MNS is MNS's corporate AI agent, so its identity belongs to the MNS family: the MNS blue field, bold white letters, and the red wedge that fills the lower counter of the \"N\"…",
+      "headings": [],
+      "file": "pages/repository/docs/visual-identity.json"
+    },
+    {
       "id": "repository/packages/sdk/AGENTS",
       "kind": "repository",
       "title": "SDK-local Instructions",
@@ -2259,8 +2269,9 @@
       { "file": "search/0014.json", "count": 76, "kinds": ["repository"] },
       { "file": "search/0015.json", "count": 71, "kinds": ["repository"] },
       { "file": "search/0016.json", "count": 104, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 80, "kinds": ["repository"] }
+      { "file": "search/0017.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 2, "kinds": ["repository"] }
     ],
-    "count": 1251
+    "count": 1259
   }
 }

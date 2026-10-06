@@ -30,6 +30,7 @@ import {
 import { requestHostProof } from "./bridge.js";
 import { identityMessage } from "./messages.js";
 import { TotpEnrollment } from "./totp.js";
+import brandMark from "../../assets/brand-mark.svg";
 import "./identity.css";
 
 /**
@@ -314,6 +315,7 @@ export function RequireSignIn({ children }: { children: ReactNode }) {
   if (!identity.token)
     return (
       <main className="identity-loading" aria-busy="true">
+        <img src={brandMark} alt="" width="48" height="48" />
         <span className="identity-spinner" aria-hidden="true" />
         <span className="visually-hidden" role="status">
           Carregando…

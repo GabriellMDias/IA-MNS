@@ -2,7 +2,8 @@ import { readFile, writeFile } from "node:fs/promises";
 import { URL } from "node:url";
 import { chromium } from "@playwright/test";
 
-// Raster output is only needed by Apple's home-screen icon integration.
+// Raster output is only needed by Apple's home-screen icon integration. The
+// MNS blue background fills the corners Apple masks with its own radius.
 const source = new URL("../src/assets/brand-mark.svg", import.meta.url);
 const destination = new URL(
   "../src/assets/brand-touch-icon.png",
@@ -16,7 +17,7 @@ try {
     deviceScaleFactor: 1,
   });
   await page.setContent(
-    `<style>body{margin:0;background:#f7f9fa}svg{display:block;width:180px;height:180px}</style>${svg}`,
+    `<style>body{margin:0;background:#2b3e84}svg{display:block;width:180px;height:180px}</style>${svg}`,
   );
   const png = await page.screenshot({ type: "png" });
   await writeFile(destination, png);

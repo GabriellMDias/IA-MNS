@@ -169,26 +169,15 @@
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
-  box-shadow: 0 16px 40px rgb(0 0 0 / 0.08);
+  box-shadow: 0 16px 40px var(--shadow);
 }
 .identity-auth-brand {
   display: flex;
-  align-items: center;
-  gap: 10px;
   margin-bottom: 28px;
-  font-size: 15px;
-  font-weight: 600;
 }
-.identity-auth-mark {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 19px;
-  font-weight: 700;
+.identity-auth-brand img {
+  width: auto;
+  height: 40px;
 }
 .identity-auth h1 {
   margin: 0 0 6px;
@@ -294,7 +283,9 @@
 /* ---------- loading while a session is restored ---------- */
 .identity-loading {
   display: grid;
-  place-items: center;
+  place-content: center;
+  justify-items: center;
+  gap: 20px;
   min-height: 100dvh;
   background: var(--surface);
 }

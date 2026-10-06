@@ -1,0 +1,20 @@
+[
+  {
+    "id": "repository/README",
+    "title": "IA-MNS",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Start here",
+    "anchor": "start-here",
+    "text": "Start here\nTask\nEntry point\nFind the policy for a change\n[Documentation task index](docs/README.md)\nUnderstand contributor and agent obligations\n[Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)\nUnderstand architecture and code placement\n[Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)\nAdd a product capability\n[API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation)\nFind a selected technology or its rationale\n[Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)\nDetermine available verification\n[Validation](docs/validation.md)\nReproduce the local workflow\n[Development setup](docs/setup.md)\nExplore local guides, architecture, API routes, data, and components\n[Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data)\nFind outstanding work or required owner decisions\nThe plan and human actions linked from [Current state](#current-state)\nInspect provenance or adopt a newer Orion revision\n[Project derivation](docs/project-derivation.md)\nCreate an operational procedure\n[Runbooks](docs/runbooks/README.md)\nAccepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate.\nDirectory trees in architecture documents describe intended responsibilities, not proof that those directories exist. The physical repository takes precedence over illustrations. English is the canonical repository language; product localization is separate.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "IA-MNS",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "License",
+    "anchor": "license",
+    "text": "License\nIA-MNS is licensed under the [Apache License 2.0](LICENSE), which covers both the project's own work and the material inherited from Orion. [ADR-0021](docs/adr/0021-license-ia-mns-under-apache-2-0.md) records the decision. The repository is public. Never commit credentials, local configuration, or confidential business data.\n"
+  }
+]
