@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "description": "Follow-ups that refine the active analysis, and new questions that must not inherit its constraints.",
+  "cases": [
+    {
+      "id": "follow-up/compare-previous-year",
+      "title": "A comparison follow-up keeps product, period and grouping",
+      "status": "active",
+      "source": "curated",
+      "tags": ["follow-up", "comparison", "multi-turn"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã por mês nos últimos 3 meses?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" },
+              "period": {
+                "kind": "last",
+                "unit": "month",
+                "count": 3,
+                "includeCurrent": false
+              },
+              "groupBy": "month"
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-07-01",
+              "endDate": "2026-09-30",
+              "metric": "net_value",
+              "groupBy": "month",
+              "comparison": "none"
+            }
+          }
+        },
+        {
+          "user": "E comparado ao mesmo período do ano passado?",
+          "fixture": {
+            "interpretation": {
+              "relation": "refine",
+              "comparison": "previous_year"
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-07-01",
+              "endDate": "2026-09-30",
+              "metric": "net_value",
+              "groupBy": "month",
+              "comparison": "previous_year"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "follow-up/change-product-keeps-period",
+      "title": "Changing the product keeps the period",
+      "status": "active",
+      "source": "curated",
+      "tags": ["follow-up", "product", "multi-turn"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã no mês passado?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" },
+              "period": { "kind": "previous", "unit": "month" }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": { "productSearch": "maçã", "startDate": "2026-09-01" }
+          }
+        },
+        {
+          "user": "E de banana?",
+          "fixture": {
+            "interpretation": {
+              "relation": "refine",
+              "filters": { "product": "banana" }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "banana",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30",
+              "metric": "net_value"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "follow-up/identify-considered-products",
+      "title": "Identifying the considered products reuses the filters",
+      "status": "active",
+      "source": "curated",
+      "tags": ["follow-up", "grouping", "multi-turn"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã no mês passado?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" },
+              "period": { "kind": "previous", "unit": "month" }
+            }
+          },
+          "expect": { "kind": "answer" }
+        },
+        {
+          "user": "Quais produtos foram considerados?",
+          "fixture": {
+            "interpretation": { "relation": "refine", "groupBy": "product" }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30",
+              "groupBy": "product"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "follow-up/overall-total-drops-product",
+      "title": "Asking for the overall total removes the product filter",
+      "status": "active",
+      "source": "curated",
+      "tags": ["follow-up", "constraints", "multi-turn"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã no mês passado?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" },
+              "period": { "kind": "previous", "unit": "month" }
+            }
+          },
+          "expect": { "kind": "answer" }
+        },
+        {
+          "user": "Agora quero o total geral de todos os produtos neste mês",
+          "fixture": {
+            "interpretation": {
+              "relation": "new",
+              "measure": "net_value",
+              "filters": { "product": null },
+              "period": { "kind": "current", "unit": "month" }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": null,
+              "startDate": "2026-10-01",
+              "endDate": "2026-10-05"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "follow-up/change-measure",
+      "title": "Changing the measure keeps product and period",
+      "status": "active",
+      "source": "curated",
+      "tags": ["follow-up", "measure", "multi-turn"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã no mês passado?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" },
+              "period": { "kind": "previous", "unit": "month" }
+            }
+          },
+          "expect": { "kind": "answer" }
+        },
+        {
+          "user": "E a quantidade?",
+          "fixture": {
+            "interpretation": { "relation": "refine", "measure": "quantity" }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30",
+              "metric": "quantity"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "follow-up/change-period",
+      "title": "Changing the period keeps the product",
+      "status": "active",
+      "source": "curated",
+      "tags": ["follow-up", "period", "multi-turn"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de banana em agosto?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "banana" },
+              "period": { "kind": "month", "month": 8 }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "banana",
+              "startDate": "2026-08-01",
+              "endDate": "2026-08-31"
+            }
+          }
+        },
+        {
+          "user": "E em setembro?",
+          "fixture": {
+            "interpretation": {
+              "relation": "refine",
+              "period": { "kind": "month", "month": 9 }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "banana",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

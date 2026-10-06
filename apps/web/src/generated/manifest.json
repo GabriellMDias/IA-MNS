@@ -111,6 +111,24 @@
       "file": "pages/api/completeMfa.json"
     },
     {
+      "id": "api/confirmSignInMfaEnrollment",
+      "kind": "api",
+      "title": "confirmSignInMfaEnrollment",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/login/mfa-enrollment/confirm",
+      "method": "POST",
+      "path": "/identity/login/mfa-enrollment/confirm",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/confirmSignInMfaEnrollment.json"
+    },
+    {
       "id": "api/confirmTotpSetup",
       "kind": "api",
       "title": "confirmTotpSetup",
@@ -215,6 +233,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/disableTotp.json"
+    },
+    {
+      "id": "api/forgetRememberedDevices",
+      "kind": "api",
+      "title": "forgetRememberedDevices",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/me/remembered-devices",
+      "method": "DELETE",
+      "path": "/identity/me/remembered-devices",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/forgetRememberedDevices.json"
     },
     {
       "id": "api/forgetSalesConversation",
@@ -368,6 +403,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getSalesStatus.json"
+    },
+    {
+      "id": "api/getSecurityPolicy",
+      "kind": "api",
+      "title": "getSecurityPolicy",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/security-policy",
+      "method": "GET",
+      "path": "/identity/admin/security-policy",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getSecurityPolicy.json"
     },
     {
       "id": "api/getStartupHealth",
@@ -916,6 +968,24 @@
       "file": "pages/api/startProviderSignIn.json"
     },
     {
+      "id": "api/startSignInMfaEnrollment",
+      "kind": "api",
+      "title": "startSignInMfaEnrollment",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/login/mfa-enrollment",
+      "method": "POST",
+      "path": "/identity/login/mfa-enrollment",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/startSignInMfaEnrollment.json"
+    },
+    {
       "id": "api/startTotpSetup",
       "kind": "api",
       "title": "startTotpSetup",
@@ -988,6 +1058,24 @@
       "file": "pages/api/updateIdentityMe.json"
     },
     {
+      "id": "api/updateSecurityPolicy",
+      "kind": "api",
+      "title": "updateSecurityPolicy",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/admin/security-policy",
+      "method": "PUT",
+      "path": "/identity/admin/security-policy",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateSecurityPolicy.json"
+    },
+    {
       "id": "database/agent_conversations",
       "kind": "database",
       "title": "agent_conversations",
@@ -996,6 +1084,16 @@
       "summary": "Actor-owned corporate agent conversation with capability-specific validated context and a bounded execution lease.",
       "headings": [],
       "file": "pages/database/agent_conversations.json"
+    },
+    {
+      "id": "database/agent_turn_traces",
+      "kind": "database",
+      "title": "agent_turn_traces",
+      "group": "agent",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Optional content-level AI trace of one turn, written only when IA_MNS_AI_TRACE=content: model/prompt identifiers, timings and token counts, routing and interpretation decisions, structured conversation state before and after, and the executed query filters. Never result rows, response prose, credentials or provider payloads. Used to reproduce failures and derive evaluation candidates.",
+      "headings": [],
+      "file": "pages/database/agent_turn_traces.json"
     },
     {
       "id": "database/agent_turns",
@@ -1078,6 +1176,16 @@
       "file": "pages/database/identity_role_assignments.json"
     },
     {
+      "id": "database/identity_security_policies",
+      "kind": "database",
+      "title": "identity_security_policies",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The single owner-administered authentication policy: session lifetime, inactivity timeout, recent-authentication windows, second-factor requirement and remembered browsers. Absent row means the built-in secure defaults.",
+      "headings": [],
+      "file": "pages/database/identity_security_policies.json"
+    },
+    {
       "id": "database/identity_sessions",
       "kind": "database",
       "title": "identity_sessions",
@@ -1096,6 +1204,16 @@
       "summary": "Short-lived single-use flow state addressed by the SHA-256 of a high-entropy secret: bootstrap, enrollment, reset and link invitations, pending second factor, pending TOTP setup, provisioning choice, profile consolidation, and pending PDT or Sankhya proofs (state, nonce, PKCE verifier).",
       "headings": [],
       "file": "pages/database/identity_tickets.json"
+    },
+    {
+      "id": "database/identity_trusted_devices",
+      "kind": "database",
+      "title": "identity_trusted_devices",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "A browser that completed the second factor for a Person and asked to be remembered; its HttpOnly cookie holds a random token stored here only as SHA-256.",
+      "headings": [],
+      "file": "pages/database/identity_trusted_devices.json"
     },
     {
       "id": "database/identity_used_assertions",
@@ -1408,6 +1526,26 @@
       "file": "pages/repository/docs/adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.json"
     },
     {
+      "id": "repository/docs/adr/0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior",
+      "kind": "repository",
+      "title": "ADR-0024: Interpret Analytics through Structured State and Evaluate AI Behavior",
+      "group": "Decisions",
+      "source": "docs/adr/0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md",
+      "summary": "Sales interpretation asked the model to produce the complete query, including computed dates, from raw recent questions plus the last successful query. A clarification turn…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.json"
+    },
+    {
+      "id": "repository/docs/adr/0025-administer-the-authentication-policy-within-fixed-safeguards",
+      "kind": "repository",
+      "title": "ADR-0025: Administer the Authentication Policy within Fixed Safeguards",
+      "group": "Decisions",
+      "source": "docs/adr/0025-administer-the-authentication-policy-within-fixed-safeguards.md",
+      "summary": "ADR-0022 fixed direct sessions at 12 hours (2 hours idle), recent authentication at 10 minutes (30 for administration), and a second factor only for administration. The owner…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0025-administer-the-authentication-policy-within-fixed-safeguards.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -1496,6 +1634,26 @@
       "summary": "This page owns how repository instructions reach human contributors and AI coding agents. ADR-0013 records the decision. The repository is not coupled to a particular model,…",
       "headings": [],
       "file": "pages/repository/docs/architecture/agent-instructions.json"
+    },
+    {
+      "id": "repository/docs/architecture/ai-evaluation",
+      "kind": "repository",
+      "title": "AI Evaluation",
+      "group": "Architecture",
+      "source": "docs/architecture/ai-evaluation.md",
+      "summary": "This page owns how IA-MNS measures AI behavior: datasets, deterministic checks, metrics, reports, model-assisted scenario generation, and the path from a traced failure to a…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/ai-evaluation.json"
+    },
+    {
+      "id": "repository/docs/architecture/ai-interpretation",
+      "kind": "repository",
+      "title": "AI Interpretation Architecture",
+      "group": "Architecture",
+      "source": "docs/architecture/ai-interpretation.md",
+      "summary": "This page owns how IA-MNS turns a Portuguese message into a bounded analytical query: the division of work between model and application, the structured conversation state, the…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/ai-interpretation.json"
     },
     {
       "id": "repository/docs/architecture/application-boundaries",
@@ -2048,6 +2206,16 @@
       "file": "pages/repository/docs/versioning.json"
     },
     {
+      "id": "repository/docs/visual-identity",
+      "kind": "repository",
+      "title": "IA-MNS Visual Identity",
+      "group": "Project guides",
+      "source": "docs/visual-identity.md",
+      "summary": "IA-MNS is MNS's corporate AI agent, so its identity belongs to the MNS family: the MNS blue field, bold white letters, and the red wedge that fills the lower counter of the \"N\"…",
+      "headings": [],
+      "file": "pages/repository/docs/visual-identity.json"
+    },
+    {
       "id": "repository/packages/sdk/AGENTS",
       "kind": "repository",
       "title": "SDK-local Instructions",
@@ -2080,28 +2248,30 @@
   ],
   "search": {
     "shards": [
-      { "file": "search/0000.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0001.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0002.json", "count": 15, "kinds": ["api"] },
-      { "file": "search/0003.json", "count": 14, "kinds": ["api"] },
-      { "file": "search/0004.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0005.json", "count": 14, "kinds": ["api", "database"] },
+      { "file": "search/0000.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0001.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 16, "kinds": ["api"] },
+      { "file": "search/0003.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0006.json", "count": 17, "kinds": ["api", "database"] },
       {
-        "file": "search/0006.json",
-        "count": 81,
+        "file": "search/0007.json",
+        "count": 80,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0007.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0008.json", "count": 129, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 167, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 118, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 121, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 85, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 76, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 98, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 96, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 18, "kinds": ["repository"] }
+      { "file": "search/0008.json", "count": 108, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 129, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 167, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 125, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 135, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 84, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 71, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 104, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 2, "kinds": ["repository"] }
     ],
-    "count": 1177
+    "count": 1259
   }
 }

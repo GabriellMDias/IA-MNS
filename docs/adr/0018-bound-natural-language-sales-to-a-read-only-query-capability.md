@@ -3,6 +3,7 @@
 **Status:** accepted
 **Date:** 2026-10-01
 **Partially superseded by:** [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md) replaces the sales-specific product identity and temporary conversation decision. Controlled sales execution and deterministic answers remain accepted.
+**Extended by:** [ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md): the model now reports a structured interpretation that the application merges, resolves and compiles into the same bounded query.
 
 ## Context
 

@@ -108,7 +108,7 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 **Request and reason:** The owner configured a key manually and explicitly authorized reusing it on 2026-10-01, superseding the previous request for a new key and its incomplete picker/destination flow. No new key was created or rotated by the agent.
 **Configuration:** OPENAI_API_KEY, optional OPENAI_MODEL; ignored root .env.local, never browser or tracked source. Minimum application capability: model Responses requests.
 **Verification:** Safe presence check and actual strict Responses interpretation with the configured key/model succeeded; ten live-language HTTP scenarios passed through the real application. [Live evidence](live-sales-verification.md).
-**Evidence / blocker:** Authenticated live interpretation passed on 2026-10-01. Account ownership, project attribution, billing, and retention policy remain owner controls; successful requests do not independently attest those settings. Oracle grants/units remain PH-08.
+**Evidence / blocker:** Authenticated live interpretation passed on 2026-10-01. On 2026-10-05 the same key and model ran opt-in AI evaluations, synthetic candidate generation and simulations under PJ-20; only synthetic dataset text was sent. Account ownership, project attribution, billing, and retention policy remain owner controls; successful requests do not independently attest those settings. Oracle grants/units remain PH-08.
 
 ## PH-08
 
@@ -127,8 +127,8 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 
 **Status:** pending (conditional on shared deployment). **Owner:** project owner.
 **Dependency / trigger:** PJ-05; PostgreSQL local history introduced by PJ-09 is explicitly authorized.
-**Request and reason:** Before shared deployment, choose conversation retention/deletion duration, provider data policy, backup/restore requirements and permitted operators. Local history currently persists until its owner explicitly deletes it; no automatic expiry or backup promise is made. Select real employee authentication/permission mapping at that point, not in this task.
-**Configuration:** Existing ORION_DATABASE_URL and verifier settings; no new secret or provider is required for local operation.
+**Request and reason:** Before shared deployment, choose conversation retention/deletion duration, provider data policy, backup/restore requirements and permitted operators. Include confidential AI content traces (`agent_turn_traces`, enabled by `IA_MNS_AI_TRACE=content`): whether production may capture them, for how long, who may export them to evaluation candidates, and how they are anonymized; production refuses content tracing until this decision exists. Local history currently persists until its owner explicitly deletes it; no automatic expiry or backup promise is made. Select real employee authentication/permission mapping at that point, not in this task.
+**Configuration:** Existing ORION_DATABASE_URL and verifier settings; no new secret or provider is required for local operation. `IA_MNS_AI_TRACE` (non-secret: `off`, `metadata` or `content`).
 **Verification:** Approved lifecycle controls, recovery evidence and deployment-specific identity exist before sharing confidential history.
 **Evidence / blocker:** Local Docker volume, restricted runtime grants and explicit cascade deletion implemented on 2026-10-01; shared-operation policy remains intentionally undecided. On 2026-10-04 the IA-MNS identity (Persons, local accounts, PDT/Sankhya links, sessions, permissions, owner administration) was implemented under PJ-15 ([identity](../domains/identity.md)); retention of identity data, sessions and audit is part of this pending policy. Shared deployment has not been triggered.
 
@@ -141,7 +141,7 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 **Request and reason:** Commit the reviewed migration/application baseline and record its immutable commit/checksums in release-history.json when establishing a supported persistent environment. The local conversation migration has been applied; treat its SQL as immutable now. Do not edit applied history because the registry currently has no recorded release. Committing the migrations in the first pull request does not record a release.
 **Configuration:** none.
 **Verification:** Release-history validation and supported upgrade evidence reference the actual committed baseline.
-**Evidence / blocker:** Two additive local agent migrations have been applied, including conversation organization on 2026-10-02. On 2026-10-03 they were first committed for review in the initial project pull request; no release-history entry, release tag, or remote release was created.
+**Evidence / blocker:** Two additive local agent migrations have been applied, including conversation organization on 2026-10-02. On 2026-10-03 they were first committed for review in the initial project pull request; no release-history entry, release tag, or remote release was created. On 2026-10-05 PJ-20 added the additive `202610050001_agent_turn_traces` migration; it was verified on disposable PostgreSQL only and has not been applied to the owner's local volume.
 
 ## PH-11
 
@@ -150,6 +150,7 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 **Status:** pending (blocks production approval of Sankhya sign-in, PJ-17). **Owner:** infrastructure administrator with the project owner; Sankhya support for WildFly settings.
 **Dependency / trigger:** [PJ-17](implementation-plan.md#current-work); does not block the rest of the identity.
 **Request and reason:** An internal read-only review on 2026-10-04 found that the current Om deployment does not yet meet the conditions below. The specific hosts, ports and observations are kept with the project owner, outside this public repository. Approve and apply, preferably at the TLS reverse proxy that Sankhya recommends:
+
 1. HTTPS-only access with HSTS for the Om host.
 2. `Secure` and `SameSite=Lax` on the Om session cookie. Use `Lax`, not `Strict`, which would break "Entrar com Sankhya".
 3. Only `https://` redirects generated by the Om behind the proxy (forwarded protocol honored by WildFly, or `Location` rewriting).
@@ -170,6 +171,7 @@ Apply nothing without the owner's approval. Never test with real credentials ove
 **Status:** pending (blocks PJ-16). **Owner:** PDT Connect owner/administrator.
 **Dependency / trigger:** [PJ-16](implementation-plan.md#current-work); IA-MNS's PDT connector is implemented and tested against a synthetic contract.
 **Request and reason:** In an HTTPS homologation PDT (never production):
+
 1. Apply the identity migration.
 2. Set `PDT_IDENTITY_ISSUER`.
 3. Register the IA-MNS client in `PDT_IDENTITY_CLIENTS` with the redirect URI of the IA-MNS homologation `/api/identity/pdt/callback` and only the SHA-256 of a secret generated for IA-MNS.
@@ -178,6 +180,7 @@ Apply nothing without the owner's approval. Never test with real credentials ove
 The host page is a PDT frontend change that needs the owner's authorization; the PDT backend contract needs no change.
 **Configuration:** in IA-MNS: `PDT_IDENTITY_BASE_URL`, `PDT_IDENTITY_ISSUER`, `PDT_IDENTITY_CLIENT_ID`, `PDT_IDENTITY_CLIENT_SECRET` (secret store only), `PDT_IDENTITY_REDIRECT_URI`, `PDT_EMBED_ORIGIN`; `ORION_WEB_EMBED_ANCESTORS` or the hosting equivalent.
 **Verification:** In homologation:
+
 - direct sign-in, first access and reload work;
 - embedded sign-in without a new login works, including silent renewal and reload;
 - revocation is followed by a 401;
@@ -206,11 +209,12 @@ Record the HTTPS evidence.
 **Request and reason:** The add-on reads the authenticated user from the server-side Om session and signs short assertions under the [assertion contract](../domains/identity.md#sankhya-om-add-on-assertion-contract-outside-this-repository). Its embedding page frames `/embed/sankhya` and answers the bridge, and its authorize page serves the direct URL. Decide the Add-on Studio (developer portal access) or BI JSP packaging. Generate the signing key pair, keep the private key in Om custody outside sources editable by ordinary BI authors, and restrict who can publish JSP or add-ons. The disposable proof-of-concept JSP outside this repository is not production code.
 **Configuration:** in IA-MNS: `SANKHYA_IDENTITY_ISSUER`, `SANKHYA_IDENTITY_KEYS` (public keys only), `SANKHYA_IDENTITY_AUTHORIZE_URL`, `SANKHYA_EMBED_ORIGIN`.
 **Verification:** Through the HTTPS name, test with native and Sankhya ID logins:
+
 - the CODUSU is correct;
 - assertions are bound to the nonce and single-use;
 - signed-out users are refused;
 - the add-on refuses requests outside the HTTPS name.
-**Evidence / blocker:** Not started; the 2026-10-04 local proof of concept validated the signing code (Java 8) and the browser mechanics only.
+  **Evidence / blocker:** Not started; the 2026-10-04 local proof of concept validated the signing code (Java 8) and the browser mechanics only.
 
 ## PH-15
 
@@ -219,13 +223,15 @@ Record the HTTPS evidence.
 **Status:** pending (conditional on shared deployment, PJ-05). **Owner:** project owner / platform operator.
 **Dependency / trigger:** [PJ-05](implementation-plan.md#current-work).
 **Request and reason:**
+
 - An HTTPS IA-MNS public origin, with web and API under the same origin.
 - The signing and encryption keys generated for production in the secret store, never reused from local development.
 - Web hosting that sends `frame-ancestors 'none'` on every route except `/embed/pdt` and `/embed/sankhya`, which allow only their host origins.
 - Running `pnpm identity:bootstrap` on the server to create the first owner, plus a second owner for recovery.
-**Configuration:** `IA_MNS_PUBLIC_ORIGIN`, `IA_MNS_IDENTITY_SIGNING_KEY`, `IA_MNS_IDENTITY_ENCRYPTION_KEY` (both secret), optional `IA_MNS_IDENTITY_AUDIENCE`.
-**Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP are verified in the deployed environment.
-**Evidence / blocker:** No deployment environment yet.
+- An owner reviewing **Administração → Autenticação e segurança** before opening production: a policy relaxed for development (long sessions, remembered browsers) should return to production values; production always keeps the administrators' second factor ([ADR-0025](../adr/0025-administer-the-authentication-policy-within-fixed-safeguards.md)).
+  **Configuration:** `IA_MNS_PUBLIC_ORIGIN`, `IA_MNS_IDENTITY_SIGNING_KEY`, `IA_MNS_IDENTITY_ENCRYPTION_KEY` (both secret), optional `IA_MNS_IDENTITY_AUDIENCE`.
+  **Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP, and the reviewed authentication policy are verified in the deployed environment.
+  **Evidence / blocker:** No deployment environment yet.
 
 ## New action template
 

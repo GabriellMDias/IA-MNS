@@ -1,0 +1,284 @@
+{
+  "version": 1,
+  "description": "Routing, unsupported scope, measures and literal product phrases.",
+  "cases": [
+    {
+      "id": "unsupported/customer-filter",
+      "title": "A customer filter is rejected rather than partially answered",
+      "status": "active",
+      "source": "curated",
+      "tags": ["unsupported", "constraints"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi para o cliente Mercado Central em setembro?",
+          "fixture": {
+            "interpretation": {
+              "decision": "unsupported",
+              "unsupportedReason": "dimension"
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "unavailable"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unsupported/returns",
+      "title": "Returns are not reported as net sales",
+      "status": "active",
+      "source": "curated",
+      "tags": ["unsupported"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto tivemos de devoluções em setembro?",
+          "fixture": {
+            "interpretation": {
+              "decision": "unsupported",
+              "unsupportedReason": "measure"
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "unavailable"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unsupported/sales-forecast",
+      "title": "A sales forecast is unsupported, not a period question",
+      "status": "active",
+      "source": "curated",
+      "tags": ["unsupported", "period"],
+      "today": "2026-10-05",
+      "notes": "Added from the 2026-10-05 live evaluation: the capability reports recorded sales and never forecasts. Either the router or the sales boundary may reject it; only the unavailable reply is required.",
+      "turns": [
+        {
+          "user": "Quanto vamos vender em 2027?",
+          "fixture": {
+            "interpretation": {
+              "decision": "unsupported",
+              "unsupportedReason": "operation"
+            }
+          },
+          "expect": {
+            "kind": "unavailable"
+          }
+        }
+      ]
+    },
+    {
+      "id": "unsupported/erp-write",
+      "title": "An ERP write is an unavailable capability",
+      "status": "active",
+      "source": "curated",
+      "tags": ["unsupported", "routing"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Cadastre um novo produto chamado maçã verde",
+          "fixture": {
+            "route": {
+              "intent": "unavailable",
+              "capabilityId": null
+            }
+          },
+          "expect": {
+            "route": "unavailable",
+            "kind": "unavailable"
+          }
+        }
+      ]
+    },
+    {
+      "id": "social/wellbeing",
+      "title": "A social opening needs no business details",
+      "status": "active",
+      "source": "curated",
+      "tags": ["routing", "social"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Oi, tudo bem?",
+          "fixture": {
+            "route": {
+              "intent": "wellbeing",
+              "capabilityId": null
+            }
+          },
+          "expect": {
+            "route": "wellbeing",
+            "kind": "conversation"
+          }
+        }
+      ]
+    },
+    {
+      "id": "measure/weight-in-kilograms",
+      "title": "Kilograms select the weight measure",
+      "status": "active",
+      "source": "curated",
+      "tags": ["measure"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quantos kg de maçã vendemos em setembro?",
+          "fixture": {
+            "interpretation": {
+              "measure": "weight",
+              "filters": {
+                "product": "maçã"
+              },
+              "period": {
+                "kind": "month",
+                "month": 9
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "metric": "weight",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "measure/quantity-of-packages",
+      "title": "Counting packages selects the quantity measure",
+      "status": "active",
+      "source": "curated",
+      "tags": ["measure"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quantas caixas de banana vendemos este mês?",
+          "fixture": {
+            "interpretation": {
+              "measure": "quantity",
+              "filters": {
+                "product": "banana"
+              },
+              "period": {
+                "kind": "current",
+                "unit": "month"
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "banana",
+              "metric": "quantity",
+              "startDate": "2026-10-01",
+              "endDate": "2026-10-05"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "product/plural-becomes-singular",
+      "title": "An ordinary plural noun becomes the singular product phrase",
+      "status": "active",
+      "source": "curated",
+      "tags": ["product"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçãs ontem?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": {
+                "product": "maçã"
+              },
+              "period": {
+                "kind": "previous",
+                "unit": "day"
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-10-04"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "product/variety-is-kept",
+      "title": "An explicit variety stays in the product phrase",
+      "status": "active",
+      "source": "curated",
+      "tags": ["product"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã gala no mês passado?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": {
+                "product": "maçã gala"
+              },
+              "period": {
+                "kind": "previous",
+                "unit": "month"
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": "maçã gala",
+              "startDate": "2026-09-01"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "constraints/no-product-means-all-products",
+      "title": "A question without a product adds no product filter",
+      "status": "active",
+      "source": "curated",
+      "tags": ["constraints"],
+      "today": "2026-10-05",
+      "turns": [
+        {
+          "user": "Qual foi o valor líquido vendido neste mês?",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "period": {
+                "kind": "current",
+                "unit": "month"
+              }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": null,
+              "startDate": "2026-10-01",
+              "endDate": "2026-10-05",
+              "metric": "net_value"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

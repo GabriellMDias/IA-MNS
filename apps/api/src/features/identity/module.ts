@@ -29,7 +29,9 @@ import {
   providerGrantPolicy,
   providers,
   validateCatalog,
+  defaultSecurityPolicy,
   lifetimes,
+  type MfaRequirement,
   type PermissionDescriptor,
   type Provider,
   type Surface,
@@ -37,7 +39,8 @@ import {
 import * as contracts from "./contracts.js";
 
 const respond = errorResponder({ ...coreErrors, ...identityErrors });
-type CookieKind = "session" | "pdt" | "sankhya" | "provision" | "merge";
+type CookieKind =
+  "session" | "pdt" | "sankhya" | "provision" | "merge" | "device";
 
 /**
  * What identity needs from the composition: moving another module's
@@ -172,6 +175,7 @@ export function identityServiceFor(
     Buffer.from(config.identityEncryptionKey, "base64url"),
     configured,
     ports.transferOwnership,
+    config.environment === "production",
     options.now,
   );
 }
@@ -307,6 +311,11 @@ export function createIdentityModule(
               }
               return sessionId;
             };
+            /** The refresh cookie lives exactly as long as the session may. */
+            const sessionCookieSeconds = (expiresAt: Date | null) =>
+              expiresAt
+                ? Math.max(0, (expiresAt.getTime() - Date.now()) / 1000)
+                : defaultSecurityPolicy.sessionMaxMinutes * 60;
             const deliver = (reply: FastifyReply, outcome: FlowOutcome) => {
               if (outcome.kind !== "authenticated") return outcome;
               if (outcome.refreshToken)
@@ -315,7 +324,15 @@ export function createIdentityModule(
                   "session",
                   outcome.refreshToken,
                   "Strict",
-                  lifetimes.directSessionAbsoluteMs / 1000,
+                  sessionCookieSeconds(outcome.sessionExpiresAt),
+                );
+              if (outcome.rememberDevice)
+                setCookie(
+                  reply,
+                  "device",
+                  outcome.rememberDevice.token,
+                  "Strict",
+                  outcome.rememberDevice.days * 24 * 3600,
                 );
               return {
                 kind: outcome.kind,
@@ -415,11 +432,21 @@ export function createIdentityModule(
                       request.body.login,
                       request.body.password,
                       request.body.surface ?? "direct",
+                      // Remembered browsers apply only to same-origin sign-in.
+                      sameOriginWeb(request)
+                        ? jar.read(request, "device")
+                        : undefined,
                     ),
                   ),
                 ),
             );
-            scope.post<{ Body: { challenge: string; code: string } }>(
+            scope.post<{
+              Body: {
+                challenge: string;
+                code: string;
+                rememberDevice?: boolean;
+              };
+            }>(
               contracts.mfaOperation.url,
               { schema: contracts.mfaOperation.schema, ...limit(10) },
               (request, reply) =>
@@ -429,27 +456,68 @@ export function createIdentityModule(
                     await svc.completeMfa(
                       request.body.challenge,
                       request.body.code,
+                      request.body.rememberDevice === true &&
+                        sameOriginWeb(request),
                     ),
                   ),
                 ),
             );
-            scope.post(
+            scope.post<{ Body: { challenge: string } }>(
+              contracts.signInEnrollmentStartOperation.url,
+              {
+                schema: contracts.signInEnrollmentStartOperation.schema,
+                ...limit(10),
+              },
+              (request, reply) =>
+                handle(request, reply, (svc) =>
+                  svc.startSignInEnrollment(request.body.challenge),
+                ),
+            );
+            scope.post<{
+              Body: { challenge: string; setup: string; code: string };
+            }>(
+              contracts.signInEnrollmentConfirmOperation.url,
+              {
+                schema: contracts.signInEnrollmentConfirmOperation.schema,
+                ...limit(10),
+              },
+              (request, reply) =>
+                handle(request, reply, async (svc) => {
+                  const result = await svc.completeSignInEnrollment(
+                    request.body.challenge,
+                    request.body.setup,
+                    request.body.code,
+                  );
+                  deliver(reply, result);
+                  return {
+                    recoveryCodes: result.recoveryCodes,
+                    accessToken: result.accessToken,
+                    expiresIn: result.expiresIn,
+                  };
+                }),
+            );
+            scope.post<{ Body: { active?: boolean } }>(
               contracts.refreshOperation.url,
-              { schema: contracts.refreshOperation.schema, ...limit(30) },
+              { schema: contracts.refreshOperation.schema, ...limit(60) },
               (request, reply) =>
                 handle(request, reply, async (svc) => {
                   const refresh = jar.read(request, "session");
                   if (!refresh || !sameOriginWeb(request))
                     throw new IdentityFailure("IDENTITY_INVALID_CREDENTIALS");
                   try {
-                    const result = await svc.refresh(refresh);
-                    setCookie(
-                      reply,
-                      "session",
-                      result.refreshToken!,
-                      "Strict",
-                      lifetimes.directSessionAbsoluteMs / 1000,
+                    const result = await svc.refresh(
+                      refresh,
+                      request.body.active !== false,
                     );
+                    // A concurrent renewal keeps the cookie the winner set.
+                    if (result.refreshToken)
+                      setCookie(
+                        reply,
+                        "session",
+                        result.refreshToken,
+                        "Strict",
+                        sessionCookieSeconds(result.sessionExpiresAt),
+                      );
                     return {
                       accessToken: result.accessToken,
                       expiresIn: result.expiresIn,
@@ -836,6 +904,7 @@ export function createIdentityModule(
                     assurance: detail.session.assurance,
                     authenticatedAt: iso(detail.session.authTime),
                   },
+                  rememberedDevices: detail.rememberedDevices,
                   linkableProviders: providers.filter(
                     (item) =>
                       svc.signInAvailable(item) &&
@@ -952,7 +1021,53 @@ export function createIdentityModule(
               ),
             );
 
+            scope.delete(
+              contracts.forgetDevicesOperation.url,
+              { schema: contracts.forgetDevicesOperation.schema },
+              authed(async (svc, sessionId) => ({
+                forgotten: await svc.forgetRememberedDevices(sessionId),
+              })),
+            );
+
             // ---------- owner administration ----------
+            scope.get(
+              contracts.adminPolicyOperation.url,
+              { schema: contracts.adminPolicyOperation.schema },
+              authed(async (svc, sessionId) => {
+                const view = await svc.securityPolicyView(sessionId);
+                return {
+                  ...view,
+                  updatedAt: view.updatedAt ? iso(view.updatedAt) : null,
+                  history: view.history.map((item) => ({
+                    ...item,
+                    occurredAt: iso(item.occurredAt),
+                  })),
+                };
+              }),
+            );
+            type PolicyBody = {
+              Body: {
+                sessionMaxMinutes: number;
+                idleTimeoutMinutes: number;
+                recentAuthMinutes: number;
+                adminRecentAuthMinutes: number;
+                mfaRequirement: MfaRequirement;
+                rememberDeviceDays: number;
+                acknowledgeReducedSecurity?: boolean;
+              };
+            };
+            scope.put<PolicyBody>(
+              contracts.adminUpdatePolicyOperation.url,
+              { schema: contracts.adminUpdatePolicyOperation.schema },
+              authed<PolicyBody>(async (svc, sessionId, request) => {
+                const { acknowledgeReducedSecurity, ...policy } = request.body;
+                return svc.updateSecurityPolicy(
+                  sessionId,
+                  policy,
+                  acknowledgeReducedSecurity === true,
+                );
+              }),
+            );
             type PersonParams = { Params: { personId: string } };
             const capabilities = (svc: IdentityService) => ({
               sankhyaDirectory: svc.directoryAvailable(),

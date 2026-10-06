@@ -50,7 +50,25 @@ export const outcomeSchema = Type.Union([
     object,
   ),
   Type.Object(
-    { kind: Type.Literal("mfa_required"), challenge: Type.String() },
+    {
+      kind: Type.Literal("mfa_required"),
+      challenge: Type.String(),
+      rememberDeviceDays: Type.Integer({
+        minimum: 0,
+        description:
+          "Days this browser may skip the code after it is confirmed; 0 means the option is not offered.",
+      }),
+    },
+    object,
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("mfa_enrollment_required"),
+      challenge: Type.String({
+        description:
+          "Single-use enrollment challenge: the policy requires a second factor this account has not set up.",
+      }),
+    },
     object,
   ),
   Type.Object(
@@ -141,9 +159,53 @@ const personSchema = Type.Object(
   },
   object,
 );
+const policyFields = {
+  sessionMaxMinutes: Type.Integer({
+    description: "Longest a direct session lasts from sign-in.",
+  }),
+  idleTimeoutMinutes: Type.Integer({
+    description: "Longest a direct session survives without user activity.",
+  }),
+  recentAuthMinutes: Type.Integer({
+    description:
+      "How long a sign-in or confirmation allows sensitive changes to one's own account.",
+  }),
+  adminRecentAuthMinutes: Type.Integer({
+    description:
+      "How long a strong sign-in or confirmation allows administrative changes.",
+  }),
+  mfaRequirement: Type.Union(
+    [
+      Type.Literal("everyone"),
+      Type.Literal("administrators"),
+      Type.Literal("none"),
+    ],
+    {
+      description:
+        "Who must use a second factor with an IA-MNS password; none is refused in production.",
+    },
+  ),
+  rememberDeviceDays: Type.Integer({
+    description:
+      "Days a browser skips the second factor at sign-in; 0 asks every time. Owners only when the second factor is optional (never in production).",
+  }),
+};
+const policySchema = Type.Object(policyFields, object);
+const limitSchema = Type.Object(
+  {
+    min: Type.Integer(),
+    max: Type.Integer(),
+    recommendedMax: Type.Integer(),
+  },
+  object,
+);
 export const meSchema = Type.Object(
   {
     person: personSchema,
+    rememberedDevices: Type.Integer({
+      minimum: 0,
+      description: "Browsers currently remembered to skip the second factor.",
+    }),
     session: Type.Object(
       {
         id: uuid,
@@ -231,18 +293,72 @@ export const mfaOperation = operation(
   "POST",
   "/identity/login/mfa",
   "completeMfa",
-  "Complete a local sign-in with a TOTP code or a single-use recovery code.",
+  "Complete a local sign-in with a TOTP code or a single-use recovery code. When the policy offers it, `rememberDevice` lets this browser skip the code at later sign-ins (HttpOnly cookie).",
   {
-    body: Type.Object({ challenge: secret, code: codeField }, object),
+    body: Type.Object(
+      {
+        challenge: secret,
+        code: codeField,
+        rememberDevice: Type.Optional(Type.Boolean()),
+      },
+      object,
+    ),
     response: { 200: outcomeSchema, ...errors },
+  },
+);
+const enrollmentSecret = Type.Object(
+  { setup: Type.String(), secret: Type.String(), otpauthUri: Type.String() },
+  object,
+);
+const recoveryCodeList = Type.Array(Type.String(), {
+  minItems: 10,
+  maxItems: 10,
+});
+export const signInEnrollmentStartOperation = operation(
+  "POST",
+  "/identity/login/mfa-enrollment",
+  "startSignInMfaEnrollment",
+  "When the policy requires a second factor the account lacks, start its setup after the password. Returns the secret once.",
+  {
+    body: Type.Object({ challenge: secret }, object),
+    response: { 200: enrollmentSecret, ...errors },
+  },
+);
+export const signInEnrollmentConfirmOperation = operation(
+  "POST",
+  "/identity/login/mfa-enrollment/confirm",
+  "confirmSignInMfaEnrollment",
+  "Confirm the second factor set up during sign-in: enables it, returns single-use recovery codes once and opens a strong session.",
+  {
+    body: Type.Object(
+      { challenge: secret, setup: secret, code: codeField },
+      object,
+    ),
+    response: {
+      200: Type.Object(
+        {
+          recoveryCodes: recoveryCodeList,
+          accessToken: Type.String(),
+          expiresIn: Type.Integer({ minimum: 1 }),
+        },
+        object,
+      ),
+      ...errors,
+    },
   },
 );
 export const refreshOperation = operation(
   "POST",
   "/identity/session/refresh",
   "refreshSession",
-  "Rotate the direct-URL refresh cookie and return a new access token. Reuse of a rotated credential revokes the session.",
-  { body: Type.Object({}, object), response: { 200: tokenSchema, ...errors } },
+  "Rotate the direct-URL refresh cookie and return a new access token. `active` reports user activity since the last renewal; only activity postpones the inactivity deadline. A concurrent renewal by another tab within a short grace window gets a token without rotation; later reuse of a rotated credential revokes the session.",
+  {
+    body: Type.Object(
+      { active: Type.Optional(Type.Boolean({ default: true })) },
+      object,
+    ),
+    response: { 200: tokenSchema, ...errors },
+  },
 );
 export const logoutOperation = operation(
   "POST",
@@ -610,6 +726,19 @@ export const unlinkOperation = operation(
   },
   true,
 );
+export const forgetDevicesOperation = operation(
+  "DELETE",
+  "/identity/me/remembered-devices",
+  "forgetRememberedDevices",
+  "Stop skipping the second factor on every browser remembered for the signed-in Person.",
+  {
+    response: {
+      200: Type.Object({ forgotten: Type.Integer({ minimum: 0 }) }, object),
+      ...errors,
+    },
+  },
+  true,
+);
 export const revokeSessionOperation = operation(
   "DELETE",
   "/identity/me/sessions/:sessionId",
@@ -845,6 +974,84 @@ export const adminMergeOperation = operation(
   },
   true,
 );
+export const adminPolicyOperation = operation(
+  "GET",
+  "/identity/admin/security-policy",
+  "getSecurityPolicy",
+  "Owner: the authentication policy as configured and as enforced (production never lets administrators skip the second factor), its defaults, limits, the settings that reduce security and recent changes.",
+  {
+    response: {
+      200: Type.Object(
+        {
+          configured: policySchema,
+          effective: policySchema,
+          defaults: policySchema,
+          limits: Type.Object(
+            {
+              sessionMaxMinutes: limitSchema,
+              idleTimeoutMinutes: limitSchema,
+              recentAuthMinutes: limitSchema,
+              adminRecentAuthMinutes: limitSchema,
+              rememberDeviceDays: limitSchema,
+            },
+            object,
+          ),
+          production: Type.Boolean(),
+          warnings: Type.Array(Type.String()),
+          updatedAt: nullable(Type.String({ format: "date-time" })),
+          updatedBy: nullable(Type.String()),
+          history: Type.Array(
+            Type.Object(
+              {
+                occurredAt: Type.String({ format: "date-time" }),
+                actorName: nullable(Type.String()),
+                details: Type.Record(
+                  Type.String(),
+                  Type.Union([
+                    Type.String(),
+                    Type.Number(),
+                    Type.Boolean(),
+                    Type.Null(),
+                  ]),
+                ),
+              },
+              object,
+            ),
+          ),
+        },
+        object,
+      ),
+      ...errors,
+    },
+  },
+  true,
+);
+export const adminUpdatePolicyOperation = operation(
+  "PUT",
+  "/identity/admin/security-policy",
+  "updateSecurityPolicy",
+  "Owner: change the authentication policy (strong, recent authentication). Values outside the limits are refused; settings that significantly reduce security require `acknowledgeReducedSecurity`. Open direct sessions follow the new durations immediately. Audited with previous and new values.",
+  {
+    body: Type.Object(
+      {
+        ...policyFields,
+        acknowledgeReducedSecurity: Type.Optional(Type.Boolean()),
+      },
+      object,
+    ),
+    response: {
+      200: Type.Object(
+        {
+          endedSessions: Type.Integer({ minimum: 0 }),
+          currentSessionEnded: Type.Boolean(),
+        },
+        object,
+      ),
+      ...errors,
+    },
+  },
+  true,
+);
 export const adminGrantOperation = operation(
   "PUT",
   "/identity/admin/persons/:personId/grants/:permission",
@@ -951,6 +1158,8 @@ export const identityOperations: readonly ApiOperation[] = [
   statusOperation,
   localLoginOperation,
   mfaOperation,
+  signInEnrollmentStartOperation,
+  signInEnrollmentConfirmOperation,
   refreshOperation,
   logoutOperation,
   providerStartOperation,
@@ -973,6 +1182,7 @@ export const identityOperations: readonly ApiOperation[] = [
   totpDisableOperation,
   recoveryCodesOperation,
   unlinkOperation,
+  forgetDevicesOperation,
   revokeSessionOperation,
   adminListOperation,
   adminDetailOperation,
@@ -982,6 +1192,8 @@ export const identityOperations: readonly ApiOperation[] = [
   adminLinkInvitationOperation,
   adminEnrollmentOperation,
   adminMergeOperation,
+  adminPolicyOperation,
+  adminUpdatePolicyOperation,
   adminGrantOperation,
   adminRevokeGrantOperation,
   adminOwnerOperation,

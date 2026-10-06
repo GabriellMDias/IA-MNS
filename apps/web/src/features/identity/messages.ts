@@ -48,6 +48,12 @@ const messages: Record<string, string> = {
     "Esta conta não pode mais entrar no sistema de origem.",
   IDENTITY_MERGE_NOT_ALLOWED:
     "Estes perfis não podem ser unificados assim. Fale com o administrador do IA-MNS.",
+  IDENTITY_POLICY_INVALID:
+    "Algum valor está fora dos limites permitidos. Revise a política.",
+  IDENTITY_POLICY_NOT_ALLOWED:
+    "Em produção, a verificação em duas etapas dos administradores não pode ser desativada.",
+  IDENTITY_POLICY_CONFIRMATION_REQUIRED:
+    "Esta política reduz a segurança. Confirme que entende os riscos para salvar.",
   IDENTITY_MERGE_BUSY:
     "Há uma conversa em andamento. Aguarde a resposta e tente novamente.",
   RATE_LIMITED: "Muitas tentativas. Aguarde um minuto.",

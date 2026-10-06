@@ -52,7 +52,7 @@
       "Nullable": "no",
       "Default": "'{}'::jsonb",
       "Classification": "CONFIDENTIAL",
-      "Meaning": "Versioned capability contexts keyed by capability id. Sales stores its last validated query and bounded sales questions/clarifications, never financial result prose. No secret credentials.",
+      "Meaning": "Versioned capability contexts keyed by capability id. Sales version 2 stores structured conversation state: the last executed analysis plan and query filters, an unanswered request with its known slots and awaited information, and a bounded transcript of sales questions with application-authored clarifications or filter-only answer descriptions, never financial figures or result prose. The _agent entry records the last capability and the capability awaiting an answer. No secret credentials.",
       "Null meaning": "—",
       "Unit": "—"
     },

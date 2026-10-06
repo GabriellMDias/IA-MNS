@@ -244,7 +244,7 @@
           "classification": "CONFIDENTIAL"
         },
         "last_seen_at": {
-          "description": "Application-clock last refresh or validation.",
+          "description": "Application-clock last user activity reported by the browser (or sign-in); the inactivity deadline is derived from it.",
           "classification": "CONFIDENTIAL"
         },
         "idle_expires_at": {
@@ -264,6 +264,11 @@
           "description": "Allowlisted revocation reason code.",
           "classification": "CONFIDENTIAL",
           "nullMeaning": "Not revoked."
+        },
+        "refresh_rotated_at": {
+          "description": "When the refresh credential last rotated. A request presenting the immediately previous credential within a short grace window is a concurrent refresh of the same browser and receives an access token without rotation; later presentations are treated as reuse and revoke the session.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Never rotated."
         }
       },
       "objects": {
@@ -455,6 +460,101 @@
         "identity_audit_events_details_check": "Details are a JSON object.",
         "identity_audit_events_target_idx": "Per-Person audit history.",
         "identity_audit_events_recent_idx": "Recent audit listing."
+      }
+    },
+    "identity_security_policies": {
+      "owner": "identity",
+      "classification": "INTERNAL",
+      "description": "The single owner-administered authentication policy: session lifetime, inactivity timeout, recent-authentication windows, second-factor requirement and remembered browsers. Absent row means the built-in secure defaults.",
+      "lifecycle": "One row, updated in place by owners with strong recent authentication; every change is recorded in identity_audit_events with previous and new values.",
+      "columns": {
+        "id": {
+          "description": "Singleton key; always 1.",
+          "classification": "INTERNAL"
+        },
+        "session_max_minutes": {
+          "description": "Longest a direct-URL session lasts from sign-in, whatever the activity.",
+          "classification": "INTERNAL"
+        },
+        "idle_timeout_minutes": {
+          "description": "Longest a direct-URL session survives without user activity reported by the browser.",
+          "classification": "INTERNAL"
+        },
+        "recent_auth_minutes": {
+          "description": "How long a sign-in or confirmation allows sensitive changes to the person's own account without confirming again.",
+          "classification": "INTERNAL"
+        },
+        "admin_recent_auth_minutes": {
+          "description": "How long a strong sign-in or confirmation allows administrative changes without confirming again.",
+          "classification": "INTERNAL"
+        },
+        "mfa_requirement": {
+          "description": "Who must use a second factor with IA-MNS passwords: everyone, administrators, or none (never applied in production).",
+          "classification": "INTERNAL"
+        },
+        "remember_device_days": {
+          "description": "Days a browser that completed the second factor skips it at sign-in; 0 asks at every sign-in. Owners are remembered only while the second factor is optional, which production never allows.",
+          "classification": "INTERNAL"
+        },
+        "updated_by": {
+          "description": "Owner who last changed the policy.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Never changed by a person."
+        },
+        "updated_at": {
+          "description": "Database-clock instant of the last change.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "identity_security_policies_pkey": "Singleton policy.",
+        "identity_security_policies_updated_by_fkey": "The last editor is an existing Person.",
+        "identity_security_policies_singleton_check": "Only one policy row exists.",
+        "identity_security_policies_session_check": "Session lifetime between one hour and 30 days.",
+        "identity_security_policies_idle_check": "Inactivity timeout between 15 minutes and 7 days, never longer than the session.",
+        "identity_security_policies_recent_check": "Account confirmation window between 5 minutes and 24 hours, never longer than the session.",
+        "identity_security_policies_admin_recent_check": "Administrative confirmation window between 5 minutes and 4 hours.",
+        "identity_security_policies_mfa_check": "Known second-factor requirements.",
+        "identity_security_policies_remember_check": "Remembered browsers last at most 90 days."
+      }
+    },
+    "identity_trusted_devices": {
+      "owner": "identity",
+      "classification": "CONFIDENTIAL",
+      "description": "A browser that completed the second factor for a Person and asked to be remembered; its HttpOnly cookie holds a random token stored here only as SHA-256.",
+      "lifecycle": "Valid while not revoked and younger than the policy's remember_device_days. Revoked by the Person, by password or second-factor changes, by an owner reset or disabling; expired rows are pruned.",
+      "columns": {
+        "id": {
+          "description": "Remembered-browser identifier.",
+          "classification": "CONFIDENTIAL"
+        },
+        "person_id": {
+          "description": "Person whose second factor the browser completed.",
+          "classification": "CONFIDENTIAL"
+        },
+        "token_hash": {
+          "description": "SHA-256 of the 256-bit browser token; the token itself is never stored.",
+          "classification": "RESTRICTED"
+        },
+        "created_at": {
+          "description": "When the second factor was completed on this browser.",
+          "classification": "CONFIDENTIAL"
+        },
+        "last_used_at": {
+          "description": "Last sign-in that skipped the second factor with this browser.",
+          "classification": "CONFIDENTIAL"
+        },
+        "revoked_at": {
+          "description": "When the browser stopped being remembered.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Still remembered while within the policy period."
+        }
+      },
+      "objects": {
+        "identity_trusted_devices_pkey": "Remembered-browser identity.",
+        "identity_trusted_devices_person_id_fkey": "Removed with the Person.",
+        "identity_trusted_devices_token_key": "Token lookup; one row per browser token.",
+        "identity_trusted_devices_person_idx": "Revocation of a Person's remembered browsers."
       }
     }
   }

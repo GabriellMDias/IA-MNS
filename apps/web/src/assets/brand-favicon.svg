@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Small-size symbol (16-24 px): the bubble and red wedge without letters. -->
+  <rect width="32" height="32" rx="7" fill="#2B3E84" />
+  <path d="M7.5 17H17.5L7.5 29Z" fill="#EC1C24" />
+  <rect x="4" y="5" width="24" height="16" rx="5" fill="#FFFFFF" />
+</svg>

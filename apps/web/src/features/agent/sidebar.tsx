@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ThemeMenuItem, ThemeToggle } from "../../theme.js";
+import brandMark from "../../assets/brand-mark.svg";
 import {
   useAccountMenu,
   useModuleNavigation,
@@ -235,9 +236,13 @@ export function ConversationSidebar(props: Props) {
   const content = (
     <>
       <div className="agent-sidebar-title">
-        <span className="agent-monogram" aria-hidden="true">
-          M
-        </span>
+        <img
+          className="agent-brand-mark"
+          src={brandMark}
+          alt=""
+          width="30"
+          height="30"
+        />
         <span className="agent-sidebar-text agent-brand-name">IA-MNS</span>
         <button
           className="agent-icon-button agent-sidebar-toggle"

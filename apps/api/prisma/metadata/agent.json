@@ -23,7 +23,7 @@
           "classification": "CONFIDENTIAL"
         },
         "contexts": {
-          "description": "Versioned capability contexts keyed by capability id. Sales stores its last validated query and bounded sales questions/clarifications, never financial result prose. No secret credentials.",
+          "description": "Versioned capability contexts keyed by capability id. Sales version 2 stores structured conversation state: the last executed analysis plan and query filters, an unanswered request with its known slots and awaited information, and a bounded transcript of sales questions with application-authored clarifications or filter-only answer descriptions, never financial figures or result prose. The _agent entry records the last capability and the capability awaiting an answer. No secret credentials.",
           "classification": "CONFIDENTIAL"
         },
         "active_turn_id": {
@@ -136,6 +136,37 @@
         "agent_turns_outcome_check": "Terminal reply/failure and timestamp agree with lifecycle state.",
         "agent_turns_conversation_sequence_key": "One turn per allocated sequence.",
         "agent_turns_conversation_request_key": "One acceptance per client request id in a conversation."
+      }
+    },
+    "agent_turn_traces": {
+      "owner": "agent",
+      "classification": "CONFIDENTIAL",
+      "description": "Optional content-level AI trace of one turn, written only when IA_MNS_AI_TRACE=content: model/prompt identifiers, timings and token counts, routing and interpretation decisions, structured conversation state before and after, and the executed query filters. Never result rows, response prose, credentials or provider payloads. Used to reproduce failures and derive evaluation candidates.",
+      "lifecycle": "Written in the same transaction as the turn outcome and deleted by cascade with its turn or conversation. The runtime role can only append and read. Content capture is refused in production until the shared-deployment retention and access policy (PH-09) approves it. No automatic expiry is implemented.",
+      "columns": {
+        "turn_id": {
+          "description": "Traced turn; one trace per turn, deleted with it.",
+          "classification": "CONFIDENTIAL"
+        },
+        "conversation_id": {
+          "description": "Owning conversation of the traced turn, for conversation-scoped export and cascade deletion.",
+          "classification": "CONFIDENTIAL"
+        },
+        "captured_at": {
+          "description": "Database-clock instant the trace was stored with the turn outcome.",
+          "classification": "CONFIDENTIAL"
+        },
+        "trace": {
+          "description": "Version 1 trace object: allowlisted metadata plus confidential interpretation content, bounded to 256 KB with content omitted rather than truncated beyond it.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "agent_turn_traces_pkey": "One trace per turn.",
+        "agent_turn_traces_turn_id_fkey": "Trace lifecycle follows its turn; cascade on deletion.",
+        "agent_turn_traces_conversation_id_fkey": "Conversation deletion removes its traces.",
+        "agent_turn_traces_trace_check": "Trace must be a JSON object.",
+        "agent_turn_traces_conversation_idx": "Conversation-scoped trace export."
       }
     }
   },

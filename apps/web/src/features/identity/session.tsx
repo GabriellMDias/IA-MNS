@@ -15,6 +15,7 @@ import { currentSurface, type Surface } from "../../surface.js";
 import {
   completeEmbedded,
   completeMfa,
+  confirmSignInEnrollment,
   getIdentityStatus,
   loginLocal,
   logout,
@@ -22,12 +23,37 @@ import {
   provisionLink,
   refreshSession,
   startProvider,
+  startSignInEnrollment,
   type IdentityStatus,
   type Outcome,
 } from "./api.js";
 import { requestHostProof } from "./bridge.js";
 import { identityMessage } from "./messages.js";
+import { TotpEnrollment } from "./totp.js";
+import brandMark from "../../assets/brand-mark.svg";
 import "./identity.css";
+
+/**
+ * One renewal at a time. The refresh credential rotates on every renewal, so
+ * concurrent renewals (React development double effects, several tabs, a
+ * reload during a renewal) would present a replaced credential. Requests are
+ * shared inside a page and serialized across tabs with the Web Locks API; the
+ * API also tolerates a short race as a second line of defense.
+ */
+let renewal: ReturnType<typeof refreshSession> | null = null;
+function renewDirect(active: boolean) {
+  renewal ??= (async () => {
+    try {
+      const run = () => refreshSession(active);
+      return navigator.locks
+        ? await navigator.locks.request("ia-mns-session-renewal", run)
+        : await run();
+    } finally {
+      renewal = null;
+    }
+  })();
+  return renewal;
+}
 
 type Phase =
   "loading" | "unavailable" | "signed-out" | "signed-in" | "embedded";
@@ -39,6 +65,8 @@ type Identity = {
   /** Adopts tokens from a completed sign-in. */
   accept: (token: string, expiresIn: number) => void;
   signOut: () => Promise<void>;
+  /** The session ended by itself (time or inactivity), not by signing out. */
+  expired: boolean;
   /** Product screens start identity; the local documentation portal never does. */
   start: () => void;
 };
@@ -89,6 +117,11 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
   const timer = useRef<number | undefined>(undefined);
   const subject = useRef<string | null>(null);
   const renewRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const [expired, setExpired] = useState(false);
+  // Inactivity follows what the person does, not background renewals.
+  const lastActivity = useRef(Date.now());
+  const lastRenewal = useRef(0);
+  const tokenExpiresAt = useRef(0);
 
   const accept = useCallback(
     (next: string, expiresIn: number) => {
@@ -98,7 +131,10 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
       subject.current = person;
       setToken(next);
       setPhase("signed-in");
+      setExpired(false);
       setGate(null);
+      lastRenewal.current = Date.now();
+      tokenExpiresAt.current = Date.now() + expiresIn * 1000;
       window.clearTimeout(timer.current);
       timer.current = window.setTimeout(
         () => void renewRef.current(),
@@ -157,12 +193,43 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
   renewRef.current = async () => {
     if (surface !== "direct") return handshake();
     try {
-      const refreshed = await refreshSession();
+      const refreshed = await renewDirect(
+        lastActivity.current > lastRenewal.current,
+      );
       accept(refreshed.accessToken, refreshed.expiresIn);
     } catch {
       drop();
+      setExpired(true);
     }
   };
+
+  // Direct surface: record real activity, and renew at once when the person
+  // returns to a tab whose token lapsed while hidden or asleep.
+  useEffect(() => {
+    if (surface !== "direct") return;
+    const touch = () => {
+      lastActivity.current = Date.now();
+    };
+    const resume = () => {
+      if (document.visibilityState !== "visible") return;
+      touch();
+      if (
+        subject.current !== null &&
+        tokenExpiresAt.current - Date.now() < 60_000
+      )
+        void renewRef.current();
+    };
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    for (const name of events)
+      window.addEventListener(name, touch, { passive: true });
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("focus", resume);
+    return () => {
+      for (const name of events) window.removeEventListener(name, touch);
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("focus", resume);
+    };
+  }, [surface]);
 
   // Without a reachable identity service, product screens show their own
   // availability state instead of waiting for a session forever.
@@ -178,7 +245,7 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (surface === "direct")
-      void refreshSession().then(
+      void renewDirect(true).then(
         (result) => accept(result.accessToken, result.expiresIn),
         () => setPhase("signed-out"),
       );
@@ -192,6 +259,7 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await logout(token).catch(() => undefined);
     drop();
+    setExpired(false);
   }, [drop, token]);
 
   return (
@@ -203,6 +271,7 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
         token,
         accept,
         signOut,
+        expired,
         start,
       }}
     >
@@ -235,10 +304,18 @@ export function RequireSignIn({ children }: { children: ReactNode }) {
   const identity = useIdentityStart();
   if (identity.surface !== "direct" || identity.phase === "unavailable")
     return <>{children}</>;
-  if (identity.phase === "signed-out") return <Navigate to="/entrar" replace />;
+  if (identity.phase === "signed-out")
+    return (
+      <Navigate
+        to="/entrar"
+        search={identity.expired ? { erro: "IDENTITY_SESSION_EXPIRED" } : {}}
+        replace
+      />
+    );
   if (!identity.token)
     return (
       <main className="identity-loading" aria-busy="true">
+        <img src={brandMark} alt="" width="48" height="48" />
         <span className="identity-spinner" aria-hidden="true" />
         <span className="visually-hidden" role="status">
           Carregando…
@@ -379,12 +456,19 @@ export function LocalSignIn({
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [challenge, setChallenge] = useState<string | null>(null);
+  const [rememberDays, setRememberDays] = useState(0);
+  const [remember, setRemember] = useState(false);
+  const [enrollment, setEnrollment] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function finish(outcome: Outcome) {
     if (outcome.kind === "mfa_required") {
       setChallenge(outcome.challenge);
+      setRememberDays(outcome.rememberDeviceDays);
+      setPassword("");
+    } else if (outcome.kind === "mfa_enrollment_required") {
+      setEnrollment(outcome.challenge);
       setPassword("");
     } else if (outcome.kind === "authenticated")
       await onAuthenticated(outcome.accessToken, outcome.expiresIn);
@@ -396,7 +480,7 @@ export function LocalSignIn({
     try {
       await finish(
         challenge
-          ? await completeMfa(challenge, code.trim())
+          ? await completeMfa(challenge, code.trim(), remember)
           : await loginLocal(login, password, surface),
       );
     } catch (failure) {
@@ -406,6 +490,25 @@ export function LocalSignIn({
       setBusy(false);
     }
   }
+  if (enrollment)
+    return (
+      <>
+        <p role="status">
+          A política do IA-MNS exige a verificação em duas etapas para esta
+          conta. Configure o aplicativo autenticador para concluir a entrada.
+        </p>
+        <TotpEnrollment
+          autoStart
+          start={() => startSignInEnrollment(enrollment)}
+          confirm={(setup, value) =>
+            confirmSignInEnrollment(enrollment, setup, value)
+          }
+          onDone={(accessToken, expiresIn) =>
+            void onAuthenticated(accessToken, expiresIn)
+          }
+        />
+      </>
+    );
   return (
     <form className="identity-form" onSubmit={(event) => void submit(event)}>
       {!challenge ? (
@@ -444,6 +547,17 @@ export function LocalSignIn({
             Use o código de 6 dígitos do aplicativo autenticador ou um código de
             recuperação.
           </p>
+          {rememberDays > 0 && (
+            <label className="identity-check">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(event) => setRemember(event.target.checked)}
+              />{" "}
+              Não pedir o código neste navegador por {rememberDays}{" "}
+              {rememberDays === 1 ? "dia" : "dias"}
+            </label>
+          )}
         </>
       )}
       <button disabled={busy}>{challenge ? "Verificar" : submitLabel}</button>

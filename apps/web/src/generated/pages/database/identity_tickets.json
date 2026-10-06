@@ -120,7 +120,7 @@
     },
     {
       "Object": "identity_tickets_purpose_check",
-      "Physical definition": "CHECK (((purpose)::text = ANY ((ARRAY['bootstrap'::character varying, 'enrollment'::character varying, 'reset'::character varying, 'link_invitation'::character varying, 'mfa'::character varying, 'provision'::character varying, 'merge'::character varying, 'totp_setup'::character varying, 'pdt_login'::character varying, 'sankhya_login'::character varying])::text[])))",
+      "Physical definition": "CHECK (((purpose)::text = ANY ((ARRAY['bootstrap'::character varying, 'enrollment'::character varying, 'reset'::character varying, 'link_invitation'::character varying, 'mfa'::character varying, 'mfa_enrollment'::character varying, 'provision'::character varying, 'merge'::character varying, 'totp_setup'::character varying, 'pdt_login'::character varying, 'sankhya_login'::character varying])::text[])))",
       "Purpose": "Known flow purposes."
     },
     {

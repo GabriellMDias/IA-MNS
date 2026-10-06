@@ -447,6 +447,40 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   const linkInvitation = (await admin
     .getByText(/\/identidade\/vincular#/)
     .textContent())!.replace(/^.*?(http\S+).*$/s, "$1");
+  // Authentication policy: understandable settings, explicit risk acknowledgement.
+  await admin
+    .getByRole("navigation", { name: "Seções da administração" })
+    .getByRole("link", { name: "Autenticação e segurança" })
+    .click();
+  await expect(
+    admin.getByRole("heading", { name: "Autenticação e segurança" }),
+  ).toBeVisible();
+  await expect(admin.getByLabel("Duração máxima de uma sessão")).toHaveValue(
+    "720",
+  );
+  await admin
+    .getByLabel("Duração máxima de uma sessão")
+    .selectOption({ label: "30 dias — reduz a segurança" });
+  await admin
+    .getByLabel("Encerrar a sessão após inatividade")
+    .selectOption({ label: "1 dia — reduz a segurança" });
+  await expect(
+    admin.getByText("Esta política reduz a segurança"),
+  ).toBeVisible();
+  const savePolicy = admin.getByRole("button", { name: "Salvar política" });
+  await expect(savePolicy).toBeDisabled();
+  await admin
+    .getByLabel("Entendo os riscos e quero aplicar esta política")
+    .check();
+  await admin.screenshot({
+    path: "../../test-results/identity-security-policy.png",
+    fullPage: true,
+  });
+  await savePolicy.click();
+  await expect(admin.getByText(/^Política salva\./)).toBeVisible();
+  await expect(
+    admin.getByText(/Duração máxima de uma sessão: 12 h → 30 dias/),
+  ).toBeVisible();
   await other.close();
   const invited = await browser.newContext();
   const invitedPage = await invited.newPage();

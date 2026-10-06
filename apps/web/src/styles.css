@@ -1,42 +1,58 @@
 :root {
   color-scheme: light;
-  --canvas: #f3f5f1;
-  --surface: #fffefa;
-  --surface-muted: #f1f5ef;
+  /* MNS brand colors: identical in both themes (see docs/visual-identity.md). */
+  --brand-blue: #2b3e84;
+  --brand-red: #ec1c24;
+  --canvas: #f4f6fa;
+  --surface: #ffffff;
+  --surface-muted: #eef1f7;
   --input: #ffffff;
-  --ink: #213f32;
-  --muted: #536b5d;
-  --border: #d6e1d5;
-  --border-strong: #abbfa9;
-  --accent: #245c43;
+  --ink: #172140;
+  --muted: #4d5775;
+  --border: #dadfea;
+  --border-strong: #8a94ae;
+  --accent: var(--brand-blue);
+  --accent-hover: #22326a;
   --on-accent: #ffffff;
-  --selected: #e3eddf;
-  --link: #205d47;
-  --focus: #347e57;
-  --header: #193c30;
-  --error-ink: #812723;
-  --error-bg: #fff0ee;
-  --error-border: #e6b6b2;
+  --selected: #e2e8f5;
+  --link: #2a4bb0;
+  --focus: #3557c2;
+  --header: #22326a;
+  --on-header: #ffffff;
+  --on-header-muted: #c3cdeb;
+  --shadow: rgb(15 23 51 / 8%);
+  --error-ink: #9b1c24;
+  --error-bg: #fdefef;
+  --error-border: #edb5b8;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --canvas: #111b17;
-  --surface: #18251f;
-  --surface-muted: #1e2e25;
-  --input: #1a2921;
-  --ink: #e5eee7;
-  --muted: #b0c3b5;
-  --border: #394c3e;
-  --border-strong: #627c69;
-  --accent: #99d5ab;
-  --on-accent: #142d1d;
-  --selected: #2c4433;
-  --link: #a3d8b4;
-  --focus: #a3d8b4;
-  --header: #101a15;
-  --error-ink: #ffc1b9;
-  --error-bg: #412823;
-  --error-border: #916258;
+  --canvas: #0b1020;
+  --surface: #111830;
+  --surface-muted: #172039;
+  --input: #1b2543;
+  --ink: #e8ebf5;
+  --muted: #a9b2cc;
+  --border: #2a3454;
+  --border-strong: #66729a;
+  --accent: #9fb2f4;
+  --accent-hover: #bccbf8;
+  --on-accent: #0f1733;
+  --selected: #222d50;
+  --link: #a9bcf8;
+  --focus: #a9bcf8;
+  --header: #0e1530;
+  --on-header: #ffffff;
+  --on-header-muted: #b9c3e2;
+  --shadow: rgb(0 0 0 / 35%);
+  --error-ink: #ffb3b6;
+  --error-bg: #3a1823;
+  --error-border: #8e3a47;
+}
+/* Artwork drawn for one theme: the light variant shows unless dark is active. */
+:root[data-theme="dark"] .theme-light-only,
+:root:not([data-theme="dark"]) .theme-dark-only {
+  display: none;
 }
 input,
 textarea,
@@ -45,9 +61,9 @@ select {
   background: var(--input);
 }
 .theme-toggle {
-  color: #fff;
+  color: var(--on-header);
   background: transparent;
-  border-color: #81988a;
+  border-color: color-mix(in srgb, var(--on-header) 40%, transparent);
   padding: 0.35rem 0.65rem;
   font-size: 20px;
   line-height: 1;
@@ -91,7 +107,9 @@ button:disabled {
 }
 .site-header {
   background: var(--header);
-  color: #fff;
+  color: var(--on-header);
+  /* The red line echoes the MNS wedge without changing the header height. */
+  box-shadow: inset 0 -3px var(--brand-red);
 }
 .site-header-inner {
   max-width: 1180px;
@@ -103,7 +121,7 @@ button:disabled {
   gap: 1rem;
 }
 .brand {
-  color: #fff;
+  color: var(--on-header);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-decoration: none;
@@ -112,25 +130,22 @@ button:disabled {
 .brand img {
   width: 32px;
   height: 32px;
-  padding: 3px;
   margin-right: 0.55rem;
   vertical-align: middle;
   object-fit: contain;
-  background: #f7f9fa;
-  border-radius: 6px;
 }
 .brand span {
   font-size: 0.67rem;
   font-weight: 500;
   letter-spacing: 0.08em;
-  color: #c9dae6;
+  color: var(--on-header-muted);
 }
 .header-note {
   font-size: 0.8rem;
-  color: #b9cbd8;
+  color: var(--on-header-muted);
 }
 .header-nav a {
-  color: #fff;
+  color: var(--on-header);
   font-size: 0.9rem;
 }
 .main-content {
@@ -179,7 +194,7 @@ button:disabled {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 6px 22px #1d3d5c0b;
+  box-shadow: 0 6px 22px var(--shadow);
   padding: 1.6rem;
   min-width: 0;
 }
@@ -205,13 +220,14 @@ button:disabled {
   text-decoration: underline;
 }
 .button-primary {
-  background: #185f9b;
-  border-color: #185f9b;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
   font-weight: 650;
 }
 .button-primary:hover:not(:disabled) {
-  background: #124977;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 .tabs {
   display: flex;
@@ -228,7 +244,7 @@ button:disabled {
 }
 .tabs a.active {
   color: var(--ink);
-  border-color: #2574b5;
+  border-color: var(--accent);
 }
 .pagination {
   display: flex;

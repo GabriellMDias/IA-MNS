@@ -21,6 +21,7 @@
     "build": "pnpm db:generate && pnpm -C apps/api build && pnpm -C apps/web build && pnpm -C apps/web bundle:check",
     "smoke": "node apps/api/scripts/smoke.mjs",
     "test:e2e": "pnpm -C apps/web test:e2e",
+    "eval": "pnpm -C apps/api eval",
     "references:check": "pnpm -C apps/api references:check && pnpm -C packages/sdk references:check",
     "docs:references:write": "node tooling/documentation/generate.mjs --write",
     "docs:references:check": "node tooling/documentation/generate.mjs --check",

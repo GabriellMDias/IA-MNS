@@ -27,7 +27,12 @@
         "application/json": {
           "schema": {
             "type": "object",
-            "required": ["person", "session", "linkableProviders"],
+            "required": [
+              "person",
+              "rememberedDevices",
+              "session",
+              "linkableProviders"
+            ],
             "properties": {
               "person": {
                 "type": "object",
@@ -167,6 +172,11 @@
                 },
                 "additionalProperties": false
               },
+              "rememberedDevices": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Browsers currently remembered to skip the second factor."
+              },
               "session": {
                 "type": "object",
                 "required": [
@@ -212,7 +222,12 @@
       },
       "schema": {
         "type": "object",
-        "required": ["person", "session", "linkableProviders"],
+        "required": [
+          "person",
+          "rememberedDevices",
+          "session",
+          "linkableProviders"
+        ],
         "properties": {
           "person": {
             "type": "object",
@@ -339,6 +354,11 @@
               }
             },
             "additionalProperties": false
+          },
+          "rememberedDevices": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Browsers currently remembered to skip the second factor."
           },
           "session": {
             "type": "object",
@@ -476,6 +496,11 @@
         {
           "name": "person.sessions[].current",
           "type": "boolean",
+          "required": true
+        },
+        {
+          "name": "rememberedDevices",
+          "type": "integer (minimum 0)",
           "required": true
         },
         { "name": "session", "type": "object", "required": true },

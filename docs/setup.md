@@ -141,6 +141,23 @@ Do not use `down -v` for normal startup/restart: it deletes the history volume. 
 
 The existing OPENAI_API_KEY and Sankhya configuration activate sales; [sales setup](#sales-chat) still owns Oracle requirements. Restart the complete API development command after changing `.env.local`, because watch reload alone does not refresh inherited environment. Open `http://127.0.0.1:5173`. New conversation keeps previous history; choose a conversation to continue it, or explicitly delete it. Only the display theme uses browser storage. [Agent design](domains/corporate-agent.md) records context, progress, recovery and lifecycle limits.
 
+## AI evaluation and tracing
+
+Replay the curated AI evaluation cases deterministically (also part of `pnpm test`):
+
+```sh
+pnpm eval run
+```
+
+With `OPENAI_API_KEY` in the ignored root `.env.local`, evaluate the live router and interpreter, then compare runs:
+
+```sh
+pnpm eval run --subject model
+pnpm eval compare <base-report.json> <head-report.json>
+```
+
+Live runs send only synthetic dataset text, consume provider quota and write reports to the ignored `apps/api/evals/.local/`. `IA_MNS_AI_TRACE` defaults to `metadata` (one content-free log event per turn). Set `IA_MNS_AI_TRACE=content` in `.env.local` and restart the API to store confidential interpretation traces with each local turn; then `pnpm eval capture --turn <turn-id>` writes a candidate case to the same ignored folder. Captured candidates contain real conversation text: rewrite them synthetically before promotion. [AI evaluation](architecture/ai-evaluation.md) documents every command and the review workflow.
+
 ## Phone testing on the local network
 
 Normal web/API listeners are loopback-only, so a phone cannot use the computer IP with port 5173. The owner-controlled temporary alternative follows [ADR-0020](adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md). With the existing database/providers running/configured, choose the computer's assigned private IPv4 address on the phone's network and run from the repository root:

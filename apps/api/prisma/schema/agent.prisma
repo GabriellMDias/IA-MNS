@@ -12,6 +12,7 @@ model AgentConversation {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
   turns        AgentTurn[]
+  traces       AgentTurnTrace[]
   @@index([owner, updatedAt, id], map: "agent_conversations_owner_updated_idx")
   @@index([owner, archived, pinned(sort: Desc), updatedAt(sort: Desc), id(sort: Desc)], map: "agent_conversations_history_idx")
   @@map("agent_conversations")
@@ -31,7 +32,19 @@ model AgentTurn {
   failureCode    String? @map("failure_code") @db.VarChar(80)
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   finishedAt     DateTime? @map("finished_at") @db.Timestamptz(3)
+  trace          AgentTurnTrace?
   @@unique([conversationId, sequence], map: "agent_turns_conversation_sequence_key")
   @@unique([conversationId, requestId], map: "agent_turns_conversation_request_key")
   @@map("agent_turns")
+}
+
+model AgentTurnTrace {
+  turnId         String @id @map("turn_id") @db.Uuid
+  turn           AgentTurn @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  conversationId String @map("conversation_id") @db.Uuid
+  conversation   AgentConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  capturedAt     DateTime @default(now()) @map("captured_at") @db.Timestamptz(3)
+  trace          Json
+  @@index([conversationId], map: "agent_turn_traces_conversation_idx")
+  @@map("agent_turn_traces")
 }

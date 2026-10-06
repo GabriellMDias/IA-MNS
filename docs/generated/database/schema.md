@@ -18,7 +18,7 @@ Lifecycle: Local history persists until the owner explicitly deletes the convers
 | `owner` | `character varying(300)` | no | — | CONFIDENTIAL | Authenticated principal id or explicit loopback developer identity. | — | — |
 | `title` | `character varying(100)` | no | — | CONFIDENTIAL | Owner-editable bounded title, initially derived from the first question; never model instructions. | — | — |
 | `version` | `integer` | no | `0` | CONFIDENTIAL | Monotonically allocated turn sequence; advanced under a row lock. | — | — |
-| `contexts` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Versioned capability contexts keyed by capability id. Sales stores its last validated query and bounded sales questions/clarifications, never financial result prose. No secret credentials. | — | — |
+| `contexts` | `jsonb` | no | `'{}'::jsonb` | CONFIDENTIAL | Versioned capability contexts keyed by capability id. Sales version 2 stores structured conversation state: the last executed analysis plan and query filters, an unanswered request with its known slots and awaited information, and a bounded transcript of sales questions with application-authored clarifications or filter-only answer descriptions, never financial figures or result prose. The _agent entry records the last capability and the capability awaiting an answer. No secret credentials. | — | — |
 | `active_turn_id` | `uuid` | yes | — | CONFIDENTIAL | Current execution lease holder; absence means no active execution. | Absent in the lifecycle states described in the field meaning. | — |
 | `lease_until` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Database-clock lease expiry, 120 seconds after acceptance; absent when inactive. | Absent in the lifecycle states described in the field meaning. | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock creation instant. | — | — |
@@ -75,6 +75,31 @@ Lifecycle: Local history persists until the owner explicitly deletes the convers
 | `agent_turns_state_check` | `CHECK (((state)::text = ANY ((ARRAY['running'::character varying, 'completed'::character varying, 'failed'::character varying, 'interrupted'::character varying])::text[])))` | Explicit supported lifecycle states. |
 | `agent_turns_conversation_request_key` | `CREATE UNIQUE INDEX agent_turns_conversation_request_key ON public.agent_turns USING btree (conversation_id, request_id)` | One acceptance per client request id in a conversation. |
 | `agent_turns_conversation_sequence_key` | `CREATE UNIQUE INDEX agent_turns_conversation_sequence_key ON public.agent_turns USING btree (conversation_id, sequence)` | One turn per allocated sequence. |
+
+## agent_turn_traces
+
+Optional content-level AI trace of one turn, written only when IA_MNS_AI_TRACE=content: model/prompt identifiers, timings and token counts, routing and interpretation decisions, structured conversation state before and after, and the executed query filters. Never result rows, response prose, credentials or provider payloads. Used to reproduce failures and derive evaluation candidates.
+
+Owner: agent. Classification: CONFIDENTIAL.
+
+Lifecycle: Written in the same transaction as the turn outcome and deleted by cascade with its turn or conversation. The runtime role can only append and read. Content capture is refused in production until the shared-deployment retention and access policy (PH-09) approves it. No automatic expiry is implemented.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `turn_id` | `uuid` | no | — | CONFIDENTIAL | Traced turn; one trace per turn, deleted with it. | — | — |
+| `conversation_id` | `uuid` | no | — | CONFIDENTIAL | Owning conversation of the traced turn, for conversation-scoped export and cascade deletion. | — | — |
+| `captured_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock instant the trace was stored with the turn outcome. | — | — |
+| `trace` | `jsonb` | no | — | CONFIDENTIAL | Version 1 trace object: allowlisted metadata plus confidential interpretation content, bounded to 256 KB with content omitted rather than truncated beyond it. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `agent_turn_traces_conversation_id_fkey` | `FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON UPDATE CASCADE ON DELETE CASCADE` | Conversation deletion removes its traces. |
+| `agent_turn_traces_pkey` | `PRIMARY KEY (turn_id)` | One trace per turn. |
+| `agent_turn_traces_trace_check` | `CHECK ((jsonb_typeof(trace) = 'object'::text))` | Trace must be a JSON object. |
+| `agent_turn_traces_turn_id_fkey` | `FOREIGN KEY (turn_id) REFERENCES agent_turns(id) ON UPDATE CASCADE ON DELETE CASCADE` | Trace lifecycle follows its turn; cascade on deletion. |
+| `agent_turn_traces_conversation_idx` | `CREATE INDEX agent_turn_traces_conversation_idx ON public.agent_turn_traces USING btree (conversation_id)` | Conversation-scoped trace export. |
 
 ## identity_persons
 
@@ -216,11 +241,12 @@ Lifecycle: Expire at idle or absolute limits; revoked on logout, Person disable,
 | `previous_refresh_hash` | `character(64)` | yes | — | RESTRICTED | SHA-256 of the previous refresh credential; presenting it revokes the session as reuse. | Not rotated yet. | — |
 | `auth_time` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Instant of the latest primary or step-up authentication; drives recent-authentication checks. | — | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock creation instant. | — | — |
-| `last_seen_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Application-clock last refresh or validation. | — | — |
+| `last_seen_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Application-clock last user activity reported by the browser (or sign-in); the inactivity deadline is derived from it. | — | — |
 | `idle_expires_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Application-clock idle expiry, extended on refresh but never past expires_at. | — | — |
 | `expires_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | Application-clock absolute expiry. | — | — |
 | `revoked_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Revocation instant. | Not revoked. | — |
 | `revoked_reason` | `character varying(40)` | yes | — | CONFIDENTIAL | Allowlisted revocation reason code. | Not revoked. | — |
+| `refresh_rotated_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | When the refresh credential last rotated. A request presenting the immediately previous credential within a short grace window is a concurrent refresh of the same browser and receives an access token without rotation; later presentations are treated as reuse and revoke the session. | Never rotated. | — |
 
 ### Constraints and indexes
 
@@ -313,7 +339,7 @@ Lifecycle: Consumed atomically once or expires (minutes; invitations up to 72 ho
 | `identity_tickets_payload_check` | `CHECK ((jsonb_typeof(payload) = 'object'::text))` | Payload is a JSON object. |
 | `identity_tickets_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Optional Person binding. |
 | `identity_tickets_pkey` | `PRIMARY KEY (id)` | Ticket identity. |
-| `identity_tickets_purpose_check` | `CHECK (((purpose)::text = ANY ((ARRAY['bootstrap'::character varying, 'enrollment'::character varying, 'reset'::character varying, 'link_invitation'::character varying, 'mfa'::character varying, 'provision'::character varying, 'merge'::character varying, 'totp_setup'::character varying, 'pdt_login'::character varying, 'sankhya_login'::character varying])::text[])))` | Known flow purposes. |
+| `identity_tickets_purpose_check` | `CHECK (((purpose)::text = ANY ((ARRAY['bootstrap'::character varying, 'enrollment'::character varying, 'reset'::character varying, 'link_invitation'::character varying, 'mfa'::character varying, 'mfa_enrollment'::character varying, 'provision'::character varying, 'merge'::character varying, 'totp_setup'::character varying, 'pdt_login'::character varying, 'sankhya_login'::character varying])::text[])))` | Known flow purposes. |
 | `identity_tickets_expiry_idx` | `CREATE INDEX identity_tickets_expiry_idx ON public.identity_tickets USING btree (expires_at)` | Expired-ticket pruning. |
 | `identity_tickets_token_key` | `CREATE UNIQUE INDEX identity_tickets_token_key ON public.identity_tickets USING btree (token_hash)` | Secret lookup by hash. |
 
@@ -362,3 +388,63 @@ Lifecycle: Append-only for the runtime role. Retention requires an owner-approve
 | `identity_audit_events_pkey` | `PRIMARY KEY (id)` | Event identity. |
 | `identity_audit_events_recent_idx` | `CREATE INDEX identity_audit_events_recent_idx ON public.identity_audit_events USING btree (occurred_at DESC, id DESC)` | Recent audit listing. |
 | `identity_audit_events_target_idx` | `CREATE INDEX identity_audit_events_target_idx ON public.identity_audit_events USING btree (target_person_id, occurred_at DESC)` | Per-Person audit history. |
+
+## identity_security_policies
+
+The single owner-administered authentication policy: session lifetime, inactivity timeout, recent-authentication windows, second-factor requirement and remembered browsers. Absent row means the built-in secure defaults.
+
+Owner: identity. Classification: INTERNAL.
+
+Lifecycle: One row, updated in place by owners with strong recent authentication; every change is recorded in identity_audit_events with previous and new values.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `smallint` | no | `1` | INTERNAL | Singleton key; always 1. | — | — |
+| `session_max_minutes` | `integer` | no | — | INTERNAL | Longest a direct-URL session lasts from sign-in, whatever the activity. | — | — |
+| `idle_timeout_minutes` | `integer` | no | — | INTERNAL | Longest a direct-URL session survives without user activity reported by the browser. | — | — |
+| `recent_auth_minutes` | `integer` | no | — | INTERNAL | How long a sign-in or confirmation allows sensitive changes to the person's own account without confirming again. | — | — |
+| `admin_recent_auth_minutes` | `integer` | no | — | INTERNAL | How long a strong sign-in or confirmation allows administrative changes without confirming again. | — | — |
+| `mfa_requirement` | `character varying(16)` | no | — | INTERNAL | Who must use a second factor with IA-MNS passwords: everyone, administrators, or none (never applied in production). | — | — |
+| `remember_device_days` | `smallint` | no | — | INTERNAL | Days a browser that completed the second factor skips it at sign-in; 0 asks at every sign-in. Owners are remembered only while the second factor is optional, which production never allows. | — | — |
+| `updated_by` | `uuid` | yes | — | CONFIDENTIAL | Owner who last changed the policy. | Never changed by a person. | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | Database-clock instant of the last change. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_security_policies_admin_recent_check` | `CHECK (((admin_recent_auth_minutes >= 5) AND (admin_recent_auth_minutes <= 240)))` | Administrative confirmation window between 5 minutes and 4 hours. |
+| `identity_security_policies_idle_check` | `CHECK ((((idle_timeout_minutes >= 15) AND (idle_timeout_minutes <= 10080)) AND (idle_timeout_minutes <= session_max_minutes)))` | Inactivity timeout between 15 minutes and 7 days, never longer than the session. |
+| `identity_security_policies_mfa_check` | `CHECK (((mfa_requirement)::text = ANY ((ARRAY['everyone'::character varying, 'administrators'::character varying, 'none'::character varying])::text[])))` | Known second-factor requirements. |
+| `identity_security_policies_pkey` | `PRIMARY KEY (id)` | Singleton policy. |
+| `identity_security_policies_recent_check` | `CHECK ((((recent_auth_minutes >= 5) AND (recent_auth_minutes <= 1440)) AND (recent_auth_minutes <= session_max_minutes)))` | Account confirmation window between 5 minutes and 24 hours, never longer than the session. |
+| `identity_security_policies_remember_check` | `CHECK (((remember_device_days >= 0) AND (remember_device_days <= 90)))` | Remembered browsers last at most 90 days. |
+| `identity_security_policies_session_check` | `CHECK (((session_max_minutes >= 60) AND (session_max_minutes <= 43200)))` | Session lifetime between one hour and 30 days. |
+| `identity_security_policies_singleton_check` | `CHECK ((id = 1))` | Only one policy row exists. |
+| `identity_security_policies_updated_by_fkey` | `FOREIGN KEY (updated_by) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE RESTRICT` | The last editor is an existing Person. |
+
+## identity_trusted_devices
+
+A browser that completed the second factor for a Person and asked to be remembered; its HttpOnly cookie holds a random token stored here only as SHA-256.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Valid while not revoked and younger than the policy's remember_device_days. Revoked by the Person, by password or second-factor changes, by an owner reset or disabling; expired rows are pruned.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | CONFIDENTIAL | Remembered-browser identifier. | — | — |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Person whose second factor the browser completed. | — | — |
+| `token_hash` | `character(64)` | no | — | RESTRICTED | SHA-256 of the 256-bit browser token; the token itself is never stored. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | When the second factor was completed on this browser. | — | — |
+| `last_used_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Last sign-in that skipped the second factor with this browser. | — | — |
+| `revoked_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | When the browser stopped being remembered. | Still remembered while within the policy period. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_trusted_devices_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Removed with the Person. |
+| `identity_trusted_devices_pkey` | `PRIMARY KEY (id)` | Remembered-browser identity. |
+| `identity_trusted_devices_person_idx` | `CREATE INDEX identity_trusted_devices_person_idx ON public.identity_trusted_devices USING btree (person_id)` | Revocation of a Person's remembered browsers. |
+| `identity_trusted_devices_token_key` | `CREATE UNIQUE INDEX identity_trusted_devices_token_key ON public.identity_trusted_devices USING btree (token_hash)` | Token lookup; one row per browser token. |

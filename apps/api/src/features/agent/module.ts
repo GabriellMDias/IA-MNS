@@ -15,6 +15,7 @@ import { AgentFailure, agentErrors } from "./errors.js";
 import { CorporateAgent, type AgentActor } from "./application.js";
 import { AgentRepository } from "./prisma-repository.js";
 import { createAgentPlanner } from "./planner.js";
+import { createOpenAiModel } from "../../ai/openai.js";
 import type { AgentCapability } from "./capabilities.js";
 import {
   updateConversationOperation,
@@ -63,9 +64,10 @@ export function createAgentModule(
           ? new CorporateAgent(
               new AgentRepository(resources.database),
               config.openaiApiKey
-                ? createAgentPlanner(config, capabilities)
+                ? createAgentPlanner(createOpenAiModel(config), capabilities)
                 : undefined,
               capabilities,
+              { traceLevel: config.aiTrace },
             )
           : undefined);
       const configured = Boolean(agent && (injected || config.openaiApiKey));
@@ -79,6 +81,11 @@ export function createAgentModule(
             app.addHook("onReady", async () => {
               await resources.database!
                 .$queryRaw`SELECT c.pinned, c.archived, c.title_manual, c.owner, c.contexts, c.version, c.active_turn_id, c.lease_until, t.reply, t.events, t.state, t.request_id, t.sequence FROM agent_conversations c LEFT JOIN agent_turns t ON t.conversation_id = c.id LIMIT 0`;
+              // Content tracing writes with each turn outcome; refuse to start
+              // against a schema without its table.
+              if (config.aiTrace === "content")
+                await resources.database!
+                  .$queryRaw`SELECT turn_id, conversation_id, captured_at, trace FROM agent_turn_traces LIMIT 0`;
             });
           void app.register(async (scope) => {
             const actors = new WeakMap<FastifyRequest, AgentActor>();
@@ -377,6 +384,10 @@ export function createAgentModule(
                     request.body.requestId,
                     request.body.message.trim(),
                     (error, turnId) => report(error, request, turnId),
+                    // Allowlisted metadata only: decisions, issue codes,
+                    // timings and token counts, never user text or results.
+                    (trace, turnId) =>
+                      request.log.info({ turnId, ai: trace }, "ai_turn_traced"),
                   );
                   reply.code(202);
                   return result;

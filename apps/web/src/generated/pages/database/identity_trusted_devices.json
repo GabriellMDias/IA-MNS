@@ -1,0 +1,92 @@
+{
+  "kind": "database",
+  "name": "identity_trusted_devices",
+  "description": "A browser that completed the second factor for a Person and asked to be remembered; its HttpOnly cookie holds a random token stored here only as SHA-256.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Valid while not revoked and younger than the policy's remember_device_days. Revoked by the Person, by password or second-factor changes, by an owner reset or disabling; expired rows are pruned.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Remembered-browser identifier.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person whose second factor the browser completed.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "token_hash",
+      "PostgreSQL type": "character(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "RESTRICTED",
+      "Meaning": "SHA-256 of the 256-bit browser token; the token itself is never stored.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When the second factor was completed on this browser.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "last_used_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Last sign-in that skipped the second factor with this browser.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "revoked_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When the browser stopped being remembered.",
+      "Null meaning": "Still remembered while within the policy period.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_trusted_devices_person_id_fkey",
+      "Physical definition": "FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Removed with the Person."
+    },
+    {
+      "Object": "identity_trusted_devices_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Remembered-browser identity."
+    },
+    {
+      "Object": "identity_trusted_devices_person_idx",
+      "Physical definition": "CREATE INDEX identity_trusted_devices_person_idx ON public.identity_trusted_devices USING btree (person_id)",
+      "Purpose": "Revocation of a Person's remembered browsers."
+    },
+    {
+      "Object": "identity_trusted_devices_token_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_trusted_devices_token_key ON public.identity_trusted_devices USING btree (token_hash)",
+      "Purpose": "Token lookup; one row per browser token."
+    }
+  ]
+}
