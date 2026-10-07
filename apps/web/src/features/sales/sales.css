@@ -120,3 +120,26 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
+.sales-source + .sales-source {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.sales-source-title {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+.sales-source-status {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.sales-source-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}

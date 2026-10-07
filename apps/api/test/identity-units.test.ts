@@ -45,6 +45,8 @@ import {
   secondFactorRequired,
 } from "../src/features/identity/domain.js";
 import { signingKey } from "./identity-helpers.js";
+import { identityServiceFor } from "../src/features/identity/module.js";
+import type { Database } from "../src/database.js";
 
 const catalog: PermissionDescriptor[] = [
   {
@@ -363,6 +365,11 @@ describe("Sankhya session assertion connector", () => {
         name: "Ana",
       });
     }
+    // The shared SUP account (CODUSU 0) is a valid subject by owner decision.
+    const { verifier, sign } = await setup();
+    expect(
+      (await verifier.verify(await sign({ sub: "0" }), "nonce-1")).subject,
+    ).toBe("0");
   });
 
   it("rejects wrong nonce, issuer, audience, subject, lifetime, type and foreign keys", async () => {
@@ -389,12 +396,10 @@ describe("Sankhya session assertion connector", () => {
         verifier.verify(await sign({ sub: "42" }, { aud: "pdt" }), "nonce-1"),
       ),
     ).toBe("invalid_assertion");
-    expect(
-      await reason(verifier.verify(await sign({ sub: "0" }), "nonce-1")),
-    ).toBe("bad_subject");
-    expect(
-      await reason(verifier.verify(await sign({ sub: "ana" }), "nonce-1")),
-    ).toBe("bad_subject");
+    for (const sub of ["ana", "00", "07", "-1", "12345678901"])
+      expect(
+        await reason(verifier.verify(await sign({ sub }), "nonce-1")),
+      ).toBe("bad_subject");
     expect(
       await reason(
         verifier.verify(
@@ -753,5 +758,65 @@ describe("identity cookies", () => {
     } finally {
       await app.close();
     }
+  });
+});
+
+describe("direct sign-in availability", () => {
+  it("offers Sankhya on the direct URL only with the add-on authorize page", async () => {
+    const om = await generateKeyPair("ES256");
+    const base = {
+      ORION_ENV: "test",
+      IA_MNS_PUBLIC_ORIGIN: "https://ia.example.test",
+      IA_MNS_IDENTITY_SIGNING_KEY: signingKey(),
+      IA_MNS_IDENTITY_ENCRYPTION_KEY: randomBytes(32).toString("base64url"),
+      SANKHYA_IDENTITY_ISSUER: "urn:mns:sankhya-om:test",
+      SANKHYA_IDENTITY_KEYS: JSON.stringify({
+        keys: [{ ...(await exportJWK(om.publicKey)), kid: "om" }],
+      }),
+      SANKHYA_EMBED_ORIGIN: "https://om.example.test",
+    };
+    const service = (env: Record<string, string>) =>
+      identityServiceFor(
+        parseServerConfig(env),
+        { database: {} as Database },
+        [],
+        { transferOwnership: () => Promise.resolve() } as never,
+      )!;
+    const embeddedOnly = service(base);
+    expect(embeddedOnly.signInAvailable("sankhya")).toBe(true);
+    expect(embeddedOnly.directSignInAvailable("sankhya")).toBe(false);
+    const withPage = service({
+      ...base,
+      SANKHYA_IDENTITY_AUTHORIZE_URL:
+        "https://om.example.test/ia-mns/authorize",
+    });
+    expect(withPage.directSignInAvailable("sankhya")).toBe(true);
+  });
+
+  it("offers PDT on the direct URL only when its callback is on this origin", () => {
+    const pdt = (redirect: string) =>
+      identityServiceFor(
+        parseServerConfig({
+          ORION_ENV: "test",
+          IA_MNS_PUBLIC_ORIGIN: "https://ia.example.test",
+          IA_MNS_IDENTITY_SIGNING_KEY: signingKey(),
+          IA_MNS_IDENTITY_ENCRYPTION_KEY: randomBytes(32).toString("base64url"),
+          PDT_IDENTITY_BASE_URL: "https://pdt.example.test",
+          PDT_IDENTITY_ISSUER: "https://pdt.example.test",
+          PDT_IDENTITY_CLIENT_ID: "ia-mns",
+          PDT_IDENTITY_CLIENT_SECRET: "c".repeat(40),
+          PDT_IDENTITY_REDIRECT_URI: redirect,
+          PDT_EMBED_ORIGIN: "https://pdt.example.test",
+        }),
+        { database: {} as Database },
+        [],
+        { transferOwnership: () => Promise.resolve() } as never,
+      )!;
+    const sameOrigin = pdt("https://ia.example.test/api/identity/pdt/callback");
+    expect(sameOrigin.directSignInAvailable("pdt")).toBe(true);
+    // An embedded-only installation registers a callback the browser never visits.
+    const embeddedOnly = pdt("https://other.example.test/callback");
+    expect(embeddedOnly.signInAvailable("pdt")).toBe(true);
+    expect(embeddedOnly.directSignInAvailable("pdt")).toBe(false);
   });
 });

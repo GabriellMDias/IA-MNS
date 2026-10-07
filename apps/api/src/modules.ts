@@ -4,10 +4,10 @@ import { createSalesModule } from "./features/sales/module.js";
 import { createAgentModule } from "./features/agent/module.js";
 import { createSalesCapability } from "./features/sales/capability.js";
 import { providersConfigured } from "./features/sales/module.js";
+import { createSalesReaders } from "./features/sales/readers.js";
 import { SalesChat } from "./features/sales/application.js";
 import { createModelInterpreter } from "./features/sales/interpreter.js";
 import { createOpenAiModel } from "./ai/openai.js";
-import { createOracleReader } from "./features/sales/oracle.js";
 import {
   createIdentityModule,
   type IdentityPorts,
@@ -24,7 +24,7 @@ function salesService(resources: ModuleResources): SalesChat | undefined {
   if (!service) {
     service = new SalesChat(
       createModelInterpreter(createOpenAiModel(config)),
-      createOracleReader(config),
+      createSalesReaders(config),
     );
     salesServices.set(config, service);
   }
@@ -40,7 +40,7 @@ function salesService(resources: ModuleResources): SalesChat | undefined {
 export const permissionCatalog: readonly PermissionDescriptor[] = [
   {
     permission: "sales:read",
-    title: "Consultas de vendas (Sankhya)",
+    title: "Consultas de vendas (Sankhya e VR Master)",
     access: "read",
     autoGrantProviders: ["sankhya"],
   },

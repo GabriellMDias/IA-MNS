@@ -1,0 +1,28 @@
+{
+  "kind": "component",
+  "name": "SalesAnswer",
+  "source": "apps/web/src/features/sales/results.tsx",
+  "summary": "Presents a sales answer with one labeled section per queried source: MNS (Sankhya), Pilar da Terra (VR Master) or both.",
+  "props": [
+    {
+      "name": "answer",
+      "type": "SalesAnswer",
+      "meaning": "Generated SDK agent result: the selection and a section per source with its status, reason and result."
+    }
+  ],
+  "states": [
+    "One source",
+    "Both sources",
+    "Source unavailable",
+    "Measure unavailable in a source"
+  ],
+  "accessibility": "Each source is a group named by its level-2 heading, not a landmark, so repeated answers stay distinct; status text explains a missing result without relying on color.",
+  "usage": "Never add figures across sections: each source keeps its own totals, and a failed source is reported beside the other source's result.",
+  "examples": [
+    {
+      "id": "sales-answer-both-sources",
+      "label": "Both sources, one unavailable",
+      "description": "Synthetic Tudo answer with a Sankhya total and an unavailable VRMaster; the preview makes no API or provider request."
+    }
+  ]
+}

@@ -318,6 +318,35 @@
   max-width: var(--agent-content-width);
   margin-inline: auto;
 }
+.agent-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.agent-source label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.agent-source select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+}
+.agent-turn-source {
+  width: fit-content;
+  max-width: 85%;
+  margin: 6px 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+}
 .agent-composer {
   display: flex;
   align-items: flex-end;
@@ -599,6 +628,11 @@
   }
   .agent-composer-area {
     padding-inline: 12px;
+  }
+  /* 16px keeps mobile browsers from zooming into the focused control. */
+  .agent-source select {
+    flex: 1;
+    font-size: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

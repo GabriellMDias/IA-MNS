@@ -22,11 +22,37 @@ const result = {
   comparison: null,
   warnings: [],
 };
+// The second source of a "Tudo" answer, with figures that must never be added
+// to the first source's.
+const vrmasterResult = {
+  ...result,
+  rows: [{ period: "2026-07", product: null, unit: "BRL", value: "50.00" }],
+  products: [],
+  totals: [
+    { unit: "BRL", value: "50.00", previousValue: null, changePercent: null },
+  ],
+};
+function answerFor(source: string) {
+  const section = (name: string) => ({
+    source: name,
+    status: "answered",
+    reason: null,
+    result: name === "vrmaster" ? vrmasterResult : result,
+  });
+  return {
+    selection: source,
+    sections:
+      source === "all"
+        ? [section("sankhya"), section("vrmaster")]
+        : [section(source)],
+  };
+}
 type Turn = {
   id: string;
   requestId: string;
   sequence: number;
   question: string;
+  source: string;
   state: string;
   reply: unknown;
   events: { stage: string; message: string; at: string }[];
@@ -44,6 +70,7 @@ async function fixture(
   } = {},
 ) {
   const turns: Turn[] = [];
+  const sources: (string | undefined)[] = [];
   let exists = false;
   let polls = 0;
   let requests = 0;
@@ -142,7 +169,9 @@ async function fixture(
       const body = request.postDataJSON() as {
         message: string;
         requestId: string;
+        source?: string;
       };
+      sources.push(body.source);
       let turn = turns.find((item) => item.requestId === body.requestId);
       if (!turn) {
         turn = {
@@ -150,6 +179,7 @@ async function fixture(
           requestId: body.requestId,
           sequence: turns.length + 1,
           question: body.message,
+          source: body.source ?? "sankhya",
           state: "running",
           reply: null,
           events: [],
@@ -193,14 +223,14 @@ async function fixture(
             kind: "answer",
             capabilityId: "sales",
             message: "Valor líquido vendido para maçã: R$ 300,30.",
-            result,
+            result: answerFor(active.source),
             suggestions: [],
           };
       }
     }
     await route.fulfill({ json: { conversation, turns, olderThan: null } });
   });
-  return { turns, requests: () => requests };
+  return { turns, requests: () => requests, sources: () => sources };
 }
 const webUrl = () => process.env.ORION_E2E_WEB_URL!;
 test("mobile conversation menus act on their row and leave the selected conversation intact", async ({
@@ -404,10 +434,13 @@ test("light/dark themes persist only a display preference and stay accessible on
   page,
 }) => {
   await fixture(page);
+  // Light is the default even when the operating system prefers dark.
+  await page.emulateMedia({ colorScheme: "dark" });
   await page.goto(webUrl());
   await expect(
     page.getByRole("heading", { name: "Como posso ajudar hoje?" }),
   ).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await page.screenshot({
     path: "../../test-results/agent-light-desktop.png",
     fullPage: true,
@@ -599,5 +632,79 @@ test("changing credentials clears confidential cached turns and missing setup st
   await page.goto(webUrl());
   await expect(page.getByRole("status")).toContainText(
     "O agente está indisponível",
+  );
+});
+test("the source selector routes each question explicitly, keeps sources apart and works by keyboard on mobile", async ({
+  page,
+}) => {
+  const state = await fixture(page);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(webUrl());
+  const selector = page.getByRole("combobox", { name: "Fonte" });
+  await expect(selector).toBeVisible();
+  await expect(selector).toHaveValue("sankhya");
+  await expect(selector.locator("option")).toHaveText([
+    "MNS (Sankhya)",
+    "Pilar da Terra (VR Master)",
+    "Tudo",
+  ]);
+  // The selector sits right above the message box, inside a 375px screen.
+  const box = (await selector.boundingBox())!;
+  const input = (await page.getByLabel("Sua mensagem").boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(375);
+  expect(input.y - (box.y + box.height)).toBeLessThan(40);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  // Keyboard selection; the question names another system, but the
+  // selector decides.
+  await selector.focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(selector).toHaveValue("vrmaster");
+  await page
+    .getByLabel("Sua mensagem")
+    .fill("Quanto vendi no Sankhya em setembro?");
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(
+    page.getByRole("group", { name: "Fonte: Pilar da Terra (VR Master)" }),
+  ).toBeVisible();
+  expect(state.sources()).toEqual(["vrmaster"]);
+  await expect(page.locator(".agent-turn-source")).toHaveText([
+    "Fonte: Pilar da Terra (VR Master)",
+  ]);
+
+  // Changing the selector routes the next question; both sources appear
+  // separately and nothing adds them.
+  await selector.selectOption("all");
+  await page.getByLabel("Sua mensagem").fill("E no mês passado?");
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(page.locator(".agent-turn-source")).toHaveText([
+    "Fonte: Pilar da Terra (VR Master)",
+    "Fonte: Tudo",
+  ]);
+  expect(state.sources()).toEqual(["vrmaster", "all"]);
+  const last = page.locator(".agent-turn").last();
+  await expect(
+    last.getByRole("group", { name: "Fonte: MNS (Sankhya)" }),
+  ).toBeVisible();
+  await expect(
+    last.getByRole("group", { name: "Fonte: Pilar da Terra (VR Master)" }),
+  ).toBeVisible();
+  await expect(last.getByText("os valores não são somados")).toBeVisible();
+  await expect(last.getByText("R$ 350,30")).toHaveCount(0);
+  await expect(selector).toHaveValue("all");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  // The choice lives only in memory: nothing is stored and a reload starts
+  // again from MNS (Sankhya).
+  await expectNoStoredUserData(page);
+  await page.reload();
+  await expect(page.getByRole("combobox", { name: "Fonte" })).toHaveValue(
+    "sankhya",
   );
 });

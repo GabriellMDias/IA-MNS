@@ -1,0 +1,4 @@
+<sk-application ng-controller="IaMnsController as ctrl" creation-complete="ctrl.init()" class="ia-mns-host">
+    <div class="ia-mns-status" ng-show="ctrl.message" role="status">{{ctrl.message}}</div>
+    <iframe id="ia-mns-frame" class="ia-mns-frame" title="IA-MNS" referrerpolicy="no-referrer"></iframe>
+</sk-application>

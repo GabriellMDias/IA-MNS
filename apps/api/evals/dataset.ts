@@ -8,6 +8,10 @@ import {
   measureSchema,
 } from "../src/features/sales/analysis.js";
 import { clarificationSchema } from "../src/features/sales/conversation-state.js";
+import {
+  sourceSchema,
+  sourceSelectionSchema,
+} from "../src/features/sales/contracts.js";
 import { interpretationFixtureSchema, routeFixtureSchema } from "./fixtures.js";
 
 const object = { additionalProperties: false };
@@ -80,6 +84,10 @@ export const turnExpectationSchema = Type.Object(
       ]),
     ),
     clarification: optional(clarificationSchema),
+    /** Sources actually queried, in order; [] when none ran. */
+    sources: optional(Type.Array(sourceSchema, { maxItems: 2 })),
+    /** Whether the reply tells that the message names another source. */
+    sourceNotice: optional(Type.Boolean()),
     query: optional(queryExpectationSchema),
     /** Accept product filters the expectation does not name. */
     allowExtraFilters: optional(Type.Boolean()),
@@ -92,6 +100,8 @@ export type TurnExpectation = Static<typeof turnExpectationSchema>;
 export const evalTurnSchema = Type.Object(
   {
     user: Type.String({ minLength: 1, maxLength: 2000 }),
+    /** Source selected in the interface for this turn; sankhya when absent. */
+    source: optional(sourceSelectionSchema),
     /**
      * Reference model outputs for deterministic replay. They describe a
      * correct reading, or a recorded faulty one the system must withstand.

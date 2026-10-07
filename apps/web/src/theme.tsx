@@ -1,18 +1,56 @@
 import { useEffect, useState } from "react";
+import { currentSurface } from "./surface.js";
 type Theme = "light" | "dark";
+const isTheme = (value: unknown): value is Theme =>
+  value === "light" || value === "dark";
+
+/**
+ * Inside PDT Connect the host owns the display theme: the frame starts with the
+ * `theme` query value of its embed URL and follows `ia-mns:host-theme`
+ * messages. Neither is stored, so the direct-URL preference stays untouched.
+ */
+export const hostThemed = currentSurface.surface === "pdt";
 function initialTheme(): Theme {
+  if (hostThemed) {
+    const requested = new URLSearchParams(window.location.search).get("theme");
+    return isTheme(requested) ? requested : "light";
+  }
   try {
     const saved = localStorage.getItem("ia-mns-theme");
     if (saved === "light" || saved === "dark") return saved;
   } catch {
     /* Storage is optional. */
   }
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  // Light is the product default; only an explicit choice selects dark.
+  return "light";
 }
 export function initializeTheme() {
   document.documentElement.dataset.theme = initialTheme();
+  if (hostThemed) listenForHostTheme();
+}
+
+// The host origin is known only after the identity handshake starts; a theme
+// message that arrives earlier waits until its origin is confirmed.
+let trustedHost: string | null = null;
+let pending: { origin: string; theme: Theme } | null = null;
+function listenForHostTheme() {
+  window.addEventListener("message", (event: MessageEvent) => {
+    if (window.parent === window || event.source !== window.parent) return;
+    const data = event.data as Record<string, unknown> | null;
+    if (!data || data.v !== 1 || data.type !== "ia-mns:host-theme") return;
+    if (!isTheme(data.theme)) return;
+    if (trustedHost === null)
+      pending = { origin: event.origin, theme: data.theme };
+    else if (event.origin === trustedHost)
+      document.documentElement.dataset.theme = data.theme;
+  });
+}
+/** Accepts display messages from the embedded host's verified origin. */
+export function trustHostTheme(origin: string) {
+  trustedHost = origin;
+  if (pending?.origin === origin)
+    document.documentElement.dataset.theme = pending.theme;
+  pending = null;
 }
 /** Current display theme and its toggle; the choice is only a display preference. */
 export function useTheme() {

@@ -51,7 +51,10 @@ export class SalesFailure extends Error {
   readonly boundary?: Readonly<
     // The model provider name is a fixed adapter identifier, never input.
     | { provider: string; stage: "interpretation" }
-    | { provider: "oracle"; stage: "connection" | "query" | "cleanup" }
+    | {
+        provider: "oracle" | "postgresql";
+        stage: "connection" | "query" | "cleanup";
+      }
   >;
   constructor(
     code: keyof typeof salesErrors,

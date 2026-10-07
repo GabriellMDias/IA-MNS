@@ -38,6 +38,19 @@ export const serverConfigSchema = Type.Object(
     sankhyaPassword: Type.Optional(Type.String({ minLength: 1 })),
     sankhyaConnectString: Type.Optional(Type.String({ minLength: 1 })),
     oracleClientLibDir: Type.Optional(Type.String({ minLength: 1 })),
+    vrmasterHost: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9.:_-]{1,253}$" }),
+    ),
+    vrmasterPort: Type.Integer({ minimum: 1, maximum: 65535 }),
+    vrmasterDatabase: Type.Optional(
+      Type.String({ minLength: 1, maxLength: 63 }),
+    ),
+    vrmasterUser: Type.Optional(Type.String({ minLength: 1, maxLength: 63 })),
+    vrmasterPassword: Type.Optional(Type.String({ minLength: 1 })),
+    vrmasterSslMode: Type.Union([
+      Type.Literal("verify-full"),
+      Type.Literal("disable"),
+    ]),
     localAccess: Type.Boolean(),
     devAccessToken: Type.Optional(Type.String({ pattern: "^[a-f0-9]{64}$" })),
     devAccessOrigin: Type.Optional(Type.String({ minLength: 1 })),
@@ -313,6 +326,75 @@ export const configReference = Object.freeze([
     secret: false,
     purpose:
       "Optional Oracle Client 19+ library directory; enables Thick mode when needed.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
+    key: "vrmasterHost",
+    name: "VRMASTER_DB_HOST",
+    type: "host name or IP address",
+    default: "",
+    secret: false,
+    purpose:
+      "VRMaster PostgreSQL server of the Pilar da Terra sales source; configure with name, user and password.",
+    required: false,
+    visibility: "server",
+    classification: "RESTRICTED",
+  },
+  {
+    key: "vrmasterPort",
+    name: "VRMASTER_DB_PORT",
+    type: "integer 1..65535",
+    default: "5432",
+    secret: false,
+    purpose: "VRMaster PostgreSQL port.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
+    key: "vrmasterDatabase",
+    name: "VRMASTER_DB_NAME",
+    type: "PostgreSQL database name",
+    default: "",
+    secret: false,
+    purpose: "VRMaster database that holds the sales reference tables.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
+    key: "vrmasterUser",
+    name: "VRMASTER_DB_USER",
+    type: "PostgreSQL role name",
+    default: "",
+    secret: true,
+    purpose:
+      "Dedicated read-only VRMaster role (PH-19) with SELECT only on the sales reference tables; never the PDT Connect account.",
+    required: false,
+    visibility: "server",
+    classification: "RESTRICTED",
+  },
+  {
+    key: "vrmasterPassword",
+    name: "VRMASTER_DB_PASSWORD",
+    type: "nonempty string",
+    default: "",
+    secret: true,
+    purpose: "Password of the dedicated read-only VRMaster role.",
+    required: false,
+    visibility: "server",
+    classification: "RESTRICTED",
+  },
+  {
+    key: "vrmasterSslMode",
+    name: "VRMASTER_DB_SSL_MODE",
+    type: "verify-full | disable",
+    default: "verify-full",
+    secret: false,
+    purpose:
+      "TLS with certificate and host verification, or explicitly disabled for a server without TLS, which sends the credentials and sales data unencrypted on that network.",
     required: false,
     visibility: "server",
     classification: "INTERNAL",
@@ -827,6 +909,12 @@ export function parseServerConfig(
     ...(env.SANKHYA_ORACLE_CLIENT_LIB_DIR === undefined
       ? {}
       : { oracleClientLibDir: env.SANKHYA_ORACLE_CLIENT_LIB_DIR }),
+    ...optional("vrmasterHost", env.VRMASTER_DB_HOST),
+    vrmasterPort: numberFromEnv(env.VRMASTER_DB_PORT, 5432),
+    ...optional("vrmasterDatabase", env.VRMASTER_DB_NAME),
+    ...optional("vrmasterUser", env.VRMASTER_DB_USER),
+    ...optional("vrmasterPassword", env.VRMASTER_DB_PASSWORD),
+    vrmasterSslMode: env.VRMASTER_DB_SSL_MODE ?? "verify-full",
     releaseId: env.ORION_RELEASE_ID ?? "local",
     host: env.ORION_API_HOST ?? "127.0.0.1",
     port: numberFromEnv(env.ORION_API_PORT, 3000),
@@ -921,6 +1009,16 @@ export function parseServerConfig(
   ];
   if (oracleValues.some(Boolean) && oracleValues.some((value) => !value))
     throw new Error("Invalid API configuration: incomplete Sankhya connection");
+  const vrmasterValues = [
+    candidate.vrmasterHost,
+    candidate.vrmasterDatabase,
+    candidate.vrmasterUser,
+    candidate.vrmasterPassword,
+  ];
+  if (vrmasterValues.some(Boolean) && vrmasterValues.some((value) => !value))
+    throw new Error(
+      "Invalid API configuration: incomplete VRMaster connection (VRMASTER_DB_HOST, VRMASTER_DB_NAME, VRMASTER_DB_USER and VRMASTER_DB_PASSWORD)",
+    );
   if (candidate.otlpEndpoint !== undefined) {
     let endpoint: URL;
     try {

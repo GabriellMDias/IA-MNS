@@ -5,28 +5,46 @@ import { Prisma, type AgentTurn } from "../../generated/prisma/client.js";
 import { AgentFailure } from "./errors.js";
 import {
   storedReplySchema,
+  storedReplyV1Schema,
   turnSchema,
   type TurnView,
   type ConversationScope,
   type ConversationPatch,
 } from "./contracts.js";
 import type { AgentReply, ProgressStage } from "./capabilities.js";
+import type { SourceSelection } from "../sales/sources.js";
 import { progressMessages } from "./capabilities.js";
 type Json = Prisma.InputJsonValue;
 const json = (value: unknown): Json =>
   JSON.parse(JSON.stringify(value)) as Json;
+/**
+ * Reads a stored reply. Version 1 sales results came from Sankhya, the only
+ * source then; they become a one-section Sankhya answer. Remove this upgrade
+ * only when no version 1 reply can remain in a supported database.
+ */
+function storedReply(value: unknown): TurnView["reply"] {
+  if (Value.Check(storedReplySchema, value)) return value.payload;
+  if (!Value.Check(storedReplyV1Schema, value))
+    throw new Error("Unsupported stored agent reply");
+  const { result, ...payload } = value.payload;
+  return {
+    ...payload,
+    result: result && {
+      selection: "sankhya",
+      sections: [
+        { source: "sankhya", status: "answered", reason: null, result },
+      ],
+    },
+  };
+}
 function view(turn: AgentTurn): TurnView {
-  let reply: TurnView["reply"] = null;
-  if (turn.reply !== null) {
-    if (!Value.Check(storedReplySchema, turn.reply))
-      throw new Error("Unsupported stored agent reply");
-    reply = turn.reply.payload;
-  }
+  const reply = turn.reply === null ? null : storedReply(turn.reply);
   const result = {
     id: turn.id,
     requestId: turn.requestId,
     sequence: turn.sequence,
     question: turn.question,
+    source: turn.source,
     state: turn.state,
     reply,
     events: turn.events,
@@ -235,13 +253,19 @@ export class AgentRepository {
       await tx.agentConversation.delete({ where: { id } });
     });
   }
-  async claim(owner: string, id: string, requestId: string, question: string) {
+  async claim(
+    owner: string,
+    id: string,
+    requestId: string,
+    question: string,
+    source: SourceSelection,
+  ) {
     return this.locked(owner, id, async (tx, item) => {
       const prior = await tx.agentTurn.findUnique({
         where: { conversationId_requestId: { conversationId: id, requestId } },
       });
       if (prior) {
-        if (prior.question !== question)
+        if (prior.question !== question || prior.source !== source)
           throw new AgentFailure("AGENT_REQUEST_CONFLICT");
         return {
           fresh: false,
@@ -264,6 +288,7 @@ export class AgentRepository {
           sequence: item.version + 1,
           state: "running",
           question,
+          source,
         },
       });
       await tx.agentConversation.update({
@@ -328,7 +353,7 @@ export class AgentRepository {
       >`SELECT clock_timestamp() AS now`;
       if (
         "reply" in outcome &&
-        !Value.Check(storedReplySchema, { version: 1, payload: outcome.reply })
+        !Value.Check(storedReplySchema, { version: 2, payload: outcome.reply })
       )
         throw new Error("Invalid agent capability output");
       await tx.agentTurn.update({
@@ -338,7 +363,7 @@ export class AgentRepository {
           ...("reply" in outcome
             ? {
                 state: "completed",
-                reply: json({ version: 1, payload: outcome.reply }),
+                reply: json({ version: 2, payload: outcome.reply }),
                 capabilityId: outcome.reply.capabilityId,
               }
             : { state: "failed", failureCode: outcome.failureCode }),

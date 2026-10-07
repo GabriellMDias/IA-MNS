@@ -20,7 +20,7 @@ import {
 } from "./contracts.js";
 import { createOpenAiModel } from "../../ai/openai.js";
 import { createModelInterpreter } from "./interpreter.js";
-import { createOracleReader } from "./oracle.js";
+import { createSalesReaders } from "./readers.js";
 
 const respond = errorResponder({ ...coreErrors, ...salesErrors });
 export function providersConfigured(config: ServerConfig) {
@@ -63,7 +63,7 @@ export function createSalesModule(
         (configured
           ? new SalesChat(
               createModelInterpreter(createOpenAiModel(config)),
-              createOracleReader(config),
+              createSalesReaders(config),
             )
           : undefined);
       const actors = new WeakMap<FastifyRequest, SalesActor>();

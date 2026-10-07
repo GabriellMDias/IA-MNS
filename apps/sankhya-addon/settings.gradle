@@ -1,0 +1,4 @@
+// The root project name is the add-on name registered for the IA-MNS solution.
+rootProject.name = "ia-mns"
+include "model"
+include "vc"

@@ -81,9 +81,11 @@ export class SankhyaAssertionVerifier implements SankhyaIdentityConnector {
       throw new SankhyaFailure("bad_lifetime");
     if (payload.nonce !== expectedNonce)
       throw new SankhyaFailure("nonce_mismatch");
+    // CODUSU 0 (SUP) is accepted by the owner's 2026-10-06 decision, so the
+    // shared SUP account can be linked to an administrator's Person.
     if (
       typeof payload.sub !== "string" ||
-      !/^[1-9][0-9]{0,9}$/.test(payload.sub)
+      !/^(0|[1-9][0-9]{0,9})$/.test(payload.sub)
     )
       throw new SankhyaFailure("bad_subject");
     if (typeof payload.jti !== "string" || payload.jti.length > 128)

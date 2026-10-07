@@ -42,7 +42,7 @@
       "Nullable": "no",
       "Default": "—",
       "Classification": "CONFIDENTIAL",
-      "Meaning": "Client UUID for idempotent acceptance replay; same id with different message is a conflict.",
+      "Meaning": "Client UUID for idempotent acceptance replay; same id with a different message or source is a conflict.",
       "Null meaning": "—",
       "Unit": "—"
     },
@@ -72,7 +72,7 @@
       "Nullable": "yes",
       "Default": "—",
       "Classification": "CONFIDENTIAL",
-      "Meaning": "Version 1 envelope containing application-authored reply and bounded result snapshot. Not current ERP truth and never sent back to OpenAI as financial data.",
+      "Meaning": "Version 2 envelope containing the application-authored reply and a bounded result snapshot with one section per queried sales source; version 1 envelopes (one Sankhya result) are upgraded when read. Not current ERP truth and never sent back to OpenAI as financial data.",
       "Null meaning": "Absent in the lifecycle states described in the field meaning.",
       "Unit": "—"
     },
@@ -125,6 +125,16 @@
       "Meaning": "Database-clock terminal outcome instant; absent while running.",
       "Null meaning": "Absent in the lifecycle states described in the field meaning.",
       "Unit": "—"
+    },
+    {
+      "Column": "source",
+      "PostgreSQL type": "character varying(20)",
+      "Nullable": "no",
+      "Default": "'sankhya'::character varying",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Sales source selected in the interface for this turn: sankhya, vrmaster or all. The message never changes it; a replay with another source is a conflict. Turns written before the selector are sankhya, the only source then.",
+      "Null meaning": "—",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -157,6 +167,11 @@
       "Object": "agent_turns_sequence_check",
       "Physical definition": "CHECK ((sequence > 0))",
       "Purpose": "Positive order."
+    },
+    {
+      "Object": "agent_turns_source_check",
+      "Physical definition": "CHECK (((source)::text = ANY ((ARRAY['sankhya'::character varying, 'vrmaster'::character varying, 'all'::character varying])::text[])))",
+      "Purpose": "Supported sales source selections only."
     },
     {
       "Object": "agent_turns_state_check",

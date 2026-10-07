@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
 import { useCredentials } from "../../credentials.js";
 import { currentSurface, type Surface } from "../../surface.js";
+import { trustHostTheme } from "../../theme.js";
 import {
   completeEmbedded,
   completeMfa,
@@ -123,11 +124,21 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
   const lastRenewal = useRef(0);
   const tokenExpiresAt = useRef(0);
 
+  // A change of person discards every cached answer except the public identity
+  // configuration, which does not belong to anyone and drives the sign-in
+  // start below; dropping it would refetch it and start another sign-in.
+  const clearPersonData = useCallback(
+    () =>
+      queryClient.removeQueries({
+        predicate: (query) => query.queryKey[0] !== "identity-status",
+      }),
+    [queryClient],
+  );
   const accept = useCallback(
     (next: string, expiresIn: number) => {
       const person = subjectOf(next);
       if (subject.current !== null && person !== subject.current)
-        queryClient.clear();
+        clearPersonData();
       subject.current = person;
       setToken(next);
       setPhase("signed-in");
@@ -141,15 +152,15 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
         Math.max(30, expiresIn - 60) * 1000,
       );
     },
-    [queryClient, setToken],
+    [clearPersonData, setToken],
   );
   const drop = useCallback(() => {
     window.clearTimeout(timer.current);
     subject.current = null;
     setToken(null);
-    queryClient.clear();
+    clearPersonData();
     setPhase(surface === "direct" ? "signed-out" : "embedded");
-  }, [queryClient, setToken, surface]);
+  }, [clearPersonData, setToken, surface]);
 
   const handshake = useCallback(async () => {
     if (surface === "direct") return;
@@ -158,6 +169,7 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
       const started = await startProvider(surface, "login", "embedded");
       if (started.mode !== "embedded" || !started.hostOrigin)
         throw new Error("Embedded host not configured");
+      if (surface === "pdt") trustHostTheme(started.hostOrigin);
       const proof = await requestHostProof(
         started.hostOrigin,
         surface === "pdt"
@@ -236,10 +248,13 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (status.isError) setPhase("unavailable");
   }, [status.isError]);
+  // Starts once per configuration state, not per status object, so a refetched
+  // status never starts another sign-in (a refused host proof once looped).
+  const configured = status.data?.configured;
   useEffect(() => {
-    if (!status.data) return;
-    setManaged(status.data.configured);
-    if (!status.data.configured) {
+    if (configured === undefined) return;
+    setManaged(configured);
+    if (!configured) {
       setPhase("unavailable");
       setGate(null);
       return;
@@ -254,7 +269,7 @@ export function IdentitySessionProvider({ children }: { children: ReactNode }) {
       void handshake();
     }
     return () => window.clearTimeout(timer.current);
-  }, [status.data, surface, accept, handshake, setManaged]);
+  }, [configured, surface, accept, handshake, setManaged]);
 
   const signOut = useCallback(async () => {
     await logout(token).catch(() => undefined);

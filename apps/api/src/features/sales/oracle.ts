@@ -6,15 +6,8 @@ import { ensureOracleClient } from "../../oracle-client.js";
 import { comparisonQuery, type SalesData, type SalesQuery } from "./domain.js";
 import { SalesFailure } from "./errors.js";
 import { aggregateSql, matchingProductsSql, queryBindings } from "./query.js";
+import { rowsMatchScope, type SalesReader } from "./reader.js";
 
-export interface SalesReader {
-  read(
-    this: void,
-    query: SalesQuery,
-    signal: AbortSignal,
-  ): Promise<{ current: SalesData; previous: SalesData | null }>;
-  close(this: void): Promise<void>;
-}
 const aggregateRowSchema = Type.Object({
   PERIOD: Type.String({ pattern: "^(?:total|\\d{4}-(?:0[1-9]|1[0-2]))$" }),
   PRODUCT: Type.Union([Type.String({ minLength: 1 }), Type.Null()]),
@@ -97,24 +90,22 @@ export function createOracleReader(config: ServerConfig): SalesReader {
           const rows = aggregates.rows;
           if (rows.length > 500)
             throw new SalesFailure("SALES_RESULT_TOO_LARGE");
-          const keys = new Set<string>();
-          for (const row of rows) {
-            const key = JSON.stringify([row.PERIOD, row.PRODUCT, row.UNIT]);
-            if (
-              keys.has(key) ||
-              (period.groupBy === "month"
-                ? row.PERIOD < period.startDate.slice(0, 7) ||
-                  row.PERIOD > period.endDate.slice(0, 7)
-                : row.PERIOD !== "total") ||
-              (period.groupBy === "product"
-                ? row.PRODUCT === null
-                : row.PRODUCT !== null) ||
-              (period.metric === "net_value" && row.UNIT !== "BRL") ||
-              (period.metric === "weight" && row.UNIT !== "PESOLIQ")
+          if (
+            !rowsMatchScope(
+              period,
+              rows.map((row) => ({
+                period: row.PERIOD,
+                product: row.PRODUCT,
+                unit: row.UNIT ?? "",
+              })),
+            ) ||
+            rows.some(
+              (row) =>
+                (period.metric === "net_value" && row.UNIT !== "BRL") ||
+                (period.metric === "weight" && row.UNIT !== "PESOLIQ"),
             )
-              throw new Error("Sales aggregate does not match its query scope");
-            keys.add(key);
-          }
+          )
+            throw new Error("Sales aggregate does not match its query scope");
           const products =
             period.productSearch === null
               ? []

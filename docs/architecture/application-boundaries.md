@@ -21,15 +21,21 @@ The implemented `apps/api` uses Fastify and Pino. It owns HTTP parsing/validatio
 
 Keep HTTP requests/responses, status codes, headers, cookies, and framework concepts at the transport boundary unless the operation is inherently transport-specific. Map validated application input to business operations and map their outcomes back to public responses. Exposing a rule through HTTP does not make it transport logic.
 
-The API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.
+The API is also IA-MNS's identity of record: it verifies host proofs, provisions and links Persons, issues sessions and computes permissions for every surface ([identity](../domains/identity.md)). The API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.
 
 ## Web Application
 
 The implemented `apps/web` is a React/Vite client-first SPA. TanStack Router owns URLs/navigation, TanStack Query owns server state through the generated SDK, and React state/context owns local UI state. The accepted direction includes React Compiler when compatible. No general global-state library or full-stack web framework is selected by default; server rendering requires product justification. Fastify retains authoritative backend responsibilities.
 
-The web application owns pages/layouts, interactions, accessibility, browser rendering/storage, local state, web authentication integration, client composition, localization, and any frontend telemetry. Keep DOM/navigation and other browser-specific behavior local unless a genuinely compatible shared responsibility exists. UI components can share visual concepts without sharing implementation across platforms.
+It is IA-MNS's only frontend: the same build serves the direct URL and the PDT Connect and Sankhya Om embedded surfaces ([ADR-0023](../adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)). The web application owns pages/layouts, interactions, accessibility, browser rendering/storage, local state, web authentication integration, client composition, localization, and any frontend telemetry. Keep DOM/navigation and other browser-specific behavior local unless a genuinely compatible shared responsibility exists. UI components can share visual concepts without sharing implementation across platforms.
 
 The browser can be inspected, modified, bypassed, replayed, or automated. Client validation and hidden/disabled controls improve experience; trusted backend boundaries still enforce validation, identity, permissions, and business invariants. Clients receive neither database credentials nor privileged server secrets. See [authentication](../security/authentication.md) and [authorization](../security/authorization.md).
+
+## Sankhya Om Add-on
+
+`apps/sankhya-addon` is an Add-on Studio project built with Gradle for the Sankhya Om runtime (Java 8 on WildFly), not a pnpm workspace member ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)). It adapts and hosts IA-MNS inside the Om and nothing more: a menu screen that frames `/embed/sankhya`, the bridge answer, the identity assertion minted from the server-side Om session, and the authorize page of the direct-URL Sankhya sign-in. Its runtime contracts with IA-MNS are bridge protocol v1 and the [assertion contract](../domains/identity.md#sankhya-om-add-on-assertion-contract).
+
+The add-on must not become a second IA-MNS frontend or hold IA-MNS business rules, conversations, permissions, Persons, links or data; those belong to `apps/web` and `apps/api`. It runs with the Om's privileges and the API trusts only its signed assertion, never browser-supplied identity. Its [local guide](../../apps/sankhya-addon/README.md) describes its build, development environment and repository cautions.
 
 ## Shared Contracts
 

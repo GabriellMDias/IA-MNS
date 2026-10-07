@@ -1236,12 +1236,22 @@
       "file": "pages/components/ErrorNotice.json"
     },
     {
+      "id": "components/SalesAnswer",
+      "kind": "component",
+      "title": "SalesAnswer",
+      "group": "Web components",
+      "source": "apps/web/src/features/sales/results.tsx",
+      "summary": "Presents a sales answer with one labeled section per queried source: MNS (Sankhya), Pilar da Terra (VR Master) or both.",
+      "headings": [],
+      "file": "pages/components/SalesAnswer.json"
+    },
+    {
       "id": "components/SalesResults",
       "kind": "component",
       "title": "SalesResults",
       "group": "Web components",
       "source": "apps/web/src/features/sales/results.tsx",
-      "summary": "Presents validated sales aggregates, distinct units, comparisons and matched products.",
+      "summary": "Presents validated sales aggregates of one source, distinct units, comparisons and matched products.",
       "headings": [],
       "file": "pages/components/SalesResults.json"
     },
@@ -1274,6 +1284,26 @@
       "summary": "The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma,…",
       "headings": [],
       "file": "pages/repository/apps/api/README.json"
+    },
+    {
+      "id": "repository/apps/sankhya-addon/AGENTS",
+      "kind": "repository",
+      "title": "Sankhya Add-on Instructions",
+      "group": "Agent instructions",
+      "source": "apps/sankhya-addon/AGENTS.md",
+      "summary": "Use the add-on guide for its responsibilities, flow, structure, environment and repository cautions, and ADR-0026 for the decision. Global repository instructions still apply.",
+      "headings": [],
+      "file": "pages/repository/apps/sankhya-addon/AGENTS.json"
+    },
+    {
+      "id": "repository/apps/sankhya-addon/README",
+      "kind": "repository",
+      "title": "Sankhya Om Add-on",
+      "group": "Workspace guides",
+      "source": "apps/sankhya-addon/README.md",
+      "summary": "This application adapts and hosts IA-MNS inside Sankhya Om. It is an Add-on Studio project built with Gradle for the Om runtime (Java 8 on WildFly), kept in the IA-MNS…",
+      "headings": [],
+      "file": "pages/repository/apps/sankhya-addon/README.json"
     },
     {
       "id": "repository/apps/web/AGENTS",
@@ -1544,6 +1574,26 @@
       "summary": "ADR-0022 fixed direct sessions at 12 hours (2 hours idle), recent authentication at 10 minutes (30 for administration), and a second factor only for administration. The owner…",
       "headings": [],
       "file": "pages/repository/docs/adr/0025-administer-the-authentication-policy-within-fixed-safeguards.json"
+    },
+    {
+      "id": "repository/docs/adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on",
+      "kind": "repository",
+      "title": "ADR-0026: Host IA-MNS in Sankhya Om through an In-Repository Add-on",
+      "group": "Decisions",
+      "source": "docs/adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md",
+      "summary": "ADR-0023 serves one frontend to the direct URL, PDT Connect and Sankhya Om, and proves a Sankhya identity with a short assertion signed by a component that runs inside the Om…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.json"
+    },
+    {
+      "id": "repository/docs/adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately",
+      "kind": "repository",
+      "title": "ADR-0027: Select the Sales Source in the Interface and Read Each Source Separately",
+      "group": "Decisions",
+      "source": "docs/adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md",
+      "summary": "The sales capability (ADR-0018) read only the MNS sales in Sankhya (Oracle). The group's other company, Pilar da Terra, records its sales in VRMaster, a PostgreSQL database on…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -1868,10 +1918,10 @@
     {
       "id": "repository/docs/domains/sales-chat",
       "kind": "repository",
-      "title": "Sankhya Sales Capability",
+      "title": "Sales Capability",
       "group": "Domain guides",
       "source": "docs/domains/sales-chat.md",
-      "summary": "The first business capability of the IA-MNS corporate agent lets an authorized MNS sales reader ask questions in Portuguese about confirmed Sankhya sales, receive real…",
+      "summary": "The first business capability of the IA-MNS corporate agent lets an authorized sales reader ask questions in Portuguese about the sales of MNS (Sankhya) and Pilar da Terra…",
       "headings": [],
       "file": "pages/repository/docs/domains/sales-chat.json"
     },
@@ -1974,6 +2024,16 @@
       "summary": "Historical review on 2026-10-01. The subsequent corporate agent evolution owns current product identity, durable context and progress; the sales guarantees below remain…",
       "headings": [],
       "file": "pages/repository/docs/project/mvp-audit.json"
+    },
+    {
+      "id": "repository/docs/project/vrmaster-reconciliation",
+      "kind": "repository",
+      "title": "VRMaster Reconciliation",
+      "group": "Project guides",
+      "source": "docs/project/vrmaster-reconciliation.md",
+      "summary": "These read-only queries let the owner compare the IA-MNS VRMaster source with the official dashboard SQL on the real database (PH-20). Run them in a PostgreSQL client connected…",
+      "headings": [],
+      "file": "pages/repository/docs/project/vrmaster-reconciliation.json"
     },
     {
       "id": "repository/docs/README",
@@ -2254,24 +2314,24 @@
       { "file": "search/0003.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0004.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0005.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0006.json", "count": 17, "kinds": ["api", "database"] },
+      { "file": "search/0006.json", "count": 15, "kinds": ["api", "database"] },
       {
         "file": "search/0007.json",
-        "count": 80,
+        "count": 74,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0008.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 129, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 167, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 125, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 135, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 84, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 76, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 71, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 104, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 86, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 2, "kinds": ["repository"] }
+      { "file": "search/0008.json", "count": 110, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 165, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 140, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 121, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 75, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 76, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 67, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 105, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 71, "kinds": ["repository"] }
     ],
-    "count": 1259
+    "count": 1320
   }
 }

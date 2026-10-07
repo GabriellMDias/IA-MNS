@@ -244,7 +244,7 @@ export const statusOperation = operation(
   "GET",
   "/identity/status",
   "getIdentityStatus",
-  "Available sign-in methods and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations.",
+  "Sign-in methods offered on the direct URL and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations.",
   {
     response: {
       200: Type.Object(

@@ -28,10 +28,10 @@ Each model call is one forced, strict tool call with a schema derived from the a
 
 1. The agent loads its own context (last capability, capability awaiting an answer) and the capability contexts of the conversation.
 2. The router receives the message, the recent transcript with application replies (an answer is shared only as "answer delivered") and the pending request. If it returns `unavailable` while a permitted capability awaits an answer, the message goes to that capability, whose boundary rejects unsupported requests itself. Social intents are respected.
-3. The sales capability loads its state, upgrading version 1 contexts.
+3. The sales capability loads its state, upgrading version 1 contexts. It also receives the turn's source selection from the interface; nothing in the model's output can change it.
 4. The interpreter returns an interpretation; the adapter rejects schema violations and inconsistent combinations (for example a clarification without a category or a filter action without text).
 5. The state machine (`advance` in [`conversation-state.ts`](../../apps/api/src/features/sales/conversation-state.ts)) normalizes the relation, grounds filters, merges, checks completeness, resolves the period and compiles the query, or returns a clarification or rejection.
-6. Only an executed plan reaches Oracle. The result, answer and suggestions stay deterministic.
+6. Only an executed plan reaches a database, and only the adapters of the selected sources that support its measure run ([sources](../domains/sales-chat.md#sources)). The plan is the same for every source; results, answers and suggestions stay deterministic and per source. A source or company name in the message only adds an application-authored notice, and a source name the model placed in a filter is dropped (`source_named_as_product`).
 7. The exchange is appended to the transcript; the capability returns its new state and what it awaits; the agent stores both with the turn and records the trace.
 
 A failed turn changes neither state nor transcript.

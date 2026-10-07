@@ -116,14 +116,16 @@ function Reauthenticate({
         </form>
       )}
       {identity.surface === "direct" &&
-        me.person.links.map((link) => (
-          <ProviderButton
-            key={link.id}
-            provider={link.provider}
-            intent="reauth"
-            token={token}
-          />
-        ))}
+        me.person.links
+          .filter((link) => identity.status?.methods[link.provider])
+          .map((link) => (
+            <ProviderButton
+              key={link.id}
+              provider={link.provider}
+              intent="reauth"
+              token={token}
+            />
+          ))}
       {identity.surface !== "direct" && !me.person.local && (
         <p>
           Feche e abra o IA-MNS novamente pelo sistema hospedeiro para

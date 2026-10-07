@@ -1,0 +1,12 @@
+# Sankhya Add-on Instructions
+
+Use [the add-on guide](README.md) for its responsibilities, flow, structure, environment and repository cautions, and [ADR-0026](../../docs/adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md) for the decision. Global repository instructions still apply.
+
+- This is a Gradle project for the Om runtime (Java 8, WildFly, Add-on Studio plugin). Do not add it to the pnpm workspace, convert it to Node/TypeScript, or run Node formatters and linters on its sources. Keep Java sources compatible with Java 8.
+- Keep the add-on a thin host: the screen that frames `/embed/sankhya`, the bridge answer, the `IaMnsHostSP` assertion service and, later, the direct-URL authorize page. IA-MNS screens belong to `apps/web`; business rules, identity, provisioning and permissions belong to `apps/api`. Never add a second frontend, IA-MNS state, Om tables, database scripts, dashboards or parameters here.
+- Change bridge protocol v1 or the [assertion contract](../../docs/domains/identity.md#sankhya-om-add-on-assertion-contract) on both sides, with their tests and the identity documentation, in the same change. Read the CODUSU only from the server-side Om session (`AuthenticationInfo`), never from request input. CODUSU 0 (SUP) is accepted by owner decision; do not change that without a new owner decision.
+- Keep the service's request checks (POST, configured Om origin, `X-IA-MNS-Host`, same-origin fetch metadata), the single trusted Om origin (no assertion for any other address) and the frame's `referrerpolicy="no-referrer"`. Log only refusal codes, never assertions, nonces or session identifiers.
+- Never commit the solution `appKey`, private keys, keystores, certificates, credentials, `local.properties`, local paths or MNS environment details, and never put sensitive files under `vc/src/main/webapp/assets/`, which the Om serves publicly. Do not commit generated directories or template-derived files before [PH-17](../../docs/project/human-actions.md#ph-17) is decided.
+- Keep `menu.xml` ASCII (it declares ISO-8859-1) and Java sources ASCII.
+- Deploy only to the Sankhya development environment with development users and keys. Publishing to or changing the production Om is a human action (PH-14), never an agent action.
+- Verify with `./gradlew model:test`, `./gradlew clean deployAddon` and the development-Om journey in the guide; `pnpm validate` does not cover this project. Report which of these actually ran.

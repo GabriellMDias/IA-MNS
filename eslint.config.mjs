@@ -11,6 +11,8 @@ export default defineConfig(
       "test-results/**",
       "**/dist/**",
       "apps/api/src/generated/**",
+      // Gradle project for the Sankhya Om runtime (ADR-0026).
+      "apps/sankhya-addon/**",
     ],
   },
   {

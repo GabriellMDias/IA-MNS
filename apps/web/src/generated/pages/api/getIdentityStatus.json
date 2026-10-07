@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "getIdentityStatus",
   "summary": "",
-  "description": "Available sign-in methods and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations.",
+  "description": "Sign-in methods offered on the direct URL and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations.",
   "security": [],
   "components": {},
   "method": "GET",

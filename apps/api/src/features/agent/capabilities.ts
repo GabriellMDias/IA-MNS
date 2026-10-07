@@ -1,4 +1,5 @@
 import type { TraceRecorder } from "../../ai/trace.js";
+import type { SourceSelection } from "../sales/sources.js";
 export type ProgressStage =
   "thinking" | "interpreting_sales" | "querying_sales" | "organizing";
 export type AgentReply = {
@@ -15,6 +16,10 @@ export type CapabilityInput = {
   signal: AbortSignal;
   progress: (stage: ProgressStage) => Promise<void>;
   trace: TraceRecorder;
+  /** The data source the person selected in the interface for this turn. */
+  source: SourceSelection;
+  /** Observes a failure the reply reports instead of failing the turn. */
+  report?: (error: unknown) => void;
 };
 export type CapabilityOutcome = {
   reply: AgentReply;

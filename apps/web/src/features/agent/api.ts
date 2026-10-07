@@ -1,5 +1,6 @@
 import type { paths } from "@ia-mns/sdk";
 import { apiClient, unwrap } from "../../api-client.js";
+import type { SalesSourceSelection } from "../sales/sources.js";
 const headers = { "x-ia-mns-client": "web" };
 const codes = new Set([
   "AGENT_NOT_CONFIGURED",
@@ -101,12 +102,13 @@ export async function submitTurn(
   conversationId: string,
   message: string,
   requestId: string,
+  source: SalesSourceSelection,
 ) {
   return unwrap(
     await apiClient(token).POST("/agent/conversations/{conversationId}/turns", {
       headers,
       params: { path: { conversationId } },
-      body: { message, requestId },
+      body: { message, requestId, source },
       signal: AbortSignal.timeout(10000),
     }),
     codes,

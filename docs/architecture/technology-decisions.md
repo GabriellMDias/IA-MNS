@@ -1,6 +1,6 @@
 # Technology Decision Map
 
-This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. Every record listed below currently states `accepted`, with ADR-0014 partly superseded by ADR-0017; workspace tooling, the API runtime with composable modules and PostgreSQL support, generated SDK, web shell, documentation portal, and project-derivation tooling exist. Consult [validation availability](../validation.md) before running commands.
+This is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. Every record listed below currently states `accepted`, with ADR-0014 partly superseded by ADR-0017; workspace tooling, the API runtime with composable modules and PostgreSQL support, generated SDK, web shell, documentation portal, and project-derivation tooling exist; the Sankhya add-on in `apps/sankhya-addon` works in the Sankhya development Om. Consult [validation availability](../validation.md) before running commands.
 
 ## Selected directions
 
@@ -21,6 +21,8 @@ This is a navigation summary, not an independent technology specification. Each 
 | [ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md) | `AGENTS.md` hierarchy as the only agent instruction source | Tool-specific files are thin discovery adapters only; currently a Gemini CLI setting. | [Policy](agent-instructions.md) |
 | [ADR-0014](../adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) | Projects derived from Orion by Git ancestry with `.orion/project.json` provenance | Fetch-only `orion-upstream`, reviewed upgrade merges, immutable commits instead of a release scheme. | [Policy](../project-derivation.md) |
 | [ADR-0017](../adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) | Derived projects start from a clean baseline | `.orion/derivation.json` separates shared, foundation-only, and project-owned content; initialization removes the reference implementation and foundation history and applies the project identity. | [Policy](../project-derivation.md) |
+| [ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)                                 | Sankhya Add-on Studio add-on: Gradle with the Sankhya plugin, Java 8, WildFly                   | Only for `apps/sankhya-addon`, a thin Om host outside the pnpm workspace; not a second frontend.                                                                                                    | [Policy](application-boundaries.md#sankhya-om-add-on) |
+| [ADR-0027](../adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)                  | node-postgres (`pg`) for the VRMaster sales source                                              | Only the read-only VRMaster adapter; Prisma remains the access path to the IA-MNS database.                                                                                                         | [Policy](../domains/sales-chat.md#sources)            |
 
 ## Deliberately unresolved or conditional choices
 

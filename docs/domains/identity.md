@@ -1,10 +1,10 @@
 # IA-MNS Identity
 
-[ADR-0022](../adr/0022-own-the-ia-mns-identity-with-verified-external-links.md) · [ADR-0023](../adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) · [ADR-0025](../adr/0025-administer-the-authentication-policy-within-fixed-safeguards.md) · [Corporate agent](corporate-agent.md) · [Setup](../setup.md#identity) · [Human actions](../project/human-actions.md)
+[ADR-0022](../adr/0022-own-the-ia-mns-identity-with-verified-external-links.md) · [ADR-0023](../adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) · [ADR-0025](../adr/0025-administer-the-authentication-policy-within-fixed-safeguards.md) · [ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md) · [Corporate agent](corporate-agent.md) · [Setup](../setup.md#identity) · [Human actions](../project/human-actions.md)
 
 ## Model
 
-The `identity` API module (`apps/api/src/features/identity/`) owns who a person is in IA-MNS and what they may do. The web module (`apps/web/src/features/identity/`) owns sign-in, first access, account and administration screens and the embedded host bridge.
+The `identity` API module (`apps/api/src/features/identity/`) owns who a person is in IA-MNS and what they may do. The web module (`apps/web/src/features/identity/`) owns sign-in, first access, account and administration screens and the embedded host bridge. Host components only frame the web application and supply proofs: the PDT host page belongs to PDT Connect, and the Sankhya Om add-on is [`apps/sankhya-addon`](../../apps/sankhya-addon/README.md).
 
 | Concept       | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -45,22 +45,28 @@ On the direct surface every product screen requires a signed-in person; anyone e
    - Failure: `{ v: 1, type: "ia-mns:auth-error", requestId, error }` (for example `pdt_login_required`, `no_authenticated_user`).
 4. The frame sends the proof to `POST /identity/providers/{provider}/complete`; the API verifies it and returns an access token (with `provisioned: true` on an automatic first access), a confirmation request, or a public error.
 
+PDT Connect also sets the display theme: it opens the frame with `?theme=light|dark` and sends `{ v: 1, type: "ia-mns:host-theme", theme }` on load and whenever the person changes the PDT theme. Inside PDT the frame follows that theme, hides its own theme control and stores nothing, so the direct-URL preference is unaffected; a theme message is applied only once the handshake has confirmed the PDT origin. The Sankhya Om sends no theme, and the frame keeps its own light default there.
+
 The frame accepts messages only from the configured host origin and its parent window. These checks are defense in depth: an intercepted code is useless without the client secret and PKCE verifier held by the API, and an assertion is bound to the server nonce and accepted once.
+
+A refused or failed handshake shows its message once, with **Tentar novamente**; nothing retries automatically. Ending an embedded session discards cached person data but keeps the public identity status, so it never starts another handshake by itself.
 
 ### PDT host component (outside this repository)
 
-PDT Connect needs a page or menu entry that renders `<iframe src="https://<ia-mns>/embed/pdt">` and implements step 3 for PDT. It uses the **existing** contract v1 endpoint `POST /api/auth/integrations/authorize` with the signed-in PDT JWT and its own fixed configuration: `client_id` and the registered `redirect_uri` (never values sent by the frame). It then forwards the `code`, `state` and `iss` from the returned `redirectUrl` without navigating. No PDT backend change is needed. The identity contract client registration (`PDT_IDENTITY_CLIENTS`, with only the SHA-256 of the IA-MNS secret) and the host page are PDT changes owned by PDT ([PH-12](../project/human-actions.md#ph-12)).
+The PDT Connect repository (not this one) provides the **IA-MNS** screen (route `/ia-mns`, permission `ia-mns:acessar`), which frames `/embed/pdt` with `referrerpolicy="no-referrer"` and implements step 3 for PDT. It reads its fixed configuration from the PDT parameters `IA_MNS_URL`, `IA_MNS_CLIENT_ID` and `IA_MNS_REDIRECT_URI` through `GET /api/ia-mns/host`, which refuses values outside `PDT_IDENTITY_CLIENTS`, and calls the **existing** contract v1 endpoint `POST /api/auth/integrations/authorize` with the signed-in PDT JWT and that `client_id` and `redirect_uri` (never values sent by the frame). It forwards only the `code`, `state` and `iss` of the returned `redirectUrl`, without navigating. An invalid PDT session answers `pdt_login_required`. The PDT guide `guides/integration-identity.md` documents the screen; client registration, parameters and deployment are PDT operations ([PH-12](../project/human-actions.md#ph-12)).
 
-### Sankhya Om add-on assertion contract (outside this repository)
+The embedded flow never visits the registered callback; it only binds the code to the client. IA-MNS therefore offers "Entrar com PDT Connect" on its direct URL only when `PDT_IDENTITY_REDIRECT_URI` is on `IA_MNS_PUBLIC_ORIGIN`, where the direct flow's binding cookie lives; an installation may register a callback elsewhere for embedded use only.
 
-The add-on runs inside the Om and must:
+### Sankhya Om add-on assertion contract
 
-- read the authenticated user from the **server-side** session (never from the browser) and refuse CODUSU 0 and requests that did not arrive through the Om HTTPS name;
+The add-on ([`apps/sankhya-addon`](../../apps/sankhya-addon/README.md), [ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)) runs inside the Om. Its menu screen frames `/embed/sankhya` and answers step 3 for Sankhya; it renders no IA-MNS screen and keeps no IA-MNS state or business rule. It must:
+
+- read the authenticated user from the **server-side** session (never from the browser) and refuse requests that did not arrive through the configured Om HTTPS name. On 2026-10-06 the owner decided that CODUSU 0 (the shared SUP account) is accepted, so it can be consolidated into an administrator's Person; anyone who signs in to the Om as SUP then acts as that Person, and the audit cannot tell individuals apart;
 - mint a compact JWS with header `{ alg: "RS256" | "ES256", typ: "JWT", kid }` and claims `iss` = `SANKHYA_IDENTITY_ISSUER`, `aud` = `IA_MNS_IDENTITY_AUDIENCE`, `sub` = CODUSU (decimal string), `nonce` = the flow nonce, `jti` = unique id, `iat`, and `exp` ≤ `iat` + 120 seconds; the `name` and `email` (the user's TSIUSU e-mail, used only as a duplicate hint) claims are optional;
 - expose the mint operation only to same-origin POST requests from its own embedding page (custom header, `Sec-Fetch-Site: same-origin`), and the direct-URL page only as a top-level document that form-posts to the fixed IA-MNS callback;
 - keep the private key outside sources editable by ordinary component authors, publishing only public keys (`SANKHYA_IDENTITY_KEYS`, a JWKS that IA-MNS pins).
 
-The 2026-10-04 proof of concept confirmed the signing code on Java 8 and the browser mechanics; reading the real Om session awaits [PH-11](../project/human-actions.md#ph-11). Production refuses this connector until `SANKHYA_SESSION_TRUST=approved`.
+The add-on implements this contract for the embedded surface: its `IaMnsHostSP` service requires the custom header `X-IA-MNS-Host` and the configured Om origin, signs ES256 assertions valid for 60 seconds with a key kept in the WildFly configuration directory, and its screen frames IA-MNS with `referrerpolicy="no-referrer"` ([add-on guide](../../apps/sankhya-addon/README.md#how-it-works)). On 2026-10-06 it was validated in the Sankhya development Om with a real signed-in user ([PJ-24](../project/implementation-plan.md#current-work)); the direct-URL authorize page is not implemented yet. In production only the Om HTTPS name is trusted (owner decision of 2026-10-06): when the Om is opened through another address, such as a plain-HTTP address, the screen does not frame IA-MNS and tells the person to open the Om through the secure address. Trusting a production Om session awaits [PH-11](../project/human-actions.md#ph-11), and production refuses this connector until `SANKHYA_SESSION_TRUST=approved`.
 
 ## First access, duplicates and linking
 
@@ -131,7 +137,7 @@ Owners manage it at `/admin` → **Autenticação e segurança** (`GET`/`PUT /id
 
 ## Limits and next steps
 
-- Real PDT homologation and the Om add-on are pending human actions (PH-12, PH-11). Synthetic contract tests, browser journeys and the proof of concept are not production evidence.
+- The embedded Sankhya integration passed in the Sankhya development Om only; the direct-URL Sankhya sign-in page is pending ([PJ-25](../project/implementation-plan.md#current-work)), and production needs PH-11, PH-14 and PH-17. The embedded PDT integration passed with a local PDT Connect ([PJ-27](../project/implementation-plan.md#current-work)); HTTPS homologation and production are PH-12. Development, synthetic and proof-of-concept results are not production evidence.
 - Passkeys, e-mail recovery, SCIM or automated deprovisioning from Sankhya/PDT, and Sankhya-group-to-permission mappings are not implemented. Deactivating a user in Sankhya or PDT stops new proofs; existing IA-MNS sessions end at their expiry or on owner action.
 - PDT authorization data (permissions and stores) is not yet mapped to IA-MNS capabilities; future PDT capabilities must re-authorize with PDT at execution time, as the contract requires.
 - Retention of identity data, audit and sessions follows the shared-deployment policy still pending in [PH-09](../project/human-actions.md#ph-09).

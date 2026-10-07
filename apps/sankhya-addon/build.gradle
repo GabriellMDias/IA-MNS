@@ -1,0 +1,52 @@
+// Sankhya Om add-on that hosts IA-MNS inside the Om (ADR-0026).
+// Machine-specific values (development WildFly folder, solution appKey) come from
+// the ignored local.properties file or the environment and are never committed.
+
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url = uri("https://artifacts-partners.sankhya.com.br/repository/maven-releases")
+        }
+    }
+
+    dependencies {
+        classpath "br.com.sankhya.studio:gradle-plugin:2.20.1"
+        classpath "com.google.devtools.ksp:symbol-processing-gradle-plugin:2.0.0-1.0.24"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0"
+    }
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = file("local.properties")
+if (localPropertiesFile.isFile()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+def localValue = { String property, String variable ->
+    def value = localProperties.getProperty(property) ?: System.getenv(variable)
+    value?.trim() ? value.trim() : null
+}
+
+group = "br.com.grupomns.ia-mns"
+version = "1.0.0"
+description = "IA-MNS"
+
+apply(plugin: "br.com.sankhya.addonstudio")
+
+snkmodule {
+    def wildflyHome = localValue("wildfly.home", "WILDFLY_HOME")
+    if (wildflyHome) {
+        serverFolder = wildflyHome
+    }
+    plataformaMinima = "4.28"
+}
+
+addon {
+    // The add-on owns no tables: the data dictionary holds only its menu entry.
+    autoDDL = false
+    def solutionAppKey = localValue("sankhya.appKey", "SANKHYA_ADDON_APP_KEY")
+    if (solutionAppKey) {
+        appKey = solutionAppKey
+    }
+    parceiroNome = "MNS-COMERCIO DE PRODUTOS AGROPECUARIOS LTDA"
+}

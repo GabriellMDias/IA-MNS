@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ErrorNotice } from "../components.js";
 import { ApiFailure } from "../api-client.js";
-import { SalesResults } from "../features/sales/results.js";
+import { SalesAnswer, SalesResults } from "../features/sales/results.js";
 import "../features/sales/sales.css";
 
 export function Example({ id }: { id: string }) {
@@ -56,6 +56,58 @@ export function Example({ id }: { id: string }) {
               ],
             },
             warnings: ["Synthetic component preview; no ERP data or request."],
+          }}
+        />
+      );
+    case "sales-answer-both-sources":
+      return (
+        <SalesAnswer
+          answer={{
+            selection: "all",
+            sections: [
+              {
+                source: "sankhya",
+                status: "answered",
+                reason: null,
+                result: {
+                  query: {
+                    productSearch: null,
+                    startDate: "2026-09-01",
+                    endDate: "2026-09-30",
+                    metric: "net_value",
+                    groupBy: "total",
+                    comparison: "none",
+                  },
+                  rows: [
+                    {
+                      period: "total",
+                      product: null,
+                      unit: "BRL",
+                      value: "1000.10",
+                    },
+                  ],
+                  totals: [
+                    {
+                      unit: "BRL",
+                      value: "1000.10",
+                      previousValue: null,
+                      changePercent: null,
+                    },
+                  ],
+                  products: [],
+                  comparison: null,
+                  warnings: [
+                    "Synthetic component preview; no ERP data or request.",
+                  ],
+                },
+              },
+              {
+                source: "vrmaster",
+                status: "unavailable",
+                reason: "provider_unavailable",
+                result: null,
+              },
+            ],
           }}
         />
       );

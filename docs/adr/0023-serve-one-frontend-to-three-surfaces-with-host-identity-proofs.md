@@ -2,6 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-10-04
+**Superseded by:** [ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md), only for maintaining the Om host component outside this repository; the PDT host page stays in PDT, and the rest of this decision remains accepted
 
 ## Context
 

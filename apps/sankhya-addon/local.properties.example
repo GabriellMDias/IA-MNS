@@ -1,0 +1,10 @@
+# Copy to the ignored local.properties (or use the environment variables in
+# parentheses). Never commit real values.
+
+# Development WildFly installation used by deployAddon (WILDFLY_HOME). Use forward
+# slashes: Java properties treat a backslash as an escape.
+wildfly.home=C:/wildfly
+
+# appKey of the IA-MNS solution from the Sankhya developer area
+# (SANKHYA_ADDON_APP_KEY). Needed to package the add-on.
+sankhya.appKey=

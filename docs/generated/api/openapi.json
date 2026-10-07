@@ -193,7 +193,7 @@
     "/identity/status": {
       "get": {
         "operationId": "getIdentityStatus",
-        "description": "Available sign-in methods and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations.",
+        "description": "Sign-in methods offered on the direct URL and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations.",
         "tags": ["Identity"],
         "parameters": [],
         "responses": {
@@ -20930,6 +20930,7 @@
                           "requestId",
                           "sequence",
                           "question",
+                          "source",
                           "state",
                           "reply",
                           "events",
@@ -20952,6 +20953,23 @@
                           },
                           "question": {
                             "type": "string"
+                          },
+                          "source": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "sankhya"
+                              },
+                              {
+                                "type": "string",
+                                "const": "vrmaster"
+                              },
+                              {
+                                "type": "string",
+                                "const": "all"
+                              }
+                            ],
+                            "description": "Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it."
                           },
                           "state": {
                             "anyOf": [
@@ -21023,250 +21041,349 @@
                                     "anyOf": [
                                       {
                                         "type": "object",
-                                        "required": [
-                                          "query",
-                                          "rows",
-                                          "products",
-                                          "totals",
-                                          "comparison",
-                                          "warnings"
-                                        ],
+                                        "required": ["selection", "sections"],
                                         "properties": {
-                                          "query": {
-                                            "type": "object",
-                                            "required": [
-                                              "productSearch",
-                                              "startDate",
-                                              "endDate",
-                                              "metric",
-                                              "groupBy",
-                                              "comparison"
-                                            ],
-                                            "properties": {
-                                              "productSearch": {
-                                                "anyOf": [
-                                                  {
-                                                    "type": "string"
-                                                  },
-                                                  {
-                                                    "type": "null"
-                                                  }
-                                                ]
-                                              },
-                                              "startDate": {
-                                                "type": "string"
-                                              },
-                                              "endDate": {
-                                                "type": "string"
-                                              },
-                                              "metric": {
-                                                "anyOf": [
-                                                  {
-                                                    "type": "string",
-                                                    "const": "net_value"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "const": "quantity"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "const": "weight"
-                                                  }
-                                                ]
-                                              },
-                                              "groupBy": {
-                                                "anyOf": [
-                                                  {
-                                                    "type": "string",
-                                                    "const": "month"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "const": "product"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "const": "total"
-                                                  }
-                                                ]
-                                              },
-                                              "comparison": {
-                                                "anyOf": [
-                                                  {
-                                                    "type": "string",
-                                                    "const": "none"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "const": "previous_year"
-                                                  },
-                                                  {
-                                                    "type": "string",
-                                                    "const": "previous_period"
-                                                  }
-                                                ]
-                                              }
-                                            },
-                                            "additionalProperties": false
-                                          },
-                                          "rows": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "object",
-                                              "required": [
-                                                "period",
-                                                "product",
-                                                "unit",
-                                                "value"
-                                              ],
-                                              "properties": {
-                                                "period": {
-                                                  "type": "string"
-                                                },
-                                                "product": {
-                                                  "anyOf": [
-                                                    {
-                                                      "type": "string"
-                                                    },
-                                                    {
-                                                      "type": "null"
-                                                    }
-                                                  ]
-                                                },
-                                                "unit": {
-                                                  "type": "string"
-                                                },
-                                                "value": {
-                                                  "type": "string"
-                                                }
-                                              },
-                                              "additionalProperties": false
-                                            }
-                                          },
-                                          "products": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "object",
-                                              "required": [
-                                                "code",
-                                                "description"
-                                              ],
-                                              "properties": {
-                                                "code": {
-                                                  "type": "string"
-                                                },
-                                                "description": {
-                                                  "type": "string"
-                                                }
-                                              },
-                                              "additionalProperties": false
-                                            }
-                                          },
-                                          "totals": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "object",
-                                              "required": [
-                                                "unit",
-                                                "value",
-                                                "previousValue",
-                                                "changePercent"
-                                              ],
-                                              "properties": {
-                                                "unit": {
-                                                  "type": "string"
-                                                },
-                                                "value": {
-                                                  "type": "string"
-                                                },
-                                                "previousValue": {
-                                                  "anyOf": [
-                                                    {
-                                                      "type": "string"
-                                                    },
-                                                    {
-                                                      "type": "null"
-                                                    }
-                                                  ]
-                                                },
-                                                "changePercent": {
-                                                  "anyOf": [
-                                                    {
-                                                      "type": "string"
-                                                    },
-                                                    {
-                                                      "type": "null"
-                                                    }
-                                                  ]
-                                                }
-                                              },
-                                              "additionalProperties": false
-                                            }
-                                          },
-                                          "comparison": {
+                                          "selection": {
                                             "anyOf": [
                                               {
-                                                "type": "object",
-                                                "required": [
-                                                  "startDate",
-                                                  "endDate",
-                                                  "rows"
-                                                ],
-                                                "properties": {
-                                                  "startDate": {
-                                                    "type": "string"
-                                                  },
-                                                  "endDate": {
-                                                    "type": "string"
-                                                  },
-                                                  "rows": {
-                                                    "type": "array",
-                                                    "items": {
+                                                "type": "string",
+                                                "const": "sankhya"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "vrmaster"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "all"
+                                              }
+                                            ],
+                                            "description": "Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it."
+                                          },
+                                          "sections": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "required": [
+                                                "source",
+                                                "status",
+                                                "reason",
+                                                "result"
+                                              ],
+                                              "properties": {
+                                                "source": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "const": "sankhya"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "vrmaster"
+                                                    }
+                                                  ]
+                                                },
+                                                "status": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "const": "answered"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "unavailable"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "unsupported"
+                                                    }
+                                                  ]
+                                                },
+                                                "reason": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "const": "provider_unavailable"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "not_configured"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "result_too_large"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "measure"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "result": {
+                                                  "anyOf": [
+                                                    {
                                                       "type": "object",
                                                       "required": [
-                                                        "period",
-                                                        "product",
-                                                        "unit",
-                                                        "value"
+                                                        "query",
+                                                        "rows",
+                                                        "products",
+                                                        "totals",
+                                                        "comparison",
+                                                        "warnings"
                                                       ],
                                                       "properties": {
-                                                        "period": {
-                                                          "type": "string"
+                                                        "query": {
+                                                          "type": "object",
+                                                          "required": [
+                                                            "productSearch",
+                                                            "startDate",
+                                                            "endDate",
+                                                            "metric",
+                                                            "groupBy",
+                                                            "comparison"
+                                                          ],
+                                                          "properties": {
+                                                            "productSearch": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string"
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
+                                                            },
+                                                            "startDate": {
+                                                              "type": "string"
+                                                            },
+                                                            "endDate": {
+                                                              "type": "string"
+                                                            },
+                                                            "metric": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "net_value"
+                                                                },
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "quantity"
+                                                                },
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "weight"
+                                                                }
+                                                              ]
+                                                            },
+                                                            "groupBy": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "month"
+                                                                },
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "product"
+                                                                },
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "total"
+                                                                }
+                                                              ]
+                                                            },
+                                                            "comparison": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "none"
+                                                                },
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "previous_year"
+                                                                },
+                                                                {
+                                                                  "type": "string",
+                                                                  "const": "previous_period"
+                                                                }
+                                                              ]
+                                                            }
+                                                          },
+                                                          "additionalProperties": false
                                                         },
-                                                        "product": {
+                                                        "rows": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "required": [
+                                                              "period",
+                                                              "product",
+                                                              "unit",
+                                                              "value"
+                                                            ],
+                                                            "properties": {
+                                                              "period": {
+                                                                "type": "string"
+                                                              },
+                                                              "product": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "unit": {
+                                                                "type": "string"
+                                                              },
+                                                              "value": {
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          }
+                                                        },
+                                                        "products": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "required": [
+                                                              "code",
+                                                              "description"
+                                                            ],
+                                                            "properties": {
+                                                              "code": {
+                                                                "type": "string"
+                                                              },
+                                                              "description": {
+                                                                "type": "string"
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          }
+                                                        },
+                                                        "totals": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "required": [
+                                                              "unit",
+                                                              "value",
+                                                              "previousValue",
+                                                              "changePercent"
+                                                            ],
+                                                            "properties": {
+                                                              "unit": {
+                                                                "type": "string"
+                                                              },
+                                                              "value": {
+                                                                "type": "string"
+                                                              },
+                                                              "previousValue": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "changePercent": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "string"
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          }
+                                                        },
+                                                        "comparison": {
                                                           "anyOf": [
                                                             {
-                                                              "type": "string"
+                                                              "type": "object",
+                                                              "required": [
+                                                                "startDate",
+                                                                "endDate",
+                                                                "rows"
+                                                              ],
+                                                              "properties": {
+                                                                "startDate": {
+                                                                  "type": "string"
+                                                                },
+                                                                "endDate": {
+                                                                  "type": "string"
+                                                                },
+                                                                "rows": {
+                                                                  "type": "array",
+                                                                  "items": {
+                                                                    "type": "object",
+                                                                    "required": [
+                                                                      "period",
+                                                                      "product",
+                                                                      "unit",
+                                                                      "value"
+                                                                    ],
+                                                                    "properties": {
+                                                                      "period": {
+                                                                        "type": "string"
+                                                                      },
+                                                                      "product": {
+                                                                        "anyOf": [
+                                                                          {
+                                                                            "type": "string"
+                                                                          },
+                                                                          {
+                                                                            "type": "null"
+                                                                          }
+                                                                        ]
+                                                                      },
+                                                                      "unit": {
+                                                                        "type": "string"
+                                                                      },
+                                                                      "value": {
+                                                                        "type": "string"
+                                                                      }
+                                                                    },
+                                                                    "additionalProperties": false
+                                                                  }
+                                                                }
+                                                              },
+                                                              "additionalProperties": false
                                                             },
                                                             {
                                                               "type": "null"
                                                             }
                                                           ]
                                                         },
-                                                        "unit": {
-                                                          "type": "string"
-                                                        },
-                                                        "value": {
-                                                          "type": "string"
+                                                        "warnings": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string"
+                                                          }
                                                         }
                                                       },
                                                       "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "null"
                                                     }
-                                                  }
-                                                },
-                                                "additionalProperties": false
+                                                  ]
+                                                }
                                               },
-                                              {
-                                                "type": "null"
-                                              }
-                                            ]
-                                          },
-                                          "warnings": {
-                                            "type": "array",
-                                            "items": {
-                                              "type": "string"
-                                            }
+                                              "additionalProperties": false
+                                            },
+                                            "minItems": 1,
+                                            "maxItems": 2
                                           }
                                         },
                                         "additionalProperties": false
@@ -22826,7 +22943,7 @@
     "/agent/conversations/{conversationId}/turns": {
       "post": {
         "operationId": "submitAgentTurn",
-        "description": "Persist and accept one bounded turn. Replay the same requestId/content to recover an unknown acceptance outcome; never repeat provider execution. Poll conversation detail for actual progress and outcome. Requires the selected capability permission at execution.",
+        "description": "Persist and accept one bounded turn. source is the sales source selected in the interface (default sankhya); the message never changes it. Replay the same requestId, message and source to recover an unknown acceptance outcome; never repeat provider execution. Poll conversation detail for actual progress and outcome. Requires the selected capability permission at execution.",
         "tags": ["Agent"],
         "security": [
           {
@@ -22861,6 +22978,23 @@
                   "requestId": {
                     "type": "string",
                     "format": "uuid"
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "const": "sankhya"
+                      },
+                      {
+                        "type": "string",
+                        "const": "vrmaster"
+                      },
+                      {
+                        "type": "string",
+                        "const": "all"
+                      }
+                    ],
+                    "description": "Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it."
                   }
                 },
                 "additionalProperties": false
@@ -22880,6 +23014,7 @@
                     "requestId",
                     "sequence",
                     "question",
+                    "source",
                     "state",
                     "reply",
                     "events",
@@ -22902,6 +23037,23 @@
                     },
                     "question": {
                       "type": "string"
+                    },
+                    "source": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "sankhya"
+                        },
+                        {
+                          "type": "string",
+                          "const": "vrmaster"
+                        },
+                        {
+                          "type": "string",
+                          "const": "all"
+                        }
+                      ],
+                      "description": "Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it."
                     },
                     "state": {
                       "anyOf": [
@@ -22973,247 +23125,349 @@
                               "anyOf": [
                                 {
                                   "type": "object",
-                                  "required": [
-                                    "query",
-                                    "rows",
-                                    "products",
-                                    "totals",
-                                    "comparison",
-                                    "warnings"
-                                  ],
+                                  "required": ["selection", "sections"],
                                   "properties": {
-                                    "query": {
-                                      "type": "object",
-                                      "required": [
-                                        "productSearch",
-                                        "startDate",
-                                        "endDate",
-                                        "metric",
-                                        "groupBy",
-                                        "comparison"
-                                      ],
-                                      "properties": {
-                                        "productSearch": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string"
-                                            },
-                                            {
-                                              "type": "null"
-                                            }
-                                          ]
-                                        },
-                                        "startDate": {
-                                          "type": "string"
-                                        },
-                                        "endDate": {
-                                          "type": "string"
-                                        },
-                                        "metric": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "const": "net_value"
-                                            },
-                                            {
-                                              "type": "string",
-                                              "const": "quantity"
-                                            },
-                                            {
-                                              "type": "string",
-                                              "const": "weight"
-                                            }
-                                          ]
-                                        },
-                                        "groupBy": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "const": "month"
-                                            },
-                                            {
-                                              "type": "string",
-                                              "const": "product"
-                                            },
-                                            {
-                                              "type": "string",
-                                              "const": "total"
-                                            }
-                                          ]
-                                        },
-                                        "comparison": {
-                                          "anyOf": [
-                                            {
-                                              "type": "string",
-                                              "const": "none"
-                                            },
-                                            {
-                                              "type": "string",
-                                              "const": "previous_year"
-                                            },
-                                            {
-                                              "type": "string",
-                                              "const": "previous_period"
-                                            }
-                                          ]
-                                        }
-                                      },
-                                      "additionalProperties": false
-                                    },
-                                    "rows": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "object",
-                                        "required": [
-                                          "period",
-                                          "product",
-                                          "unit",
-                                          "value"
-                                        ],
-                                        "properties": {
-                                          "period": {
-                                            "type": "string"
-                                          },
-                                          "product": {
-                                            "anyOf": [
-                                              {
-                                                "type": "string"
-                                              },
-                                              {
-                                                "type": "null"
-                                              }
-                                            ]
-                                          },
-                                          "unit": {
-                                            "type": "string"
-                                          },
-                                          "value": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      }
-                                    },
-                                    "products": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "object",
-                                        "required": ["code", "description"],
-                                        "properties": {
-                                          "code": {
-                                            "type": "string"
-                                          },
-                                          "description": {
-                                            "type": "string"
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      }
-                                    },
-                                    "totals": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "object",
-                                        "required": [
-                                          "unit",
-                                          "value",
-                                          "previousValue",
-                                          "changePercent"
-                                        ],
-                                        "properties": {
-                                          "unit": {
-                                            "type": "string"
-                                          },
-                                          "value": {
-                                            "type": "string"
-                                          },
-                                          "previousValue": {
-                                            "anyOf": [
-                                              {
-                                                "type": "string"
-                                              },
-                                              {
-                                                "type": "null"
-                                              }
-                                            ]
-                                          },
-                                          "changePercent": {
-                                            "anyOf": [
-                                              {
-                                                "type": "string"
-                                              },
-                                              {
-                                                "type": "null"
-                                              }
-                                            ]
-                                          }
-                                        },
-                                        "additionalProperties": false
-                                      }
-                                    },
-                                    "comparison": {
+                                    "selection": {
                                       "anyOf": [
                                         {
-                                          "type": "object",
-                                          "required": [
-                                            "startDate",
-                                            "endDate",
-                                            "rows"
-                                          ],
-                                          "properties": {
-                                            "startDate": {
-                                              "type": "string"
-                                            },
-                                            "endDate": {
-                                              "type": "string"
-                                            },
-                                            "rows": {
-                                              "type": "array",
-                                              "items": {
+                                          "type": "string",
+                                          "const": "sankhya"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "vrmaster"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "all"
+                                        }
+                                      ],
+                                      "description": "Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it."
+                                    },
+                                    "sections": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": [
+                                          "source",
+                                          "status",
+                                          "reason",
+                                          "result"
+                                        ],
+                                        "properties": {
+                                          "source": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "const": "sankhya"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "vrmaster"
+                                              }
+                                            ]
+                                          },
+                                          "status": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "const": "answered"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "unavailable"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "unsupported"
+                                              }
+                                            ]
+                                          },
+                                          "reason": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "const": "provider_unavailable"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "not_configured"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "result_too_large"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "measure"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "result": {
+                                            "anyOf": [
+                                              {
                                                 "type": "object",
                                                 "required": [
-                                                  "period",
-                                                  "product",
-                                                  "unit",
-                                                  "value"
+                                                  "query",
+                                                  "rows",
+                                                  "products",
+                                                  "totals",
+                                                  "comparison",
+                                                  "warnings"
                                                 ],
                                                 "properties": {
-                                                  "period": {
-                                                    "type": "string"
+                                                  "query": {
+                                                    "type": "object",
+                                                    "required": [
+                                                      "productSearch",
+                                                      "startDate",
+                                                      "endDate",
+                                                      "metric",
+                                                      "groupBy",
+                                                      "comparison"
+                                                    ],
+                                                    "properties": {
+                                                      "productSearch": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string"
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "startDate": {
+                                                        "type": "string"
+                                                      },
+                                                      "endDate": {
+                                                        "type": "string"
+                                                      },
+                                                      "metric": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string",
+                                                            "const": "net_value"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "const": "quantity"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "const": "weight"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "groupBy": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string",
+                                                            "const": "month"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "const": "product"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "const": "total"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "comparison": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string",
+                                                            "const": "none"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "const": "previous_year"
+                                                          },
+                                                          {
+                                                            "type": "string",
+                                                            "const": "previous_period"
+                                                          }
+                                                        ]
+                                                      }
+                                                    },
+                                                    "additionalProperties": false
                                                   },
-                                                  "product": {
+                                                  "rows": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "required": [
+                                                        "period",
+                                                        "product",
+                                                        "unit",
+                                                        "value"
+                                                      ],
+                                                      "properties": {
+                                                        "period": {
+                                                          "type": "string"
+                                                        },
+                                                        "product": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "unit": {
+                                                          "type": "string"
+                                                        },
+                                                        "value": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "products": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "required": [
+                                                        "code",
+                                                        "description"
+                                                      ],
+                                                      "properties": {
+                                                        "code": {
+                                                          "type": "string"
+                                                        },
+                                                        "description": {
+                                                          "type": "string"
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "totals": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "required": [
+                                                        "unit",
+                                                        "value",
+                                                        "previousValue",
+                                                        "changePercent"
+                                                      ],
+                                                      "properties": {
+                                                        "unit": {
+                                                          "type": "string"
+                                                        },
+                                                        "value": {
+                                                          "type": "string"
+                                                        },
+                                                        "previousValue": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "changePercent": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "string"
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "comparison": {
                                                     "anyOf": [
                                                       {
-                                                        "type": "string"
+                                                        "type": "object",
+                                                        "required": [
+                                                          "startDate",
+                                                          "endDate",
+                                                          "rows"
+                                                        ],
+                                                        "properties": {
+                                                          "startDate": {
+                                                            "type": "string"
+                                                          },
+                                                          "endDate": {
+                                                            "type": "string"
+                                                          },
+                                                          "rows": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "object",
+                                                              "required": [
+                                                                "period",
+                                                                "product",
+                                                                "unit",
+                                                                "value"
+                                                              ],
+                                                              "properties": {
+                                                                "period": {
+                                                                  "type": "string"
+                                                                },
+                                                                "product": {
+                                                                  "anyOf": [
+                                                                    {
+                                                                      "type": "string"
+                                                                    },
+                                                                    {
+                                                                      "type": "null"
+                                                                    }
+                                                                  ]
+                                                                },
+                                                                "unit": {
+                                                                  "type": "string"
+                                                                },
+                                                                "value": {
+                                                                  "type": "string"
+                                                                }
+                                                              },
+                                                              "additionalProperties": false
+                                                            }
+                                                          }
+                                                        },
+                                                        "additionalProperties": false
                                                       },
                                                       {
                                                         "type": "null"
                                                       }
                                                     ]
                                                   },
-                                                  "unit": {
-                                                    "type": "string"
-                                                  },
-                                                  "value": {
-                                                    "type": "string"
+                                                  "warnings": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
                                                   }
                                                 },
                                                 "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
                                               }
-                                            }
-                                          },
-                                          "additionalProperties": false
+                                            ]
+                                          }
                                         },
-                                        {
-                                          "type": "null"
-                                        }
-                                      ]
-                                    },
-                                    "warnings": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "string"
-                                      }
+                                        "additionalProperties": false
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 2
                                     }
                                   },
                                   "additionalProperties": false
