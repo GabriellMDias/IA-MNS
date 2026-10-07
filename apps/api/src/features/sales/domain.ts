@@ -1,5 +1,6 @@
 import { Decimal } from "decimal.js";
 import { SalesFailure } from "./errors.js";
+import { sourceCatalog, type SalesSource } from "./sources.js";
 
 Decimal.set({ precision: 50 });
 export type SalesQuery = Readonly<{
@@ -113,7 +114,9 @@ export function assembleResult(
   query: SalesQuery,
   data: SalesData,
   previous: SalesData | null,
+  source: SalesSource = "sankhya",
 ): SalesResult {
+  const semantics = sourceCatalog[source];
   const sum = (rows: SalesRow[]) => {
     const totals = new Map<string, Decimal>();
     for (const row of rows) {
@@ -189,7 +192,7 @@ export function assembleResult(
           }
         : null,
     warnings: [
-      "Vendas confirmadas, sem devoluções e sem vendas bonificadas; data de negociação (DTNEG).",
+      semantics.basis,
       ...(previous && data.rows.length === 0
         ? [
             "Não houve vendas no período consultado; os dados anteriores pertencem somente ao período comparado.",
@@ -200,28 +203,36 @@ export function assembleResult(
             "Os produtos identificados incluem vendas de ambos os períodos comparados.",
           ]
         : []),
-      ...(query.metric === "quantity"
-        ? [
-            "Quantidades separadas por unidade do ERP; unidades diferentes não são somadas.",
-          ]
-        : []),
-      ...(query.metric === "weight"
-        ? ["Peso calculado por QTDNEG × PESOLIQ, na unidade cadastrada no ERP."]
+      ...(query.metric === "quantity" ? [semantics.quantityNote] : []),
+      ...(query.metric === "weight" && semantics.weightNote
+        ? [semantics.weightNote]
         : []),
       ...(query.metric === "weight" &&
+      semantics.missingWeightNote &&
       (data.missingWeight || previous?.missingWeight)
-        ? ["Há produtos sem PESOLIQ positivo; o peso pode estar incompleto."]
+        ? [semantics.missingWeightNote]
         : []),
     ],
   };
 }
 
-export function answerFor(result: SalesResult): string {
-  const labels = {
-    net_value: "Valor líquido vendido",
-    quantity: "Quantidade vendida",
-    weight: "Peso vendido",
-  };
+/** Readable unit of an ERP unit code, for prose. */
+export function unitText(unit: string): string {
+  const packaging = /^EMBALAGEM:(-?\d+)$/.exec(unit);
+  return unit === "PESOLIQ"
+    ? "(unidade de peso do ERP)"
+    : unit === "UNSPECIFIED"
+      ? "(sem unidade)"
+      : packaging
+        ? `(tipo de embalagem ${packaging[1]})`
+        : unit;
+}
+
+export function answerFor(
+  result: SalesResult,
+  source: SalesSource = "sankhya",
+): string {
+  const labels = sourceCatalog[source].measureLabels;
   if (result.totals.length === 0)
     return "Não encontrei vendas para os filtros e o período informados.";
   const money = (value: string, unit: string) => {
@@ -237,7 +248,7 @@ export function answerFor(result: SalesResult): string {
       ? `R$ ${formatted}`
       : unit === "%"
         ? `${formatted}%`
-        : `${formatted} ${unit === "PESOLIQ" ? "(unidade de peso do ERP)" : unit}`;
+        : `${formatted} ${unitText(unit)}`;
   };
-  return `${labels[result.query.metric]} de ${result.query.startDate.split("-").reverse().join("/")} a ${result.query.endDate.split("-").reverse().join("/")}${result.query.productSearch ? ` para “${result.query.productSearch}”` : ""}:\n${result.totals.map((total) => `${money(total.value, total.unit)}${total.previousValue !== null ? `; período comparado: ${money(total.previousValue, total.unit)}; variação: ${total.changePercent === null ? "não calculável (base zero)" : money(total.changePercent, "%")}` : ""}`).join("\n")}`;
+  return `${labels[result.query.metric] ?? "Vendas"} de ${result.query.startDate.split("-").reverse().join("/")} a ${result.query.endDate.split("-").reverse().join("/")}${result.query.productSearch ? ` para “${result.query.productSearch}”` : ""}:\n${result.totals.map((total) => `${money(total.value, total.unit)}${total.previousValue !== null ? `; período comparado: ${money(total.previousValue, total.unit)}; variação: ${total.changePercent === null ? "não calculável (base zero)" : money(total.changePercent, "%")}` : ""}`).join("\n")}`;
 }

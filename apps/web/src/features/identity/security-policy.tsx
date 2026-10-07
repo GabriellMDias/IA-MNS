@@ -107,6 +107,9 @@ function reducesSecurity(
 
 /** Owner administration of session duration, inactivity and second-factor rules. */
 export function SecurityPolicyPanel({ token }: { token: string }) {
+  // The form remounts when a saved policy returns a new version; the save
+  // confirmation lives here so it survives that remount.
+  const [notice, setNotice] = useState<string | null>(null);
   const view = useQuery({
     queryKey: ["identity-security-policy", token],
     queryFn: ({ signal }) => getSecurityPolicy(token, signal),
@@ -119,6 +122,8 @@ export function SecurityPolicyPanel({ token }: { token: string }) {
       key={view.data.updatedAt ?? "defaults"}
       token={token}
       view={view.data}
+      notice={notice}
+      setNotice={setNotice}
     />
   );
 }
@@ -126,15 +131,18 @@ export function SecurityPolicyPanel({ token }: { token: string }) {
 function PolicyForm({
   token,
   view,
+  notice,
+  setNotice,
 }: {
   token: string;
   view: SecurityPolicyView;
+  notice: string | null;
+  setNotice: (notice: string | null) => void;
 }) {
   const identity = useIdentity();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<SecurityPolicy>(view.configured);
   const [acknowledged, setAcknowledged] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const reduced = reducesSecurity(draft, view.limits);
   const alreadyAccepted = reducesSecurity(view.configured, view.limits);
   const needsAcknowledgement = reduced.some(

@@ -10,6 +10,7 @@ import {
   type AgentRoute,
 } from "./planner.js";
 import { AgentRepository } from "./prisma-repository.js";
+import type { SourceSelection } from "../sales/sources.js";
 import { AgentFailure } from "./errors.js";
 import {
   TurnTrace,
@@ -99,6 +100,10 @@ export type TurnInput = Readonly<{
   signal: AbortSignal;
   progress: (stage: ProgressStage) => Promise<void>;
   trace: TraceRecorder;
+  /** The sales source selected in the interface for this turn. */
+  source: SourceSelection;
+  /** Observes a failure a capability reports in its reply instead of failing. */
+  report?: (error: unknown) => void;
 }>;
 
 /**
@@ -155,6 +160,7 @@ export async function runAgentTurn(
     intent: route.intent,
     capabilityId,
     pendingCapabilityId: saved.pending?.capabilityId ?? null,
+    source: input.source,
     routeOverride: override ? "pending_capability" : null,
   });
   const contexts: Record<string, unknown> = { ...input.contexts };
@@ -171,6 +177,8 @@ export async function runAgentTurn(
     signal,
     progress: input.progress,
     trace,
+    source: input.source,
+    report: input.report,
   });
   if (outcome.reply.capabilityId !== capability.id)
     throw new Error("Invalid capability reply identity");
@@ -218,6 +226,7 @@ export class CorporateAgent {
     conversationId: string,
     requestId: string,
     question: string,
+    source: SourceSelection,
     reportFailure: ReportFailure,
     observe?: ObserveTrace,
   ) {
@@ -232,6 +241,7 @@ export class CorporateAgent {
         conversationId,
         requestId,
         question,
+        source,
       );
     } finally {
       this.accepting--;
@@ -299,6 +309,8 @@ export class CorporateAgent {
           signal,
           progress,
           trace,
+          source: claimed.turn.source,
+          report: (error) => void reportFailure(error, claimed.turn.id),
         },
       );
       signal.throwIfAborted();

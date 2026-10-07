@@ -6,7 +6,7 @@
 
 This checklist records IA-MNS's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.
 
-IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.
+IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), and the terms for publishing the Sankhya add-on template (PH-17). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.
 
 ## Maintaining this checklist
 
@@ -160,6 +160,8 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 7. Session-id rotation at login.
 
 Apply nothing without the owner's approval. Never test with real credentials over plain HTTP.
+
+On 2026-10-06 the owner decided that IA-MNS trusts only the Om HTTPS name in production; the other current addresses of the Om (kept with the owner, outside this public repository) are not trusted, and the add-on tells people who open the Om through them to use the secure address. An internal address can be added later only if it is served over HTTPS, which would also need IA-MNS support for more than one Om origin.
 **Configuration:** none in IA-MNS until approval, then `SANKHYA_SESSION_TRUST=approved` (non-secret) in production.
 **Verification:** Anonymous HTTPS checks show HSTS, `Secure; SameSite=Lax` on the session cookie and only `https://` redirects, and the direct HTTP port is closed to the public. The Om proof of concept, run only through the HTTPS name, confirms the CODUSU and the frame chain.
 **Evidence / blocker:** 2026-10-04 internal review (details withheld from this public repository). No infrastructure was changed.
@@ -169,15 +171,15 @@ Apply nothing without the owner's approval. Never test with real credentials ove
 - [ ] **Provide a PDT Connect homologation installation for IA-MNS sign-in and embedding.**
 
 **Status:** pending (blocks PJ-16). **Owner:** PDT Connect owner/administrator.
-**Dependency / trigger:** [PJ-16](implementation-plan.md#current-work); IA-MNS's PDT connector is implemented and tested against a synthetic contract.
+**Dependency / trigger:** [PJ-16](implementation-plan.md#current-work); IA-MNS's PDT connector and the PDT IA-MNS screen are implemented and passed with a local PDT ([PJ-27](implementation-plan.md#current-work)).
 **Request and reason:** In an HTTPS homologation PDT (never production):
 
 1. Apply the identity migration.
 2. Set `PDT_IDENTITY_ISSUER`.
 3. Register the IA-MNS client in `PDT_IDENTITY_CLIENTS` with the redirect URI of the IA-MNS homologation `/api/identity/pdt/callback` and only the SHA-256 of a secret generated for IA-MNS.
-4. Add the PDT host page that frames `/embed/pdt` and answers the bridge with the existing `authorize` endpoint ([identity](../domains/identity.md#pdt-host-component-outside-this-repository)).
+4. Review, commit and deploy the PDT IA-MNS screen (PJ-27; uncommitted in the PDT Connect working tree), apply its migration, set the `IA_MNS_*` parameters to the IA-MNS homologation values and grant `ia-mns:acessar` to the intended users ([identity](../domains/identity.md#pdt-host-component-outside-this-repository)). If the PDT proxy sends a Content-Security-Policy, its `frame-src` must allow the IA-MNS origin.
 
-The host page is a PDT frontend change that needs the owner's authorization; the PDT backend contract needs no change.
+Keep the production PDT origin and other environment addresses out of this public repository; they belong to the deployment configuration.
 **Configuration:** in IA-MNS: `PDT_IDENTITY_BASE_URL`, `PDT_IDENTITY_ISSUER`, `PDT_IDENTITY_CLIENT_ID`, `PDT_IDENTITY_CLIENT_SECRET` (secret store only), `PDT_IDENTITY_REDIRECT_URI`, `PDT_EMBED_ORIGIN`; `ORION_WEB_EMBED_ANCESTORS` or the hosting equivalent.
 **Verification:** In homologation:
 
@@ -187,7 +189,7 @@ The host page is a PDT frontend change that needs the owner's authorization; the
 - hostile framing is blocked.
 
 Record the HTTPS evidence.
-**Evidence / blocker:** Homologation URL and deployment not yet provided.
+**Evidence / blocker:** Homologation URL and deployment not yet provided. On 2026-10-06 the owner authorized changes to the PDT Connect repository, and the embedded flow passed with a local PDT over HTTP ([PJ-27](implementation-plan.md#current-work)); that is not HTTPS or homologation evidence.
 
 ## PH-13
 
@@ -202,19 +204,19 @@ Record the HTTPS evidence.
 
 ## PH-14
 
-- [ ] **Develop, review and deploy the IA-MNS identity add-on in the Sankhya Om.**
+- [ ] **Review and publish the IA-MNS add-on in the production Sankhya Om with production key custody.**
 
-**Status:** pending (blocks PJ-17; depends on PH-11 for production). **Owner:** project owner with the Sankhya Om administrator.
-**Dependency / trigger:** [PJ-17](implementation-plan.md#current-work).
-**Request and reason:** The add-on reads the authenticated user from the server-side Om session and signs short assertions under the [assertion contract](../domains/identity.md#sankhya-om-add-on-assertion-contract-outside-this-repository). Its embedding page frames `/embed/sankhya` and answers the bridge, and its authorize page serves the direct URL. Decide the Add-on Studio (developer portal access) or BI JSP packaging. Generate the signing key pair, keep the private key in Om custody outside sources editable by ordinary BI authors, and restrict who can publish JSP or add-ons. The disposable proof-of-concept JSP outside this repository is not production code.
-**Configuration:** in IA-MNS: `SANKHYA_IDENTITY_ISSUER`, `SANKHYA_IDENTITY_KEYS` (public keys only), `SANKHYA_IDENTITY_AUTHORIZE_URL`, `SANKHYA_EMBED_ORIGIN`.
+**Status:** pending (blocks PJ-17; PJ-24 is completed; production also depends on PH-11 and PH-17). **Owner:** project owner with the Sankhya Om administrator.
+**Dependency / trigger:** [PJ-17](implementation-plan.md#current-work), after the add-on passes in the development environment ([PJ-24](implementation-plan.md#current-work)).
+**Request and reason:** The add-on in [`apps/sankhya-addon`](../../apps/sankhya-addon/README.md) reads the authenticated user from the server-side Om session and signs short assertions under the [assertion contract](../domains/identity.md#sankhya-om-add-on-assertion-contract). Its menu screen frames `/embed/sankhya` and answers the bridge; the direct-URL authorize page is PJ-25. On 2026-10-06 the owner chose an Add-on Studio add-on, not BI JSP packaging ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)); the developer-area solution and template are in place (PH-16). Before production: review the add-on, generate the production P-256 signing key pair and write the add-on host configuration (`ia-mns-addon.properties` with the production IA-MNS and Om HTTPS origins, issuer, audience and key id) in the production WildFly configuration directory, keeping the private key there, outside sources editable by ordinary BI authors and outside this repository; restrict who can publish JSP or add-ons; provide the add-on `appKey` to the build without committing it; install the add-on in the production Om; and grant the screen **IA-MNS** (resource `ia-mns.IaMns`) only to the intended users or groups in the Om access control. `om.origin` is the Om HTTPS name only (owner decision of 2026-10-06). The owner also decided to accept the shared SUP account (CODUSU 0) and consolidate it into the principal administrator's Person: restrict who knows the production SUP password, because anyone signed in as SUP will act as that administrator in IA-MNS (production still requires the administrator's second factor for administration). Agents do not publish to or change the production Om. The disposable proof-of-concept JSP outside this repository is not production code.
+**Configuration:** in IA-MNS: `SANKHYA_IDENTITY_ISSUER`, `SANKHYA_IDENTITY_KEYS` (public keys only), `SANKHYA_IDENTITY_AUTHORIZE_URL`, `SANKHYA_EMBED_ORIGIN`; in the Om WildFly: `ia-mns-addon.properties` and the signing key file ([add-on guide](../../apps/sankhya-addon/README.md#how-it-works)).
 **Verification:** Through the HTTPS name, test with native and Sankhya ID logins:
 
 - the CODUSU is correct;
 - assertions are bound to the nonce and single-use;
 - signed-out users are refused;
 - the add-on refuses requests outside the HTTPS name.
-  **Evidence / blocker:** Not started; the 2026-10-04 local proof of concept validated the signing code (Java 8) and the browser mechanics only.
+  **Evidence / blocker:** Packaging decided on 2026-10-06. The embedded add-on passed these checks in the development Om on 2026-10-06 over local HTTP with a development key ([PJ-24](implementation-plan.md#current-work)); that is not production evidence. Nothing has been installed in the production Om.
 
 ## PH-15
 
@@ -232,6 +234,77 @@ Record the HTTPS evidence.
   **Configuration:** `IA_MNS_PUBLIC_ORIGIN`, `IA_MNS_IDENTITY_SIGNING_KEY`, `IA_MNS_IDENTITY_ENCRYPTION_KEY` (both secret), optional `IA_MNS_IDENTITY_AUDIENCE`.
   **Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP, and the reviewed authentication policy are verified in the deployed environment.
   **Evidence / blocker:** No deployment environment yet.
+
+## PH-16
+
+- [x] **Prepare the Sankhya add-on development environment and the official template.**
+
+**Status:** completed. **Owner:** project owner.
+**Dependency / trigger:** [PJ-23](implementation-plan.md#current-work) and [PJ-24](implementation-plan.md#current-work); a Sankhya developer account and the solution are account actions.
+**Request and reason:** Create the IA-MNS solution in the Sankhya developer area, download its add-on template, run the development database in Docker, and install and configure the development WildFly and Om as the Sankhya developer documentation describes. Place the template in `apps/sankhya-addon`.
+**Configuration:** local only: `JAVA_HOME` (JDK 8); `wildfly.home` and the solution `sankhya.appKey` in the ignored `apps/sankhya-addon/local.properties` (or `WILDFLY_HOME` and `SANKHYA_ADDON_APP_KEY`) ([add-on guide](../../apps/sankhya-addon/README.md#development-environment)).
+**Verification:** The template is in `apps/sankhya-addon`; the development database container and WildFly run locally.
+**Evidence / blocker:** The owner reported on 2026-10-06 that the solution was created, the template downloaded, the database configured with Docker and the WildFly configured per the Sankhya developer documentation. Verified the same day: the template is in `apps/sankhya-addon` with Gradle wrapper 8.2 and the IA-MNS solution's project name and group; a `sankhyaimages/skdev-oracle:1.1.0` container was running and healthy; a JDK 8 process was listening on the WildFly HTTP and management ports; `JAVA_HOME` pointed to JDK 8. `WILDFLY_HOME` was not set in the user or machine environment, so it must be set (or supplied through the IDE) before `deployAddon`. The developer-area registration and the Om installation through WPM were not inspected directly. During PJ-24 on 2026-10-06 the development WildFly needed two development-only corrections: `placemm.ear`, marked failed by the deployment scanner's timeout during the first boot, was redeployed (the add-on requires it), and `-XX:MaxMetaspaceSize` in `bin/standalone.conf.bat` was raised from 256m to 1024m after the fully deployed Om ran out of metaspace (the previous file was kept as a backup); the owner restarted WildFly. The owner then granted the IA-MNS screen to the development user VENDEDOR in the Om access control.
+
+## PH-17
+
+- [ ] **Confirm the terms for publishing the Sankhya add-on template files in this public repository.**
+
+**Status:** pending (blocks committing template-derived files; does not block local development). **Owner:** project owner, with Sankhya or legal input when needed.
+**Dependency / trigger:** [PJ-24](implementation-plan.md#current-work); before the first commit of template-derived files.
+**Request and reason:** The template downloaded from the Sankhya developer area carries no license statement. IA-MNS is public under Apache-2.0 ([ADR-0021](../adr/0021-license-ia-mns-under-apache-2-0.md)), so committing Sankhya-authored files publishes them under this repository. Agents must not assume redistribution rights. PJ-24 removed or replaced every template file the add-on does not need: the guide, the example Java classes, screen, dashboard, data-dictionary, database-script and parameter examples, the icon, `.gitignore`, `.editorconfig` and the build files, which were rewritten; the Gradle wrapper was regenerated from Gradle's official Apache-2.0 distribution. One Sankhya-authored file remains because the Om requires it: `apps/sankhya-addon/vc/src/main/webapp/WEB-INF/web.xml`, the Om web module descriptor (filters and servlets of the Om framework). Decide one of:
+
+1. Obtain Sankhya's confirmation that `web.xml` may be published in a public repository, with any required notice.
+2. Keep `web.xml` out of the repository and document that developers take it from the template of their Sankhya developer area.
+
+Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MNS-authored files and the official Gradle wrapper can be committed; a fresh clone then needs the template's `web.xml` to build the add-on.
+**Configuration:** none.
+**Verification:** The decision and any required notice are recorded here, and the committed contents of `apps/sankhya-addon` match it.
+**Evidence / blocker:** Identified on 2026-10-06 while reviewing the template and narrowed the same day to `web.xml` (PJ-24). No template file has been committed; the solution `appKey` is no longer in any file Git would track.
+
+## PH-18
+
+- [x] **Supply the VRMaster sales reference SQL.**
+
+**Status:** completed. **Owner:** project owner.
+**Dependency / trigger:** [PJ-28](implementation-plan.md#current-work); the owner chose on 2026-10-06 to provide the reference, as for Sankhya.
+**Request and reason:** Send the SQL that defines a sale in VRMaster for IA-MNS. It should make explicit: the tables and joins; the date column; the net-value expression; quantity and its unit; weight, if wanted; which stores count; how cancellations, returns and other exclusions are treated; and the product description used for search. Agents must not invent ERP business semantics; the PDT queries over `public.venda` are only a comparison point.
+**Configuration:** none.
+**Verification:** The SQL is received and transcribed into the VRMaster reader without changing which sales count. Its reconciliation with the real database was split into [PH-20](#ph-20) on 2026-10-07, because it needs the owner's account password.
+**Evidence / blocker:** Received on 2026-10-07: the query of a PDT Connect dashboard over `venda` joined to `produto`, `loja`, the store's `fornecedor`, `produtoaliquota` for the store's state, `aliquota`, the level-1 `mercadologico`, and left joins to `centrocusto` and `comprador`, filtered by `venda.data` and a store list, with cost, tax and margin computations. The owner named the fields IA-MNS uses (`venda.id`, `id_produto`, `data`, `quantidade`, `id_loja`, `valortotal`, `produto.descricaocompleta`, `id_tipoembalagem`, `loja.descricao`) and excluded stores, cost centers, buyers, margins, costs and taxes from the scope. Transcribed the same day in `apps/api/src/features/sales/vrmaster-query.ts` with every join; every store counts ([VRMaster sales semantics](../domains/sales-chat.md#vrmaster-sales-semantics)). The supplied excerpt elided the body of its `calculos` step, which the transcription assumes derives columns only; PH-20 confirms it. Synthetic PostgreSQL tests verify the transcription's behavior, not the real figures.
+
+## PH-19
+
+- [x] **Provide a dedicated read-only VRMaster PostgreSQL account for IA-MNS.**
+
+**Status:** completed. **Owner:** project owner and VRMaster DBA.
+**Dependency / trigger:** [PJ-28](implementation-plan.md#current-work); the owner chose a dedicated account on 2026-10-06. The account PDT Connect uses also runs DDL and must not be reused.
+**Request and reason:** Create a login role for IA-MNS with `CONNECT` on the VRMaster database, `USAGE` on the schemas of the reference SQL and `SELECT` only on its tables, with no ownership, DDL, DML, function execution beyond what the SQL needs, or membership in broader roles. Prefer `default_transaction_read_only = on` and a statement timeout on the role. Never send the password in chat or commit it; the owner places it in the ignored root `.env.local` (development) or the secret store.
+**Configuration:** `VRMASTER_DB_HOST`, `VRMASTER_DB_PORT`, `VRMASTER_DB_NAME`, `VRMASTER_DB_USER`, `VRMASTER_DB_PASSWORD` and `VRMASTER_DB_SSL_MODE` ([generated configuration reference](../generated/configuration/api.md), [setup](../setup.md#sales-chat)).
+**Verification:** The owner confirms the account and its limits. Connecting with it and confirming that `SELECT` works on the reference tables while writes, DDL and other tables are refused is part of [PH-20](#ph-20), because only the owner holds the password.
+**Evidence / blocker:** On 2026-10-07 the owner reported the account `ia_mns` with `CONNECT` on the VRMaster database, `USAGE` on its schema, `SELECT` only on the tables of the reference SQL (`venda`, `produto`, `loja`, `fornecedor`, `produtoaliquota`, `aliquota`, `mercadologico`, `centrocusto`, `comprador`), `default_transaction_read_only = on`, `statement_timeout = 30s` and no DDL or DML. IA-MNS has not connected with it; no password was requested or recorded. The same grants are reproduced in the adapter tests on synthetic PostgreSQL, where the transcribed SQL needs nothing more. On 2026-10-06 the VRMaster PostgreSQL port was reachable from the development machine; on 2026-10-07 the server answered the TLS request negatively ([PH-21](#ph-21)).
+
+## PH-20
+
+- [ ] **Connect IA-MNS to the real VRMaster and reconcile the VRMaster source.**
+
+**Status:** pending (blocks [PJ-29](implementation-plan.md#current-work)). **Owner:** project owner.
+**Dependency / trigger:** [PH-18](#ph-18) and [PH-19](#ph-19); split from them on 2026-10-07. Only the owner holds the account password.
+**Request and reason:** Place the `VRMASTER_DB_*` settings of the [setup](../setup.md#sales-chat) in the ignored root `.env.local` (`VRMASTER_DB_SSL_MODE=disable` while [PH-21](#ph-21) is open) and restart the API. Connected as `ia_mns`, confirm that a write and a `CREATE` are refused. Then, with the queries of [VRMaster reconciliation](vrmaster-reconciliation.md), compare for the periods and products agreed with the owner the official dashboard query run with every store against the IA-MNS reference: total value and quantity per month, per product and per packaging type, an accented product phrase and a period boundary. Finally ask IA-MNS the same questions with `Pilar da Terra (VR Master)` and `Tudo` selected. Agents never receive the password.
+**Configuration:** `VRMASTER_DB_HOST`, `VRMASTER_DB_PORT`, `VRMASTER_DB_NAME`, `VRMASTER_DB_USER`, `VRMASTER_DB_PASSWORD`, `VRMASTER_DB_SSL_MODE` in the root `.env.local`.
+**Verification:** Every comparison returns no difference (or each difference is explained and corrected in the reference transcription), writes and DDL are refused, and the IA-MNS answers equal the reference aggregates. Record only equal/different results and row counts, never figures, hosts or credentials, because the repository is public.
+**Evidence / blocker:** Not started. The read-only queries are in [VRMaster reconciliation](vrmaster-reconciliation.md); on 2026-10-07 they ran without error on the synthetic VRMaster schema of the adapter tests, where the official and IA-MNS sales were identical.
+
+## PH-21
+
+- [ ] **Decide how the VRMaster connection is protected in transit.**
+
+**Status:** pending (required before shared or production use of the VRMaster source). **Owner:** project owner and VRMaster DBA.
+**Dependency / trigger:** [PJ-28](implementation-plan.md#current-work), [PJ-29](implementation-plan.md#current-work).
+**Request and reason:** On 2026-10-07 the VRMaster PostgreSQL server answered the TLS request negatively, so IA-MNS can connect only with `VRMASTER_DB_SSL_MODE=disable`, which sends the `ia_mns` credentials and the sales results unencrypted on that network. Either enable TLS on the server with a certificate IA-MNS can verify (then use `verify-full`, the default), or record an explicit owner decision accepting unencrypted traffic on that network for a named environment.
+**Configuration:** `VRMASTER_DB_SSL_MODE`.
+**Verification:** The server accepts TLS and IA-MNS connects with `verify-full`, or the owner's dated acceptance with its scope is recorded here.
+**Evidence / blocker:** Not started. The probe sent only the PostgreSQL TLS request, without credentials.
 
 ## New action template
 

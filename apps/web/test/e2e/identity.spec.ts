@@ -173,14 +173,20 @@ function pdtServer(clientSecret: string, redirectUri: string) {
       if (url.pathname === "/host") {
         // Minimal PDT host component: fixed IA-MNS origin, client and callback; PDT session from its own storage.
         response.writeHead(200, { "content-type": "text/html" });
-        return response.end(`<!doctype html><title>PDT</title><iframe id="ia" title="IA-MNS" src="${web}/embed/pdt" style="width:1200px;height:760px;border:0"></iframe>
+        return response.end(`<!doctype html><title>PDT</title><iframe id="ia" title="IA-MNS" style="width:1200px;height:760px;border:0"></iframe>
 <script>
 localStorage.setItem("accessToken", "synthetic-pdt-session");
 const frame = document.getElementById("ia");
+const deny = new URLSearchParams(location.search).has("deny");
+// Like the PDT screen: the initial theme in the embed URL, changes by message.
+const theme = new URLSearchParams(location.search).get("theme");
+frame.src = ${JSON.stringify(web)} + "/embed/pdt" + (theme ? "?theme=" + theme : "");
+window.sendTheme = (value) => frame.contentWindow.postMessage({ v: 1, type: "ia-mns:host-theme", theme: value }, ${JSON.stringify(web)});
 addEventListener("message", async (event) => {
   if (event.origin !== ${JSON.stringify(web)} || event.source !== frame.contentWindow) return;
   const d = event.data;
   if (!d || d.v !== 1 || d.type !== "ia-mns:auth-request" || d.provider !== "pdt") return;
+  if (deny) return frame.contentWindow.postMessage({ v: 1, type: "ia-mns:auth-error", requestId: d.requestId, error: "pdt_login_required" }, ${JSON.stringify(web)});
   const r = await fetch("/api/auth/integrations/authorize", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + localStorage.getItem("accessToken") },
     body: JSON.stringify({ client_id: "ia-mns", redirect_uri: ${JSON.stringify(redirectUri)}, state: d.state, code_challenge: d.code_challenge, code_challenge_method: "S256" }) });
   const u = new URL((await r.json()).redirectUrl);
@@ -313,7 +319,7 @@ test("embedded PDT Connect opens IA-MNS without a new login and keeps the sessio
   page,
   context,
 }) => {
-  await page.goto(`${pdt}/host`);
+  await page.goto(`${pdt}/host?theme=dark`);
   const frame = page.frameLocator("iframe#ia");
   // First access creates the profile automatically: no registration step.
   await expect(frame.getByLabel("Sua mensagem")).toBeVisible();
@@ -326,8 +332,35 @@ test("embedded PDT Connect opens IA-MNS without a new login and keeps the sessio
   const inner = page
     .frames()
     .find((item) => item.url().startsWith(`${web}/embed/pdt`))!;
-  expect(new URL(inner.url()).pathname).toBe("/embed/pdt");
+  expect(new URL(inner.url()).pathname).toMatch(/^\/embed\/pdt\/?$/);
   await noCredentialStorage(inner);
+  // The PDT theme: initial value in the embed URL, changes by message, never stored.
+  const embeddedFrame = () =>
+    page.frames().find((item) => item.url().startsWith(`${web}/embed/pdt`))!;
+  const theme = () =>
+    embeddedFrame().evaluate(() => document.documentElement.dataset.theme);
+  expect(await theme()).toBe("dark");
+  await page.evaluate(() =>
+    (window as unknown as { sendTheme(value: string): void }).sendTheme(
+      "light",
+    ),
+  );
+  await expect.poll(theme).toBe("light");
+  await page.evaluate(() =>
+    (window as unknown as { sendTheme(value: string): void }).sendTheme("neon"),
+  );
+  await page.waitForTimeout(300);
+  expect(await theme()).toBe("light");
+  // The host owns the theme: no IA-MNS theme control and nothing stored.
+  await frame.getByRole("button", { name: /menu da conta$/ }).click();
+  await expect(frame.getByRole("menuitem", { name: /^Tema/ })).toHaveCount(0);
+  await expect(
+    frame.getByRole("button", { name: /modo (claro|escuro)/ }),
+  ).toHaveCount(0);
+  expect(
+    await embeddedFrame().evaluate(() => localStorage.getItem("ia-mns-theme")),
+  ).toBeNull();
+  await page.keyboard.press("Escape");
   // Reload: a silent new host proof, no provisioning question, no cookie for IA-MNS.
   await page.reload();
   await expect(
@@ -358,6 +391,27 @@ test("embedded PDT Connect opens IA-MNS without a new login and keeps the sessio
     .frames()
     .find((item) => item.url().startsWith(`${web}/embed/pdt`))!;
   expect(new URL(account.url()).pathname).toBe("/embed/pdt/conta");
+});
+
+test("a host that refuses the proof gets one sign-in attempt and an explanation", async ({
+  page,
+}) => {
+  let starts = 0;
+  page.on("request", (request) => {
+    if (
+      new URL(request.url()).pathname.endsWith("/identity/providers/pdt/start")
+    )
+      starts += 1;
+  });
+  await page.goto(`${pdt}/host?deny=1`);
+  await expect(
+    page
+      .frameLocator("iframe#ia")
+      .getByText("Entre no PDT Connect e abra o IA-MNS novamente."),
+  ).toBeVisible();
+  // A refused proof once restarted the handshake endlessly through a status refetch.
+  await page.waitForTimeout(2_000);
+  expect(starts).toBe(1);
 });
 
 test("direct PDT sign-in reaches the same Person, and local sign-in requires the second factor", async ({
@@ -429,7 +483,9 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   await admin.getByRole("button", { name: /, menu da conta$/ }).click();
   await admin.getByRole("menuitem", { name: "Administração" }).click();
   await admin.getByRole("button", { name: /Pessoa do PDT/ }).click();
-  await expect(admin.getByText("Consultas de vendas (Sankhya)")).toBeVisible();
+  await expect(
+    admin.getByText("Consultas de vendas (Sankhya e VR Master)"),
+  ).toBeVisible();
   await expect(admin.getByText("não efetiva")).toBeVisible();
   // Only the owner creates people, optionally with a local invitation and
   // proof-based link invitations; each invitation is a one-time link.

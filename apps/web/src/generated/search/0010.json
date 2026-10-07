@@ -4,6 +4,240 @@
     "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Manual execution",
+    "anchor": "manual-execution",
+    "text": "Manual execution\nImportant CI workflows should support manual execution where GitHub Actions provides an appropriate mechanism.\nThis supports:\ndiagnostics;\ninfrastructure investigation;\nvalidation after configuration changes;\ncontrolled reruns;\nfuture release workflows.\nManual execution must not require a separate validation implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Required CI gate",
+    "anchor": "required-ci-gate",
+    "text": "Required CI gate\nOrion will expose a **stable aggregate required CI gate** for branch protection.\nConceptually:\nstatic validation ──────┐\ntype checking ──────────┤\nunit tests ─────────────┤\nintegration tests ──────┤\nbrowser tests ──────────┤\nE2E tests ──────────────┤\nbuild validation ───────┤\n                        ↓\n                 required CI gate\n\nThe specific internal jobs may evolve without requiring branch-protection configuration to track every implementation change.\nThe aggregate gate succeeds only when all required jobs for that repository state succeed.\nThis creates a stable external contract between CI implementation and repository governance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI execution environment",
+    "anchor": "ci-execution-environment",
+    "text": "CI execution environment\nGitHub-hosted Linux runners will be Orion's default CI execution environment initially.\nThe foundation will not run a Windows/macOS operating-system matrix by default.\nAdditional operating systems should be introduced only when a product or supported runtime genuinely depends on cross-platform behavior.\nThe CI operating system does not imply that every Orion application must deploy on the same operating system.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Runtime versions",
+    "anchor": "runtime-versions",
+    "text": "Runtime versions\nCI must use repository-pinned runtime and package-manager versions.\nThe CI workflow must not independently choose a different Node.js or pnpm release from the versions established by repository configuration.\nConceptually:\nrepository\n├── Node version policy / pin\n└── packageManager → pnpm version\n        ↓\nCI consumes those versions\n\nThis avoids situations where:\nlocal development\n→ Node A / pnpm A\n\nCI\n→ Node B / pnpm B\n\nsilently creates environment-dependent behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency installation",
+    "anchor": "dependency-installation",
+    "text": "Dependency installation\nCI will install dependencies using the committed pnpm lockfile in frozen mode.\nThe intended requirement is equivalent to:\npnpm install --frozen-lockfile\n\nCI must fail when package manifests and the committed lockfile disagree.\nCI must not automatically rewrite the lockfile to make a validation run succeed.\nDependency changes belong in the source change being reviewed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI caching",
+    "anchor": "ci-caching",
+    "text": "CI caching\nCaching is an optimization, not a correctness requirement.\nThe initial CI strategy may cache the pnpm package store using the committed lockfile as part of the cache identity.\n`node_modules` will not be treated as a portable canonical build artifact.\nA cache miss must produce the same correct result as a cache hit.\nCI must never depend on cached state that cannot be reconstructed from canonical repository inputs.\nTask-output or build caching will not be introduced globally until repository scale demonstrates a meaningful need.\nIf Orion later adopts a monorepo task runner or remote cache, the existing repository commands must remain the validation interface.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Full validation before affected-project optimization",
+    "anchor": "full-validation-before-affected-project-optimization",
+    "text": "Full validation before affected-project optimization\nOrion will initially favor complete required validation over sophisticated affected-project analysis.\nPath-based skipping, dependency-graph selective testing, incremental CI, and remote execution may eventually reduce CI cost substantially.\nThey also add complexity and create the risk that an incorrect dependency graph allows a relevant validation step to be skipped.\nTherefore:\nfull deterministic validation first\n    ↓\nmeasure CI cost\n    ↓\nintroduce selective execution when justified\n\nAffected-project optimization should only be introduced when the repository is large enough for the saved execution time to justify the additional correctness machinery.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Pull-request concurrency",
+    "anchor": "pull-request-concurrency",
+    "text": "Pull-request concurrency\nSuperseded validation runs for the same pull request should be cancelled when practical.\nWhen a contributor pushes a new commit to a pull request, continuing expensive validation for an obsolete commit normally provides little value.\nThis is particularly relevant for:\nintegration tests;\nbrowser tests;\nE2E tests;\nlarge builds.\nPrimary-branch validation should not be cancelled merely because another commit is pushed unless the workflow semantics explicitly make doing so safe.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Integration-test infrastructure",
+    "anchor": "integration-test-infrastructure",
+    "text": "Integration-test infrastructure\nCI integration tests will use the strategy established by ADR-0009.\nWhere tests require PostgreSQL:\nGitHub Actions runner\n    ↓\nTestcontainers\n    ↓\nreal PostgreSQL\n    ↓\ncommitted migrations\n    ↓\nVitest integration tests\n\nCI must not use a simplified database substitute merely to make CI configuration easier.\nContainer infrastructure is a testing implementation detail and does not establish Docker or a particular container platform as Orion's application deployment strategy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Browser testing",
+    "anchor": "browser-testing",
+    "text": "Browser testing\nBrowser-dependent component tests will use the Vitest Browser Mode strategy established by ADR-0009.\nFull browser E2E tests will use Playwright Test.\nChromium remains the initial routine browser.\nAdditional browser matrices should be introduced according to product support requirements.\nCI may later shard browser or E2E suites when execution time justifies doing so.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Test artifacts",
+    "anchor": "test-artifacts",
+    "text": "Test artifacts\nDiagnostic test artifacts may be retained when they materially improve failure investigation.\nExamples include:\nPlaywright traces;\nscreenshots;\nvideos;\ncoverage reports;\nstructured test reports.\nArtifact retention should remain bounded.\nArtifacts must follow Orion's security and data-classification policies and must not become an uncontrolled channel for exposing secrets or sensitive test data.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "GitHub Actions security",
+    "anchor": "github-actions-security",
+    "text": "GitHub Actions security\nGitHub Actions workflows must follow least-privilege principles.\nWorkflow and job permissions must be declared explicitly when access beyond the minimal default is required.\nOrdinary validation jobs should normally require no repository write permission.\nThe expected baseline is conceptually:\nrepository contents\n    → read\n\nrepository modification\n    → none\n\nunless a job has an explicit responsibility requiring greater access.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Action pinning",
+    "anchor": "action-pinning",
+    "text": "Action pinning\nExternal GitHub Actions will be pinned to **full-length immutable commit SHAs**.\nReadable release/version information should remain present as an adjacent comment or equivalent maintainability aid where useful.\nConceptually:\nuses: actions/checkout@<full-commit-sha> # vX.Y.Z\n\nrather than:\nuses: actions/checkout@vX\n\nas the canonical Orion security posture.\nDependency automation will keep these action pins current.\nThis requirement applies to GitHub-maintained actions as well as third-party actions when they are referenced externally.\nRepository-local actions remain controlled by repository history.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Third-party Actions",
+    "anchor": "third-party-actions",
+    "text": "Third-party Actions\nThird-party GitHub Actions must not be introduced merely for convenience when a small repository-owned command provides the same capability with lower supply-chain exposure.\nWhen a third-party action provides meaningful value, its:\npublisher;\nmaintenance status;\npermissions;\ninputs;\nsupply-chain exposure;\nshould be reviewed.\nThe number of privileged workflow dependencies should remain intentionally small.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Untrusted pull requests",
+    "anchor": "untrusted-pull-requests",
+    "text": "Untrusted pull requests\nUntrusted pull-request code must not execute with privileged credentials.\nValidation workflows triggered by pull requests should be designed so that code under review cannot obtain:\ndeployment credentials;\nproduction secrets;\nprivileged repository tokens;\nunrelated infrastructure access.\nOrion will avoid using `pull_request_target` for ordinary build or validation execution of untrusted pull-request code.\nIf that event is ever required for a metadata-only workflow, untrusted pull-request contents must not be checked out and executed with privileged context.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "CI secrets",
+    "anchor": "ci-secrets",
+    "text": "CI secrets\nOrdinary validation should require as few secrets as possible.\nTests should use ephemeral test credentials and local container infrastructure instead of external production-like credentials where practical.\nCI secrets must:\nfollow least privilege;\nbe scoped narrowly;\nnot be printed;\nnot be copied into artifacts;\nnot be required for unrelated validation jobs.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "OIDC for future privileged workflows",
+    "anchor": "oidc-for-future-privileged-workflows",
+    "text": "OIDC for future privileged workflows\nFuture workflows that need to authenticate to supported cloud providers or publishing systems should prefer short-lived identity federation through OpenID Connect when practical.\nLong-lived cloud credentials stored as GitHub secrets should not be the preferred Orion pattern.\nThe intended model is:\nGitHub Actions identity\n    ↓\nOIDC\n    ↓\nshort-lived provider credential\n\nrather than:\nGitHub secret\n    ↓\nlong-lived cloud access key\n\nActual deployment authentication is outside the scope of this ADR and will be decided when deployment targets exist.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency automation",
+    "anchor": "dependency-automation",
+    "text": "Dependency automation\nOrion will use **Renovate as its primary dependency-update automation tool**.\nRenovate will manage relevant repository dependencies including, where supported:\nnpm/pnpm dependencies;\ndevelopment dependencies;\nruntime dependencies;\nGitHub Actions references;\ntoolchain versions represented in supported files;\nother machine-readable dependency declarations introduced later.\nDependabot version-update pull requests will not be enabled alongside Renovate for the same dependency ecosystem.\nRunning two competing version-update systems would create redundant pull requests and overlapping configuration.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Renovate configuration",
+    "anchor": "renovate-configuration",
+    "text": "Renovate configuration\nRenovate configuration will be stored in the repository and treated as repository policy.\nThe configuration should begin from Renovate's recommended baseline and be customized deliberately.\nA **Dependency Dashboard** will be enabled to provide a machine-maintained overview of:\npending updates;\ndeferred updates;\nmajor upgrades;\ndeprecated dependencies;\ndependency-maintenance state.\nThis provides both human contributors and AI agents with an explicit view of dependency debt.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency update cadence",
+    "anchor": "dependency-update-cadence",
+    "text": "Dependency update cadence\nRoutine dependency updates will be grouped and scheduled to reduce unnecessary pull-request noise.\nThe initial approach will favor a **weekly routine update cadence** for ordinary dependency updates.\nSecurity remediation updates should not be intentionally delayed to the routine maintenance window when Renovate identifies them as security-related.\nUpdate frequency may later be adjusted based on repository activity and risk.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency grouping",
+    "anchor": "dependency-grouping",
+    "text": "Dependency grouping\nRelated dependency families may be grouped when they are expected to evolve together.\nExamples may include ecosystems such as:\nReact ecosystem\nTanStack ecosystem\nPrisma ecosystem\nOpenTelemetry ecosystem\nFastify ecosystem\nVitest ecosystem\nPlaywright ecosystem\n\nGrouping should reduce update noise without creating large unrelated upgrade pull requests.\nA generic \"update every dependency\" mega-group will not be the default.\nThe objective is:\ncoherent upgrade units\n\nrather than:\nminimum possible number of pull requests\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Major dependency upgrades",
+    "anchor": "major-dependency-upgrades",
+    "text": "Major dependency upgrades\nMajor-version upgrades require deliberate review.\nRenovate should expose pending major upgrades and may require Dependency Dashboard approval before opening selected major-upgrade pull requests when that improves signal.\nA major version must not be ignored indefinitely merely to keep automation quiet.\nMajor upgrades should remain visible even when they are intentionally deferred.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency automerge",
+    "anchor": "dependency-automerge",
+    "text": "Dependency automerge\nAutomatic merging of dependency updates will be **disabled by default initially**.\nPassing CI is necessary but does not prove that every dependency change is semantically harmless.\nSelective automerge may later be enabled for explicitly identified low-risk dependency classes when sufficient repository experience demonstrates that doing so is safe.\nExamples might eventually include narrowly scoped patch updates to development-only tooling.\nThere will be no blanket:\npatch update\n    → automerge\n\nrule initially.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Lockfile maintenance",
+    "anchor": "lockfile-maintenance",
+    "text": "Lockfile maintenance\nAutomated dependency updates must keep the shared pnpm lockfile synchronized with package manifests.\nThe lockfile remains committed repository state.\nDependency automation must not create manifest changes without the corresponding deterministic lockfile update.\nPeriodic lockfile maintenance may be enabled if it produces concrete value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency security alerts",
+    "anchor": "dependency-security-alerts",
+    "text": "Dependency security alerts\nOrion will enable GitHub's dependency graph and **Dependabot vulnerability alerts** where supported.\nThis use of Dependabot is distinct from Dependabot version-update automation.\nThe responsibility split is:\nRenovate\n    → routine/version dependency updates\n\nDependabot alerts / GitHub advisory data\n    → vulnerability visibility\n\nSecurity findings should result in explicit remediation, acceptance, or documented exception rather than being silently ignored.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dependency review",
+    "anchor": "dependency-review",
+    "text": "Dependency review\nWhere the repository's GitHub feature entitlement supports it, Orion will enable the GitHub dependency review capability for pull requests.\nDependency review should prevent newly introduced vulnerable dependencies from entering unnoticed.\nThe initial enforcement threshold should block newly introduced vulnerabilities rated **high or critical**, unless an explicitly reviewed exception exists.\nThe policy may become stricter for applications with higher risk or regulatory requirements.\nDependency review is an additional guardrail and does not replace repository tests or dependency update automation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Static security analysis",
     "anchor": "static-security-analysis",
     "text": "Static security analysis\nWhere available for the repository, Orion will enable **GitHub CodeQL for JavaScript and TypeScript security analysis**.\nCode scanning should be represented by repository-visible configuration when customization is required.\nThe initial objective is to detect actionable security defects without making a paid GitHub security product a mandatory dependency of the Orion architecture.\nIf CodeQL is unavailable for a particular private repository, the absence of that GitHub entitlement does not invalidate the Orion foundation.\nA different SAST implementation may be introduced when the risk profile of that application requires one.\n"
@@ -1249,257 +1483,5 @@
     "heading": "ADR-0021: License IA-MNS under Apache-2.0",
     "anchor": "adr-0021-license-ia-mns-under-apache-20",
     "text": "ADR-0021: License IA-MNS under Apache-2.0\n**Status:** accepted\n**Date:** 2026-10-03\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nIA-MNS was derived from Orion, whose source is licensed under Apache-2.0 ([ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)). That decision explicitly left the license of independently created project code to each derived project. Since then, IA-MNS has added its corporate-agent and sales capabilities, documentation, and tooling as its own work. The repository is published at https://github.com/GabriellMDias/IA-MNS. Until this decision, project human action PH-06 tracked the license as undecided.\nOn 2026-10-03 the project owner decided that the repository stays public and that IA-MNS is licensed under the Apache License 2.0. This decision covers IA-MNS's repository source. It does not change third-party dependency rights, Orion's own license, or provenance.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nDistribute the IA-MNS repository source, including material inherited from Orion and IA-MNS's own work, under the unmodified Apache License, Version 2.0. The root `LICENSE` file holds the canonical terms, and the root README states the decision. The repository remains public.\nDo not add package license metadata, a `NOTICE` file, or a copyright statement in this decision. Packages are private and unpublished, and the owner has not named a copyright holder. Any later change to the license or distribution model requires a new decision.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThe owner chose the license explicitly. Because the inherited Orion material already uses Apache-2.0, one license now covers the whole repository. Contributors and readers therefore do not need to tell foundation code from project code to know which terms apply, and Orion upgrades keep merging into a single-license tree. The root license file already contains the standard terms, so the decision needs no custom text.\nThe repository is public, which means the code and documentation can be read by anyone and reused under these terms. Business rules, ERP table names, and verification evidence in the documentation are therefore public too. Credentials, local configuration, and real financial results stay out of the repository under the existing [secrets](../security/secrets-management.md) and [data classification](../security/data-classification.md) policies.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Keep IA-MNS's own work under a different or proprietary license",
-    "anchor": "keep-ia-mnss-own-work-under-a-different-or-proprietary-license",
-    "text": "Keep IA-MNS's own work under a different or proprietary license\nThe owner did not choose this. It would mean mixed licensing in one repository and does not fit the decision to keep the repository public.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nThe repository has one clear, standard license that GitHub detects.\nOrion upgrades do not create licensing boundaries inside the tree.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nAnyone may use, modify, and redistribute IA-MNS under Apache-2.0. Confidential business data must therefore never be committed, because publication cannot be undone by later changing the license.\nRedistributors must satisfy Apache-2.0 conditions. The license does not settle obligations of third-party dependencies. A dependency-license policy remains deferred under [ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md#license-policy).\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNo application, manifest, package publication, or deployment change is required. A copyright notice can be added later if the owner names a holder.\n"
-  },
-  {
-    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
-    "title": "ADR-0021: License IA-MNS under Apache-2.0",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Canonical Apache-2.0 license](../../LICENSE)\n[Repository README](../../README.md#license)\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\n[Project human action PH-06](../project/human-actions.md#ph-06)\n[Project derivation](../project-derivation.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "anchor": "adr-0022-own-the-ia-mns-identity-with-verified-external-links",
-    "text": "ADR-0022: Own the IA-MNS Identity with Verified External Links\n**Status:** accepted\n**Date:** 2026-10-04\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nIA-MNS is used by people who may have accounts in Sankhya Om, in PDT Connect, both, or neither. The owner requires one IA-MNS identity per person, reached through any of those systems or an IA-MNS local account; automatic first-access provisioning through Sankhya or PDT Connect without prior registration; no public self-registration of local accounts; owner-only manual creation; no second Person for the same individual and no merge of people by name or e-mail; secure linking and unlinking; capabilities that depend on links and IA-MNS authorization rather than on the access surface; and a principal administrator independent of external roles. [ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) already fixes how the API verifies bearer access tokens, and the [authentication](../security/authentication.md) and [authorization](../security/authorization.md) policies require stable opaque subjects, separation of authentication and authorization, and explicit freshness.\nNeither external system is an OpenID Connect provider. PDT Connect exposes its own identity contract v1 (authorization code with PKCE S256, confidential client, opaque five-minute token, identity lookup and revocation). Sankhya's documented gateway authentication is client credentials only and cannot identify a person; [ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) records how a Sankhya identity is proven. A general identity server would therefore need custom extensions for both systems.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nIA-MNS owns its identity in an `identity` API module:\n**Person** is the single principal. Its UUID is the access-token `orion_principal_id` and the owner of conversations and preferences. Persons are disabled, never hard-deleted, by the application.\n**External links** bind a Person to `(provider, fixed issuer, stable subject)`: PDT `identitySubject` or Sankhya `CODUSU` under a configured installation issuer. A subject maps to at most one Person; a Person has at most one account per provider installation. A link is established only by a server-verified proof in a context that names the Person (an existing session, an owner-issued link invitation, or the proof of the Person's only method) or by an owner attestation of a real Sankhya user read from the ERP directory; never from a typed identifier.\n**First access and duplicates.** An unknown external account creates its Person and link automatically unless there is a reason to suspect an existing profile: the browser is already signed in to a Person, or another active Person has a link of another provider that reported the same normalized e-mail. Then the person must either prove that profile (sign in with one of its methods, after which the account is attached) or declare it is not theirs and receive a separate Person. E-mail and names are hints only; they never link or merge. Two Persons of one individual are consolidated only by proof (the person proves both, and the absorbed one has no method other than the proven account, no grants and no owner role) or by an audited owner action with strong, recent authentication. Consolidation moves links, the local credential when the target has none, grants and other modules' data (conversations, through a composition port) in one transaction, and marks the source `merged`.\n**No public self-registration.** Local credentials are created only by the bootstrap, owner-issued enrollment or reset invitations, or as an additional method of an already authenticated Person. Owners create Persons with any combination of a local invitation, a directory-selected Sankhya user and proof-based link invitations.\n**Local accounts** use a normalized login and a scrypt password verifier (N=2^15, r=8, p=1) through the platform implementation, with progressive temporary lockout and uniform failures. **Strong authentication** is RFC 6238 TOTP whose secret is sealed with AES-256-GCM; ten single-use recovery codes are stored as hashes. Owners must keep TOTP. **Recovery** is owner-issued single-use invitations (72 hours) or the server-side bootstrap command with explicit break-glass.\n**Issuer and sessions.** IA-MNS issues ES256 `at+jwt` access tokens (10 minutes) carrying the Person, effective scopes, `sid`, assurance (`acr`) and `auth_time`; the API verifies them in process with the ADR-0012 contract. Direct-URL sessions keep a rotating refresh credential in an HttpOnly `__Host-` cookie (SameSite=Strict); reuse of a rotated credential revokes the session. Embedded sessions have no cookie and renew with a new host proof. Identity endpoints check the session row, so revocation, disabling and credential reset take effect immediately there; other modules accept the access token until it expires.\n**Authorization** stays separate from authentication. Effective permissions are computed only from server state: explicit owner grants of registered catalog permissions, a provider policy that may grant **read** capabilities to Persons with an active link of a given provider, and internal roles. Write or sensitive capabilities can never be granted automatically. The catalog is declared at composition; the language model never grants a capability.\n**Principal administrator** is the internal `owner` role: all catalog permissions plus `identity:admin`. Administration requires TOTP assurance and recent authentication for mutations; the last active owner cannot be removed or disabled. The first owner is created through a single-use invitation issued by a server-side command. Sensitive identity changes are recorded in an append-only audit table.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nA first-party identity is the only model that satisfies \"one Person, many methods\" while both external systems use custom contracts. Keeping links keyed by stable provider subjects makes the login mechanism replaceable: a new Sankhya connector only has to prove the same `CODUSU`. Short access tokens fit ADR-0012 and give bounded permission freshness; immediate checks where they matter most (identity and administration) avoid a per-request database lookup elsewhere. scrypt, HMAC and AES-GCM from the platform avoid new runtime dependencies while respecting the rule against custom cryptography.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Self-hosted general identity server (for example Keycloak)",
-    "anchor": "self-hosted-general-identity-server-for-example-keycloak",
-    "text": "Self-hosted general identity server (for example Keycloak)\nMature sessions, MFA and administration, but both PDT Connect and the Sankhya proof would need custom extensions in another technology, and the embedded host handshake is not a standard flow. It remains a possible future replacement behind the same Person, link and token contracts.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Use one external system as the identity of record",
-    "anchor": "use-one-external-system-as-the-identity-of-record",
-    "text": "Use one external system as the identity of record\nRejected: people without that system could not use IA-MNS, and the other system's users would need duplicate accounts.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Link or merge automatically by matching e-mail",
-    "anchor": "link-or-merge-automatically-by-matching-e-mail",
-    "text": "Link or merge automatically by matching e-mail\nRejected: neither system guarantees that an e-mail is verified, unique or still owned by the same person (Sankhya user e-mails are free-form), so a match could hand one person another's history and capabilities. The match only stops automatic creation and asks for proof.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Always ask at first access whether the person already has a profile",
-    "anchor": "always-ask-at-first-access-whether-the-person-already-has-a-profile",
-    "text": "Always ask at first access whether the person already has a profile\nRejected after first implementation: it made every first access through Sankhya or PDT a registration step and invited people to create duplicates or to link the wrong profile. Asking only when there is a concrete reason keeps first access automatic.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Let owners type an external identifier",
-    "anchor": "let-owners-type-an-external-identifier",
-    "text": "Let owners type an external identifier\nRejected: a mistyped or guessed `CODUSU` or PDT subject would bind a real account to the wrong Person. Owners select Sankhya users read from the ERP directory, and PDT associations require the person's own proof (PDT exposes no user directory to IA-MNS).\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Passkeys (WebAuthn) as the primary local factor",
-    "anchor": "passkeys-webauthn-as-the-primary-local-factor",
-    "text": "Passkeys (WebAuthn) as the primary local factor\nDesirable and compatible with this model, but it needs a browser and server library choice and recovery design. TOTP with recovery codes is accepted now; passkeys can be added as another method.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nOne Person, history and authorization across every method and surface; links and grants are auditable and reversible.\nExternal mechanisms can change without migrating Persons or conversations.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nIA-MNS operates security-sensitive code and data (password verifiers, TOTP secrets, sessions, audit) and its keys.\nPermission changes reach non-identity modules within the 10-minute token lifetime, not instantly.\nPassword reset depends on an owner; there is no e-mail recovery.\nA person with two profiles who cannot prove both (for example, the absorbed profile also has a password) needs an owner to consolidate them; someone who declares a suggested profile is not theirs gets a separate Person that an owner may later consolidate.\nThe owner directory needs a read-only Sankhya user view granted by the ERP DBA.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nAn additive migration creates the identity tables with restricted runtime grants (audit is append-only). Production needs an HTTPS public origin, the signing key and the encryption key in the secret store; rotating the encryption key requires re-enrolling second factors. Existing local conversations owned by the explicit loopback developer identity remain available only in local mode.\n"
-  },
-  {
-    "id": "repository/docs/adr/0022-own-the-ia-mns-identity-with-verified-external-links",
-    "title": "ADR-0022: Own the IA-MNS Identity with Verified External Links",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Identity domain](../domains/identity.md)\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md), [ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\n[Authentication policy](../security/authentication.md), [authorization policy](../security/authorization.md)\n[Schema reference](../generated/database/schema.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs",
-    "title": "ADR-0023: Serve One Frontend to Three Surfaces with Host Identity Proofs",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0023: Serve One Frontend to Three Surfaces with Host Identity Proofs",
-    "anchor": "adr-0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs",
-    "text": "ADR-0023: Serve One Frontend to Three Surfaces with Host Identity Proofs\n**Status:** accepted\n**Date:** 2026-10-04\n"
-  },
-  {
-    "id": "repository/docs/adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs",
-    "title": "ADR-0023: Serve One Frontend to Three Surfaces with Host Identity Proofs",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nIA-MNS must be reachable at its own URL, inside PDT Connect and inside Sankhya Om without maintaining three frontends. Inside a host, the person is already authenticated there and must not sign in again, yet IA-MNS must never trust an identifier supplied by the browser. Modern browsers block or partition third-party cookies and storage in iframes, and framing must not weaken clickjacking protection. A disposable proof of concept on 2026-10-04 confirmed in Chrome 154, with third-party cookies blocked, that an in-memory session with a host handshake works, that `localStorage` throws inside a third-party frame, that `frame-ancestors` blocks other origins, and that a cross-site form post back from the Om requires a `SameSite=None` binding cookie.\nAn internal review of the current Om deployment found that its session transport and cookie protections do not yet meet the conditions required to trust it as an authentication source (details are kept outside this public repository). The PDT contract v1 already lets an authenticated PDT page obtain an authorization code for a registered client through its `authorize` endpoint, which returns the redirect URL as JSON.\n"
   }
 ]

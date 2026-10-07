@@ -100,7 +100,12 @@ export type FlowOutcome =
   | { kind: "reauthenticated" };
 
 export type IdentityProviders = {
-  pdt?: { client: PdtIdentityClient; embedOrigin: string | null };
+  pdt?: {
+    client: PdtIdentityClient;
+    embedOrigin: string | null;
+    /** The registered callback is on this IA-MNS origin, where the direct flow's binding cookie lives. */
+    directCallback: boolean;
+  };
   sankhya?: {
     /** Session-assertion sign-in; absent until the Om add-on is configured. */
     connector?: SankhyaIdentityConnector;
@@ -189,6 +194,18 @@ export class IdentityService {
     return provider === "pdt"
       ? Boolean(this.providers.pdt)
       : Boolean(this.providers.sankhya?.connector);
+  }
+
+  /**
+   * Whether the direct URL can offer this provider: Sankhya also needs the
+   * add-on authorize page; embedded sign-in only needs the connector.
+   */
+  directSignInAvailable(provider: Provider): boolean {
+    return provider === "pdt"
+      ? this.signInAvailable("pdt") &&
+          Boolean(this.providers.pdt?.directCallback)
+      : this.signInAvailable("sankhya") &&
+          Boolean(this.providers.sankhya?.authorizeUrl);
   }
 
   directoryAvailable(): boolean {
@@ -739,6 +756,8 @@ export class IdentityService {
     options: StartOptions = {},
   ) {
     this.requireSignIn(provider);
+    if (!this.directSignInAvailable(provider))
+      throw new IdentityFailure("IDENTITY_METHOD_UNAVAILABLE");
     const context = await this.intentContext(
       provider,
       intent,

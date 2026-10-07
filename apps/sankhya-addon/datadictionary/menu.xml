@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<metadados xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="../.gradle/metadados.xsd">
+
+    <!-- The add-on's only Om artifact: one screen that hosts the IA-MNS frontend. -->
+    <menu id="iamns" description="IA-MNS" icon="/$ctx/assets/icon.png">
+        <ui id="IaMns" url="/$ctx/IaMns.xhtml5" description="IA-MNS"/>
+    </menu>
+</metadados>

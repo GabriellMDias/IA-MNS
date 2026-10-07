@@ -41,6 +41,7 @@ it("persists owned conversation organization, literal search, favorite paginatio
         target.id,
         requestId,
         "Find apples",
+        "sankhya",
       );
       await expect(
         repository.update("alice", target.id, { title: "Concurrent rename" }),
@@ -102,11 +103,18 @@ it("persists owned conversation organization, literal search, favorite paginatio
         ).items,
       ).toHaveLength(0);
       await expect(
-        repository.claim("alice", target.id, randomUUID(), "New"),
+        repository.claim("alice", target.id, randomUUID(), "New", "sankhya"),
       ).rejects.toThrow("AGENT_CONVERSATION_ARCHIVED");
       expect(
-        (await repository.claim("alice", target.id, requestId, "Find apples"))
-          .fresh,
+        (
+          await repository.claim(
+            "alice",
+            target.id,
+            requestId,
+            "Find apples",
+            "sankhya",
+          )
+        ).fresh,
       ).toBe(false);
       await repository.update("alice", target.id, { archived: false });
       const resumed = await repository.claim(
@@ -114,6 +122,7 @@ it("persists owned conversation organization, literal search, favorite paginatio
         target.id,
         randomUUID(),
         "Continue",
+        "sankhya",
       );
       expect(resumed.contexts).toEqual({ sales: { source: "retained" } });
       expect(resumed.history).toHaveLength(1);
@@ -195,6 +204,7 @@ it("persists owned conversations, serializes concurrent turns, replays acceptanc
         conversation.id,
         requestId,
         "Oi, tudo bem?",
+        "sankhya",
         () => "INTERNAL_ERROR",
       );
       const detail = await completed(repository, actor.id, conversation.id);
@@ -209,6 +219,7 @@ it("persists owned conversations, serializes concurrent turns, replays acceptanc
         conversation.id,
         requestId,
         "Oi, tudo bem?",
+        "sankhya",
         () => "INTERNAL_ERROR",
       );
       expect(planner.route).toHaveBeenCalledOnce();
@@ -218,13 +229,14 @@ it("persists owned conversations, serializes concurrent turns, replays acceptanc
           conversation.id,
           requestId,
           "Different",
+          "sankhya",
           () => "INTERNAL_ERROR",
         ),
       ).rejects.toThrow("AGENT_REQUEST_CONFLICT");
       const two = await repository.create(actor.id);
       const races = await Promise.allSettled([
-        repository.claim(actor.id, two.id, randomUUID(), "First"),
-        repository.claim(actor.id, two.id, randomUUID(), "Second"),
+        repository.claim(actor.id, two.id, randomUUID(), "First", "sankhya"),
+        repository.claim(actor.id, two.id, randomUUID(), "Second", "sankhya"),
       ]);
       expect(
         races.filter((result) => result.status === "fulfilled"),
@@ -273,6 +285,7 @@ it("persists owned conversations, serializes concurrent turns, replays acceptanc
             conversation.id,
             randomUUID(),
             `Question ${i}`,
+            "sankhya",
           );
           await freshRepository.finish(
             actor.id,
@@ -369,7 +382,7 @@ it("restores validated sales filters independently of social turns, emits real s
       config,
       new SalesChat(
         planner,
-        reader,
+        { sankhya: reader },
         undefined,
         () => new Date("2026-10-01T15:00:00Z"),
       ),
@@ -382,6 +395,7 @@ it("restores validated sales filters independently of social turns, emits real s
         conversation.id,
         randomUUID(),
         "Vendas de maçã",
+        "sankhya",
         () => "INTERNAL_ERROR",
       );
       const first = await completed(repository, actor.id, conversation.id);
@@ -398,7 +412,7 @@ it("restores validated sales filters independently of social turns, emits real s
           config,
           new SalesChat(
             planner,
-            reader,
+            { sankhya: reader },
             undefined,
             () => new Date("2026-10-01T15:00:00Z"),
           ),
@@ -413,6 +427,7 @@ it("restores validated sales filters independently of social turns, emits real s
         conversation.id,
         randomUUID(),
         "Obrigado",
+        "sankhya",
         () => "INTERNAL_ERROR",
       );
       await completed(repository, actor.id, conversation.id);
@@ -424,6 +439,7 @@ it("restores validated sales filters independently of social turns, emits real s
         conversation.id,
         randomUUID(),
         "E no ano passado?",
+        "sankhya",
         () => "SALES_PROVIDER_UNAVAILABLE",
       );
       expect(
@@ -435,12 +451,13 @@ it("restores validated sales filters independently of social turns, emits real s
         conversation.id,
         randomUUID(),
         "Detalhe produtos",
+        "sankhya",
         () => "INTERNAL_ERROR",
       );
       await completed(repository, actor.id, conversation.id);
       const restored = vi.mocked(planner.interpret).mock.calls[2][0].state;
       expect(restored.active?.query).toEqual(
-        first.turns[0].reply?.result?.query,
+        first.turns[0].reply?.result?.sections[0].result?.query,
       );
       expect(restored.transcript.map((item) => item.user)).toEqual([
         "Vendas de maçã",
@@ -454,6 +471,7 @@ it("restores validated sales filters independently of social turns, emits real s
         conversation.id,
         randomUUID(),
         "Atualize o estoque",
+        "sankhya",
         () => "INTERNAL_ERROR",
       );
       expect(
@@ -466,6 +484,7 @@ it("restores validated sales filters independently of social turns, emits real s
         conversation.id,
         randomUUID(),
         "Vendas",
+        "sankhya",
         () => "AGENT_ACCESS_DENIED",
       );
       expect(
@@ -638,6 +657,8 @@ it("enforces the HTTP ownership/local boundary and redacts background failures",
       const result = await completed(repository, "local-developer", id);
       expect(result.turns[0].failureCode).toBe("INTERNAL_ERROR");
       expect(result.turns[0].reply).toBeNull();
+      // A client that sends no source keeps the earlier Sankhya-only meaning.
+      expect(result.turns[0].source).toBe("sankhya");
       expect(logs).toContain("agent_execution_failed");
       expect(logs).toContain("request_id");
       expect(logs).not.toContain("private-provider-password");
@@ -673,6 +694,17 @@ it("enforces the HTTP ownership/local boundary and redacts background failures",
         },
       });
       expect(malformed.statusCode).toBe(400);
+      const unknownSource = await app.inject({
+        method: "POST",
+        url: `/agent/conversations/${id}/turns`,
+        headers,
+        payload: {
+          message: "Hello",
+          requestId: randomUUID(),
+          source: "oracle",
+        },
+      });
+      expect(unknownSource.statusCode).toBe(400);
     } finally {
       await app.close();
       await database.$disconnect();
@@ -792,7 +824,7 @@ it("stores content traces with their turns, logs only metadata and deletes trace
           config,
           new SalesChat(
             interpreter,
-            reader,
+            { sankhya: reader },
             undefined,
             () => new Date("2026-10-05T15:00:00Z"),
           ),
@@ -917,6 +949,131 @@ it("stores content traces with their turns, logs only metadata and deletes trace
       ).toBe(0);
     } finally {
       await app.close();
+      await database.$disconnect();
+    }
+  });
+}, 120000);
+
+it("records the selected source per turn, passes it to the capability and reads version 1 replies", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const database = createDatabase(runtimeUrl);
+    const repository = new AgentRepository(database);
+    const planner: AgentPlanner = {
+      route: vi.fn<AgentPlanner["route"]>(() =>
+        Promise.resolve({ intent: "capability", capabilityId: "sales" }),
+      ),
+    };
+    const execute = vi.fn<AgentCapability["execute"]>(() =>
+      Promise.resolve({
+        reply: {
+          kind: "clarification",
+          message: "Qual período você quer consultar?",
+          capabilityId: "sales",
+          result: null,
+          suggestions: [],
+        },
+        context: null,
+      }),
+    );
+    const capability: AgentCapability = {
+      id: "sales",
+      title: "Consultas de vendas",
+      description: "Vendas",
+      examples: [],
+      permission: "sales:read",
+      execute,
+      close: async () => {},
+    };
+    const agent = new CorporateAgent(repository, planner, [capability]);
+    try {
+      const conversation = await repository.create(actor.id);
+      const requestId = randomUUID();
+      await agent.submit(
+        actor,
+        conversation.id,
+        requestId,
+        "Quanto vendi?",
+        "vrmaster",
+        () => "INTERNAL_ERROR",
+      );
+      const detail = await completed(repository, actor.id, conversation.id);
+      expect(detail.turns[0].source).toBe("vrmaster");
+      expect(execute).toHaveBeenCalledWith(
+        expect.objectContaining({ source: "vrmaster" }),
+      );
+      // Replaying the same request with the same source recovers the turn;
+      // another source is a different request.
+      const replay = await agent.submit(
+        actor,
+        conversation.id,
+        requestId,
+        "Quanto vendi?",
+        "vrmaster",
+        () => "INTERNAL_ERROR",
+      );
+      expect(replay.id).toBe(detail.turns[0].id);
+      await expect(
+        agent.submit(
+          actor,
+          conversation.id,
+          requestId,
+          "Quanto vendi?",
+          "all",
+          () => "INTERNAL_ERROR",
+        ),
+      ).rejects.toThrow("AGENT_REQUEST_CONFLICT");
+      expect(execute).toHaveBeenCalledOnce();
+      // A reply stored before the selector holds one Sankhya result.
+      const legacy = {
+        query: {
+          productSearch: null,
+          startDate: "2026-09-01",
+          endDate: "2026-09-30",
+          metric: "net_value",
+          groupBy: "total",
+          comparison: "none",
+        },
+        rows: [],
+        products: [],
+        totals: [],
+        comparison: null,
+        warnings: [],
+      };
+      await database.agentTurn.update({
+        where: { id: detail.turns[0].id },
+        data: {
+          reply: {
+            version: 1,
+            payload: {
+              kind: "answer",
+              message: "Valor líquido vendido",
+              capabilityId: "sales",
+              result: legacy,
+              suggestions: [],
+            },
+          },
+        },
+      });
+      await database.$executeRaw`UPDATE agent_turns SET source = DEFAULT WHERE id = ${detail.turns[0].id}::uuid`;
+      const upgraded = (await repository.detail(actor.id, conversation.id))
+        .turns[0];
+      expect(upgraded.source).toBe("sankhya");
+      expect(upgraded.reply?.result).toEqual({
+        selection: "sankhya",
+        sections: [
+          {
+            source: "sankhya",
+            status: "answered",
+            reason: null,
+            result: legacy,
+          },
+        ],
+      });
+      await expect(
+        database.$executeRaw`UPDATE agent_turns SET source = 'oracle' WHERE id = ${detail.turns[0].id}::uuid`,
+      ).rejects.toThrow();
+    } finally {
+      await agent.close();
       await database.$disconnect();
     }
   });

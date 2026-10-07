@@ -1,5 +1,176 @@
 [
   {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Architecture and dependency enforcement",
+    "anchor": "architecture-and-dependency-enforcement",
+    "text": "Architecture and dependency enforcement\nOrion will use **dependency-cruiser** as its initial dependency-graph and architecture-rule enforcement tool for JavaScript and TypeScript code.\nDependency rules should be encoded mechanically where dependency-cruiser or another appropriate repository mechanism can express them reliably.\nThese rules may include:\nforbidden dependency directions;\nforbidden imports between applications or packages;\nisolation of domain and application layers from infrastructure concerns;\nrestrictions on importing application internals across boundaries;\ncircular dependency detection;\nunresolved dependency detection;\npackage dependency consistency;\nrestrictions between production and development-only dependencies;\nother dependency-graph invariants defined by Orion architecture.\nArchitecture documentation remains the source of architectural intent.\nMechanical rules implement enforceable portions of that intent and must remain consistent with the authored architecture documentation.\ndependency-cruiser does not define Orion's architecture. It verifies dependency properties derived from Orion's architecture.\nIf a future architecture rule cannot be expressed appropriately by dependency-cruiser, another focused validation mechanism may be introduced rather than weakening the architectural requirement.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Validation composition",
+    "anchor": "validation-composition",
+    "text": "Validation composition\nThe initial `pnpm validate` workflow will include the checks that exist at the current repository stage.\nIts initial responsibilities are expected to include:\nformat:check\nlint\ntypecheck\narchitecture\n\nAs Orion introduces additional capabilities, the same canonical validation workflow will expand to include relevant checks such as:\nunit tests\nintegration tests\nbrowser tests where appropriate\ngenerated artifact consistency\ndatabase consistency\ndocumentation validation\nsecurity checks\nbuild validation\n\nA capability must not be represented in `pnpm validate` before the corresponding implementation actually exists.\nThe canonical command should therefore evolve with the repository while remaining a stable contributor-facing interface.\nIndividual validation responsibilities should remain independently executable where practical for development, diagnosis, and CI optimization.\nFor example:\npnpm format:check\npnpm lint\npnpm typecheck\npnpm architecture\npnpm validate\n\nThe existence of `pnpm validate` does not prevent contributors from running narrower checks during development.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Automatic fixes",
+    "anchor": "automatic-fixes",
+    "text": "Automatic fixes\nCommands that intentionally modify source files must remain separate from validation commands.\nExamples may include:\npnpm format\npnpm lint:fix\n\n`pnpm validate` must not intentionally invoke automatic fix operations.\nCaches, compiler metadata, test artifacts, temporary files, and similar execution artifacts are not considered source modification when they are explicitly managed as generated or ignored runtime artifacts.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Future task orchestration",
+    "anchor": "future-task-orchestration",
+    "text": "Future task orchestration\nADR-0002 establishes that Orion will not initially adopt a dedicated monorepo task runner.\nThe validation interface defined by this ADR must not depend on that remaining true forever.\nIf Turborepo, Nx, or another task orchestrator is adopted in the future, repository-level commands such as:\npnpm validate\n\nshould remain stable where practical while the internal execution mechanism changes.\nThis preserves a consistent interface for humans, AI agents, automation, and documentation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nOrion treats validation as part of the engineering architecture rather than as a loose collection of developer scripts.\nA single canonical entry point gives both humans and AI agents an unambiguous answer to the question:\nIs this repository change acceptable according to the checks Orion currently implements?\n\nThis reduces hidden development knowledge and prevents validation procedures from becoming dependent on individual contributors remembering a sequence of unrelated commands.\nUsing the same underlying validation responsibilities locally and in CI also reduces the risk of changes passing locally while failing because CI contains undocumented or independently implemented validation logic.\nThe canonical validation command is intentionally non-mutating.\nValidation should provide evidence about repository state rather than silently changing that state. Separating checks from fix commands improves predictability, reviewability, debugging, and AI-agent behavior.\nTypeScript's compiler remains the correct authority for static type correctness. Although ESLint and typescript-eslint can perform sophisticated type-aware analysis, lint rules solve different classes of problems and should not replace compiler validation.\nESLint and typescript-eslint are selected because Orion requires an extensible static-analysis platform rather than only stylistic linting.\nThe project is expected to contain backend, web, testing, tooling, and other TypeScript contexts over time. An extensible rule and plugin model allows static analysis to evolve with those contexts without requiring a custom validation framework.\nTyped linting is particularly relevant because some correctness rules cannot be evaluated reliably from syntax alone.\nThis additional analysis has a performance cost because type information must be available to the linting process. Orion accepts that tradeoff when the resulting rules materially improve correctness or maintainability.\nPrettier is selected separately because formatting is a distinct responsibility from semantic static analysis.\nA dedicated formatter provides consistent representation of source and documentation-oriented file types without filling ESLint configuration with formatting rules that do not contribute to code correctness.\ndependency-cruiser is selected because Orion's architecture depends heavily on explicit boundaries and stable dependency direction.\nDocumentation can describe:\ndomain must not depend on infrastructure\n\nbut a mature Orion repository should be capable of turning that statement into a validation failure when the rule is violated.\nAnalyzing the dependency graph separately from ordinary linting also creates a clearer responsibility model:\nPrettier\n    → source representation\n\nESLint + typescript-eslint\n    → source-level static analysis\n\ntsc\n    → TypeScript type correctness\n\ndependency-cruiser\n    → dependency-graph and architecture rules\n\npnpm validate\n    → repository-level validation contract\n\nThis separation makes individual failures easier to understand and allows tools to evolve independently.\nOrion intentionally does not add unused-code analysis, dedicated task orchestration, project references, or additional validation platforms merely because they may become useful later.\nSuch tools should be introduced when the repository has a demonstrated requirement that justifies their configuration, execution cost, and maintenance burden.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Biome as the Unified Formatter and Linter",
+    "anchor": "biome-as-the-unified-formatter-and-linter",
+    "text": "Biome as the Unified Formatter and Linter\nBiome provides integrated formatting and linting with strong performance characteristics and a growing set of TypeScript and JavaScript rules.\nUsing one tool for both responsibilities would reduce the number of tools in the repository and could improve validation performance.\nIt was not selected as Orion's initial primary linting platform because Orion places significant value on extensible static analysis, TypeScript type-aware linting, and compatibility with a broad ecosystem of framework- and domain-specific rules.\nESLint and typescript-eslint currently provide a stronger fit for those requirements.\nThe decision does not imply that Biome is unsuitable for Orion permanently. Formatting and linting tooling may be reevaluated if the capabilities and tradeoffs materially change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ESLint for Both Formatting and Static Analysis",
+    "anchor": "eslint-for-both-formatting-and-static-analysis",
+    "text": "ESLint for Both Formatting and Static Analysis\nESLint can enforce many formatting-related rules in addition to semantic code rules.\nThis could reduce the need for a separate formatter.\nIt was not selected because mixing formatting and semantic analysis increases configuration complexity and makes lint results less focused on correctness and maintainability.\nOrion prefers the clearer responsibility boundary of Prettier for formatting and ESLint for static analysis.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ESLint Import Restrictions as the Only Architecture Enforcement",
+    "anchor": "eslint-import-restrictions-as-the-only-architecture-enforcement",
+    "text": "ESLint Import Restrictions as the Only Architecture Enforcement\nESLint rules such as restricted imports can enforce some architectural boundaries.\nThey are useful for local import restrictions and may still be used when appropriate.\nThey were not selected as the sole architecture-enforcement mechanism because Orion needs to reason about dependency-graph properties such as cycles, package relationships, and dependency directions that are better represented by a dedicated graph-analysis tool.\ndependency-cruiser provides a more direct model for these repository-wide dependency rules.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Custom Architecture Validation Scripts",
+    "anchor": "custom-architecture-validation-scripts",
+    "text": "Custom Architecture Validation Scripts\nOrion could implement its own scripts to parse imports, inspect packages, and validate architecture rules.\nThis would provide complete control over the validation model.\nIt was not selected as the initial approach because maintaining a custom dependency analyzer would add substantial complexity while mature tools already solve the required graph-analysis problems.\nCustom validation should be introduced only when a real Orion rule cannot be represented reliably by existing focused tooling.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Dedicated Monorepo Task Runner",
+    "anchor": "dedicated-monorepo-task-runner",
+    "text": "Dedicated Monorepo Task Runner\nA tool such as Turborepo or Nx could orchestrate all repository validation tasks and provide caching, dependency-aware execution, and affected-project analysis.\nADR-0002 already defers this decision because Orion does not yet have sufficient repository scale or CI cost to justify an additional orchestration layer.\nThe validation contract established by this ADR is deliberately compatible with adopting such a tool later without changing the contributor-facing canonical command.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "TypeScript Project References from the Beginning",
+    "anchor": "typescript-project-references-from-the-beginning",
+    "text": "TypeScript Project References from the Beginning\nTypeScript project references can model package relationships and improve build and type-check performance in large TypeScript repositories.\nThey were not made mandatory because Orion does not yet have a sufficiently large TypeScript project graph to demonstrate that the added configuration and build semantics provide meaningful value.\nThey may be introduced later when repository scale or performance justifies them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nHumans and AI agents have one canonical command for complete repository validation.\nLocal development and CI can rely on the same validation capabilities.\nValidation behavior is deterministic and does not intentionally rewrite tracked source files.\nTypeScript type correctness has a clear authority in `tsc`.\nStatic analysis can use TypeScript type information where it provides meaningful value.\nESLint provides a mature and extensible foundation for future backend, web, testing, and tooling rules.\nFormatting is separated cleanly from semantic static analysis.\nArchitectural dependency rules can become machine-enforced rather than remaining prose-only expectations.\nCircular dependencies and other dependency-graph violations can be detected automatically.\nIndividual validation responsibilities remain independently executable for faster development feedback and diagnosis.\nThe validation workflow can grow as tests, generated artifacts, security checks, and build validation are introduced.\nA stable `pnpm validate` interface reduces the amount of repository-specific procedural knowledge required by AI agents.\nFuture task orchestration can be introduced without necessarily changing contributor-facing commands.\nTools have focused responsibilities and can evolve independently when their architectural role remains unchanged.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nOrion adopts multiple validation tools rather than a single integrated toolchain.\nContributors and maintainers must understand the boundaries between Prettier, ESLint, TypeScript, and dependency-cruiser.\nTyped ESLint rules can materially increase lint execution time compared with syntax-only linting.\nMaintaining architecture rules requires keeping dependency-cruiser configuration consistent with architectural documentation.\nSome architectural invariants may not be expressible purely through dependency-graph analysis and may require additional validation mechanisms later.\nPrettier and ESLint may occasionally require compatibility configuration to prevent overlapping responsibilities.\nRepository-wide validation may become increasingly expensive as the monorepo grows until task caching or affected-project execution is justified.\nMaintaining one canonical validation workflow requires discipline when new tools are introduced so that important checks do not exist only as undocumented standalone commands.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently have an established validation toolchain that must be migrated.\nRepository implementation must introduce and configure:\nTypeScript compiler\nESLint\ntypescript-eslint\nPrettier\ndependency-cruiser\n\nand expose their relevant repository-level commands through pnpm scripts.\nThe repository must establish:\npnpm validate\n\nas the canonical complete validation command.\nCI, once implemented, must execute the same validation responsibilities instead of maintaining an independent repository-validation definition.\nTool versions must be pinned through the repository dependency-management mechanism established by ADR-0002.\nRoutine upgrades to TypeScript, ESLint, typescript-eslint, Prettier, or dependency-cruiser do not require a new ADR when they preserve the responsibilities and validation architecture established here.\nAdding additional checks to `pnpm validate` as already-approved repository capabilities are implemented does not require a new ADR when the additions are consistent with this decision.\nReplacing one of the primary validation mechanisms with a materially different validation architecture may require a new ADR depending on the scope and consequences of the change.\n"
+  },
+  {
+    "id": "repository/docs/adr/0003-establish-repository-validation-and-architecture-enforcement",
+    "title": "ADR-0003: Establish Repository Validation and Architecture Enforcement",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [repository structure](../architecture/repository-structure.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [versioning and compatibility](../architecture/versioning-and-compatibility.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "anchor": "adr-0004-select-fastify-as-the-backend-http-framework",
+    "text": "ADR-0004: Select Fastify as the Backend HTTP Framework\n**Status:** accepted\n**Date:** 2026-09-13\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a backend HTTP framework before the initial API application and its transport layer can be implemented consistently.\nThe selected framework must support projects with substantially different sizes and operational requirements, ranging from small applications to large, long-lived systems with significant traffic, domain complexity, integration surfaces, and horizontal scaling requirements.\nOrion already defines its own architectural principles, application boundaries, dependency rules, validation model, and preference for explicit composition.\nThe backend framework should therefore provide strong HTTP infrastructure without becoming the architecture of the business system itself.\nIn particular, the framework should support an architecture in which:\nHTTP framework\n    ↓\ntransport adapters\n    ↓\napplication operations\n    ↓\ndomain behavior\n\nDomain and application code should remain independent from the HTTP framework wherever practical.\nThe framework should also align with Orion's broader priorities:\nstrong runtime performance;\nlow framework overhead;\npredictable production behavior;\nexplicit request lifecycle;\nruntime validation and serialization capabilities;\nstructured logging;\nTypeScript support;\nextensibility without requiring a framework-specific application model;\nmaintainability in large codebases;\nhorizontal scalability;\neffective observability integration;\ncompatibility with machine-readable API contracts;\nminimal unnecessary abstraction;\nclear execution paths for both human contributors and AI agents.\nThe selection must not assume that a large system requires microservices or a heavyweight application framework.\nOrion intends to support modular monoliths and other incrementally scalable architectures while preserving the option to extract independently deployable components when concrete requirements justify doing so.\n"
+  },
+  {
     "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
     "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
     "group": "Decisions",
@@ -817,158 +988,5 @@
     "heading": "Negative",
     "anchor": "negative",
     "text": "Negative\nOrion introduces TypeBox as another foundational dependency that contributors must learn.\nDevelopers familiar with Zod may need to adapt to a JSON Schema-oriented modeling style.\nSome JavaScript-native or transformation-oriented schema patterns are intentionally unsuitable for canonical wire contracts.\nGenerating OpenAPI and SDK artifacts adds build and validation steps.\nKeeping first-party clients behind the generated OpenAPI boundary introduces more indirection than importing TypeScript types directly.\n`openapi-typescript` and `openapi-fetch` do not provide the richer generated convenience functions or framework-specific hooks available from larger SDK generators.\nOperation metadata such as descriptions and stable `operationId` values must be maintained deliberately.\nConfiguration parsing requires explicit code in addition to schema definition because raw environment values commonly use string representations.\nRestricting environment access requires architectural enforcement to prevent convenience-driven direct `process.env` usage from spreading.\nOpenAPI cannot by itself express every runtime or business semantic that documentation may need, so authored API documentation remains necessary for intent and behavior not represented by the contract.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nOrion does not currently have an established API contract or configuration-validation implementation that must be migrated.\nThe initial API implementation will therefore adopt TypeBox contracts directly.\nRepository implementation must introduce compatible versions of:\ntypebox\n@fastify/type-provider-typebox\nOpenAPI generation tooling\nopenapi-typescript\nopenapi-fetch\n\nwhen the corresponding application and SDK content actually exists.\nThe generated OpenAPI description should initially target a supported OpenAPI 3.1.x representation.\nThe exact OpenAPI patch version and generator configuration must be pinned through repository tooling.\nAPI operations must define stable unique `operationId` values before generated SDKs or external API publication rely on them.\nA TypeScript SDK package should not be created until a real consumer requires it.\nWhen created, its generated contract types must originate from OpenAPI rather than direct imports from server implementation types.\nOther-language SDK generators should be selected only when corresponding consumers exist.\nRepository validation must eventually detect stale generated OpenAPI or SDK artifacts once those artifacts are introduced.\nBootstrap configuration must be validated before Fastify begins listening for requests or before workers begin accepting jobs.\nApplications must progressively restrict `process.env` or equivalent raw configuration access to the designated bootstrap/configuration boundary.\nSensitive configuration values must remain excluded from generated documentation, logging, telemetry, and error output according to existing Orion security policies.\nRoutine compatible upgrades of TypeBox, OpenAPI tooling, `openapi-typescript`, or `openapi-fetch` do not require a new ADR when they preserve the responsibilities and contract architecture established here.\nReplacing TypeBox as Orion's canonical contract schema system, replacing OpenAPI as the primary interoperable API description, or materially changing the API contract architecture would require a new ADR that supersedes this decision.\n"
-  },
-  {
-    "id": "repository/docs/adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy",
-    "title": "ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [principles](../api/principles.md)\nRelated policy: [error contract](../api/error-contract.md)\nRelated policy: [versioning](../api/versioning.md)\nRelated policy: [data classification](../security/data-classification.md)\nRelated policy: [secrets management](../security/secrets-management.md)\nExternal reference: TypeBox documentation.\nExternal reference: Fastify Type Providers documentation.\nExternal reference: Fastify OpenAPI ecosystem documentation.\nExternal reference: OpenAPI Specification.\nExternal reference: openapi-typescript and openapi-fetch documentation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "anchor": "adr-0008-select-react-vite-and-tanstack-for-web-applications",
-    "text": "ADR-0008: Select React, Vite, and TanStack for Web Applications\n**Status:** accepted\n**Date:** 2026-09-23\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion requires a default web application stack before the initial web application and its integration with the backend API can be implemented consistently.\nThe selected stack must support projects ranging from small applications to large, long-lived business systems with complex navigation, substantial user interfaces, large datasets, many application screens, and potentially extensive client-side state.\nPerformance is an important requirement, but Orion must optimize for production application performance rather than framework microbenchmarks alone.\nThe web stack should therefore balance:\nruntime UI performance;\nbuild and development performance;\ncode-splitting capabilities;\nbundle optimization;\nstrong TypeScript integration;\npredictable routing;\nexplicit URL state;\nefficient server-state management;\ncompatibility with generated API clients;\nmature ecosystem support;\nmaintainability in large codebases;\naccessibility tooling;\ntesting ecosystem;\nobservability integration;\neffective use by human contributors and AI agents;\nincremental scalability from small applications to large systems.\nOrion has already established Fastify as the authoritative backend HTTP boundary and OpenAPI as the interoperable API contract.\nThe web application should therefore behave primarily as an API client rather than introducing a second backend architecture by default.\nThe intended boundary is:\nweb application\n    ↓\ngenerated API client\n    ↓\nHTTP / JSON\n    ↓\nFastify API\n    ↓\napplication layer\n\nThe default web stack must not encourage business rules, database access, authentication authority, or backend application behavior to migrate into the web application merely because a full-stack framework makes those capabilities available.\nAt the same time, some future products may have legitimate requirements for server-side rendering, static generation, or other server-assisted rendering strategies.\nThose capabilities should remain available when product requirements justify them without becoming baseline complexity for all Orion applications.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nOrion will use **React 19.x as its default web UI framework**.\nOrion web applications will use **React Compiler** as the default React optimization strategy when compatible with the selected application toolchain.\nOrion will use **Vite 8.x as its initial web development and build tooling**.\nThe exact React, React Compiler, Vite, and related package versions will be pinned mechanically by repository dependency management rather than permanently fixed by this ADR.\nCompatible future upgrades do not require a new ADR when they preserve the architectural responsibilities established here.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Default web architecture",
-    "anchor": "default-web-architecture",
-    "text": "Default web architecture\nOrion web applications will use a **client-first single-page application architecture by default**.\nThe normal architecture is:\nbrowser\n    ↓\nReact application\n    ↓\ngenerated TypeScript API client\n    ↓\nHTTP / JSON\n    ↓\nFastify API\n\nThe Fastify backend remains the authoritative application and data boundary.\nWeb applications must not access PostgreSQL, Prisma, or backend persistence infrastructure directly.\nBusiness rules that must remain authoritative across clients belong behind the backend application boundary rather than exclusively in the web application.\nThe client-first default applies primarily to application-oriented web systems such as:\nERP applications;\nCRM systems;\nadministrative applications;\nauthenticated SaaS products;\noperational dashboards;\ninternal business systems;\nother interaction-heavy web applications.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Server rendering",
-    "anchor": "server-rendering",
-    "text": "Server rendering\nServer-side rendering, static-site generation, React Server Components, or other server-assisted rendering models will **not be baseline Orion requirements**.\nThey may be introduced when concrete product requirements justify them, including concerns such as:\nsearch-engine indexing;\npublic content discovery;\nfirst-content requirements;\nmarketing pages;\ncontent-heavy public websites;\ne-commerce discovery surfaces;\nother workloads that materially benefit from server rendering.\nIntroducing server rendering must not silently move authoritative backend responsibilities from the Fastify application into the web application.\nA full-stack React framework is therefore not part of Orion's default web foundation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "React Compiler",
-    "anchor": "react-compiler",
-    "text": "React Compiler\nReact Compiler will be enabled as the default React compile-time optimization mechanism where supported by the selected toolchain.\nOrion should prefer:\nclear React code\n    ↓\nReact Compiler\n    ↓\nautomatic optimization\n    ↓\nprofiling\n    ↓\nmanual optimization only when demonstrated necessary\n\nrather than routinely adding manual memoization throughout the codebase without performance evidence.\nManual techniques such as memoization remain available when profiling demonstrates a concrete benefit or when compiler behavior cannot represent a required optimization.\nPerformance-sensitive behavior should be measured rather than inferred solely from component structure.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Build and development tooling",
-    "anchor": "build-and-development-tooling",
-    "text": "Build and development tooling\nVite will provide the standard development server, frontend transformation pipeline, and production build entry point for Orion web applications.\nWeb applications should use Vite's native capabilities and ecosystem directly where sufficient rather than introducing an additional web meta-framework solely for build orchestration.\nProduction builds must support code splitting and lazy loading where these provide meaningful improvements to initial loading or application navigation.\nLarge applications should avoid requiring the browser to download code for unrelated application areas before those areas are needed.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Routing",
-    "anchor": "routing",
-    "text": "Routing\nOrion will use **TanStack Router as its default client-side router**.\nRouting should be type-safe across:\nroute paths;\npath parameters;\nsearch parameters;\nnavigation;\nroute context;\nroute-level data dependencies where applicable.\nURL state should be treated as an explicit application-state category.\nState that should survive refresh, deep linking, bookmarks, browser navigation, or sharing should normally be represented in the URL where appropriate.\nExamples include:\npagination;\nfiltering;\nsorting;\nactive views;\nselected tabs when navigation-significant;\nsearch criteria;\nother shareable navigation state.\nTanStack Router's typed search-parameter model should be preferred over repeated manual parsing of `URLSearchParams`.\nThe exact choice between file-based and code-based route organization is an implementation decision.\nOrion may establish a default repository pattern once the initial web application provides enough concrete experience to do so.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Server state",
-    "anchor": "server-state",
-    "text": "Server state\nOrion will use **TanStack Query as its default server-state management mechanism for React applications**.\nServer state includes remote state obtained through application APIs whose ownership and lifecycle remain external to the React component tree.\nExamples include:\ncustomers;\norders;\ninvoices;\ninventory;\naccount data;\nbackend search results;\npaginated API collections.\nTanStack Query will be responsible for concerns such as:\nqueries;\nmutations;\ncaching;\nsynchronization;\nrefetching;\ninvalidation;\nrequest lifecycle state;\nstale-data behavior;\nbackground data refresh where appropriate.\nTanStack Query must consume the generated API client established by ADR-0007 rather than redefining transport contracts independently.\nThe intended dependency flow is:\nReact component\n    ↓\nTanStack Query\n    ↓\ngenerated API SDK\n    ↓\nopenapi-fetch\n    ↓\nHTTP / JSON\n    ↓\nFastify\n\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "State ownership",
-    "anchor": "state-ownership",
-    "text": "State ownership\nOrion will distinguish between different categories of frontend state.\nThe default model is:\nserver state\n    → TanStack Query\n\nnavigation/shareable state\n    → TanStack Router / URL\n\nlocal interaction state\n    → React state\n\nlimited shared UI state\n    → React Context where appropriate\n\nExamples of local interaction state include:\nmodal visibility;\ntemporary selections;\nexpanded sections;\nlocal editing state;\ntransient interaction state.\nA general-purpose global state library such as Redux, Zustand, MobX, or an equivalent will **not be part of the initial Orion foundation**.\nSuch a library may be introduced when a concrete class of client state cannot be represented cleanly through React state, context, URL state, or TanStack Query.\nA global state library must solve a demonstrated state-ownership problem rather than serve as the default destination for arbitrary application data.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "API integration",
-    "anchor": "api-integration",
-    "text": "API integration\nWeb applications will consume the generated TypeScript API integration established by ADR-0007.\nThe normal flow is:\nTypeBox contracts\n    ↓\ngenerated OpenAPI\n    ↓\nopenapi-typescript\n    ↓\nopenapi-fetch\n    ↓\nTanStack Query\n    ↓\nReact UI\n\nWeb applications must not import Prisma types, Fastify transport types, database models, or other backend-internal representations.\nDirect imports of authored server contract implementations should also not replace the generated OpenAPI boundary when the purpose is to consume the HTTP API.\nThis keeps the first-party web application subject to the same externally interoperable contract as other clients.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Performance strategy",
-    "anchor": "performance-strategy",
-    "text": "Performance strategy\nOrion will treat frontend performance as a system property rather than a framework benchmark.\nPerformance work should consider, where relevant:\nJavaScript bundle size;\nroute-level code splitting;\nlazy loading;\nAPI latency;\nrequest waterfalls;\nunnecessary network requests;\nserver-state caching;\nlarge DOM trees;\nlist and table virtualization;\nexpensive rendering;\nimage and asset delivery;\nunnecessary component updates;\nclient-side computation;\nmemory usage;\nbrowser profiling results.\nPerformance optimizations that materially increase code complexity should normally be supported by profiling or other evidence.\nThe selected framework does not remove the need for performance budgets, profiling, observability, or careful UI architecture in large applications.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "UI libraries and design systems",
-    "anchor": "ui-libraries-and-design-systems",
-    "text": "UI libraries and design systems\nThis ADR does not select a component library or design system.\nUI component systems, styling approaches, accessibility primitives, charting libraries, data grids, form libraries, and similar product-facing dependencies should be selected when their concrete requirements are understood.\nShared UI code should be introduced only when it represents a genuine reusable responsibility.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nReact provides the strongest overall fit for Orion when runtime performance is considered together with ecosystem maturity, TypeScript support, tooling availability, library compatibility, organizational scalability, testing support, and long-term maintainability.\nOther UI frameworks can provide lower rendering overhead in specific benchmarks.\nOrion does not treat framework rendering benchmarks as the sole measure of application performance.\nIn large business applications, user-perceived performance is also heavily influenced by network behavior, data fetching, bundle composition, large data visualizations, DOM size, rendering architecture, server latency, and application-specific computation.\nReact provides sufficient runtime performance while offering a particularly broad ecosystem for the kinds of capabilities large Orion applications may require.\nThese may include:\ncomplex data grids;\nvirtualization;\ncharts;\nrich editors;\naccessibility libraries;\ndrag-and-drop interfaces;\nforms;\ntesting tools;\nmonitoring integrations;\ncomponent systems;\nmobile ecosystem interoperability.\nReact also has a large body of conventions, documentation, examples, and production experience.\nThis improves discoverability for both human contributors and AI agents and reduces the likelihood that Orion must build custom integrations for common application requirements.\nReact Compiler further improves the fit by providing a compile-time optimization path for components and hooks.\nThis allows Orion to begin with clear code rather than making widespread manual memoization part of its normal development style.\nVite is selected because it provides a fast and comparatively narrow development and build layer without imposing an application architecture.\nThis matches the same principle used when selecting Fastify:\nOrion\n    → owns application architecture\n\ntooling\n    → implements focused infrastructure responsibilities\n\nVite therefore provides web tooling without becoming a second full-stack architecture.\nTanStack Router is selected because Orion places strong value on TypeScript correctness and explicit state ownership.\nRouting is not merely a mapping between strings and components in large applications.\nURLs frequently encode meaningful application state such as filtering, sorting, pagination, selected views, and identifiers.\nType-safe paths, parameters, search state, and navigation reduce errors and make large route trees easier to refactor safely.\nTanStack Query is selected because server state has different ownership and lifecycle semantics from local UI state.\nRemote data must account for caching, synchronization, invalidation, mutations, stale data, asynchronous errors, and background updates.\nTreating those concerns as ordinary React component state encourages repeated application-specific implementations.\nA dedicated server-state system provides a clearer responsibility boundary.\nThe separation:\nTanStack Query\n    → server state\n\nTanStack Router\n    → URL/navigation state\n\nReact\n    → local UI state\n\nreduces the need for a universal global state container.\nThis provides a smaller initial foundation while leaving specialized client-state libraries available when a real requirement appears.\nThe client-first SPA model is selected because Orion's expected reference applications are application-oriented and already have an explicit authoritative Fastify backend.\nIntroducing a full-stack React framework by default would add another server-side execution environment and create opportunities for backend responsibilities to become duplicated across the API and web applications.\nServer rendering remains available when a product's actual delivery requirements justify the additional architecture.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
   }
 ]

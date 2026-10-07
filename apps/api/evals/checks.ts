@@ -20,6 +20,7 @@ export const failureCategories = [
   "grouping",
   "comparison",
   "context_retention",
+  "source",
   "execution_error",
 ] as const;
 export type FailureCategory = (typeof failureCategories)[number];
@@ -179,6 +180,25 @@ export function evaluateTurn(
       actual,
     });
   }
+  if (expected.sources !== undefined)
+    results.push({
+      turn,
+      check: "sources",
+      passed: same(expected.sources, observed.sources),
+      category: same(expected.sources, observed.sources) ? null : "source",
+      expected: expected.sources,
+      actual: observed.sources,
+    });
+  if (expected.sourceNotice !== undefined)
+    results.push({
+      turn,
+      check: "sourceNotice",
+      passed: expected.sourceNotice === observed.sourceNotice,
+      category:
+        expected.sourceNotice === observed.sourceNotice ? null : "source",
+      expected: expected.sourceNotice,
+      actual: observed.sourceNotice,
+    });
   const want = expected.query;
   if (want) {
     const query = observed.query;

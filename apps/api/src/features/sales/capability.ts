@@ -4,7 +4,7 @@ import type { AgentCapability } from "../agent/capabilities.js";
 import { SalesChat } from "./application.js";
 import { loadSalesState } from "./conversation-state.js";
 import { createModelInterpreter } from "./interpreter.js";
-import { createOracleReader } from "./oracle.js";
+import { createSalesReaders } from "./readers.js";
 export function createSalesCapability(
   config: ServerConfig,
   injected?: SalesChat,
@@ -13,13 +13,13 @@ export function createSalesCapability(
     injected ??
     new SalesChat(
       createModelInterpreter(createOpenAiModel(config)),
-      createOracleReader(config),
+      createSalesReaders(config),
     );
   return {
     id: "sales",
     title: "Consultas de vendas",
     description:
-      "Consulte valor líquido, quantidade e peso vendido no Sankhya, detalhe produtos e compare períodos.",
+      "Consulte as vendas da MNS (Sankhya) e do Pilar da Terra (VR Master), conforme a fonte escolhida no seletor: valor, quantidade e peso vendido (peso somente no Sankhya), detalhe produtos e compare períodos.",
     examples: [
       "Quanto vendi de maçã por mês nos últimos 3 meses?",
       "Qual foi o valor líquido vendido neste mês?",
@@ -40,6 +40,7 @@ export function createSalesCapability(
         input.signal,
         input.progress,
         input.trace,
+        { selection: input.source, report: input.report },
       );
       return {
         reply: {
@@ -47,7 +48,7 @@ export function createSalesCapability(
             turn.reply.kind === "unsupported" ? "unavailable" : turn.reply.kind,
           capabilityId: "sales",
           message: turn.reply.message,
-          result: turn.reply.result,
+          result: turn.reply.answer,
           suggestions: turn.reply.suggestions,
         },
         context: turn.state,

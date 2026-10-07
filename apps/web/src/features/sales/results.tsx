@@ -1,6 +1,7 @@
-import { useState } from "react";
-import type { SalesResult } from "./api.js";
+import { useId, useState } from "react";
+import type { SalesAnswer as SalesAnswerData, SalesResult } from "./api.js";
 import { formatSalesDecimal } from "./format.js";
+import { sourceLabels, type SalesSource } from "./sources.js";
 
 export function formatMeasure(value: string, unit: string): string {
   const formatted = formatSalesDecimal(
@@ -8,9 +9,17 @@ export function formatMeasure(value: string, unit: string): string {
     unit === "BRL" ? 2 : 9,
     unit === "BRL",
   );
-  return unit === "BRL"
-    ? `R$ ${formatted}`
-    : `${formatted} ${unit === "PESOLIQ" ? "(peso ERP)" : unit === "UNSPECIFIED" ? "(sem unidade)" : unit}`;
+  return unit === "BRL" ? `R$ ${formatted}` : `${formatted} ${unitLabel(unit)}`;
+}
+function unitLabel(unit: string): string {
+  const packaging = /^EMBALAGEM:(-?\d+)$/.exec(unit);
+  return unit === "PESOLIQ"
+    ? "(peso ERP)"
+    : unit === "UNSPECIFIED"
+      ? "(sem unidade)"
+      : packaging
+        ? `(tipo de embalagem ${packaging[1]})`
+        : unit;
 }
 function ResultsTable({
   rows,
@@ -47,7 +56,27 @@ function ResultsTable({
     </div>
   );
 }
-export function SalesResults({ result }: { result: SalesResult }) {
+const measureLabels: Readonly<
+  Record<SalesSource, Readonly<Record<SalesResult["query"]["metric"], string>>>
+> = {
+  sankhya: {
+    net_value: "Valor líquido",
+    quantity: "Quantidade",
+    weight: "Peso",
+  },
+  vrmaster: {
+    net_value: "Valor total",
+    quantity: "Quantidade",
+    weight: "Peso",
+  },
+};
+export function SalesResults({
+  result,
+  source = "sankhya",
+}: {
+  result: SalesResult;
+  source?: SalesSource;
+}) {
   const [view, setView] = useState<"table" | "chart">("table");
   const canChart =
     result.query.groupBy === "month" &&
@@ -70,13 +99,7 @@ export function SalesResults({ result }: { result: SalesResult }) {
       <div className="sales-totals">
         {result.totals.map((total) => (
           <div className="sales-total" key={total.unit}>
-            <span>
-              {result.query.metric === "net_value"
-                ? "Valor líquido"
-                : result.query.metric === "quantity"
-                  ? "Quantidade"
-                  : "Peso"}
-            </span>
+            <span>{measureLabels[source][result.query.metric]}</span>
             <strong>{formatMeasure(total.value, total.unit)}</strong>
             {total.previousValue !== null && (
               <small>
@@ -167,6 +190,51 @@ export function SalesResults({ result }: { result: SalesResult }) {
           <p key={warning}>{warning}</p>
         ))}
       </div>
+    </div>
+  );
+}
+
+const unavailable: Readonly<Record<string, string>> = {
+  provider_unavailable:
+    "Não consegui consultar esta fonte agora. Tente novamente em instantes.",
+  not_configured: "Esta fonte ainda não está configurada no IA-MNS.",
+  result_too_large:
+    "A consulta ficou muito ampla para esta fonte. Reduza o período ou especifique melhor o produto.",
+  measure: "Esta medida não está disponível nesta fonte.",
+};
+/**
+ * A sales answer with one labeled group per queried source. Each group shows
+ * its own result or why it has none; sources are never combined. Groups, not
+ * landmarks: every answer in a conversation repeats the same source names.
+ */
+export function SalesAnswer({ answer }: { answer: SalesAnswerData }) {
+  const id = useId();
+  return (
+    <div className="sales-answer">
+      {answer.sections.map((section) => (
+        <div
+          role="group"
+          className="sales-source"
+          key={section.source}
+          aria-labelledby={`${id}-${section.source}`}
+        >
+          <h2 className="sales-source-title" id={`${id}-${section.source}`}>
+            Fonte: {sourceLabels[section.source]}
+          </h2>
+          {section.result ? (
+            <SalesResults result={section.result} source={section.source} />
+          ) : (
+            <p className="sales-source-status">
+              {unavailable[section.reason ?? "provider_unavailable"]}
+            </p>
+          )}
+        </div>
+      ))}
+      {answer.sections.length > 1 && (
+        <p className="sales-source-note">
+          As fontes são apresentadas separadamente; os valores não são somados.
+        </p>
+      )}
     </div>
   );
 }

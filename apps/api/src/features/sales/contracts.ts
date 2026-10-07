@@ -69,6 +69,48 @@ export const resultSchema = Type.Object(
   },
   object,
 );
+export const sourceSchema = Type.Union([
+  Type.Literal("sankhya"),
+  Type.Literal("vrmaster"),
+]);
+/** The person's explicit source choice; "all" queries each source separately. */
+export const sourceSelectionSchema = Type.Union(
+  [Type.Literal("sankhya"), Type.Literal("vrmaster"), Type.Literal("all")],
+  {
+    description:
+      "Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it.",
+  },
+);
+const sectionSchema = Type.Object(
+  {
+    source: sourceSchema,
+    status: Type.Union([
+      Type.Literal("answered"),
+      Type.Literal("unavailable"),
+      Type.Literal("unsupported"),
+    ]),
+    reason: Type.Union([
+      Type.Literal("provider_unavailable"),
+      Type.Literal("not_configured"),
+      Type.Literal("result_too_large"),
+      Type.Literal("measure"),
+      Type.Null(),
+    ]),
+    result: Type.Union([resultSchema, Type.Null()]),
+  },
+  object,
+);
+/**
+ * One sales answer: a section per queried source with its own provenance,
+ * status and result. Sections are never summed into a combined figure.
+ */
+export const salesAnswerSchema = Type.Object(
+  {
+    selection: sourceSelectionSchema,
+    sections: Type.Array(sectionSchema, { minItems: 1, maxItems: 2 }),
+  },
+  object,
+);
 export const requestSchema = Type.Object(
   {
     message: Type.String({ minLength: 1, maxLength: 2000 }),

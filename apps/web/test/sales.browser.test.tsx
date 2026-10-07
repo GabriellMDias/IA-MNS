@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-react";
-import { SalesResults } from "../src/features/sales/results.js";
+import { SalesAnswer, SalesResults } from "../src/features/sales/results.js";
 import "../src/features/sales/sales.css";
 import type { SalesResult } from "../src/features/sales/api.js";
 
@@ -90,5 +90,93 @@ test("mixed quantity units stay separate and cannot share a chart", async () => 
     .toBeVisible();
   await expect
     .element(screen.getByRole("cell", { name: "3 CX", exact: true }))
+    .toBeVisible();
+});
+
+const total = (value: string, unit = "BRL"): SalesResult => ({
+  query: {
+    productSearch: null,
+    startDate: "2026-09-01",
+    endDate: "2026-09-30",
+    metric: unit === "BRL" ? "net_value" : "quantity",
+    groupBy: "total",
+    comparison: "none",
+  },
+  rows: [{ period: "total", product: null, unit, value }],
+  products: [],
+  comparison: null,
+  warnings: [],
+  totals: [{ unit, value, previousValue: null, changePercent: null }],
+});
+test("each source keeps its own labeled section and figures are never summed", async () => {
+  const screen = await render(
+    <SalesAnswer
+      answer={{
+        selection: "all",
+        sections: [
+          {
+            source: "sankhya",
+            status: "answered",
+            reason: null,
+            result: total("1000.10"),
+          },
+          {
+            source: "vrmaster",
+            status: "answered",
+            reason: null,
+            result: total("250.20"),
+          },
+        ],
+      }}
+    />,
+  );
+  const sankhya = screen.getByRole("group", { name: "Fonte: MNS (Sankhya)" });
+  const vrmaster = screen.getByRole("group", {
+    name: "Fonte: Pilar da Terra (VR Master)",
+  });
+  await expect
+    .element(sankhya.getByRole("cell", { name: "R$ 1.000,10" }))
+    .toBeVisible();
+  await expect.element(sankhya.getByText("Valor líquido")).toBeVisible();
+  await expect
+    .element(vrmaster.getByRole("cell", { name: "R$ 250,20" }))
+    .toBeVisible();
+  await expect.element(vrmaster.getByText("Valor total")).toBeVisible();
+  await expect
+    .element(screen.getByText("os valores não são somados", { exact: false }))
+    .toBeVisible();
+  expect(document.body.textContent).not.toContain("1.250,30");
+});
+test("an unavailable source is explained beside the other source's result", async () => {
+  const screen = await render(
+    <SalesAnswer
+      answer={{
+        selection: "all",
+        sections: [
+          {
+            source: "sankhya",
+            status: "unavailable",
+            reason: "provider_unavailable",
+            result: null,
+          },
+          {
+            source: "vrmaster",
+            status: "answered",
+            reason: null,
+            result: total("3", "EMBALAGEM:4"),
+          },
+        ],
+      }}
+    />,
+  );
+  await expect
+    .element(
+      screen
+        .getByRole("group", { name: "Fonte: MNS (Sankhya)" })
+        .getByText("Não consegui consultar esta fonte agora", { exact: false }),
+    )
+    .toBeVisible();
+  await expect
+    .element(screen.getByRole("cell", { name: "3 (tipo de embalagem 4)" }))
     .toBeVisible();
 });

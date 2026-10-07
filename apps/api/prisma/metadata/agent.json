@@ -86,7 +86,7 @@
           "classification": "CONFIDENTIAL"
         },
         "request_id": {
-          "description": "Client UUID for idempotent acceptance replay; same id with different message is a conflict.",
+          "description": "Client UUID for idempotent acceptance replay; same id with a different message or source is a conflict.",
           "classification": "CONFIDENTIAL"
         },
         "state": {
@@ -97,8 +97,12 @@
           "description": "Bounded confidential user message; never logged.",
           "classification": "CONFIDENTIAL"
         },
+        "source": {
+          "description": "Sales source selected in the interface for this turn: sankhya, vrmaster or all. The message never changes it; a replay with another source is a conflict. Turns written before the selector are sankhya, the only source then.",
+          "classification": "CONFIDENTIAL"
+        },
         "reply": {
-          "description": "Version 1 envelope containing application-authored reply and bounded result snapshot. Not current ERP truth and never sent back to OpenAI as financial data.",
+          "description": "Version 2 envelope containing the application-authored reply and a bounded result snapshot with one section per queried sales source; version 1 envelopes (one Sankhya result) are upgraded when read. Not current ERP truth and never sent back to OpenAI as financial data.",
           "classification": "CONFIDENTIAL",
           "nullMeaning": "Absent in the lifecycle states described in the field meaning."
         },
@@ -132,6 +136,7 @@
         "agent_turns_sequence_check": "Positive order.",
         "agent_turns_question_check": "Nonblank user message.",
         "agent_turns_events_check": "Progress is an array.",
+        "agent_turns_source_check": "Supported sales source selections only.",
         "agent_turns_state_check": "Explicit supported lifecycle states.",
         "agent_turns_outcome_check": "Terminal reply/failure and timestamp agree with lifecycle state.",
         "agent_turns_conversation_sequence_key": "One turn per allocated sequence.",

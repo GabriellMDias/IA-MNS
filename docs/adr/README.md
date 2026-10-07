@@ -33,3 +33,5 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)                            | Serve One Frontend to Three Surfaces with Host Identity Proofs                              |
 | [ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)                     | Interpret Analytics through Structured State and Evaluate AI Behavior                       |
 | [ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)                              | Administer the Authentication Policy within Fixed Safeguards                                |
+| [ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)                                 | Host IA-MNS in Sankhya Om through an In-Repository Add-on                                   |
+| [ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)                  | Select the Sales Source in the Interface and Read Each Source Separately                    |

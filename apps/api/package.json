@@ -8,6 +8,8 @@
     "db:generate": "prisma generate",
     "db:local": "tsx scripts/local-database.ts",
     "identity:local": "tsx scripts/local-identity.ts",
+    "sankhya:local": "tsx scripts/local-sankhya.ts",
+    "pdt:local": "tsx scripts/local-pdt.ts",
     "identity:bootstrap": "node --env-file-if-exists=../../.env.local --import tsx scripts/identity-bootstrap.ts",
     "db:migrate:deploy": "prisma migrate deploy",
     "typecheck": "tsc --noEmit -p tsconfig.json",

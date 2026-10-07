@@ -4,6 +4,11 @@ import { apiClient, unwrap } from "../../api-client.js";
 export type SalesReply =
   paths["/sales/chat"]["post"]["responses"][200]["content"]["application/json"];
 export type SalesResult = NonNullable<SalesReply["result"]>;
+type AgentTurnReply = NonNullable<
+  paths["/agent/conversations/{conversationId}"]["get"]["responses"][200]["content"]["application/json"]["turns"][number]["reply"]
+>;
+/** One section per queried source, each with its own result; never summed. */
+export type SalesAnswer = NonNullable<AgentTurnReply["result"]>;
 const codes = new Set([
   "SALES_ACCESS_DENIED",
   "SALES_NOT_CONFIGURED",

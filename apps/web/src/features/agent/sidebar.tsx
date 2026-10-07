@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ThemeMenuItem, ThemeToggle } from "../../theme.js";
+import { hostThemed, ThemeMenuItem, ThemeToggle } from "../../theme.js";
 import brandMark from "../../assets/brand-mark.svg";
 import {
   useAccountMenu,
@@ -230,7 +230,7 @@ export function ConversationSidebar(props: Props) {
         <Icon kind="docs" />
         <span className="agent-sidebar-text">Documentação</span>
       </Link>
-      <ThemeToggle />
+      {!hostThemed && <ThemeToggle />}
     </>
   );
   const content = (
@@ -373,7 +373,7 @@ export function ConversationSidebar(props: Props) {
                   <Icon kind="docs" />
                   <span>Documentação</span>
                 </button>
-                <ThemeMenuItem />
+                {!hostThemed && <ThemeMenuItem />}
               </>
             }
             fallback={shellEntries}

@@ -62,7 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Available sign-in methods and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations. */
+        /** @description Sign-in methods offered on the direct URL and embedded host origins. Public; no account data. There is no public account creation: local credentials come only from owner invitations. */
         get: operations["getIdentityStatus"];
         put?: never;
         post?: never;
@@ -873,7 +873,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Persist and accept one bounded turn. Replay the same requestId/content to recover an unknown acceptance outcome; never repeat provider execution. Poll conversation detail for actual progress and outcome. Requires the selected capability permission at execution. */
+        /** @description Persist and accept one bounded turn. source is the sales source selected in the interface (default sankhya); the message never changes it. Replay the same requestId, message and source to recover an unknown acceptance outcome; never repeat provider execution. Poll conversation detail for actual progress and outcome. Requires the selected capability permission at execution. */
         post: operations["submitAgentTurn"];
         delete?: never;
         options?: never;
@@ -9714,47 +9714,58 @@ export interface operations {
                             requestId: string;
                             sequence: number;
                             question: string;
+                            /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                            source: "sankhya" | "vrmaster" | "all";
                             state: "running" | "completed" | "failed" | "interrupted";
                             reply: {
                                 kind: "conversation" | "answer" | "clarification" | "unavailable";
                                 message: string;
                                 capabilityId: string | null;
                                 result: {
-                                    query: {
-                                        productSearch: string | null;
-                                        startDate: string;
-                                        endDate: string;
-                                        metric: "net_value" | "quantity" | "weight";
-                                        groupBy: "month" | "product" | "total";
-                                        comparison: "none" | "previous_year" | "previous_period";
-                                    };
-                                    rows: {
-                                        period: string;
-                                        product: string | null;
-                                        unit: string;
-                                        value: string;
+                                    /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                                    selection: "sankhya" | "vrmaster" | "all";
+                                    sections: {
+                                        source: "sankhya" | "vrmaster";
+                                        status: "answered" | "unavailable" | "unsupported";
+                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                        result: {
+                                            query: {
+                                                productSearch: string | null;
+                                                startDate: string;
+                                                endDate: string;
+                                                metric: "net_value" | "quantity" | "weight";
+                                                groupBy: "month" | "product" | "total";
+                                                comparison: "none" | "previous_year" | "previous_period";
+                                            };
+                                            rows: {
+                                                period: string;
+                                                product: string | null;
+                                                unit: string;
+                                                value: string;
+                                            }[];
+                                            products: {
+                                                code: string;
+                                                description: string;
+                                            }[];
+                                            totals: {
+                                                unit: string;
+                                                value: string;
+                                                previousValue: string | null;
+                                                changePercent: string | null;
+                                            }[];
+                                            comparison: {
+                                                startDate: string;
+                                                endDate: string;
+                                                rows: {
+                                                    period: string;
+                                                    product: string | null;
+                                                    unit: string;
+                                                    value: string;
+                                                }[];
+                                            } | null;
+                                            warnings: string[];
+                                        } | null;
                                     }[];
-                                    products: {
-                                        code: string;
-                                        description: string;
-                                    }[];
-                                    totals: {
-                                        unit: string;
-                                        value: string;
-                                        previousValue: string | null;
-                                        changePercent: string | null;
-                                    }[];
-                                    comparison: {
-                                        startDate: string;
-                                        endDate: string;
-                                        rows: {
-                                            period: string;
-                                            product: string | null;
-                                            unit: string;
-                                            value: string;
-                                        }[];
-                                    } | null;
-                                    warnings: string[];
                                 } | null;
                                 suggestions: string[];
                             } | null;
@@ -10443,6 +10454,8 @@ export interface operations {
                     message: string;
                     /** Format: uuid */
                     requestId: string;
+                    /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                    source?: "sankhya" | "vrmaster" | "all";
                 };
             };
         };
@@ -10460,47 +10473,58 @@ export interface operations {
                         requestId: string;
                         sequence: number;
                         question: string;
+                        /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                        source: "sankhya" | "vrmaster" | "all";
                         state: "running" | "completed" | "failed" | "interrupted";
                         reply: {
                             kind: "conversation" | "answer" | "clarification" | "unavailable";
                             message: string;
                             capabilityId: string | null;
                             result: {
-                                query: {
-                                    productSearch: string | null;
-                                    startDate: string;
-                                    endDate: string;
-                                    metric: "net_value" | "quantity" | "weight";
-                                    groupBy: "month" | "product" | "total";
-                                    comparison: "none" | "previous_year" | "previous_period";
-                                };
-                                rows: {
-                                    period: string;
-                                    product: string | null;
-                                    unit: string;
-                                    value: string;
+                                /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                                selection: "sankhya" | "vrmaster" | "all";
+                                sections: {
+                                    source: "sankhya" | "vrmaster";
+                                    status: "answered" | "unavailable" | "unsupported";
+                                    reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                    result: {
+                                        query: {
+                                            productSearch: string | null;
+                                            startDate: string;
+                                            endDate: string;
+                                            metric: "net_value" | "quantity" | "weight";
+                                            groupBy: "month" | "product" | "total";
+                                            comparison: "none" | "previous_year" | "previous_period";
+                                        };
+                                        rows: {
+                                            period: string;
+                                            product: string | null;
+                                            unit: string;
+                                            value: string;
+                                        }[];
+                                        products: {
+                                            code: string;
+                                            description: string;
+                                        }[];
+                                        totals: {
+                                            unit: string;
+                                            value: string;
+                                            previousValue: string | null;
+                                            changePercent: string | null;
+                                        }[];
+                                        comparison: {
+                                            startDate: string;
+                                            endDate: string;
+                                            rows: {
+                                                period: string;
+                                                product: string | null;
+                                                unit: string;
+                                                value: string;
+                                            }[];
+                                        } | null;
+                                        warnings: string[];
+                                    } | null;
                                 }[];
-                                products: {
-                                    code: string;
-                                    description: string;
-                                }[];
-                                totals: {
-                                    unit: string;
-                                    value: string;
-                                    previousValue: string | null;
-                                    changePercent: string | null;
-                                }[];
-                                comparison: {
-                                    startDate: string;
-                                    endDate: string;
-                                    rows: {
-                                        period: string;
-                                        product: string | null;
-                                        unit: string;
-                                        value: string;
-                                    }[];
-                                } | null;
-                                warnings: string[];
                             } | null;
                             suggestions: string[];
                         } | null;

@@ -12,6 +12,8 @@ The dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=
 
 The [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. The repository's human actions own app activation/Dashboard and effective branch-protection evidence.
 
+CI does not build `apps/sankhya-addon`: its Gradle build needs Sankhya's partner artifacts and Java 8 ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)). Renovate's recommended preset also detects Gradle and Gradle wrapper files once they reach `main`; check such updates against the Om runtime and the Sankhya plugin before merging.
+
 Committed workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Effective settings belong to each repository: a project derived from Orion inherits this configuration but none of Orion's activation evidence, and tracks its own settings in its [project human actions](../project-derivation.md#content-ownership). Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.
 
 ## Read for this change

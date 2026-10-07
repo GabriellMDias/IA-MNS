@@ -396,15 +396,26 @@ describe("saved context", () => {
       reply: {
         kind: "answer",
         message: "Valor líquido vendido: R$ 10,00",
+        // History arrives as stored replies: one section per source.
         result: {
-          query: {
-            productSearch: "maçã",
-            startDate: "2026-07-01",
-            endDate: "2026-07-31",
-            metric: "net_value",
-            groupBy: "total",
-            comparison: "none",
-          },
+          selection: "sankhya",
+          sections: [
+            {
+              source: "sankhya",
+              status: "answered",
+              reason: null,
+              result: {
+                query: {
+                  productSearch: "maçã",
+                  startDate: "2026-07-01",
+                  endDate: "2026-07-31",
+                  metric: "net_value",
+                  groupBy: "total",
+                  comparison: "none",
+                },
+              },
+            },
+          ],
         },
       },
     },
@@ -413,13 +424,15 @@ describe("saved context", () => {
     const state = loadSalesState(
       {
         version: 1,
-        lastQuery: history[0].reply.result.query,
+        lastQuery: history[0].reply.result.sections[0].result.query,
         questions: ["Vendas de maçã em julho", "E por mês?"],
         clarifications: ["", "Qual período você quer consultar?"],
       },
       [],
     );
-    expect(state.active?.query).toEqual(history[0].reply.result.query);
+    expect(state.active?.query).toEqual(
+      history[0].reply.result.sections[0].result.query,
+    );
     expect(state.active?.spec.period).toMatchObject({
       kind: "range",
       startDate: "2026-07-01",

@@ -140,6 +140,8 @@ export function identityServiceFor(
         options.fetcher,
       ),
       embedOrigin: config.pdtEmbedOrigin ?? null,
+      directCallback:
+        new URL(config.pdtRedirectUri).origin === config.publicOrigin,
     };
   if (config.sankhyaIdentityIssuer)
     configured.sankhya = {
@@ -408,8 +410,8 @@ export function createIdentityModule(
                 configured: Boolean(service),
                 methods: {
                   local: Boolean(service),
-                  pdt: Boolean(service?.signInAvailable("pdt")),
-                  sankhya: Boolean(service?.signInAvailable("sankhya")),
+                  pdt: Boolean(service?.directSignInAvailable("pdt")),
+                  sankhya: Boolean(service?.directSignInAvailable("sankhya")),
                 },
                 sankhyaSessionTrust: config.sankhyaSessionTrust,
                 embedHosts: {
@@ -907,7 +909,7 @@ export function createIdentityModule(
                   rememberedDevices: detail.rememberedDevices,
                   linkableProviders: providers.filter(
                     (item) =>
-                      svc.signInAvailable(item) &&
+                      svc.directSignInAvailable(item) &&
                       !detail.snapshot.links.some(
                         (link) => link.provider === item,
                       ),

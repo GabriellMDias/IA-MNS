@@ -19,7 +19,8 @@ import {
 } from "../src/features/sales/domain.js";
 import { SalesFailure } from "../src/features/sales/errors.js";
 import type { SalesInterpreter } from "../src/features/sales/interpreter.js";
-import type { SalesReader } from "../src/features/sales/oracle.js";
+import type { SalesReader } from "../src/features/sales/reader.js";
+import type { SalesSource } from "../src/features/sales/sources.js";
 import { ModelFailure } from "../src/ai/model.js";
 import type { EvalCase, EvalTurn } from "./dataset.js";
 
@@ -49,6 +50,9 @@ export type TurnObservation = {
   route: string | null;
   reply: Pick<AgentReply, "kind" | "message"> | null;
   query: SalesQuery | null;
+  /** Sources the turn queried, in order. */
+  sources: SalesSource[];
+  sourceNotice: boolean;
   salesState: SalesConversationState | null;
   notes: Record<string, Record<string, TraceValue>>;
   invocations: (ModelInvocation & { stage: string })[];
@@ -149,9 +153,11 @@ export function openSession(
     },
   };
   const executed: SalesQuery[] = [];
-  const reader: SalesReader = {
+  const queried: SalesSource[] = [];
+  const reader = (source: SalesSource): SalesReader => ({
     read: (query) => {
       executed.push(query);
+      queried.push(source);
       const comparison = comparisonQuery(query);
       return Promise.resolve({
         current: syntheticData(query),
@@ -159,12 +165,12 @@ export function openSession(
       });
     },
     close: () => Promise.resolve(),
-  };
+  });
   const sales = createSalesCapability(
     config,
     new SalesChat(
       subject.interpreter(script),
-      reader,
+      { sankhya: reader("sankhya"), vrmaster: reader("vrmaster") },
       undefined,
       // Noon in Sao Paulo on the business date.
       () => new Date(`${setting.today}T15:00:00Z`),
@@ -180,10 +186,11 @@ export function openSession(
       current = turn;
       const trace = new TurnTrace("content");
       const before = executed.length;
+      const sourcesBefore = queried.length;
       const started = performance.now();
       let observation: Omit<
         TurnObservation,
-        "route" | "notes" | "invocations" | "latencyMs"
+        "route" | "notes" | "invocations" | "latencyMs" | "sourceNotice"
       >;
       try {
         const result = await runAgentTurn(router, [sales], {
@@ -194,6 +201,7 @@ export function openSession(
           signal: AbortSignal.timeout(90000),
           progress: () => Promise.resolve(),
           trace,
+          source: turn.source ?? "sankhya",
         });
         contexts = result.contexts;
         history.push({ question: turn.user, reply: result.reply });
@@ -201,6 +209,7 @@ export function openSession(
           user: turn.user,
           reply: { kind: result.reply.kind, message: result.reply.message },
           query: executed[before] ?? null,
+          sources: queried.slice(sourcesBefore),
           salesState: (contexts.sales as SalesConversationState) ?? null,
           error: null,
         };
@@ -209,6 +218,7 @@ export function openSession(
           user: turn.user,
           reply: null,
           query: null,
+          sources: queried.slice(sourcesBefore),
           salesState: (contexts.sales as SalesConversationState) ?? null,
           error: failure(error),
         };
@@ -223,6 +233,7 @@ export function openSession(
       const agent = metadata.notes.agent;
       return {
         ...observation,
+        sourceNotice: metadata.notes.sales?.sourceNotice === true,
         route:
           typeof agent?.capabilityId === "string"
             ? agent.capabilityId

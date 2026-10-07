@@ -1,26 +1,56 @@
 import { Type, type Static } from "typebox";
 import type { ApiOperation } from "../../module.js";
 import { errorEnvelopeSchema } from "../../errors.js";
-import { resultSchema } from "../sales/contracts.js";
+import {
+  resultSchema,
+  salesAnswerSchema,
+  sourceSelectionSchema,
+} from "../sales/contracts.js";
 const object = { additionalProperties: false };
 const textOrNull = Type.Union([Type.String(), Type.Null()]);
+const replyKindSchema = Type.Union([
+  Type.Literal("conversation"),
+  Type.Literal("answer"),
+  Type.Literal("clarification"),
+  Type.Literal("unavailable"),
+]);
+const replyMessageSchema = Type.String({ maxLength: 10000 });
+const suggestionsSchema = Type.Array(Type.String({ maxLength: 2000 }), {
+  maxItems: 3,
+});
 export const agentReplySchema = Type.Object(
   {
-    kind: Type.Union([
-      Type.Literal("conversation"),
-      Type.Literal("answer"),
-      Type.Literal("clarification"),
-      Type.Literal("unavailable"),
-    ]),
-    message: Type.String({ maxLength: 10000 }),
+    kind: replyKindSchema,
+    message: replyMessageSchema,
     capabilityId: textOrNull,
-    result: Type.Union([resultSchema, Type.Null()]),
-    suggestions: Type.Array(Type.String({ maxLength: 2000 }), { maxItems: 3 }),
+    result: Type.Union([salesAnswerSchema, Type.Null()]),
+    suggestions: suggestionsSchema,
   },
   object,
 );
+/** Version 2: sales results are per-source answers. */
 export const storedReplySchema = Type.Object(
-  { version: Type.Literal(1), payload: agentReplySchema },
+  { version: Type.Literal(2), payload: agentReplySchema },
+  object,
+);
+/**
+ * Version 1 replies held one Sankhya result and were written before the
+ * source selector existed. They are read and upgraded, never written.
+ */
+export const storedReplyV1Schema = Type.Object(
+  {
+    version: Type.Literal(1),
+    payload: Type.Object(
+      {
+        kind: replyKindSchema,
+        message: replyMessageSchema,
+        capabilityId: textOrNull,
+        result: Type.Union([resultSchema, Type.Null()]),
+        suggestions: suggestionsSchema,
+      },
+      object,
+    ),
+  },
   object,
 );
 export const eventSchema = Type.Object(
@@ -42,6 +72,7 @@ export const turnSchema = Type.Object(
     requestId: Type.String({ format: "uuid" }),
     sequence: Type.Integer({ minimum: 1 }),
     question: Type.String(),
+    source: sourceSelectionSchema,
     state: Type.Union([
       Type.Literal("running"),
       Type.Literal("completed"),
@@ -259,13 +290,14 @@ export const submitTurnOperation = operation(
   "POST",
   "/agent/conversations/:conversationId/turns",
   "submitAgentTurn",
-  "Persist and accept one bounded turn. Replay the same requestId/content to recover an unknown acceptance outcome; never repeat provider execution. Poll conversation detail for actual progress and outcome. Requires the selected capability permission at execution.",
+  "Persist and accept one bounded turn. source is the sales source selected in the interface (default sankhya); the message never changes it. Replay the same requestId, message and source to recover an unknown acceptance outcome; never repeat provider execution. Poll conversation detail for actual progress and outcome. Requires the selected capability permission at execution.",
   {
     params,
     body: Type.Object(
       {
         message: Type.String({ minLength: 1, maxLength: 2000, pattern: "\\S" }),
         requestId: Type.String({ format: "uuid" }),
+        source: Type.Optional(sourceSelectionSchema),
       },
       object,
     ),

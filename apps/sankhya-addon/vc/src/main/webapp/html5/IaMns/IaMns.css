@@ -1,0 +1,22 @@
+.ia-mns-host {
+    display: block;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.ia-mns-frame {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.ia-mns-status {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    font-family: sans-serif;
+    font-size: 14px;
+}

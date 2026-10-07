@@ -18,6 +18,10 @@ const ignoredDirectories = new Set([
   "test-results",
 ]);
 const adrName = /^(\d{4})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
+// The Sankhya add-on is a Gradle project with Sankhya-supplied template text
+// (ADR-0026); only its IA-MNS guide and instructions are repository documents.
+const sankhyaAddon = "apps/sankhya-addon/";
+const sankhyaAddonDocuments = new Set(["README.md", "AGENTS.md"]);
 const errors: string[] = [];
 
 async function markdownFiles(directory: string): Promise<string[]> {
@@ -70,6 +74,11 @@ const documents = new Map<string, Document>();
 
 for (const file of (await markdownFiles(root)).sort()) {
   const name = repositoryPath(file);
+  if (
+    name.startsWith(sankhyaAddon) &&
+    !sankhyaAddonDocuments.has(name.slice(sankhyaAddon.length))
+  )
+    continue;
   const source = await readFile(file, "utf8");
   const tokens = markdown.parse(source, {});
   const slugger = new GithubSlugger();

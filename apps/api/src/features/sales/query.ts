@@ -1,4 +1,5 @@
 import type { SalesQuery } from "./domain.js";
+import { productPhrase, productPhrasePattern } from "./product-match.js";
 
 // Bound literal phrases prevent a named product from matching another word's
 // prefix. Both eligible controls and sales use this exact predicate.
@@ -187,21 +188,12 @@ WITH ELIGIBLE_CONTROLS AS (
 
 export function queryBindings(query: SalesQuery) {
   const search =
-    query.productSearch === null
-      ? null
-      : query.productSearch
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .toUpperCase()
-          .replace(/\s+/g, " ");
+    query.productSearch === null ? null : productPhrase(query.productSearch);
   return {
     startDate: query.startDate,
     endDate: query.endDate,
     productSearch: search,
-    productPattern:
-      search === null
-        ? null
-        : `(^|[^[:alnum:]])${search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^[:alnum:]]|$)`,
+    productPattern: search === null ? null : productPhrasePattern(search),
   };
 }
 

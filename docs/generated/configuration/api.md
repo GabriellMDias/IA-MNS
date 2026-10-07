@@ -27,6 +27,12 @@ No values are eligible for client exposure. `ORION_ENV` is always required. The 
 | `SANKHYA_DB_PASSWORD` | nonempty string | no | — | server | RESTRICTED | yes | Restricted Oracle account password; configure with user and connect string. |
 | `SANKHYA_DB_CONNECT_STRING` | Oracle connect descriptor | no | — | server | RESTRICTED | yes | Oracle Easy Connect or full descriptor, without embedded credentials. |
 | `SANKHYA_ORACLE_CLIENT_LIB_DIR` | local directory | no | — | server | INTERNAL | no | Optional Oracle Client 19+ library directory; enables Thick mode when needed. |
+| `VRMASTER_DB_HOST` | host name or IP address | no | — | server | RESTRICTED | no | VRMaster PostgreSQL server of the Pilar da Terra sales source; configure with name, user and password. |
+| `VRMASTER_DB_PORT` | integer 1..65535 | no | `5432` | server | INTERNAL | no | VRMaster PostgreSQL port. |
+| `VRMASTER_DB_NAME` | PostgreSQL database name | no | — | server | INTERNAL | no | VRMaster database that holds the sales reference tables. |
+| `VRMASTER_DB_USER` | PostgreSQL role name | no | — | server | RESTRICTED | yes | Dedicated read-only VRMaster role (PH-19) with SELECT only on the sales reference tables; never the PDT Connect account. |
+| `VRMASTER_DB_PASSWORD` | nonempty string | no | — | server | RESTRICTED | yes | Password of the dedicated read-only VRMaster role. |
+| `VRMASTER_DB_SSL_MODE` | verify-full \| disable | no | `verify-full` | server | INTERNAL | no | TLS with certificate and host verification, or explicitly disabled for a server without TLS, which sends the credentials and sales data unencrypted on that network. |
 | `IA_MNS_LOCAL_ACCESS` | true \| false | no | `false` | server | INTERNAL | no | Explicit local development access; forbidden in production or on a non-loopback listener. |
 | `IA_MNS_DEV_ACCESS_TOKEN` | 64 lowercase hexadecimal characters | no | — | server | RESTRICTED | yes | Temporary bearer for an owner-controlled LAN test; non-production loopback API only, paired with origin and expiration. Never browser configuration. |
 | `IA_MNS_DEV_ACCESS_ORIGIN` | private IPv4 HTTP origin | no | — | server | INTERNAL | no | Exact browser origin for the temporary LAN test; no credentials, path or wildcard. |

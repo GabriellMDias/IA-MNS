@@ -7,7 +7,7 @@ import { TurnTrace } from "../src/features/agent/trace.js";
 import { SalesChat } from "../src/features/sales/application.js";
 import { createSalesCapability } from "../src/features/sales/capability.js";
 import type { SalesInterpreter } from "../src/features/sales/interpreter.js";
-import type { SalesReader } from "../src/features/sales/oracle.js";
+import type { SalesReader } from "../src/features/sales/reader.js";
 import { interpretation } from "../evals/fixtures.js";
 
 function harness() {
@@ -38,7 +38,7 @@ function harness() {
     parseServerConfig({ ORION_ENV: "test" }),
     new SalesChat(
       interpreter,
-      reader,
+      { sankhya: reader },
       undefined,
       () => new Date("2026-10-05T15:00:00Z"),
     ),
@@ -54,6 +54,7 @@ function harness() {
       signal: new AbortController().signal,
       progress: () => Promise.resolve(),
       trace,
+      source: "sankhya",
     });
     contexts = result.contexts;
     history.push({ question: message, reply: result.reply });

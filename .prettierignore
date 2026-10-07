@@ -1,2 +1,3 @@
 pnpm-lock.yaml
 packages/sdk/src/generated/
+apps/sankhya-addon/

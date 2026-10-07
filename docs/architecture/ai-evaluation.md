@@ -50,6 +50,9 @@ Expectations are optional per turn and per field:
 - `kind`: `answer`, `clarification`, `unavailable` or `conversation`; `clarification` names the expected category.
 - `query`: executed query fields. The product filter is always checked: an omitted `productSearch` means no product filter is allowed, unless `allowExtraFilters` is set. Products compare accent- and case-insensitively, exactly as Oracle matches; plural versus singular differs.
 - `state`: retained context after the turn, such as `pending.awaiting`, pending or active product, measure, grouping or comparison.
+- `sources`: the sales sources the turn queried, in order (`[]` when none ran); `sourceNotice`: whether the reply says the message names another source.
+
+A turn may set `source` (`sankhya`, `vrmaster` or `all`) to the interface selection it is sent with; it defaults to `sankhya`.
 
 A `fixture` is the reference model reading for that turn: usually a correct one, or a recorded faulty one the system must withstand (the `known-bug/*` cases replay the readings behind the reported clarification failure). Fixtures let the scripted subject replay the case deterministically; the model subject ignores them.
 
@@ -64,6 +67,7 @@ A `fixture` is the reference model reading for that turn: usually a correct one,
 | `filter_missing` / `filter_unexpected` / `filter_value` | A required constraint was lost, an unintended constraint was added, or the value differs. |
 | `measure`, `grouping`, `comparison` | Plan field differs. |
 | `context_retention` | Retained state differs from the expectation. |
+| `source`                                                                    | The queried sources or the source notice differ from the selection's expectation.         |
 | `execution_error` | The turn failed; provider outages carry a `provider: <status>` detail. |
 
 Reports aggregate active (gating) cases separately from candidates and quarantined cases: case and turn pass rates, accuracy per check, failures by category, clarification precision and recall, the unintended-constraint rate (executed queries with a filter the expectation did not allow), execution errors, retried cases, turn latency percentiles and token counts. `compare` lists fixed, regressed and still-failing case ids and metric deltas between two reports.
@@ -87,7 +91,7 @@ Model-backed commands send only synthetic dataset text to the provider, consume 
 
 ## Regression datasets
 
-Committed datasets live in [`apps/api/evals/datasets/curated/`](../../apps/api/evals/datasets/curated/periods.json): clarification and retained context, periods, follow-ups, and scope and routing. They are synthetic Portuguese conversations with invented generic products; the repository is public, so they never contain real conversations, customers, figures or hosts. Rules:
+Committed datasets live in [`apps/api/evals/datasets/curated/`](../../apps/api/evals/datasets/curated/periods.json): clarification and retained context, periods, follow-ups, scope and routing, and sources. They are synthetic Portuguese conversations with invented generic products; the repository is public, so they never contain real conversations, customers, figures or hosts. Rules:
 
 - Active curated cases are human-reviewed and gate `pnpm test`. A curated case that cannot pass deterministically is a defect in the code or the expectation, not a reason to weaken checks.
 - Expect only what the behavior requires. If either the router or the sales boundary may correctly reject a request, expect the `unavailable` reply, not a route.
@@ -132,7 +136,7 @@ A subject is any router and interpreter pair. `--model` selects another model of
 
 ## Current results
 
-On 2026-10-05 the scripted replay passed all 39 curated cases. Live runs with `gpt-6.1-sol` moved from 35/38 to 39/39 cases (60/60 turns, clarification precision and recall 100%, no unintended constraints) after one interpreter rule was restored and one wrong expectation was corrected; goal simulation reached all conclusive goals. The [implementation plan](../project/implementation-plan.md#current-work) (PJ-20) records the details. Results are a dated snapshot, not a guarantee: rerun and compare before relying on them.
+On 2026-10-05 the scripted replay passed all 39 curated cases. Live runs with `gpt-6.1-sol` moved from 35/38 to 39/39 cases (60/60 turns, clarification precision and recall 100%, no unintended constraints) after one interpreter rule was restored and one wrong expectation was corrected; goal simulation reached all conclusive goals. The [implementation plan](../project/implementation-plan.md#current-work) (PJ-20) records the details. On 2026-10-07, with interpreter `sales-interpreter/2026-10-07.1` (source names are no longer filters or unsupported), the scripted replay and a live `gpt-6.1-sol` run both passed all 45 curated cases (67/67 live turns, clarification precision and recall 100%, no unintended constraints, every source check correct; one case was retried after a transient provider error). Results are a dated snapshot, not a guarantee: rerun and compare before relying on them.
 
 ## Limitations
 

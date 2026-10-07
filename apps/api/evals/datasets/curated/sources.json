@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "description": "The interface source selector decides which sales sources run; source names in the message never select, add or filter a source.",
+  "cases": [
+    {
+      "id": "source/selector-vrmaster",
+      "title": "Pilar da Terra (VR Master) selected queries only VRMaster",
+      "status": "active",
+      "source": "curated",
+      "tags": ["source", "routing"],
+      "today": "2026-10-07",
+      "turns": [
+        {
+          "user": "Quanto vendi em setembro?",
+          "source": "vrmaster",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "period": { "kind": "month", "month": 9, "year": 2026 }
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "answer",
+            "sources": ["vrmaster"],
+            "sourceNotice": false,
+            "query": {
+              "productSearch": null,
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30",
+              "metric": "net_value"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "source/all-queries-both",
+      "title": "Tudo queries both sources with the same plan",
+      "status": "active",
+      "source": "curated",
+      "tags": ["source", "routing", "product"],
+      "today": "2026-10-07",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã em setembro?",
+          "source": "all",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" },
+              "period": { "kind": "month", "month": 9, "year": 2026 }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "sources": ["sankhya", "vrmaster"],
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "source/text-does-not-override-selector",
+      "title": "A message naming VR Master still queries the selected Sankhya, with a notice",
+      "status": "active",
+      "source": "curated",
+      "tags": ["source", "constraints"],
+      "today": "2026-10-07",
+      "notes": "The selector is the authority. The interpreter must ignore the source name: no filter and no unsupported decision.",
+      "turns": [
+        {
+          "user": "Quanto vendi no VR Master em setembro?",
+          "source": "sankhya",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "period": { "kind": "month", "month": 9, "year": 2026 }
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "answer",
+            "sources": ["sankhya"],
+            "sourceNotice": true,
+            "query": {
+              "productSearch": null,
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "source/company-name-is-not-a-product",
+      "title": "A source name placed in the product filter is dropped",
+      "status": "active",
+      "source": "curated",
+      "tags": ["source", "constraints", "product"],
+      "today": "2026-10-07",
+      "notes": "The fixture records a faulty reading that treats the company as a product; the application must withstand it.",
+      "turns": [
+        {
+          "user": "Quanto a Pilar da Terra vendeu em setembro?",
+          "source": "vrmaster",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "Pilar da Terra" },
+              "period": { "kind": "month", "month": 9, "year": 2026 }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "sources": ["vrmaster"],
+            "query": { "productSearch": null }
+          }
+        }
+      ]
+    },
+    {
+      "id": "source/selection-change-keeps-analysis",
+      "title": "Changing the selector routes the follow-up to the new source with the same analysis",
+      "status": "active",
+      "source": "curated",
+      "tags": ["source", "follow-up", "multi-turn"],
+      "today": "2026-10-07",
+      "turns": [
+        {
+          "user": "Vendas de maçã em setembro",
+          "source": "sankhya",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" },
+              "period": { "kind": "month", "month": 9, "year": 2026 }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "sources": ["sankhya"],
+            "query": { "productSearch": "maçã" }
+          }
+        },
+        {
+          "user": "E em agosto?",
+          "source": "vrmaster",
+          "fixture": {
+            "interpretation": {
+              "relation": "refine",
+              "period": { "kind": "month", "month": 8, "year": null }
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "sources": ["vrmaster"],
+            "query": {
+              "productSearch": "maçã",
+              "startDate": "2026-08-01",
+              "endDate": "2026-08-31",
+              "metric": "net_value"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "source/weight-unavailable-in-vrmaster",
+      "title": "Weight is not available for VR Master and nothing is queried",
+      "status": "active",
+      "source": "curated",
+      "tags": ["source", "unsupported"],
+      "today": "2026-10-07",
+      "turns": [
+        {
+          "user": "Qual o peso vendido em setembro?",
+          "source": "vrmaster",
+          "fixture": {
+            "interpretation": {
+              "measure": "weight",
+              "period": { "kind": "month", "month": 9, "year": 2026 }
+            }
+          },
+          "expect": {
+            "kind": "unavailable",
+            "sources": []
+          }
+        }
+      ]
+    }
+  ]
+}

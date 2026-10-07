@@ -52,15 +52,16 @@ Lifecycle: Local history persists until the owner explicitly deletes the convers
 | `id` | `uuid` | no | — | CONFIDENTIAL | Immutable turn UUID. | — | — |
 | `conversation_id` | `uuid` | no | — | CONFIDENTIAL | Owning conversation; hard deletion cascades to all turns. | — | — |
 | `sequence` | `integer` | no | — | CONFIDENTIAL | Positive conversation-local ordering allocated transactionally. | — | — |
-| `request_id` | `uuid` | no | — | CONFIDENTIAL | Client UUID for idempotent acceptance replay; same id with different message is a conflict. | — | — |
+| `request_id` | `uuid` | no | — | CONFIDENTIAL | Client UUID for idempotent acceptance replay; same id with a different message or source is a conflict. | — | — |
 | `state` | `character varying(20)` | no | — | CONFIDENTIAL | running, completed, failed or interrupted. Interrupted work is not automatically retried. | — | — |
 | `question` | `character varying(2000)` | no | — | CONFIDENTIAL | Bounded confidential user message; never logged. | — | — |
-| `reply` | `jsonb` | yes | — | CONFIDENTIAL | Version 1 envelope containing application-authored reply and bounded result snapshot. Not current ERP truth and never sent back to OpenAI as financial data. | Absent in the lifecycle states described in the field meaning. | — |
+| `reply` | `jsonb` | yes | — | CONFIDENTIAL | Version 2 envelope containing the application-authored reply and a bounded result snapshot with one section per queried sales source; version 1 envelopes (one Sankhya result) are upgraded when read. Not current ERP truth and never sent back to OpenAI as financial data. | Absent in the lifecycle states described in the field meaning. | — |
 | `events` | `jsonb` | no | `'[]'::jsonb` | CONFIDENTIAL | Bounded ordered real progress events with stage, localized display message and instant; not durable workflow/audit infrastructure. | — | — |
 | `capability_id` | `character varying(80)` | yes | — | CONFIDENTIAL | Executed capability for a completed business reply; absent for social/failure turns. | Absent in the lifecycle states described in the field meaning. | — |
 | `failure_code` | `character varying(80)` | yes | — | CONFIDENTIAL | Allowlisted public failure code; absent unless failed/interrupted. No exception text. | Absent in the lifecycle states described in the field meaning. | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock acceptance instant. | — | — |
 | `finished_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | Database-clock terminal outcome instant; absent while running. | Absent in the lifecycle states described in the field meaning. | — |
+| `source` | `character varying(20)` | no | `'sankhya'::character varying` | CONFIDENTIAL | Sales source selected in the interface for this turn: sankhya, vrmaster or all. The message never changes it; a replay with another source is a conflict. Turns written before the selector are sankhya, the only source then. | — | — |
 
 ### Constraints and indexes
 
@@ -72,6 +73,7 @@ Lifecycle: Local history persists until the owner explicitly deletes the convers
 | `agent_turns_pkey` | `PRIMARY KEY (id)` | Immutable turn identity. |
 | `agent_turns_question_check` | `CHECK ((length(btrim((question)::text)) > 0))` | Nonblank user message. |
 | `agent_turns_sequence_check` | `CHECK ((sequence > 0))` | Positive order. |
+| `agent_turns_source_check` | `CHECK (((source)::text = ANY ((ARRAY['sankhya'::character varying, 'vrmaster'::character varying, 'all'::character varying])::text[])))` | Supported sales source selections only. |
 | `agent_turns_state_check` | `CHECK (((state)::text = ANY ((ARRAY['running'::character varying, 'completed'::character varying, 'failed'::character varying, 'interrupted'::character varying])::text[])))` | Explicit supported lifecycle states. |
 | `agent_turns_conversation_request_key` | `CREATE UNIQUE INDEX agent_turns_conversation_request_key ON public.agent_turns USING btree (conversation_id, request_id)` | One acceptance per client request id in a conversation. |
 | `agent_turns_conversation_sequence_key` | `CREATE UNIQUE INDEX agent_turns_conversation_sequence_key ON public.agent_turns USING btree (conversation_id, sequence)` | One turn per allocated sequence. |

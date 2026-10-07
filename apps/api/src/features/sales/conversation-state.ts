@@ -21,6 +21,7 @@ import {
 } from "./analysis.js";
 import { changeOf, type Interpretation } from "./interpretation.js";
 import { periodKind } from "./period.js";
+import { isSourceName } from "./sources.js";
 
 const object = { additionalProperties: false };
 
@@ -94,8 +95,13 @@ type HistoryTurn = {
   reply: { kind: string; message: string; result: unknown };
 };
 const answered = "Análise respondida.";
+// Answers hold one section per source; any answered section carries the plan.
 function exchangeFromHistory(turn: HistoryTurn): Exchange {
-  const query = (turn.reply.result as { query?: unknown } | null)?.query;
+  const answer = turn.reply.result as {
+    sections?: { result?: { query?: unknown } | null }[];
+  } | null;
+  const query = answer?.sections?.find((section) => section.result)?.result
+    ?.query;
   return {
     user: turn.question.slice(0, 2000),
     ...(turn.reply.kind === "answer"
@@ -295,12 +301,25 @@ export function advance(
         ? active!.spec
         : emptyDraft;
 
+  // The source comes from the interface selector; a source name is never a
+  // product or other filter.
+  const sourceNamed = change.filters
+    .filter(
+      (filter) =>
+        filter.action === "set" &&
+        filter.text !== null &&
+        isSourceName(filter.text),
+    )
+    .map((filter) => filter.dimension);
+  for (const dimension of sourceNamed)
+    issues.push(`source_named_as_${dimension}`);
   // A filter value must be written by the user; retained values were
   // grounded when they entered the state.
   const evidence = [message, ...state.transcript.map((item) => item.user)];
   const ungrounded = change.filters
     .filter(
       (filter) =>
+        !sourceNamed.includes(filter.dimension) &&
         filter.action === "set" &&
         filter.text !== null &&
         !groundedIn(filter.text, evidence),
@@ -310,7 +329,9 @@ export function advance(
   const draft = applyChange(base, {
     ...change,
     filters: change.filters.filter(
-      (filter) => !ungrounded.includes(filter.dimension),
+      (filter) =>
+        !ungrounded.includes(filter.dimension) &&
+        !sourceNamed.includes(filter.dimension),
     ),
   });
   const missing = missingSlots(draft);

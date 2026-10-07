@@ -9,7 +9,7 @@ import { emptySalesState } from "../src/features/sales/conversation-state.js";
 import { createSalesModule } from "../src/features/sales/module.js";
 import { SalesFailure } from "../src/features/sales/errors.js";
 import type { SalesInterpreter } from "../src/features/sales/interpreter.js";
-import type { SalesReader } from "../src/features/sales/oracle.js";
+import type { SalesReader } from "../src/features/sales/reader.js";
 import type { AccessTokenVerifier } from "../src/authentication.js";
 import { interpretation } from "../evals/fixtures.js";
 
@@ -41,7 +41,7 @@ function fixture() {
   };
   const chat = new SalesChat(
     interpreter,
-    reader,
+    { sankhya: reader },
     new Conversations(),
     () => new Date("2026-10-01T15:00:00Z"),
   );

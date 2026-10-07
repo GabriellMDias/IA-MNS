@@ -26,6 +26,7 @@ model AgentTurn {
   requestId      String @map("request_id") @db.Uuid
   state          String @db.VarChar(20)
   question       String @db.VarChar(2000)
+  source         String @default("sankhya") @db.VarChar(20)
   reply          Json?
   events         Json @default("[]")
   capabilityId   String? @map("capability_id") @db.VarChar(80)

@@ -22,7 +22,12 @@ import { ConversationSidebar, SidebarIcon } from "./sidebar.js";
 import brandMark from "../../assets/brand-mark.svg";
 import brandFavicon from "../../assets/brand-favicon.svg";
 import { ConversationSearch } from "./search.js";
-import { SalesResults } from "../sales/results.js";
+import { SalesAnswer } from "../sales/results.js";
+import {
+  sourceLabels,
+  sourceOptions,
+  type SalesSourceSelection,
+} from "../sales/sources.js";
 import { useAgentSession } from "./session.js";
 import { useCredentials } from "../../credentials.js";
 import { newRequestId } from "./request-id.js";
@@ -56,6 +61,8 @@ const messages: Record<string, string> = {
     "Não consegui processar sua mensagem agora. Tente novamente em instantes.",
   SALES_PROVIDER_UNAVAILABLE:
     "Não consegui consultar as vendas agora. Tente novamente em instantes.",
+  SALES_NOT_CONFIGURED:
+    "A fonte de vendas selecionada ainda não está configurada no IA-MNS.",
   SALES_QUERY_INVALID:
     "Preciso de um período válido de até 366 dias e um filtro de produto mais específico.",
   SALES_RESULT_TOO_LARGE:
@@ -71,7 +78,14 @@ function failureText(error: unknown) {
     ? (messages[error.code] ?? "Não foi possível concluir a solicitação.")
     : "Não foi possível conectar ao serviço. Verifique a conexão e tente novamente.";
 }
-type Attempt = { conversationId: string; requestId: string; message: string };
+// A retried submission replays its own message and source, whatever the
+// selector shows by then.
+type Attempt = {
+  conversationId: string;
+  requestId: string;
+  message: string;
+  source: SalesSourceSelection;
+};
 export function AgentPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -83,8 +97,15 @@ export function AgentPage() {
   const params = useParams({ strict: false });
   const conversationId =
     "conversationId" in params ? params.conversationId : undefined;
-  const { token, setToken, managed, sidebarExpanded, sidebarWidth } =
-    useAgentSession();
+  const {
+    token,
+    setToken,
+    managed,
+    sidebarExpanded,
+    sidebarWidth,
+    source,
+    setSource,
+  } = useAgentSession();
   const { requestSignIn } = useCredentials();
   useEffect(() => requestSignIn(), [requestSignIn]);
   const [tokenInput, setTokenInput] = useState("");
@@ -168,6 +189,7 @@ export function AgentPage() {
           conversationId: id,
           requestId: newRequestId(),
           message: question,
+          source,
         };
       }
       const current = attempt.current;
@@ -176,6 +198,7 @@ export function AgentPage() {
         current.conversationId,
         current.message,
         current.requestId,
+        current.source,
       );
       return { turn, conversationId: current.conversationId };
     },
@@ -342,6 +365,12 @@ export function AgentPage() {
     return (
       <div className="agent-turn" key={turn.id}>
         <div className="agent-user-message">{turn.question}</div>
+        {(turn.reply?.capabilityId === "sales" ||
+          turn.failureCode?.startsWith("SALES_")) && (
+          <p className="agent-turn-source">
+            Fonte: {sourceLabels[turn.source]}
+          </p>
+        )}
         <article className="agent-assistant-message">
           <div className="agent-assistant-label">
             <img src={brandFavicon} alt="" width="20" height="20" /> IA-MNS
@@ -359,7 +388,7 @@ export function AgentPage() {
           ) : turn.reply ? (
             <>
               <p className="agent-answer-text">{turn.reply.message}</p>
-              {turn.reply.result && <SalesResults result={turn.reply.result} />}
+              {turn.reply.result && <SalesAnswer answer={turn.reply.result} />}
             </>
           ) : (
             <p className="agent-turn-failure" role="alert">
@@ -638,6 +667,27 @@ export function AgentPage() {
               )}
             </div>
           )}
+          <div className="agent-source">
+            <label htmlFor="agent-source">Fonte</label>
+            <select
+              id="agent-source"
+              value={source}
+              onChange={(event) =>
+                setSource(event.target.value as SalesSourceSelection)
+              }
+              disabled={unresolved}
+              aria-describedby="agent-source-hint"
+            >
+              {sourceOptions.map((option) => (
+                <option key={option} value={option}>
+                  {sourceLabels[option]}
+                </option>
+              ))}
+            </select>
+            <span id="agent-source-hint" className="agent-sr-only">
+              Define de qual sistema vêm as vendas das próximas perguntas.
+            </span>
+          </div>
           <form
             className="agent-composer"
             onSubmit={(event) => {
