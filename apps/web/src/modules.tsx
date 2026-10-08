@@ -36,8 +36,10 @@ const loginSearch = (search: Record<string, unknown>): { erro?: string } =>
   text(search.erro) ? { erro: text(search.erro) } : {};
 const adminSearch = (
   search: Record<string, unknown>,
-): { secao?: "seguranca" } =>
-  search.secao === "seguranca" ? { secao: "seguranca" } : {};
+): { secao?: "seguranca" | "parametros" } =>
+  search.secao === "seguranca" || search.secao === "parametros"
+    ? { secao: search.secao }
+    : {};
 const accountSearch = (
   search: Record<string, unknown>,
 ): {

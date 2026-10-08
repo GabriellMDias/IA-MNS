@@ -198,7 +198,7 @@ Record the HTTPS evidence.
 **Status:** pending (non-blocking). **Owner:** project owner.
 **Dependency / trigger:** PJ-15 policy; before shared use.
 **Request and reason:** The composed policy grants `sales:read` to any active Person with an active Sankhya link, so new users need no manual approval for basic reading, as the owner requested. This includes Persons created automatically at a Sankhya first access and Sankhya users that an owner associates from the directory. Sales reading covers all companies in the ERP reference, with no row scoping, and PDT links grant no business capability yet. Confirm that this is acceptable, narrow it, or disable it with `IA_MNS_PROVIDER_GRANTS=none` (then owners grant explicitly).
-**Configuration:** optional `IA_MNS_PROVIDER_GRANTS`.
+**Configuration:** **Administração → Parâmetros → Liberação automática por vínculo** ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)); optional installation default `IA_MNS_PROVIDER_GRANTS`.
 **Verification:** The decision is recorded here and reflected in configuration.
 **Evidence / blocker:** Awaiting the owner's decision; default policy active in code and covered by tests.
 
@@ -231,8 +231,9 @@ Record the HTTPS evidence.
 - Web hosting that sends `frame-ancestors 'none'` on every route except `/embed/pdt` and `/embed/sankhya`, which allow only their host origins.
 - Running `pnpm identity:bootstrap` on the server to create the first owner, plus a second owner for recovery.
 - An owner reviewing **Administração → Autenticação e segurança** before opening production: a policy relaxed for development (long sessions, remembered browsers) should return to production values; production always keeps the administrators' second factor ([ADR-0025](../adr/0025-administer-the-authentication-policy-within-fixed-safeguards.md)).
+- An owner reviewing **Administração → Parâmetros** before opening production: the AI model in use (evaluated with `pnpm eval` before any change), the trace level (content tracing is refused in production), and the automatic grants by provider link ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)). Values saved in a development database do not travel to production; production starts from its environment defaults.
   **Configuration:** `IA_MNS_PUBLIC_ORIGIN`, `IA_MNS_IDENTITY_SIGNING_KEY`, `IA_MNS_IDENTITY_ENCRYPTION_KEY` (both secret), optional `IA_MNS_IDENTITY_AUDIENCE`.
-  **Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP, and the reviewed authentication policy are verified in the deployed environment.
+  **Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP, the reviewed authentication policy and operational parameters are verified in the deployed environment.
   **Evidence / blocker:** No deployment environment yet.
 
 ## PH-16
@@ -305,6 +306,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Configuration:** `VRMASTER_DB_SSL_MODE`.
 **Verification:** The server accepts TLS and IA-MNS connects with `verify-full`, or the owner's dated acceptance with its scope is recorded here.
 **Evidence / blocker:** Not started. The probe sent only the PostgreSQL TLS request, without credentials.
+
 
 ## New action template
 

@@ -1,6 +1,13 @@
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
 
+/**
+ * AI model identifiers: the domain of OPENAI_MODEL and of the ai.model
+ * operational parameter, so the installation default is always a value
+ * owners could also save.
+ */
+export const aiModelPattern = "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$";
+
 // This is the only application module that interprets environment values.
 export const serverConfigSchema = Type.Object(
   {
@@ -28,7 +35,7 @@ export const serverConfigSchema = Type.Object(
     tokenAudience: Type.Optional(Type.String({ minLength: 1 })),
     tokenJwksUrl: Type.Optional(Type.String({ minLength: 1 })),
     openaiApiKey: Type.Optional(Type.String({ minLength: 1 })),
-    openaiModel: Type.String({ minLength: 1, maxLength: 100 }),
+    openaiModel: Type.String({ pattern: aiModelPattern }),
     aiTrace: Type.Union([
       Type.Literal("off"),
       Type.Literal("metadata"),
@@ -99,9 +106,22 @@ export const serverConfigSchema = Type.Object(
 export type ServerConfig = Readonly<Static<typeof serverConfigSchema>>;
 export type ClientConfig = Readonly<Record<string, never>>;
 
+/**
+ * Why a setting is an environment variable:
+ * - bootstrap: infrastructure, deployment or trust configuration the process
+ *   needs before (or independently of) its own storage; changed by deployment
+ *   and restart;
+ * - secret: a credential or key; never exposed through an API or interface;
+ * - parameter: installation default of an operational parameter that owners
+ *   override at run time in administration (`src/parameters.ts`, ADR-0028);
+ * - development: local development or testing aid, refused in production.
+ */
+export type ConfigRole = "bootstrap" | "secret" | "parameter" | "development";
+
 type ConfigMetadata = {
   key: keyof ServerConfig;
   name: string;
+  role: ConfigRole;
   type: string;
   required: boolean;
   default: string;
@@ -115,6 +135,7 @@ export const configReference = Object.freeze([
   {
     key: "environment",
     name: "ORION_ENV",
+    role: "bootstrap",
     type: "development | test | production",
     required: true,
     default: "",
@@ -126,6 +147,7 @@ export const configReference = Object.freeze([
   {
     key: "releaseId",
     name: "ORION_RELEASE_ID",
+    role: "bootstrap",
     type: "artifact identifier, 1..128 ASCII letters/digits/._-",
     required: false,
     default: "local",
@@ -138,6 +160,7 @@ export const configReference = Object.freeze([
   {
     key: "host",
     name: "ORION_API_HOST",
+    role: "bootstrap",
     type: "nonempty string",
     required: false,
     default: "127.0.0.1",
@@ -149,6 +172,7 @@ export const configReference = Object.freeze([
   {
     key: "port",
     name: "ORION_API_PORT",
+    role: "bootstrap",
     type: "integer 0..65535",
     required: false,
     default: "3000",
@@ -160,6 +184,7 @@ export const configReference = Object.freeze([
   {
     key: "logLevel",
     name: "ORION_LOG_LEVEL",
+    role: "bootstrap",
     type: "Pino level",
     required: false,
     default: "info",
@@ -171,6 +196,7 @@ export const configReference = Object.freeze([
   {
     key: "shutdownTimeoutMs",
     name: "ORION_SHUTDOWN_TIMEOUT_MS",
+    role: "bootstrap",
     type: "integer 100..30000",
     required: false,
     default: "5000",
@@ -182,6 +208,7 @@ export const configReference = Object.freeze([
   {
     key: "otlpEndpoint",
     name: "ORION_OTLP_ENDPOINT",
+    role: "bootstrap",
     type: "http(s) URL",
     required: false,
     default: "",
@@ -193,6 +220,7 @@ export const configReference = Object.freeze([
   {
     key: "traceSampleRatio",
     name: "ORION_TRACE_SAMPLE_RATIO",
+    role: "bootstrap",
     type: "number 0..1",
     required: false,
     default: "1",
@@ -204,6 +232,7 @@ export const configReference = Object.freeze([
   {
     key: "databaseUrl",
     name: "ORION_DATABASE_URL",
+    role: "secret",
     type: "PostgreSQL URL",
     required: false,
     default: "",
@@ -216,6 +245,7 @@ export const configReference = Object.freeze([
   {
     key: "tokenIssuer",
     name: "ORION_TOKEN_ISSUER",
+    role: "bootstrap",
     type: "issuer URL",
     required: false,
     default: "",
@@ -228,6 +258,7 @@ export const configReference = Object.freeze([
   {
     key: "tokenAudience",
     name: "ORION_TOKEN_AUDIENCE",
+    role: "bootstrap",
     type: "nonempty string",
     required: false,
     default: "",
@@ -239,6 +270,7 @@ export const configReference = Object.freeze([
   {
     key: "tokenJwksUrl",
     name: "ORION_TOKEN_JWKS_URL",
+    role: "bootstrap",
     type: "http(s) URL",
     required: false,
     default: "",
@@ -250,6 +282,7 @@ export const configReference = Object.freeze([
   {
     key: "openaiApiKey",
     name: "OPENAI_API_KEY",
+    role: "secret",
     type: "nonempty string",
     default: "",
     secret: true,
@@ -262,10 +295,12 @@ export const configReference = Object.freeze([
   {
     key: "openaiModel",
     name: "OPENAI_MODEL",
+    role: "parameter",
     type: "model identifier",
     default: "gpt-6.1-sol",
     secret: false,
-    purpose: "Responses API model supporting strict function calling.",
+    purpose:
+      "Installation default of the AI model (Responses API with strict function calling); an owner value in administration (Parâmetros) takes precedence.",
     required: false,
     visibility: "server",
     classification: "INTERNAL",
@@ -273,11 +308,12 @@ export const configReference = Object.freeze([
   {
     key: "aiTrace",
     name: "IA_MNS_AI_TRACE",
+    role: "parameter",
     type: "off | metadata | content",
     default: "metadata",
     secret: false,
     purpose:
-      "AI turn tracing: metadata logs allowlisted decisions, timings and token counts without user content; content also stores confidential interpretation traces with each turn and is refused in production until PH-09.",
+      "Installation default of AI turn tracing; an owner value in administration (Parâmetros) takes precedence. metadata logs allowlisted decisions, timings and token counts without user content; content also stores confidential interpretation traces with each turn and is refused in production until PH-09.",
     required: false,
     visibility: "server",
     classification: "INTERNAL",
@@ -285,6 +321,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaUser",
     name: "SANKHYA_DB_USER",
+    role: "secret",
     type: "nonempty string",
     default: "",
     secret: true,
@@ -297,6 +334,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaPassword",
     name: "SANKHYA_DB_PASSWORD",
+    role: "secret",
     type: "nonempty string",
     default: "",
     secret: true,
@@ -309,6 +347,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaConnectString",
     name: "SANKHYA_DB_CONNECT_STRING",
+    role: "secret",
     type: "Oracle connect descriptor",
     default: "",
     secret: true,
@@ -321,6 +360,7 @@ export const configReference = Object.freeze([
   {
     key: "oracleClientLibDir",
     name: "SANKHYA_ORACLE_CLIENT_LIB_DIR",
+    role: "bootstrap",
     type: "local directory",
     default: "",
     secret: false,
@@ -333,6 +373,7 @@ export const configReference = Object.freeze([
   {
     key: "vrmasterHost",
     name: "VRMASTER_DB_HOST",
+    role: "bootstrap",
     type: "host name or IP address",
     default: "",
     secret: false,
@@ -345,6 +386,7 @@ export const configReference = Object.freeze([
   {
     key: "vrmasterPort",
     name: "VRMASTER_DB_PORT",
+    role: "bootstrap",
     type: "integer 1..65535",
     default: "5432",
     secret: false,
@@ -356,6 +398,7 @@ export const configReference = Object.freeze([
   {
     key: "vrmasterDatabase",
     name: "VRMASTER_DB_NAME",
+    role: "bootstrap",
     type: "PostgreSQL database name",
     default: "",
     secret: false,
@@ -367,6 +410,7 @@ export const configReference = Object.freeze([
   {
     key: "vrmasterUser",
     name: "VRMASTER_DB_USER",
+    role: "secret",
     type: "PostgreSQL role name",
     default: "",
     secret: true,
@@ -379,6 +423,7 @@ export const configReference = Object.freeze([
   {
     key: "vrmasterPassword",
     name: "VRMASTER_DB_PASSWORD",
+    role: "secret",
     type: "nonempty string",
     default: "",
     secret: true,
@@ -390,6 +435,7 @@ export const configReference = Object.freeze([
   {
     key: "vrmasterSslMode",
     name: "VRMASTER_DB_SSL_MODE",
+    role: "bootstrap",
     type: "verify-full | disable",
     default: "verify-full",
     secret: false,
@@ -402,6 +448,7 @@ export const configReference = Object.freeze([
   {
     key: "localAccess",
     name: "IA_MNS_LOCAL_ACCESS",
+    role: "development",
     type: "true | false",
     default: "false",
     secret: false,
@@ -414,6 +461,7 @@ export const configReference = Object.freeze([
   {
     key: "devAccessToken",
     name: "IA_MNS_DEV_ACCESS_TOKEN",
+    role: "development",
     type: "64 lowercase hexadecimal characters",
     default: "",
     secret: true,
@@ -426,6 +474,7 @@ export const configReference = Object.freeze([
   {
     key: "devAccessOrigin",
     name: "IA_MNS_DEV_ACCESS_ORIGIN",
+    role: "development",
     type: "private IPv4 HTTP origin",
     default: "",
     secret: false,
@@ -438,6 +487,7 @@ export const configReference = Object.freeze([
   {
     key: "devAccessExpiresAt",
     name: "IA_MNS_DEV_ACCESS_EXPIRES_AT",
+    role: "development",
     type: "Unix timestamp in seconds",
     default: "",
     secret: false,
@@ -450,6 +500,7 @@ export const configReference = Object.freeze([
   {
     key: "publicOrigin",
     name: "IA_MNS_PUBLIC_ORIGIN",
+    role: "bootstrap",
     type: "exact origin",
     required: false,
     default: "",
@@ -462,6 +513,7 @@ export const configReference = Object.freeze([
   {
     key: "identitySigningKey",
     name: "IA_MNS_IDENTITY_SIGNING_KEY",
+    role: "secret",
     type: "base64url PKCS#8 DER P-256 private key",
     required: false,
     default: "",
@@ -474,6 +526,7 @@ export const configReference = Object.freeze([
   {
     key: "identityEncryptionKey",
     name: "IA_MNS_IDENTITY_ENCRYPTION_KEY",
+    role: "secret",
     type: "base64url 32-byte key",
     required: false,
     default: "",
@@ -486,6 +539,7 @@ export const configReference = Object.freeze([
   {
     key: "identityAudience",
     name: "IA_MNS_IDENTITY_AUDIENCE",
+    role: "bootstrap",
     type: "nonempty identifier",
     required: false,
     default: "ia-mns-api",
@@ -497,6 +551,7 @@ export const configReference = Object.freeze([
   {
     key: "providerGrants",
     name: "IA_MNS_PROVIDER_GRANTS",
+    role: "parameter",
     type: "none | comma list of provider:permission",
     required: false,
     default: "",
@@ -504,11 +559,12 @@ export const configReference = Object.freeze([
     classification: "INTERNAL",
     secret: false,
     purpose:
-      "Optional narrowing of automatic read grants by provider link; unset uses the composed capability defaults, none disables them.",
+      "Installation default of automatic read grants by provider link; an owner value in administration (Parâmetros) takes precedence. Unset uses the composed capability defaults, none disables them.",
   },
   {
     key: "pdtBaseUrl",
     name: "PDT_IDENTITY_BASE_URL",
+    role: "bootstrap",
     type: "HTTPS origin",
     required: false,
     default: "",
@@ -521,6 +577,7 @@ export const configReference = Object.freeze([
   {
     key: "pdtIssuer",
     name: "PDT_IDENTITY_ISSUER",
+    role: "bootstrap",
     type: "HTTPS URL",
     required: false,
     default: "",
@@ -533,6 +590,7 @@ export const configReference = Object.freeze([
   {
     key: "pdtClientId",
     name: "PDT_IDENTITY_CLIENT_ID",
+    role: "bootstrap",
     type: "1..64 letters, digits, _ or -",
     required: false,
     default: "",
@@ -544,6 +602,7 @@ export const configReference = Object.freeze([
   {
     key: "pdtClientSecret",
     name: "PDT_IDENTITY_CLIENT_SECRET",
+    role: "secret",
     type: "32+ characters",
     required: false,
     default: "",
@@ -556,6 +615,7 @@ export const configReference = Object.freeze([
   {
     key: "pdtRedirectUri",
     name: "PDT_IDENTITY_REDIRECT_URI",
+    role: "bootstrap",
     type: "HTTPS URL",
     required: false,
     default: "",
@@ -568,6 +628,7 @@ export const configReference = Object.freeze([
   {
     key: "pdtEmbedOrigin",
     name: "PDT_EMBED_ORIGIN",
+    role: "bootstrap",
     type: "exact origin",
     required: false,
     default: "",
@@ -580,6 +641,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaIdentityIssuer",
     name: "SANKHYA_IDENTITY_ISSUER",
+    role: "bootstrap",
     type: "stable identifier",
     required: false,
     default: "",
@@ -592,6 +654,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaIdentityKeys",
     name: "SANKHYA_IDENTITY_KEYS",
+    role: "bootstrap",
     type: "JWKS JSON of public keys",
     required: false,
     default: "",
@@ -604,6 +667,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaIdentityAuthorizeUrl",
     name: "SANKHYA_IDENTITY_AUTHORIZE_URL",
+    role: "bootstrap",
     type: "HTTPS URL",
     required: false,
     default: "",
@@ -616,6 +680,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaEmbedOrigin",
     name: "SANKHYA_EMBED_ORIGIN",
+    role: "bootstrap",
     type: "exact origin",
     required: false,
     default: "",
@@ -628,6 +693,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaDirectoryView",
     name: "SANKHYA_DIRECTORY_VIEW",
+    role: "bootstrap",
     type: "Oracle view name (optionally SCHEMA.VIEW)",
     required: false,
     default: "",
@@ -640,6 +706,7 @@ export const configReference = Object.freeze([
   {
     key: "sankhyaSessionTrust",
     name: "SANKHYA_SESSION_TRUST",
+    role: "bootstrap",
     type: "pending | approved",
     required: false,
     default: "pending",

@@ -12,7 +12,7 @@ export function createSalesCapability(
   const service =
     injected ??
     new SalesChat(
-      createModelInterpreter(createOpenAiModel(config)),
+      createModelInterpreter(createOpenAiModel(config, config.openaiModel)),
       createSalesReaders(config),
     );
   return {

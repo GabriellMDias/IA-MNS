@@ -450,3 +450,28 @@ Lifecycle: Valid while not revoked and younger than the policy's remember_device
 | `identity_trusted_devices_pkey` | `PRIMARY KEY (id)` | Remembered-browser identity. |
 | `identity_trusted_devices_person_idx` | `CREATE INDEX identity_trusted_devices_person_idx ON public.identity_trusted_devices USING btree (person_id)` | Revocation of a Person's remembered browsers. |
 | `identity_trusted_devices_token_key` | `CREATE UNIQUE INDEX identity_trusted_devices_token_key ON public.identity_trusted_devices USING btree (token_hash)` | Token lookup; one row per browser token. |
+
+## operational_parameters
+
+Values that owners saved for the operational parameters declared by the runtime catalog in apps/api/src/parameters.ts (ADR-0028). The catalog owns each parameter's type, domain, installation default and effect; a missing row or a null value means the installation default applies. Secrets and bootstrap settings are never stored here.
+
+Owner: runtime (operational parameters). Classification: INTERNAL.
+
+Lifecycle: At most one row per catalog key, written only by owners through administration with strong recent authentication; a reset stores null instead of deleting. Every change is recorded in identity_audit_events with previous and new values.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `key` | `character varying(64)` | no | — | INTERNAL | Catalog key of the parameter, such as ai.model. | — | — |
+| `value` | `jsonb` | yes | — | INTERNAL | Saved JSON value in the catalog type of the key (string or array of strings). | Reset by an owner; the installation default applies. | — |
+| `version` | `integer` | no | — | INTERNAL | Concurrency token incremented by every change; an owner's change applies only to the version they saw. | — | — |
+| `updated_by` | `uuid` | no | — | CONFIDENTIAL | Person (identity_persons.id) who made the last change; historical attribution without a foreign key, because the authoritative trail is the identity audit. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | — | INTERNAL | Application-clock instant of the last change; informational, not the concurrency token. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `operational_parameters_key_check` | `CHECK (((key)::text = ANY ((ARRAY['ai.model'::character varying, 'ai.traceLevel'::character varying, 'access.providerGrants'::character varying])::text[])))` | Only parameters declared by the catalog. |
+| `operational_parameters_pkey` | `PRIMARY KEY (key)` | One saved value per parameter. |
+| `operational_parameters_value_check` | `CHECK (((value IS NULL) OR (((key)::text = 'ai.model'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$'::text)) OR (((key)::text = 'ai.traceLevel'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) = ANY (ARRAY['off'::text, 'metadata'::text, 'content'::text]))) OR (((key)::text = 'access.providerGrants'::text) AND (jsonb_typeof(value) = 'array'::text) AND (jsonb_array_length(value) <= 32) AND (NOT jsonb_path_exists(value, '$[*]?(@.type() != "string")'::jsonpath)))))` | Each known key holds only its catalog type and domain (model identifier pattern, trace level, list of at most 32 strings). |
+| `operational_parameters_version_check` | `CHECK ((version >= 1))` | Versions start at 1. |

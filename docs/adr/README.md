@@ -35,3 +35,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)                              | Administer the Authentication Policy within Fixed Safeguards                                |
 | [ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)                                 | Host IA-MNS in Sankhya Om through an In-Repository Add-on                                   |
 | [ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)                  | Select the Sales Source in the Interface and Read Each Source Separately                    |
+| [ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md) | Administer Operational Parameters Separately from Secrets and Bootstrap Configuration       |

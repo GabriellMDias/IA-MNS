@@ -1,0 +1,82 @@
+{
+  "kind": "database",
+  "name": "operational_parameters",
+  "description": "Values that owners saved for the operational parameters declared by the runtime catalog in apps/api/src/parameters.ts (ADR-0028). The catalog owns each parameter's type, domain, installation default and effect; a missing row or a null value means the installation default applies. Secrets and bootstrap settings are never stored here.",
+  "owner": "runtime (operational parameters)",
+  "classification": "INTERNAL",
+  "lifecycle": "At most one row per catalog key, written only by owners through administration with strong recent authentication; a reset stores null instead of deleting. Every change is recorded in identity_audit_events with previous and new values.",
+  "columns": [
+    {
+      "Column": "key",
+      "PostgreSQL type": "character varying(64)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Catalog key of the parameter, such as ai.model.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "value",
+      "PostgreSQL type": "jsonb",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Saved JSON value in the catalog type of the key (string or array of strings).",
+      "Null meaning": "Reset by an owner; the installation default applies.",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Concurrency token incremented by every change; an owner's change applies only to the version they saw.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person (identity_persons.id) who made the last change; historical attribution without a foreign key, because the authoritative trail is the identity audit.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Application-clock instant of the last change; informational, not the concurrency token.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "operational_parameters_key_check",
+      "Physical definition": "CHECK (((key)::text = ANY ((ARRAY['ai.model'::character varying, 'ai.traceLevel'::character varying, 'access.providerGrants'::character varying])::text[])))",
+      "Purpose": "Only parameters declared by the catalog."
+    },
+    {
+      "Object": "operational_parameters_pkey",
+      "Physical definition": "PRIMARY KEY (key)",
+      "Purpose": "One saved value per parameter."
+    },
+    {
+      "Object": "operational_parameters_value_check",
+      "Physical definition": "CHECK (((value IS NULL) OR (((key)::text = 'ai.model'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$'::text)) OR (((key)::text = 'ai.traceLevel'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) = ANY (ARRAY['off'::text, 'metadata'::text, 'content'::text]))) OR (((key)::text = 'access.providerGrants'::text) AND (jsonb_typeof(value) = 'array'::text) AND (jsonb_array_length(value) <= 32) AND (NOT jsonb_path_exists(value, '$[*]?(@.type() != \"string\")'::jsonpath)))))",
+      "Purpose": "Each known key holds only its catalog type and domain (model identifier pattern, trace level, list of at most 32 strings)."
+    },
+    {
+      "Object": "operational_parameters_version_check",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { Type, type TSchema } from "typebox";
 import type { ApiOperation } from "../../module.js";
 import { errorEnvelopeSchema } from "../../errors.js";
+import { parameterKeys } from "../../parameters.js";
 
 const object = { additionalProperties: false };
 const nullable = <T extends TSchema>(schema: T) =>
@@ -1052,6 +1053,118 @@ export const adminUpdatePolicyOperation = operation(
   },
   true,
 );
+const historySchema = Type.Array(
+  Type.Object(
+    {
+      occurredAt: Type.String({ format: "date-time" }),
+      actorName: nullable(Type.String()),
+      details: Type.Record(
+        Type.String(),
+        Type.Union([Type.String(), Type.Number(), Type.Boolean(), Type.Null()]),
+      ),
+    },
+    object,
+  ),
+);
+const parameterValue = Type.Union([
+  Type.String({ maxLength: 200 }),
+  Type.Array(Type.String({ maxLength: 200 }), { maxItems: 32 }),
+]);
+const parameterControl = Type.Union([
+  Type.Object(
+    {
+      kind: Type.Literal("text"),
+      pattern: Type.String(),
+      maxLength: Type.Integer({ minimum: 1 }),
+    },
+    object,
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("choice"),
+      options: Type.Array(Type.String()),
+      refused: Type.Array(Type.String()),
+    },
+    object,
+  ),
+  Type.Object(
+    {
+      kind: Type.Literal("set"),
+      options: Type.Array(
+        Type.Object({ value: Type.String(), label: Type.String() }, object),
+      ),
+    },
+    object,
+  ),
+]);
+export const adminParametersOperation = operation(
+  "GET",
+  "/identity/admin/parameters",
+  "listOperationalParameters",
+  "Owner: the operational parameters (product behavior administered at run time, never secrets or bootstrap settings) with the value in use, the installation default, whether an owner value or the default applies, when a change takes effect, the concurrency version and recent changes.",
+  {
+    response: {
+      200: Type.Object(
+        {
+          production: Type.Boolean(),
+          parameters: Type.Array(
+            Type.Object(
+              {
+                key: Type.Union(parameterKeys.map((key) => Type.Literal(key))),
+                group: Type.Union([Type.Literal("ai"), Type.Literal("access")]),
+                effect: Type.Union([
+                  Type.Literal("next_turn"),
+                  Type.Literal("next_access_token"),
+                ]),
+                control: parameterControl,
+                value: parameterValue,
+                defaultValue: parameterValue,
+                source: Type.Union([
+                  Type.Literal("administration"),
+                  Type.Literal("default"),
+                ]),
+                storedInvalid: Type.Boolean(),
+                version: Type.Integer({ minimum: 0 }),
+                updatedAt: nullable(Type.String({ format: "date-time" })),
+                updatedBy: nullable(Type.String()),
+              },
+              object,
+            ),
+          ),
+          history: historySchema,
+        },
+        object,
+      ),
+      ...errors,
+    },
+  },
+  true,
+);
+export const adminUpdateParameterOperation = operation(
+  "PUT",
+  "/identity/admin/parameters/:key",
+  "updateOperationalParameter",
+  "Owner: change one operational parameter (strong, recent authentication), or restore its installation default with `null`. Applies only to the `version` that was read; values outside the parameter's domain or refused in this environment are rejected. Takes effect without a restart. Audited with previous and new values.",
+  {
+    params: Type.Object(
+      { key: Type.String({ pattern: "^[A-Za-z0-9._-]{1,64}$" }) },
+      object,
+    ),
+    body: Type.Object(
+      {
+        // Null first: request coercion would otherwise turn it into "".
+        value: Type.Union([Type.Null(), parameterValue]),
+        version: Type.Integer({ minimum: 0 }),
+      },
+      object,
+    ),
+    response: {
+      200: Type.Object({ version: Type.Integer({ minimum: 1 }) }, object),
+      ...errors,
+    },
+  },
+  true,
+);
 export const adminGrantOperation = operation(
   "PUT",
   "/identity/admin/persons/:personId/grants/:permission",
@@ -1194,6 +1307,8 @@ export const identityOperations: readonly ApiOperation[] = [
   adminMergeOperation,
   adminPolicyOperation,
   adminUpdatePolicyOperation,
+  adminParametersOperation,
+  adminUpdateParameterOperation,
   adminGrantOperation,
   adminRevokeGrantOperation,
   adminOwnerOperation,

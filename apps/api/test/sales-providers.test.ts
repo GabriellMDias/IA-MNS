@@ -49,7 +49,9 @@ const interpret = (
   message = "Vendas",
   state: SalesConversationState = emptySalesState,
 ) =>
-  createModelInterpreter(createOpenAiModel(config)).interpret(
+  createModelInterpreter(
+    createOpenAiModel(config, config.openaiModel),
+  ).interpret(
     { message, state, today: "2026-10-01" },
     new AbortController().signal,
   );
@@ -236,9 +238,9 @@ describe("OpenAI Responses boundary", () => {
       "fetch",
       vi.fn(() => Promise.resolve(completed(reading))),
     );
-    const result = await createOpenAiModel(config, {
-      model: "synthetic-model",
-    }).invoke(
+    const result = await createOpenAiModel(config, () =>
+      Promise.resolve("synthetic-model"),
+    ).invoke(
       {
         instructions: "Synthetic",
         messages: [{ role: "user", content: "Vendas" }],

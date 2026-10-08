@@ -1,0 +1,10 @@
+// Owner-administered operational parameters (ADR-0028). Owned by the shared
+// runtime catalog in src/parameters.ts; administered through identity.
+model OperationalParameter {
+  key       String   @id @db.VarChar(64)
+  value     Json?
+  version   Int
+  updatedBy String   @map("updated_by") @db.Uuid
+  updatedAt DateTime @map("updated_at") @db.Timestamptz(3)
+  @@map("operational_parameters")
+}

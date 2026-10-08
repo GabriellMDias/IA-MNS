@@ -1,5 +1,329 @@
 [
   {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Released vs Unreleased Behavior",
+    "anchor": "released-vs-unreleased-behavior",
+    "text": "Released vs Unreleased Behavior\n“Released” includes behavior deployed, persisted, published, installed, queued, or consumed independently, not only public release. Verified unreleased contracts may be refined when no durable consumer depends on them. Git preserves development history; ADRs preserve decisions; migration history preserves durable database transitions. Released contracts may evolve compatibly, but released migrations retain their distinct immutability requirements.\nCurrent API, SDK, and web code evolve together. The [release registry](../../apps/api/prisma/release-history.json) records durable database releases; absence of an entry is not proof that no persistent environment exists. Verify release status before editing migration history. [Release evolution](../database/release-evolution.md) owns the evidence and upgrade procedure. No published SDK versioning scheme, released API baseline, client-support period, or production rollback window is implied by current scripts.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Expand–Migrate–Contract",
+    "anchor": "expandmigratecontract",
+    "text": "Expand–Migrate–Contract\nFor changes that cannot occur atomically:\n**Expand:** introduce compatible fields, schema capabilities, accepted payloads, configuration, or infrastructure while existing consumers still work.\n**Migrate:** update readers/writers/consumers, backfill durable data, and switch traffic or activation in a safe order.\n**Contract:** remove old behavior only after supported consumers, retained data, and rollback obligations no longer need it.\nSpecify the application/schema/configuration/infrastructure state at each step. Rolling/canary deployment creates mixed versions; blue-green can shorten but does not eliminate compatibility during shared data use, traffic switches, or rollback. Feature flags may separate activation from deployment but do not solve incompatible data formats.\nTemporary adapters, dual reads/writes, legacy config fallbacks, and feature flags need identifiable ownership, purpose, tests, tracking, and removal conditions. Define the canonical representation, failure handling, and reconciliation for dual writes. Fallback reads must not conceal an incomplete migration indefinitely. Preserve durable meaning; compatibility is never a justification for silent data loss.\nChoose and document rollback or forward recovery for a significant transition. Application rollback does not undo a schema migration or recover dropped data. Do not contract schema/configuration while a supported rollback application still needs it. Before activating a new writer, ask whether old readers can understand its output; delaying new writes may be necessary even when new readers understand old data.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Persisted Data Compatibility",
+    "anchor": "persisted-data-compatibility",
+    "text": "Persisted Data Compatibility\nDatabase enums/JSON, cached documents, events, job payloads, sessions, stored files, and encrypted serialization can outlive the code that wrote them. Determine which old shapes actually exist, where they live, their retention/replay lifetime, which versions read them, whether they can be migrated/rebuilt, and how both read/write directions are tested.\nExplicit payload versions are useful when incompatible shapes coexist and parsing needs identification; do not add them to every record preemptively. Shape detection may suffice for simple transitions. Defaults must accurately represent historical meaning, not merely make deserialization succeed. Preserve unknown values or reject unsupported shapes explicitly instead of mapping them to an incorrect known state.\nEvents need an owned type, schema, meaning, producer, and consumers. Prefer compatible evolution when consumers permit it; a different business fact deserves a semantic new event type rather than a misleading version of the old one. Queues, logs, dead letters, archives, and replay extend compatibility obligations; long-lived retries may span several releases. Consumers may ignore additive unknown fields only where the contract permits, never required semantics.\nCaches may be migrated, safely invalidated, or assigned new key namespaces; old namespaces must expire/be removed. Search indexes are derived state and may use reindexing, dual indexes, or alias switches instead of indefinite legacy support. Prefer mature standard serialization formats; custom binary formats need a concrete benefit and explicit compatibility design.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Other Compatibility Surfaces",
+    "anchor": "other-compatibility-surfaces",
+    "text": "Other Compatibility Surfaces\nSurface\nRequired considerations\nPackages and SDK\nInternal atomic changes usually need no compatibility layer. Independently published packages need a deliberate distribution/version policy and intentional exports. SDK programming API compatibility and SDK-to-server compatibility are distinct; generated public interfaces can become commitments even though output is rebuildable.\nAPIs and public errors\nFollow [API versioning](../api/versioning.md). Consumer-visible errors, ordering, defaults, authorization, pagination, idempotency, and side effects can break without a schema diff.\nConfiguration\nNew required keys may need provisioning before code. Renames need deterministic old/new precedence; removal must preserve rollback. Follow [configuration policy](configuration.md).\nCredentials and identity\nIssuer, audience, claim, algorithm, key, token-lifetime, and session-format changes affect existing clients/sessions. Rotation may sign with new keys while accepting previous keys temporarily under security policy. Mass logout must be deliberate.\nAuthorization/classification\nPersisted permission identifiers may need migration. Review both tighter and looser access; apply stricter current data classification to telemetry, exports, analytics, access, and retention. Required security corrections can override compatibility, with impact managed explicitly.\nCLIs and scripts\nPublic command names, arguments, output, and exit codes can be contracts. Internal scripts within one revision may evolve atomically; external CI/operations consumers may not.\nInfrastructure/providers\nCoordinate resources and permissions before dependent consumers and remove them after migration. Provider API versions are dependencies, not this API's versions; test upgrades and track deprecation deadlines near the integration.\nToolchain/dependencies\nRuntime/compiler upgrades can affect output, library compatibility, and behavior. Use repository pins, lockfile, and frozen installation; assess actual breaking impact rather than trusting labels or allowing uncontrolled upgrades.\nGenerated references\nCanonical contract semantics govern compatibility, not incidental formatting. If external automation consumes a machine-readable artifact, its intended schema becomes explicit.\nSecurity takes priority over retaining vulnerable behavior. Safe release metadata should support correlation without conflating release identity with API/schema versions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Deprecation and Removal",
+    "anchor": "deprecation-and-removal",
+    "text": "Deprecation and Removal\nDeprecation needs a replacement, migration path, support/removal condition, and owner. Remove compatibility complexity once the real consumer is gone, not just because current source no longer uses it. Check installed clients, external users, queued/persisted historical shapes, and rollback; source search alone may be insufficient.\nUse safe runtime usage evidence when available. Telemetry can correlate release, operation, bounded contract/error category, migration, and configuration changes; it must not create unbounded labels for arbitrary consumer/payload identities. Alerts should reflect impact from unsupported clients or deployment ordering failures. Document supported versions only where support exists; metadata such as introduced/deprecated/replacement belongs in canonical contracts only when useful, never a parallel manually duplicated manifest.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Compatibility Testing",
+    "anchor": "compatibility-testing",
+    "text": "Compatibility Testing\nTest actual supported combinations at their boundary: old request/new server, new application/transitional schema, old reader/new message, new worker/retained old job, active/deprecated configuration, or rollback application/current schema. Do not maintain arbitrary historical combinations. Use the real release baseline for migrations; fresh-install checks alone do not prove upgrade safety.\nReleased fixtures/baselines are immutable evidence, not snapshots to silently rewrite when tests fail. Add distinct historical shapes when necessary. Structural API comparisons, canonical event/schema checks, and property-based serializer tests can help where justified; semantic review remains required.\n`pnpm release:check` and its tests protect recorded migration/release history. Current API/SDK/reference freshness checks detect drift from current sources, not released-consumer compatibility. Dedicated historical API diffing, event versioning, and package-publication compatibility tooling are not selected merely by this policy.\nFail before unsafe work when a dependency/schema is unsupported and expose stable safe diagnostics. Prefer capability detection when the real dependency is a capability; numeric comparisons are appropriate only with precise version semantics. Accept supported old forms during transition, then reject removed forms explicitly rather than failing later with unrelated SQL/property errors.\n"
+  },
+  {
+    "id": "repository/docs/architecture/versioning-and-compatibility",
+    "title": "Versioning and Compatibility",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Breaking Change Checklist",
+    "anchor": "breaking-change-checklist",
+    "text": "Breaking Change Checklist\nBefore completing a compatibility-sensitive change, establish:\nConsumers, release evidence, independence, persistence/replay lifetime, and required direction/window.\nStructural, semantic, behavioral, operational, and security impact; whether atomic or additive evolution is possible.\nOrdered application, schema, configuration, infrastructure, credential, and message states, including new-writer/old-reader safety.\nRollback or forward-recovery expectations and any urgent security override.\nCanonical transition state, tests for supported combinations, safe usage evidence, and completion criteria.\nOwnership and removal conditions for every temporary compatibility path.\nDo not introduce `v2`, a package major, or a payload schema version merely to avoid this analysis. Compatibility exists to protect real consumers while keeping the foundation maintainable.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contributing and Documentation",
+    "anchor": "contributing-and-documentation",
+    "text": "Contributing and Documentation\nUse the [task index](README.md) to locate the policy relevant to a change. This guide owns the contributor workflow and documentation-maintenance rules; it does not replace the architectural policies or [accepted decisions](adr/README.md).\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Change workflow",
+    "anchor": "change-workflow",
+    "text": "Change workflow\nInspect relevant implementation, documentation, tests, and applicable local `AGENTS.md` files. Search for existing implementations and public APIs before creating equivalents.\nIdentify the smallest coherent change that follows existing patterns and architectural boundaries. Preserve unrelated code and avoid unnecessary refactoring. State assumptions that cannot be verified; do not invent repository behavior or domain rules.\nBefore introducing an abstraction, service, package, dependency, or cross-layer relationship, check existing equivalents, boundaries, and ADRs. Shared code must represent shared meaning, not merely similar code. Record genuinely significant architectural decisions through the [ADR process](adr/authoring.md).\nImplement the change, add or update behavior tests, update affected documentation, and regenerate derived artifacts from their canonical sources.\nRun the available [validation](validation.md), review the final diff, and report unavailable checks or remaining failures explicitly. Do not declare success while concealing known validation errors.\nKeep pull requests as coherent units of work. Follow-up changes for the same phase or objective should normally reuse its open PR and branch instead of creating a new PR for each small documentation or status update.\nPrefer the least irreversible solution when an architectural choice is uncertain. Identify conflicts with established architecture rather than bypassing them. Prefer mechanical enforcement where practical; never weaken typing, tests, validation, security, or observability to make a change pass.\nBefore adding a dependency, check repository and standard-platform capabilities. Consider maintenance, security, licensing, runtime/bundle cost, and ecosystem maturity. Avoid competing libraries for the same responsibility without a documented reason. Foundational dependencies may require an ADR.\nBehavior changes require appropriate verification. Use the lowest-cost test that reliably protects behavior, with broader integration coverage at boundaries. Bug fixes should include a regression test whenever practical; otherwise document why and how the fix was verified. Do not delete, disable, or weaken a valid test merely because it fails. See [testing strategy](architecture/testing-strategy.md).\nCompletion requires, as applicable: correct implementation, respected boundaries, passing tests/types/static analysis, current generated artifacts and documentation, preserved observability, satisfied security requirements, and no unrelated changes. Passing tests do not excuse architectural violations; correct code with stale documentation is incomplete.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Documentation ownership",
+    "anchor": "documentation-ownership",
+    "text": "Documentation ownership\nInformation\nAuthoritative location\nCurrent architectural policy and intended behavior\nRelevant policy under `docs/`\nArchitectural decision history and rationale\n[ADRs](adr/README.md)\nCurrent executable operational procedure\n[Runbooks](runbooks/README.md)\nDevelopment history\nGit\nReleased database transitions\n[Migration history](database/migrations.md)\nExternally relevant release history\nChangelog when releases exist\nStructural reference\nGenerated from canonical schemas, contracts, or metadata\nDomain meaning\nNear the owning domain; `docs/domains/` when cross-file explanation is needed\nApplication/package-specific knowledge\nNear the owning application or package\nExecution status and outstanding work\nThe implementation plan linked from the README's [Current state](../README.md#current-state)\nDecisions or access requiring a human\nThe human-action checklist linked from the README's [Current state](../README.md#current-state)\nRepository identity, Orion provenance, and the derivation contract\n[`.orion/project.json`](../.orion/project.json) and [`.orion/derivation.json`](../.orion/derivation.json), under [project derivation](project-derivation.md)\nThe maintainer of the owning code or policy is responsible for keeping its documentation current in the same change. This is responsibility by repository boundary, not an invented team or approval hierarchy. Indexes route readers; they do not own copies of another document's rules. Root `AGENTS.md` owns global invariants and task routes; nested instructions add only distinct local obligations. They apply to every contributor and agent; tool-specific files may only adapt discovery under [agent instructions](architecture/agent-instructions.md). Application/package READMEs explain local responsibility and usage, with links to shared setup and policy.\nPrefer the narrowest authoritative location. Do not create empty documentation directories, speculative runbooks, or placeholder applications to match an illustrative tree. `docs/domains/` and `docs/generated/` should appear only when real content exists. Technology-specific documentation is appropriate after the technology exists or has been selected.\nPackages should document responsibility, public API, dependency constraints, and important assumptions when these cannot be safely inferred from code or contracts. Domain documentation may explain terminology, invariants, ownership, workflows, state transitions, side effects, and failure semantics. Repository-wide policy must not become a dumping ground for one feature or provider integration.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Authored meaning and generated facts",
+    "anchor": "authored-meaning-and-generated-facts",
+    "text": "Authored meaning and generated facts\nDocument architectural decisions, business rules, invariants, non-obvious constraints, side effects, public contracts, security-sensitive behavior, failure modes, operational procedures, integrations, and unusual implementation choices with their rationale. Explain why, constraints, and consequences rather than restating code or type signatures.\nA fact should have one canonical source wherever practical. Small navigational summaries are useful; independently maintained normative copies are not. Link to the authoritative policy instead of repeating its rules. Code comments should explain local non-obvious reasoning, such as ordering, protected invariants, retry safety, or workaround constraints.\nReference\nCanonical source and governing policy\nDatabase\nSchema semantics and metadata under [schema documentation](database/schema-documentation.md); the complete physical reference must account for migrated PostgreSQL, including custom SQL\nAPI and SDK\nExecutable contracts and route metadata, then generated OpenAPI and clients under [API principles](api/principles.md)\nConfiguration\nCanonical schema and metadata under [configuration](architecture/configuration.md): name, type, description, required/default, classification, secret status, and validation\nPublic errors\nAPI-owned [`errorRegistry`](../apps/api/src/errors.ts) under [error contract](api/error-contract.md), with a [generated reference](generated/api/errors.md)\nComponents\nWeb component source and [owned examples/metadata](../apps/web/src/components.docs.json), with generated [AI-readable reference](generated/components/web.md) and [human-facing portal](architecture/living-documentation.md)\nFiles marked as generated must not be edited independently. Update their canonical source and regenerate using repository tooling. Generated output must not become a source of truth or be patched to hide stale generation. Reviewed SQL migrations have the distinct authorship and release rules in [migration policy](database/migrations.md); this does not authorize editing generated SDKs or references.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Maintenance and review",
+    "anchor": "maintenance-and-review",
+    "text": "Maintenance and review\nCurrent policy describes current truth, including accepted direction and transitional implementation state. ADRs preserve decision history; old Git revisions and superseded ADRs are not automatically current instructions. Keep implementation availability separate from decision status. Do not silently select an intentionally deferred technology or fabricate missing semantics.\nUpdate canonical documentation when behavior, architecture, contracts, configuration, security, ownership, database semantics, or operational procedures change. Significant behavior changes should include those updates in the same change where practical. Incorrect or obsolete current documentation is a defect.\nUse English for repository artifacts, including comments, API/database descriptions, generated documentation, and operational metadata, except where product localization or external data explicitly requires another language. Use stable terminology for the same concept across documents.\nBefore adding a document, identify its question, owner, canonical source, audience, discovery route, and maintenance needs. Prefer an existing owner or machine-readable source when appropriate. Before completing a change, check whether it requires an ADR, supersession, generated-reference regeneration, or updates to affected consumers and policies.\nReview documentation in proportion to its importance: architecture, security, database lifecycle, API compatibility, and production-operation changes deserve particular scrutiny. Optimize for accuracy, clarity, discoverability, and durability rather than volume. `pnpm docs:check` already enforces local links, anchors, reachability, and ADR metadata; it does not prove semantic correctness.\n"
+  },
+  {
+    "id": "repository/docs/contributing",
+    "title": "Contributing and Documentation",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Writing focused guidance",
+    "anchor": "writing-focused-guidance",
+    "text": "Writing focused guidance\nStart with the document's responsibility and route to its canonical source or implementation. State requirements, current implementation limits, and conditional choices separately. A policy requirement is not proof that code enforces it.\nUse descriptive headings for independently useful questions. Explain each rule once, with its rationale or exception nearby; avoid repeating it in principles, checklists, summaries, and AI-specific restatements.\nKeep task indexes shallow: the task route should lead to the policy owner and then to relevant source/tests. Add a section link when a page covers several independent concerns; do not require the entire documentation tree for ordinary work.\nKeep current guides free of phase-by-phase narration, obsolete counts, and old implementation states. Retain concise dated evidence where it establishes acceptance or external access; detailed history belongs in Git. Accepted ADR rationale is intentionally historical and remains protected.\nWhen consolidating or moving content, compare the old requirements, exceptions, rationale, and conditional obligations with their new destinations. Update inbound links and discovery routes, and review semantic preservation as well as the structural checks. Do not remove a safeguard merely because its mechanism is not implemented.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Database Migrations",
+    "anchor": "database-migrations",
+    "text": "Database Migrations\n[Task index](../README.md) · [Release workflow](release-evolution.md) · [Compatibility](../architecture/versioning-and-compatibility.md) · [Schema documentation](schema-documentation.md)\nThis policy owns safe transitions between durable database states. [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) selects reviewed SQL migrations through Prisma Migrate. Committed SQL migrations in `apps/api/prisma/migrations/`, the [release registry](../../apps/api/prisma/release-history.json), fresh PostgreSQL checks, and the release-history validator exist. Deployment-specific procedures require a real environment and are not selected here.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Released Migration",
+    "anchor": "released-migration",
+    "text": "Released Migration\nA migration is released when applied to a persistent environment whose history the application must upgrade safely: production, a durable staging baseline, or a customer installation may qualify. Non-production does not necessarily mean disposable. Released SQL, transformations, identifiers, contents, and ordering are immutable; corrections require a new forward migration. Generated and handwritten migrations follow the same rule.\nIf release status is uncertain, treat history as immutable until verified. An empty registry means no durable release is **recorded**, not proof that no persistent consumer exists. Do not edit, delete, reorder, or squash uncertain history on that assumption. Follow [release recording](release-evolution.md#record-the-first-durable-migration-boundary) and resolve the applicable human-action evidence in the repository's human-action checklist (linked from the README's [Current state](../../README.md#current-state)) before classifying an existing migration as unreleased.\nChecksum mismatches can indicate modified history or drift; do not bypass them to continue. Retain released migrations while supported creation/upgrade paths depend on them. A future baseline or history-retention change needs explicit tooling and support policy and must not silently invalidate existing installations.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Unreleased Migration",
+    "anchor": "unreleased-migration",
+    "text": "Unreleased Migration\nA migration used only in genuinely disposable local, preview, or test databases is not automatically released. Verified unreleased history may be edited, regenerated, renamed, reordered, combined, or removed when the final path becomes clearer and remains safe. Git records experiments; migrations record meaningful durable transitions.\nBefore generating another migration, inspect whether existing unreleased work represents the same change. Do not retain create/rename/drop experiments with no lasting released meaning. The objective is the minimum number of meaningful **safe** stages, not one file per feature or the fewest files at any cost. Preserve stages required for backfills, compatibility, locking, or rollout safety.\nParallel branches require semantic reconciliation of their schema intent, dependencies, and ordering. Do not resolve migration conflicts merely by accepting both timestamped files. Use descriptive intent-based names and the existing directory convention.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Schema Evolution",
+    "anchor": "schema-evolution",
+    "text": "Schema Evolution\nReview schema and SQL together. Prisma is the authored model for structures it can express; migrated PostgreSQL is complete physical truth, including custom SQL. Generated SQL is a proposal: inspect data loss, constraints, locks, rewrites, ordering, and compatibility before accepting it. `prisma db push` is not the durable evolution workflow; ADR-0006 permits it only for explicitly disposable experimentation/tooling.\nSchema and application deployment form one compatibility system. Identify which application/schema combinations can run before, during, and after the change, including rolling coexistence and application rollback. New code must not require schema that has not been applied; old code must be removed before dropping structures it still uses. An application must not become ready against an incompatible required schema. A numeric schema version or startup version checker is not mandatory; do not claim one exists without implementation.\nUse expand–migrate–contract when consumers cannot migrate atomically:\n**Expand:** add compatible structures while old code still works.\n**Migrate:** deploy writers/readers and backfill required data; observe and verify the transition.\n**Contract:** remove obsolete structures only after dependent consumers/data are safe.\nTemporary dual writes, fallback reads, compatibility triggers, defaults, and feature flags need a canonical source, failure/reconciliation behavior, test coverage, and removal condition. A fallback must not hide incomplete migration forever. Completion includes data verification, new code adoption, removal of old consumers, and intended compatibility cleanup, even when this spans releases.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Review by change type",
+    "anchor": "review-by-change-type",
+    "text": "Review by change type\nChange\nRequired analysis\nRename table/column\nConsumer and rolling-version impact; consider expansion/backfill/switch/removal instead of direct rename\nType conversion or narrowing\nExisting-data validity, precision/truncation, rewrite/lock cost, application representation, irreversible loss\nRequired column or `NOT NULL`\nWriters, existing-row population, verification that no invalid/null data remains, then enforcement\nDefault addition/removal\nExisting rows versus future writes, database/application semantics, cost, and temporary compatibility purpose\nUnique/foreign-key/check constraint\nExisting duplicates/orphans/violations, repair/validation, concurrency behavior, locking, and phased validation where useful\nIndex creation/removal\nReal query need, table cost, blocking/concurrent operation limits, and whether the index enforces integrity\nReference-data transformation\nExplicit source/owner; required release transformations cannot depend on development seed scripts\nNew baseline\nEvidence that existing schema corresponds to the recorded state; deterministic future creation/upgrades\nApparently additive DDL can still lock or rewrite a large table. Safety depends on actual PostgreSQL behavior and data, not SQL length.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Destructive Changes",
+    "anchor": "destructive-changes",
+    "text": "Destructive Changes\nDropping/truncating structures, deleting durable data, narrowing values, or irreversible transformation requires explicit review of owner intent, retention/audit/reporting needs, every consumer, data loss, supported rollback, and recovery. Lack of code references is insufficient evidence that data is disposable. Record irreversibility rather than providing a misleading automatic reverse operation.\nApplication rollback, schema rollback, data restoration, and a corrective forward migration are different actions. Older application code can run only if compatible with the current schema. Recreating an empty dropped column does not recover its data; new writes may make backward migration unsafe. Prefer a reviewed forward correction for released history, and use an actual environment's backup/restore or repair procedure when required. No universal safe `down` migration is assumed.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Backfills",
+    "anchor": "backfills",
+    "text": "Backfills\nA backfill is a data migration. Assess row count, runtime, locks, transaction size, retry behavior, progress, and failure recovery. Small bounded transformations may share a migration; large work may need a dedicated batched, resumable, preferably idempotent process instead of one long transaction. Repeating a batch must not corrupt data.\nDeploy compatible schema, run the backfill, observe progress, verify completeness/semantics, then enforce stricter constraints. Track safe progress such as processed/remaining counts, checkpoints, batch duration, and failures. Choose batch sizes and stop conditions from evidence. A transformation needed by every upgraded database belongs in the supported release path; a one-off environment repair may belong in a controlled audited script/runbook instead.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Execution, failure, and drift",
+    "anchor": "execution-failure-and-drift",
+    "text": "Execution, failure, and drift\nTransaction behavior depends on PostgreSQL, the specific DDL, and Prisma execution; do not assume every migration is automatically transactional or safely retryable. Make non-transactional operations and partial-failure recovery explicit. Large transactions can hold locks, exhaust resources, and increase replication lag. Prevent incompatible concurrent migration runners using appropriate tool/platform coordination.\nA failure must expose the migration, stage, rollback/partial-application state, and recovery path safely. Do not blindly rerun partially applied SQL or manually mark a failed migration successful merely to continue. Required migration failure must stop dependent rollout. Tool metadata is evidence of execution, not a substitute for understanding the physical schema.\nSchema drift is a defect. Do not routinely type ad hoc production DDL, automatically overwrite unexplained drift, or leave emergency changes outside repository history. Investigate intent and data dependence, record exact intervention, reconcile migrations, and verify future paths. [Production access](../security/production-access.md) and [incident response](../security/incident-response.md) govern authority; this policy grants none.\nFor high-risk changes, use a concrete runbook with preconditions, execution, monitoring, abort thresholds, verification, and recovery. Observe locks, application error/latency, replication lag, and progress as relevant. If future topology includes multiple databases, tenants, shards, or customer installations, define per-instance state, rollout ordering, partial failure, and version skew; do not assume atomic fleet migration.\nMigration credentials must remain separate from ordinary runtime code and limited to required privileges. Execution should be attributable to release, migration, environment, identity, time, duration, and result where available. Never embed real sensitive rows, credentials, or connection strings in SQL, examples, registry entries, or logs. Follow [redaction](../security/telemetry-redaction.md).\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Validation and release history",
+    "anchor": "validation-and-release-history",
+    "text": "Validation and release history\nThe current [release workflow](release-evolution.md) owns commands and evidence. `pnpm release:check` protects recorded durable commits, complete migration sets/checksums, and append-only registry history. Fresh Testcontainers PostgreSQL checks replay committed migrations and generate physical references; root `pnpm validate` includes real database tests. These do not prove an upgrade from a released database or inspect an actual deployment.\nWhen supported released baselines exist, add upgrade tests from those real states, with permitted representative data. Verify data meaning, constraints, schema outcome, and supported application/schema combinations; do not merely assert successful SQL execution. Historical fixtures must not be changed just to pass tests. Establish the supported upgrade window with actual deployment/support requirements rather than inventing one now.\nStatic checks can flag risky DDL, but cannot prove lock cost, retention safety, or semantic correctness. Review schema, migration, metadata, and generated reference diffs together. Major boundary changes may need an ADR; ordinary schema evolution does not. Keep temporary transition rationale in migration comments/runbooks and current meaning in schema metadata.\n"
+  },
+  {
+    "id": "repository/docs/database/migrations",
+    "title": "Database Migrations",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Migration review checklist",
+    "anchor": "migration-review-checklist",
+    "text": "Migration review checklist\nVerify ownership, actual release status, source/target state, and whether to refine verified unreleased work or append a new stage.\nReview generated/custom SQL, existing data, irreversible effects, retention, constraints/indexes, lock/rewrite cost, and transaction/partial-failure behavior.\nIdentify supported old/new application combinations, rollout order, backfill strategy, temporary compatibility, recovery, and removal conditions.\nUpdate schema semantics and [generated references](schema-documentation.md); test fresh creation, relevant real release upgrades, data outcomes, and critical constraints/concurrency.\nReview risk-proportionate monitoring, abort and verification evidence, credential separation, and required human/environment decisions. Report unavailable checks explicitly.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Database Principles",
+    "anchor": "database-principles",
+    "text": "Database Principles\n[Task index](../README.md) · [Migrations](migrations.md) · [Schema documentation](schema-documentation.md) · [Transactions](transactions-and-concurrency.md)\nThis policy owns durable data design and persistence boundaries. [ADR-0005](../adr/0005-select-postgresql-as-the-primary-database.md) selects PostgreSQL and [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) selects Prisma ORM/Migrate. Both are implemented as shared API infrastructure that modules use for their own tables; hosting, production topology, and backup procedures depend on actual deployment requirements.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Sources and implementation boundary",
+    "anchor": "sources-and-implementation-boundary",
+    "text": "Sources and implementation boundary\nConcern\nAuthority\nStructures Prisma can express\n[Authored Prisma schema folder](../../apps/api/prisma/schema/schema.prisma): shared configuration plus one model file per module\nReviewed database evolution\nCommitted SQL migrations in `apps/api/prisma/migrations/` under [migration policy](migrations.md)\nComplete physical schema, including custom SQL\nPostgreSQL after applying the committed migrations\nObject meaning, owner, classification, lifecycle\nSchema-adjacent metadata in `apps/api/prisma/metadata/`, one file per module, under [schema documentation](schema-documentation.md)\nLeast-privilege runtime access\nModule grants in `apps/api/prisma/runtime-grants/`, applied to the restricted runtime role in disposable databases\nNavigable current reference\n[Generated database reference](../generated/database/schema.md), derived from migrated PostgreSQL plus metadata\nFeature writes and queries\nA module's Prisma adapter behind its own persistence capabilities, using the shared [database client](../../apps/api/src/database.ts)\nPrisma is infrastructure. Its generated records are not automatically domain entities, public contracts, UI models, or events. Use Prisma Client where clear and efficient, and TypedSQL or explicit parameterized SQL for operations better expressed that way. Do not discard valuable PostgreSQL-native constraints, indexes, views, extensions, or types merely for ORM purity or hypothetical portability. Keep specialized access inside persistence adapters and document custom behavior.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Database Ownership",
+    "anchor": "database-ownership",
+    "text": "Database Ownership\nEvery application-owned object needs identifiable architectural ownership; every table must have a primary domain/capability owner. That owner defines meaning, invariants, allowed readers/writers, and evolution. A shared physical database or shared database package does not grant shared mutation authority.\nCross-domain reads create coupling and need intentional semantics; repeated access may justify a capability interface or projection. Cross-domain writes should invoke the owning capability unless the architecture explicitly assigns another writer. Database access itself is a scoped capability, not permission to query everything. Browser, mobile, and desktop clients must not receive direct database credentials by default; direct access needs an explicit architecture/security model.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Constraints",
+    "anchor": "constraints",
+    "text": "Constraints\nProtect durable invariants as close to the data as practical. Application validation provides useful feedback; PostgreSQL constraints and atomic writes provide the final guarantee under concurrency. Use `NOT NULL`, uniqueness, primary/foreign keys, checks, or exclusion constraints where they express the invariant clearly. Application-only uniqueness checks cannot prevent races.\nNullability must represent real absence, unknown, unassigned, or inapplicable semantics, not implementation convenience. Use foreign keys for durable referential integrity where architecture permits them, and choose update/delete actions deliberately: `CASCADE`, `RESTRICT`, or `SET NULL` is a lifecycle decision. Rich workflows belong in domain/application logic rather than unreadable SQL constraints. Multiple layers may protect the same invariant for different purposes without independently duplicating complex business rules.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Data Types",
+    "anchor": "data-types",
+    "text": "Data Types\nChoose types for meaning: explicit states instead of invalid boolean combinations, exact numeric representations for precision-sensitive values, and structured columns for stable fields requiring constraints, indexing, classification, and querying. Avoid undocumented sentinel values. Enums and custom types have schema-evolution implications.\nDocument units, precision, scale, rounding, and currency relationships where relevant. Floating point is unsuitable by default for exact monetary amounts. Distinguish calendar dates, wall-clock times, instants, durations, and time zones. Add lifecycle timestamps only when useful and define who advances them. `updated_at` is neither an audit history nor automatically a reliable concurrency/ordering token.\nJSON is a deliberate flexible representation, not a substitute for schema design. Persisted JSON and free-form metadata still require validation, classification, redaction, migration, and compatibility rules. Large binaries need a decision considering access patterns, transaction requirements, backup, retention, and cost; if stored externally, database ownership/reference and object lifecycle must remain consistent.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Identifiers",
+    "anchor": "identifiers",
+    "text": "Identifiers\nDefine identity scope and distinguish internal primary keys, public resource IDs, provider IDs, natural business keys, and idempotency keys. Stable primary keys are preferred; use mutable natural keys only with understood consequences. Public and storage identity may coincide deliberately but should not be coupled accidentally. Generated IDs must not encode sensitive information or serve as authorization.\nEach module's implementation conventions record its identifier and timestamp choices, such as immutable UUIDs and database-clock timestamps. One module's choices do not force every domain to use identical semantics.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Query Design",
+    "anchor": "query-design",
+    "text": "Query Design\nRetrieve the fields needed by the caller, with explicit projections where they improve clarity, performance, or security. Read models may differ from write models. Bound collections under [API policy](../api/principles.md#pagination) and parameterize untrusted values in SQL. ORM convenience must not hide material N+1 query costs.\nCreate indexes for demonstrated query, ordering, or integrity requirements. Review existing indexes, composite-column order, specialized/partial behavior, write/storage cost, and creation impact. Uniqueness indexes enforce semantics as well as performance. Do not index every column or remove apparently redundant indexes without query evidence. Use safe query plans, timing, and query-count investigation before adding caches or speculative optimization.\nNormalize for integrity and ownership; denormalize when actual read/performance needs justify synchronization cost. Every persisted projection, counter, cached aggregate, search index, or materialized view needs a canonical source, update/refresh mechanism, staleness expectation, recovery/rebuild strategy, and owner. Caches must not become the only copy of critical durable truth.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Database-native behavior",
+    "anchor": "database-native-behavior",
+    "text": "Database-native behavior\nViews, materialized views, functions, procedures, generated columns, and triggers are architectural behavior and part of migration/compatibility review. Explain purpose and consumers, important expressions, transaction assumptions, activation, writes, and cascading/recursive effects. Undocumented application-owned triggers or state-changing procedures are prohibited. Database notifications do not automatically become the application event architecture.\nUse additional stores, CQRS, event sourcing, separate databases/services, or analytical isolation only when requirements justify their consistency, operations, and recovery cost. A modular monolith may share one physical database while preserving logical ownership. Reporting should not erase ownership boundaries, and financial ledger requirements need their own domain design rather than mutable balances by default.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Access, classification, and lifecycle",
+    "anchor": "access-classification-and-lifecycle",
+    "text": "Access, classification, and lifecycle\nUse machine-readable [classification](../security/data-classification.md) near the schema. Sensitive fields require proportionate controls for projections, grants, telemetry, backups, exports, replicas, and support access. Read-only access can still disclose data. Encryption at rest does not lower classification; field encryption requires explicit key-management, search, rotation, migration, and recovery design. Password hashes remain restricted. Do not put infrastructure secrets in ordinary business tables for convenience.\nSeparate runtime and migration credentials when privileges differ; the current runtime uses `ORION_DATABASE_URL`, and only the Prisma CLI receives `ORION_MIGRATION_DATABASE_URL`. See the [API runtime guide](../../apps/api/README.md#configuration-and-database-access) for the implemented restricted role. [Secrets management](../security/secrets-management.md) and [production access](../security/production-access.md) govern operational access. Significant administrative access should be attributable; database tools must not become silent authorization bypasses.\n[Data retention](../security/data-retention.md) owns deletion, soft-delete justification, archival, copies, backup/recovery, and audit lifecycle. Replicas inherit data controls and may return stale reads. If business audit history is required, model it explicitly; ordinary logs and modification timestamps do not provide authoritative auditability. Development/test seeds must be synthetic and distinct from production bootstrap/reference-data evolution.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Runtime reliability",
+    "anchor": "runtime-reliability",
+    "text": "Runtime reliability\nConnection pools are finite resources; size them against actual application concurrency, database limits, replicas, and deployment scale. Saturation needs evidence, not reflexively larger pools. Bound query waits and propagate cancellation where supported and safe. Observe latency, pool wait, transaction failure, lock contention/deadlocks, timeouts, migration duration, and replica lag where relevant.\nFollow [redaction](../security/telemetry-redaction.md): raw SQL and parameters may disclose sensitive data. Translate known constraint failures to owned semantic errors, preserve unexpected failures as safe observable internal errors, and do not expose database implementation details publicly. [Health policy](../reliability/health-checks.md) distinguishes database-dependent readiness from process liveness.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Schema Evolution",
+    "anchor": "schema-evolution",
+    "text": "Schema Evolution\nUse [migrations](migrations.md) for every durable schema transition and verify release status before editing history. Released or uncertain history is immutable until verified; schema diffs alone cannot establish migration intent. Keep current schema/metadata/reference coherent without requiring readers to reconstruct current meaning from old migrations.\nChoose descriptive, consistent table/column/relationship/constraint/index names using the current schema as the local pattern. Deprecated objects and temporary compatibility fields need explicit purpose and removal conditions. Manual production schema drift is a defect; emergency changes must be recorded and reconciled. Reviewed, scoped, auditable data fixes may use controlled scripts rather than permanent migration history when they repair only one environment.\n"
+  },
+  {
+    "id": "repository/docs/database/principles",
+    "title": "Database Principles",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "New Table Checklist",
+    "anchor": "new-table-checklist",
+    "text": "New Table Checklist\nBefore creating or changing durable structures:\nInspect current schema, metadata, owning domain, access boundaries, migrations/release status, consumers, and tests. Do not guess missing non-obvious semantics.\nIdentify the persisted concept, canonical versus derived status, reader/writer authority, identifiers, lifecycle/retention, classification, and required columns.\nFor each field, define type, null/default/unit meaning, source, public-contract impact, existing-row population, constraints, and index needs.\nFor each constraint/index/native feature, explain its invariant/query purpose, existing-data compatibility, concurrency, locking/write cost, failure mapping, and discovery route.\nDesign migration, rollback or forward recovery, transaction/concurrency boundaries, and operational evidence proportional to risk. Data being unused by current code does not prove it is disposable.\nUpdate [canonical schema documentation](schema-documentation.md) and generate references. Test important constraints, atomic failure, concurrent races, and migrations against real PostgreSQL. Mocks or sequential tests alone cannot prove those guarantees.\nCurrent [validation](../validation.md) covers fresh migrations, PostgreSQL integration, reference completeness/freshness for supported object types, release-history integrity, and import boundaries. Real released upgrade paths and deployment-specific drift/recovery checks require actual supported environments; do not claim them from a fresh-install test.\n"
+  },
+  {
+    "id": "repository/docs/database/release-evolution",
+    "title": "Release and Evolution Workflow",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Release and Evolution Workflow",
+    "anchor": "release-and-evolution-workflow",
+    "text": "Release and Evolution Workflow\n[Migration policy](migrations.md) · [Compatibility policy](../architecture/versioning-and-compatibility.md) · [API versioning](../api/versioning.md)\nThis is the current contributor workflow for deciding whether a database or API change needs historical compatibility protection. It implements the policies above without declaring a deployment, a released contract, or a supported rollback window. The repository currently has no recorded durable release in [`release-history.json`](../../apps/api/prisma/release-history.json). An empty registry means **no release has been recorded here**; it is not proof that an unlisted persistent database does not exist. Do not edit existing migration history while its release status is uncertain.\n"
+  },
+  {
     "id": "repository/docs/database/release-evolution",
     "title": "Release and Evolution Workflow",
     "group": "Database guides",
@@ -366,7 +690,7 @@
     "kind": "repository",
     "heading": "Authorization",
     "anchor": "authorization",
-    "text": "Authorization\nEffective permissions are computed by the identity module from trusted state only and issued as access-token scopes:\nexplicit owner grants of permissions in the composed catalog (`apps/api/src/modules.ts`);\nprovider policy: a **read** permission may be granted automatically to Persons with an active link of a listed provider. The current catalog grants `sales:read` (Sankhya sales consultation) to Persons with an active Sankhya link. `IA_MNS_PROVIDER_GRANTS` can narrow this (`none` disables it). Write and sensitive permissions are rejected for automatic grants at startup;\ninternal roles: `owner` receives every catalog permission plus `identity:admin`.\nNothing from the browser, the host or the language model adds a permission. Modules continue to check scopes, as the agent does for `sales:read`. Scope changes reach other modules within the 10-minute access-token lifetime; identity endpoints check sessions on every request. Linking Sankhya therefore grants sales reading by policy, and creating a profile from PDT grants no business capability until PDT capabilities exist or an owner grants one. [PH-13](../project/human-actions.md#ph-13) records the owner's confirmation of this policy.\n"
+    "text": "Authorization\nEffective permissions are computed by the identity module from trusted state only and issued as access-token scopes:\nexplicit owner grants of permissions in the composed catalog (`apps/api/src/modules.ts`);\nprovider policy: a **read** permission may be granted automatically to Persons with an active link of a listed provider. The current catalog grants `sales:read` (Sankhya sales consultation) to Persons with an active Sankhya link. The enabled grants are the [operational parameter](#operational-parameters) `access.providerGrants`: owners may narrow them (or disable them) in administration, `IA_MNS_PROVIDER_GRANTS` sets the installation default (`none` disables it), and neither can add a grant the catalog does not allow. The policy is read at every token issue. Write and sensitive permissions are rejected for automatic grants at startup;\ninternal roles: `owner` receives every catalog permission plus `identity:admin`.\nNothing from the browser, the host or the language model adds a permission. Modules continue to check scopes, as the agent does for `sales:read`. Scope changes reach other modules within the 10-minute access-token lifetime; identity endpoints check sessions on every request. Linking Sankhya therefore grants sales reading by policy, and creating a profile from PDT grants no business capability until PDT capabilities exist or an owner grants one. [PH-13](../project/human-actions.md#ph-13) records the owner's confirmation of this policy.\n"
   },
   {
     "id": "repository/docs/domains/identity",
@@ -385,293 +709,5 @@
     "heading": "Authentication policy",
     "anchor": "authentication-policy",
     "text": "Authentication policy\nOwners manage it at `/admin` → **Autenticação e segurança** (`GET`/`PUT /identity/admin/security-policy`). It is one row in `identity_security_policies`; without it the defaults apply.\nSetting (screen label)\nDefault\nAllowed\nReported as reducing security above\nDuração máxima de uma sessão (`sessionMaxMinutes`)\n12 h\n1 h – 30 days\n24 h\nEncerrar a sessão após inatividade (`idleTimeoutMinutes`)\n2 h\n15 min – 7 days, not longer than the session\n8 h\nConfirmação para alterar a própria conta (`recentAuthMinutes`)\n10 min\n5 min – 24 h, not longer than the session\n1 h\nConfirmação para ações administrativas (`adminRecentAuthMinutes`)\n30 min\n5 min – 4 h\n1 h\nVerificação em duas etapas (`mfaRequirement`)\nadministrators\neveryone, administrators, none (not in production)\nnone\nPedir o código de verificação novamente (`rememberDeviceDays`)\nevery sign-in (0)\n0 – 90 days\n30 days\n**Duration and inactivity.** A direct session ends at sign-in + duration, whatever the use, or when no activity is reported for the inactivity period. The browser reports activity (clicks, typing, scrolling, returning to the tab) with each renewal of its 10-minute access token; renewals of an untouched tab keep the token fresh but do not postpone inactivity. Renewals are serialized across tabs, a tab that returns from sleep renews at once, and a renewal presenting the credential replaced in the last 30 seconds is a concurrent renewal that receives a token without a new credential; later reuse revokes the session. When a session ends, the person returns to `/entrar` with \"Sua sessão terminou\".\n**Recent authentication.** Changes to one's own password, links or second factor need a sign-in or confirmation within the account window; administrative changes within the administrative window. Confirmation uses the password and code, a provider proof, or a new embedded handshake.\n**Second factor.** It applies to sign-in with an IA-MNS password (PDT Connect and Sankhya sign-ins are protected by those systems). With `everyone` every such account, and with `administrators` every owner, must use it: an account without it gets `mfa_enrollment_required` after the password (also right after setting a password from an enrollment or reset invitation) and sets up the authenticator before any session opens (`POST /identity/login/mfa-enrollment` and `/confirm`), and cannot remove the factor while required. The code is asked at every sign-in, unless the person chose to remember the browser (offered only when `rememberDeviceDays` > 0, never inside a host page, and to owners only while the requirement is `none`, which production never allows). A remembered browser keeps an HttpOnly `ia-mns-device` cookie whose token is stored hashed in `identity_trusted_devices`; it skips the code but yields an ordinary (not second-factor) session. Password changes, removing the factor, an owner reset or **Voltar a pedir o código em todos** in Minha conta forget remembered browsers.\n**Changes.** Saving requires an owner session with the second factor (per policy) and recent administrative confirmation; values outside the limits are refused (`IDENTITY_POLICY_INVALID`), `none` in production is refused (`IDENTITY_POLICY_NOT_ALLOWED`), and newly reduced settings require `acknowledgeReducedSecurity` (`IDENTITY_POLICY_CONFIRMATION_REQUIRED`). Each change is audited (`policy.updated`) with previous and new values and listed on the screen. Open direct sessions are re-derived at once from their sign-in and last activity (shorter values may end them, including the editor's); second-factor rules apply at the next sign-in, while administration always checks the current rule. Other API instances follow within 15 seconds.\n**Not configurable.** Production always requires the second factor for administrators; outside a non-production `none` policy, owners never skip the code through a remembered browser; access tokens stay 10 minutes; embedded sessions renew silently every 10 minutes; ticket, flow and invitation lifetimes, lockout, refresh rotation with reuse detection, rate limits and audit are fixed.\n"
-  },
-  {
-    "id": "repository/docs/domains/identity",
-    "title": "IA-MNS Identity",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Security properties",
-    "anchor": "security-properties",
-    "text": "Security properties\nSecrets (tickets, refresh credentials, recovery codes, assertion ids) are 256-bit random values or high-entropy codes stored only as SHA-256. Passwords are scrypt verifiers; TOTP secrets are AES-256-GCM sealed. None are logged or returned after creation.\nFailures for unknown logins and wrong passwords are identical, and a dummy hash equalizes timing. Lockout is temporary (from the 5th failure: 1, 2, 4… up to 60 minutes). Login, verification and flow endpoints are rate limited.\nCookie-authenticated endpoints (refresh, provisioning and consolidation by cookie, signed-in detection at login start) accept only same-origin web requests (`x-ia-mns-client: web`, `Sec-Fetch-Site`, `Origin`). A consolidation ticket is bound to the session that proved both profiles.\nAudit (`identity_audit_events`) is append-only for the runtime role and stores only allowlisted codes.\nAll identity responses are `Cache-Control: no-store`.\n"
-  },
-  {
-    "id": "repository/docs/domains/identity",
-    "title": "IA-MNS Identity",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Deployment requirements",
-    "anchor": "deployment-requirements",
-    "text": "Deployment requirements\nHTTPS `IA_MNS_PUBLIC_ORIGIN`; the signing and encryption keys in the secret store (generate them like `apps/api/scripts/local-identity.ts`; never reuse local keys).\nServe the web and the API under the same origin, with the API at the browser path used in `PDT_IDENTITY_REDIRECT_URI` (for example `https://<ia-mns>/api/identity/pdt/callback`).\nWeb hosting must send `Content-Security-Policy: frame-ancestors 'none'` on every route except `/embed/pdt` and `/embed/sankhya`, which allow only their host origins. The development and preview servers apply this with `ORION_WEB_EMBED_ANCESTORS`.\nConfiguration names are listed in the [generated configuration reference](../generated/configuration/api.md).\n"
-  },
-  {
-    "id": "repository/docs/domains/identity",
-    "title": "IA-MNS Identity",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Limits and next steps",
-    "anchor": "limits-and-next-steps",
-    "text": "Limits and next steps\nThe embedded Sankhya integration passed in the Sankhya development Om only; the direct-URL Sankhya sign-in page is pending ([PJ-25](../project/implementation-plan.md#current-work)), and production needs PH-11, PH-14 and PH-17. The embedded PDT integration passed with a local PDT Connect ([PJ-27](../project/implementation-plan.md#current-work)); HTTPS homologation and production are PH-12. Development, synthetic and proof-of-concept results are not production evidence.\nPasskeys, e-mail recovery, SCIM or automated deprovisioning from Sankhya/PDT, and Sankhya-group-to-permission mappings are not implemented. Deactivating a user in Sankhya or PDT stops new proofs; existing IA-MNS sessions end at their expiry or on owner action.\nPDT authorization data (permissions and stores) is not yet mapped to IA-MNS capabilities; future PDT capabilities must re-authorize with PDT at execution time, as the contract requires.\nRetention of identity data, audit and sessions follows the shared-deployment policy still pending in [PH-09](../project/human-actions.md#ph-09).\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Sales Capability",
-    "anchor": "sales-capability",
-    "text": "Sales Capability\n[Corporate agent](corporate-agent.md) · [Project plan](../project/implementation-plan.md) · [Setup](../setup.md) · [Architecture decision](../adr/0018-bound-natural-language-sales-to-a-read-only-query-capability.md) · [Sources decision](../adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md) · [AI interpretation](../architecture/ai-interpretation.md)\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Scope and acceptance",
-    "anchor": "scope-and-acceptance",
-    "text": "Scope and acceptance\nThe first business capability of the IA-MNS corporate agent lets an authorized sales reader ask questions in Portuguese about the sales of MNS (Sankhya) and Pilar da Terra (VRMaster), receive real aggregates, and continue with related questions. The person chooses the source in the interface ([sources](#sources)). Example: “Quanto vendi de maçã por mês nos últimos 3 meses?” followed by “E comparado ao mesmo período do ano passado?”. Generic monetary questions use the source's monetary measure: VLRLIQUIDO in Sankhya, `valortotal` in VRMaster. Literal phrase matching against the product descriptions (TGFPRO, `produto.descricaocompleta`) is sufficient for this MVP.\nAcceptance requires an executable API/web workflow, validated interpretation, deterministic calculations, explicit missing configuration and provider errors, contextual comparisons, useful suggestions, no arbitrary SQL, and no ERP writes. Actual ERP reconciliation and live model interpretation additionally require the credentials tracked in the [human checklist](../project/human-actions.md#ph-08) ([PH-20](../project/human-actions.md#ph-20) for VRMaster). Synthetic tests do not establish the business accuracy of a real database.\nOnly net value, quantity, weight (Sankhya only), totals, monthly breakdown, product breakdown, and comparisons with the prior year or immediately preceding equal-length period are supported. Other processes, returns as a separate report, customer/seller/store/cost-center/buyer filters, margins, costs, taxes, automation, exports, login, and deployment are outside this capability. Durable conversation history belongs to the agent module. A capability user reads every source and all companies represented by each reference; `sales:read` grants both sources and no tenant or per-company isolation is implied.\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Sources",
-    "anchor": "sources",
-    "text": "Sources\nThe agent interface offers a selector beside the message box with exactly `MNS (Sankhya)`, `Pilar da Terra (VR Master)` and `Tudo`; it starts at `MNS (Sankhya)`. The web keeps the choice in memory while the application is open, across conversations, and sends it with each turn as `source` (`sankhya`, `vrmaster` or `all`); a reload starts again from `MNS (Sankhya)` and nothing is stored as a preference. The API records the source with the turn ([agent](corporate-agent.md#persistent-conversations-and-context)). The selection replaces the conversational \"Sankhya or VRMaster?\" question decided on 2026-10-06, which was never implemented ([ADR-0027](../adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)).\n**The selection decides, never the text.** `MNS (Sankhya)` queries only Sankhya and `Pilar da Terra (VR Master)` only VRMaster. Source and company names in a message neither switch, add nor filter a source: the interpreter ignores them, the application drops a source name placed in a filter, and a message naming another source receives an application-authored notice that the selected source was used.\n**`Tudo` queries both, separately.** The same analysis plan runs in both sources in parallel. The answer has one section per source with its provenance, status and own totals, and says that values are not summed. No combined figure exists without a later product decision.\n**Failures stay attributed.** With `Tudo`, a source that is unavailable, not configured or too broad is reported in its section beside the other source's result, and the failure is logged with the turn; the turn fails only when both fail. With a single source, its failure fails the turn and leaves the conversation state unchanged.\n**Measures per source.** Net value and quantity exist in both sources; weight only in Sankhya. A weight question with VRMaster alone is answered as unavailable without querying it; with `Tudo`, the VRMaster section says the measure is unavailable.\n**The plan is source-independent.** Changing the selector and asking a follow-up (for example \"E em agosto?\") reuses the active analysis in the newly selected source.\nThe application layer runs the adapters through the source-neutral `SalesReader` port ([reader.ts](../../apps/api/src/features/sales/reader.ts)). The Oracle adapter knows only the Sankhya reference and the PostgreSQL adapter only the VRMaster reference; they share the port, the scope check of aggregate rows and the literal product-phrase matching ([product-match.ts](../../apps/api/src/features/sales/product-match.ts)), not SQL or connections.\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Sankhya sales semantics",
-    "anchor": "sankhya-sales-semantics",
-    "text": "Sankhya sales semantics\nThe canonical executable reference is [query.ts](../../apps/api/src/features/sales/query.ts), transcribed from the owner's SQL on 2026-10-01. Preserve its complete DISTINCT projection, required inner joins, optional joins, adjusted-price precedence, and exclusions. In particular:\nConfirmed notes require `CAB.STATUSNOTA = 'L'`, product usage `M` or `R`, excluded operation codes `1002, 915, 9599, 905, 575, 930, 568, 515, 450, 460, 1006, 1008`, and excluded group `85007003`.\nThe final reference restricts computed `TIPMOV = 'V'`. The computed movement maps bonus sales to `B`, so bonus sales and returns are excluded. Do not subtract returns from the final totals merely because signed return measures exist inside the CTE.\nVLRLIQUIDO uses nonzero `AJI.AD_VLRTOTFIN`, then nonzero `ITE.AD_TOTALAJUSTADO`, then `ITE.VLRTOT - ITE.VLRDESC`, subtracts `ITE.AD_VLRTOTALBONIFI`, and applies the reference movement sign.\nQuantity uses QTDNEG and is grouped separately by CODVOL; different units never share a total. Monetary values assume BRL, which must be confirmed by the owner. Weight uses QTDNEG × PESOLIQ. The ERP weight unit has not been verified; the UI does not label it kilograms. Missing or nonpositive PESOLIQ produces a warning without changing the reference calculation.\nDates use DTNEG. The inclusive user end date becomes an exclusive next-day boundary so timestamps throughout that day are included. The supplied BETWEEN query needs its end bind to include that same day for reconciliation.\nProduct matching is a literal, case/accent-insensitive phrase bounded by non-alphanumeric characters, with whitespace normalized. Regex metacharacters are escaped before binding. A product word cannot match the prefix of an unrelated product word. The answer lists products with sales in either requested period, not all catalog products without sales. Generic all-product queries omit the match list.\nJoin fan-out and duplicate collapse follow the owner's reference. This may retain duplicate effects from multiple adjustment/origin/lot matches; removing or choosing an adjustment requires reconciliation and a separate rule. Product predicates run before DISTINCT, and the lot subquery considers only controls belonging to eligible items; all lot matches for those controls remain eligible. This prunes irrelevant work without choosing a lot or adjustment or changing the projected grain. No schema, index, grant, migration, or object is created in Sankhya.\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "VRMaster sales semantics",
-    "anchor": "vrmaster-sales-semantics",
-    "text": "VRMaster sales semantics\nThe canonical executable reference is [vrmaster-query.ts](../../apps/api/src/features/sales/vrmaster-query.ts), transcribed on 2026-10-07 from the owner's reference SQL ([PH-18](../project/human-actions.md#ph-18)), a PDT Connect dashboard query over `venda`.\nSales are the rows of `public.venda` that survive the reference's joins: inner joins to `produto`, `loja`, the store's `fornecedor`, `produtoaliquota` for the product in the store's state, `aliquota`, and the product's level-1 `mercadologico`; left joins to `centrocusto` and `comprador`. Every join is preserved as supplied, including its cardinality, because dropping one could change which sales count. Only the columns IA-MNS reports are projected; the reference's cost, tax, margin and profit computations are not used.\nEvery store counts. The reference's `venda.id_loja = ANY(:lojas)` parameter is omitted: its inner join to `loja` already admits exactly the sales of existing stores, so omitting the parameter equals passing every store.\nDates use `venda.data`; the inclusive end date becomes an exclusive next-day boundary, as in the reference.\nNet value is the sum of `venda.valortotal` and is labeled \"valor total\". Quantity is the sum of `venda.quantidade` per `produto.id_tipoembalagem`, labeled by the packaging-type identifier because the packaging-type table is outside the reference and the account's grants; different types are never added. VRMaster has no reviewed weight.\nProduct matching applies the shared literal phrase to `produto.descricaocompleta`: accented letters are translated before `upper()` so the match does not depend on the database's character classification, whitespace is collapsed, and the pattern is a bound value with its metacharacters escaped.\nTable names are schema-qualified (`public.`), so a role `search_path` cannot redirect them. Product labels are `id - descricaocompleta`.\nWhether the reference's `calculos` step filters rows could not be read from the supplied excerpt; the transcription assumes it only derives columns. The [reconciliation](../project/human-actions.md#ph-20) compares IA-MNS with the full reference and must confirm or correct this.\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Interpretation and computation",
-    "anchor": "interpretation-and-computation",
-    "text": "Interpretation and computation\nThe server uses the OpenAI Node SDK Responses API, through the structured-model port, with one forced strict `interpret_sales_message` function call. The interpretation reports a decision (analyze, clarify for genuine ambiguity, or reject unsupported scope), how the message relates to the conversation, and only what the message states; the application merges it into the structured conversation state, asks for missing information, and compiles a bounded query ([AI interpretation](../architecture/ai-interpretation.md)). All public messages, including clarification and rejection, are application-authored; model text never becomes a public sales answer. The model cannot supply arbitrary clarification text or monetary claims. Requests that require unsupported scope are rejected rather than partially answered. The model receives the current Sao Paulo date, recent sales exchanges with the application's replies, and the structured state (last executed filters and any unanswered request). Missing periods require clarification; a later reply that supplies only the period completes the request it answers. The model names the period form and the application computes its dates; periods that have not started are asked again and periods over 366 days explain the limit. “Last N months” defaults to the last N completed calendar months; including the current month must be explicit. This month/year ends today; last N days includes today and N-1 preceding dates. Weight requests, including kg, select weight rather than quantity grouped by KG; no unverified weight conversion is implied. Follow-ups, including identifying considered products, preserve prior filters unless explicitly changed. The interpretation never chooses the source: since interpreter `sales-interpreter/2026-10-07.1`, names of the sources, companies or systems (MNS, Sankhya, Pilar da Terra, VR Master) are neither filters nor unsupported, while a store filter remains unsupported.\nAll tool output is checked at the provider boundary and then validated by the application. Both current and derived comparison date ranges are real calendar dates from 2000 onward, at most 366 inclusive days, and never future dates. Descriptions have 2–80 characters. Each period, including monthly zero filling, is limited to 500 aggregate rows and 100 matched products; the combined comparison list has at most 200 unique products. Excessive results fail visibly without returning incomplete totals. Empty aggregates retain no synthetic zero row. There is no SQL tool, generated SQL, agent delegation, or vector database.\nCurrent and comparison queries of one source share one read-only transaction and snapshot: Oracle `SET TRANSACTION READ ONLY`, PostgreSQL `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY`, always rolled back. Decimal strings are converted to 50-digit decimal arithmetic for totals and percentage changes. Monthly results fill missing months with zero for known units. A zero comparison base has an undefined percentage, not infinity. Prior-year leap days clamp to February 28. The previous-period comparison uses an equal number of days, rather than assuming whole months. Replies, tables, and suggestions are built from validated results; sales numbers are not authored by the model.\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Identity, privacy, and context",
-    "anchor": "identity-privacy-and-context",
-    "text": "Identity, privacy, and context\nSales execution requires sales:read under Orion's verified bearer principal, or explicit local access. The [agent](corporate-agent.md#persistent-conversations-and-context) owns durable conversation identity, concurrency, context and history. Sales context stores structured conversation state (last executed plan and query, unanswered request, bounded exchanges with application-authored replies); ERP result rows are not model context. The context does not depend on the source. The legacy `/sales/chat` endpoint always uses Sankhya. Failed turns preserve prior filters. The legacy sales endpoints keep their original 30-minute/12-question in-memory semantics for compatibility, while the product exclusively uses durable agent endpoints.\nThe explicit `IA_MNS_LOCAL_ACCESS=true` mode is for a single developer on loopback only. Configuration rejects it in production or on a public listener; requests also require a loopback client/host, a local browser origin, and the custom client header, and reject cross-site fetches. It grants the local developer the sales-read capability. Do not expose the development Vite proxy or tunnel it; local mode is not a shared environment authentication system. Production requires configured providers and a trusted verifier at startup. A concrete issuer/login remains conditional under PJ-05.\nSales, questions, filters, and product descriptions are CONFIDENTIAL. Credentials are RESTRICTED. The browser holds token/context/results in memory and clears them on credential changes; only the light/dark theme preference uses browser storage. Protected responses use no-store. New conversation preserves history; explicit deletion removes persisted conversation/context/turns. Model requests use `store:false`, which does not establish zero provider retention or account-specific policy. Only questions and filter context go to OpenAI, never sales rows, prices, customer names, credentials, or raw schema. Users must avoid putting unrelated confidential information or credentials in questions.\nProvider exceptions produce safe public error envelopes plus one correlated, allowlisted diagnostic, including the provider/stage and bounded public Oracle/OpenAI error codes. Provider/stage remain internal and never include raw messages or configuration. Rollback/close failures remain provider failures and prevent returning an unverified success. No prompt, result, query binds, Oracle connect descriptor, VRMaster host or account, or secret enters logs. Chat input is limited to 2,000 characters and 12 KB transport size; actor rate limit is 15 questions per minute. Model timeout is 20 seconds, Oracle round-trip timeout 45 seconds, pool wait 5 seconds, and execution deadline 90 seconds. VRMaster statements stop after 30 seconds (the account's own limit, repeated in the transaction), locks after 5 seconds, the client gives up after 35 seconds, connections after 5 seconds, and an aborted turn ends its connection. With `Tudo`, both sources run in parallel within the same deadline. Agent acceptance returns immediately and its browser polls actual progress. The legacy sales route overrides the foundation socket inactivity timeout to 95 seconds, while other routes retain their existing budget. Real ERP queries exceeded the original 10-second round-trip limit, so the bounded budgets now accommodate the measured workload. Limits are process-local, not a distributed quota.\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Local execution and external verification",
-    "anchor": "local-execution-and-external-verification",
-    "text": "Local execution and external verification\nFollow [setup](../setup.md#sales-chat) and the generated [configuration reference](../generated/configuration/api.md). Oracle node-oracledb 7 supports Oracle 12.1 in Thin mode; if an actual authentication/network feature requires Thick mode, configure a compatible Oracle Client directory. Client 19 or 21 supports this database version; newer clients are not automatically compatible with older servers ([driver compatibility matrix](https://node-oracledb.readthedocs.io/en/stable/user_guide/installation.html)). The account must have CREATE SESSION and SELECT only on the reference tables, with schema resolution supplied by the DBA. No login/provider or real ERP account is provisioned by this repository.\nThe 2026-10-01 read-only audit connected to Oracle 12.1.0.2 with Client 19.32 after the configured Client 11.2 failed with DPI-1050 and Thin mode failed with NJS-116. Nine structured-query scenarios matched the supplied SQL's aggregates in a shared read-only snapshot: monthly net value, month to date, rolling 30-day weight, quantity by unit, product breakdown, previous year, equal-length prior period, accent/case equivalence, and no matching sales. The complete 46-column reference projection also matched for the current three-month product scope. Returns and bonus movements were present in the source and excluded by the final sales filter. Actual HTTP injection with the real Oracle adapter passed annual comparison and empty-result handling using a controlled planner; this is not a live natural-language test.\nThe audit exposed unrelated description-prefix matches, a comparison product list exceeding the original cap, and Oracle work exceeding the original timeout. Word boundaries now exclude unrelated prefixes, both periods contribute to the product list, limits reject truncation, and eligible-control pruning reduces work while retaining the reference projection. Oracle response shape/numeric checks reject malformed results rather than inventing empty sales. Small fetch batches in this legacy Oracle/Thick stack produced an intermittent difference in one complete record, although database-side MINUS in both directions returned no differences and aggregates matched. Fetching the complete bounded result together matched every field; the adapter now aligns its fetch array size with each result cap. This workaround does not establish the precise driver/server cause, which remains a DBA investigation under PH-08.\nNo business totals, credentials, or connection descriptor are committed as evidence. The owner later configured a key manually and explicitly authorized reuse. Ten actual language requests, eight original-SQL reconciliations, and a real-browser sales query passed; see [live verification](../project/live-sales-verification.md). Synthetic tests remain distinct evidence. The supplied account also has broad write privileges, which the DBA must remove by providing a dedicated reader. Weight-unit and currency confirmation remain owner actions.\nBoundary tests use the real OpenAI SDK with synthetic HTTP responses and Oracle connection doubles. API injection tests exercise actual Fastify authorization, context, validation, and error envelopes. Browser journeys exercise the generated SDK with intercepted synthetic sales responses, while the unavailable-configuration path reaches the real emitted API. These checks do not replace validation against Oracle 12.1 or a live model. Run the full [validation gate](../validation.md) before handoff. On the real ERP, compare at least an adjusted item, a bonus exclusion, a return exclusion, multiple adjustment joins, accented descriptions, mixed units, missing weight, month end, and both comparison periods against the reference. No verification operation writes ERP data.\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "VRMaster",
-    "anchor": "vrmaster",
-    "text": "VRMaster\nSet the `VRMASTER_DB_*` settings of the [setup](../setup.md#sales-chat) with the dedicated read-only account of [PH-19](../project/human-actions.md#ph-19) (`CONNECT`, `USAGE` on `public`, `SELECT` only on the nine reference tables, `default_transaction_read_only = on`, 30-second statement timeout); never the PDT Connect account. On 2026-10-07 the VRMaster server answered the PostgreSQL TLS request negatively, so its connection needs `VRMASTER_DB_SSL_MODE=disable`, which sends the credentials and sales data unencrypted on that network; the default `verify-full` refuses to connect without TLS. Without VRMaster settings, selecting it reports the source as not configured.\nThe adapter's tests run the fixed SQL on PostgreSQL 16 with a synthetic VRMaster schema and the PH-19 grants: period totals and inclusive dates, monthly and product grouping, accent- and case-insensitive whole-word product phrases, comparisons, packaging-type quantities, every reference join (excluded and included rows), bound text that looks like SQL or a regular expression, no transaction left open, cancellation of a blocked read and unavailable or refused connections. They establish the transcription's behavior, not agreement with the real VRMaster; that is the reconciliation of [PH-20](../project/human-actions.md#ph-20), with the queries in [VRMaster reconciliation](../project/vrmaster-reconciliation.md).\n"
-  },
-  {
-    "id": "repository/docs/domains/sales-chat",
-    "title": "Sales Capability",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Internal-pilot readiness review",
-    "anchor": "internal-pilot-readiness-review",
-    "text": "Internal-pilot readiness review\nThe [2026-10-01 MVP audit](../project/mvp-audit.md) records fixes, actual HTTP/Oracle evidence, desktop/mobile review, guarantees, and remaining human dependencies. Passing the local gate is not approval for shared deployment or proof of live natural-language accuracy.\n"
-  },
-  {
-    "id": "repository/docs/generated/api/errors",
-    "title": "API Error Registry",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "API Error Registry",
-    "anchor": "api-error-registry",
-    "text": "API Error Registry\n[Error contract](../../api/error-contract.md) · [API runtime](../../../apps/api/README.md)\nCode\nHTTP status\nCategory\nRetryable\nPublic message\n`AUTHENTICATION_REQUIRED`\n401\nauthentication\nno\nAuthentication is required.\n`VALIDATION_FAILED`\n400\nvalidation\nno\nThe request is invalid.\n`RESOURCE_NOT_FOUND`\n404\nnot_found\nno\nThe resource was not found.\n`RATE_LIMITED`\n429\nrate_limit\nyes\nToo many requests. Try again later.\n`INTERNAL_ERROR`\n500\ninternal\nno\nAn unexpected error occurred.\n`SERVICE_UNAVAILABLE`\n503\navailability\nyes\nThe service is unavailable.\n`IDENTITY_NOT_CONFIGURED`\n503\navailability\nno\nIdentity is not configured.\n`IDENTITY_METHOD_UNAVAILABLE`\n503\navailability\nno\nThis sign-in method is not available.\n`IDENTITY_INVALID_CREDENTIALS`\n401\nauthentication\nno\nThe sign-in details are invalid.\n`IDENTITY_INVALID_CODE`\n401\nauthentication\nno\nThe verification code is invalid.\n`IDENTITY_FLOW_EXPIRED`\n400\nvalidation\nno\nThis sign-in step expired or was already used. Start again.\n`IDENTITY_PROOF_REJECTED`\n401\nauthentication\nno\nThe external identity could not be verified.\n`IDENTITY_PROVIDER_UNAVAILABLE`\n503\navailability\nyes\nThe external identity provider is unavailable.\n`IDENTITY_ACCOUNT_DISABLED`\n403\nauthorization\nno\nThis account is disabled.\n`IDENTITY_SESSION_EXPIRED`\n401\nauthentication\nno\nThe session ended. Sign in again.\n`IDENTITY_RECENT_AUTHENTICATION_REQUIRED`\n403\nauthorization\nno\nConfirm your identity again to continue.\n`IDENTITY_STRONG_AUTHENTICATION_REQUIRED`\n403\nauthorization\nno\nThis operation requires a second factor.\n`IDENTITY_ACCESS_DENIED`\n403\nauthorization\nno\nThis operation is not permitted.\n`IDENTITY_PERSON_NOT_FOUND`\n404\nnot_found\nno\nThe person was not found.\n`IDENTITY_LINK_NOT_FOUND`\n404\nnot_found\nno\nThe linked account was not found.\n`IDENTITY_LINK_CONFLICT`\n409\nconflict\nno\nThis external account is already linked to another person.\n`IDENTITY_PROVIDER_ALREADY_LINKED`\n409\nconflict\nno\nA different account of this provider is already linked.\n`IDENTITY_LAST_METHOD`\n409\nconflict\nno\nAt least one sign-in method must remain.\n`IDENTITY_LAST_OWNER`\n409\nconflict\nno\nAt least one active owner must remain.\n`IDENTITY_LOGIN_TAKEN`\n409\nconflict\nno\nThis login is not available.\n`IDENTITY_ALREADY_ENROLLED`\n409\nconflict\nno\nA local credential already exists.\n`IDENTITY_INVALID_LOGIN`\n400\nvalidation\nno\nUse 3 to 64 lowercase letters, digits, dot, dash or underscore.\n`IDENTITY_INVALID_NAME`\n400\nvalidation\nno\nUse a display name with 1 to 120 characters.\n`IDENTITY_SESSION_NOT_FOUND`\n404\nnot_found\nno\nThe session was not found.\n`IDENTITY_WEAK_PASSWORD`\n400\nvalidation\nno\nUse at least 12 characters that do not contain the login.\n`IDENTITY_UNKNOWN_PERMISSION`\n400\nvalidation\nno\nThe permission is not registered.\n`IDENTITY_POLICY_INVALID`\n400\nvalidation\nno\nThe authentication policy is outside the allowed limits.\n`IDENTITY_POLICY_NOT_ALLOWED`\n409\nconflict\nno\nProduction always requires a second factor for administrators.\n`IDENTITY_POLICY_CONFIRMATION_REQUIRED`\n409\nconflict\nno\nConfirm that this policy significantly reduces security.\n`IDENTITY_TOTP_REQUIRED`\n409\nconflict\nno\nSet up a second factor first.\n`IDENTITY_DIRECTORY_UNAVAILABLE`\n503\navailability\nno\nThe Sankhya user directory is not configured.\n`IDENTITY_EXTERNAL_ACCOUNT_NOT_FOUND`\n404\nnot_found\nno\nThe external account was not found.\n`IDENTITY_EXTERNAL_ACCOUNT_INACTIVE`\n409\nconflict\nno\nThe external account can no longer sign in.\n`IDENTITY_MERGE_NOT_ALLOWED`\n409\nconflict\nno\nThese profiles cannot be combined automatically.\n`IDENTITY_MERGE_BUSY`\n409\nconflict\nyes\nA conversation is still running. Try again shortly.\n`IDENTITY_LOCAL_CREDENTIAL_REQUIRED`\n409\nconflict\nno\nCreate a local password first.\n`SALES_ACCESS_DENIED`\n403\nauthorization\nno\nSales access is not permitted.\n`SALES_NOT_CONFIGURED`\n503\nconfiguration\nno\nSales providers are not configured.\n`SALES_PROVIDER_UNAVAILABLE`\n503\navailability\nyes\nThe sales provider is unavailable. Try again later.\n`SALES_QUERY_INVALID`\n400\nvalidation\nno\nThe sales query is outside the supported limits.\n`SALES_RESULT_TOO_LARGE`\n400\nvalidation\nno\nNarrow the product search or period.\n`SALES_CONVERSATION_EXPIRED`\n410\nnot_found\nno\nThe conversation is no longer available. Start a new conversation.\n`SALES_CONVERSATION_BUSY`\n409\nconflict\nyes\nA question is already being processed in this conversation.\n`AGENT_CONVERSATION_ARCHIVED`\n409\nconflict\nno\nRestore the archived conversation before submitting a new turn.\n`AGENT_NOT_CONFIGURED`\n503\navailability\nno\nThe agent is not configured.\n`AGENT_CONVERSATION_NOT_FOUND`\n404\nnot_found\nno\nThe conversation was not found.\n`AGENT_CONVERSATION_BUSY`\n409\nconflict\nyes\nThe conversation has an active turn.\n`AGENT_REQUEST_CONFLICT`\n409\nconflict\nno\nThis request identifier has different content.\n`AGENT_ACCESS_DENIED`\n403\nauthorization\nno\nThis capability is not permitted.\n`AGENT_PROVIDER_UNAVAILABLE`\n503\navailability\nyes\nThe agent provider is unavailable.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Web Component Reference",
-    "anchor": "web-component-reference",
-    "text": "Web Component Reference\n[Living documentation](../../architecture/living-documentation.md) · [Component source](../../../apps/web/src/components.tsx)\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "ErrorNotice",
-    "anchor": "errornotice",
-    "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props",
-    "text": "Props\nName\nType\nMeaning\n`error`\n`unknown`\nMapped through the shared public failure-message boundary.\n`operation`\n`read | create | write`\nSelects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read.\n`messages`\n`Record<string, string> (optional)`\nModule-specific wording for its own stable error codes.\n`onReload`\n`() => void`\nOptional recovery action when current data can be refreshed.\n`reloadLabel`\n`string (optional)`\nAccessible name of the reload action; defaults to Reload.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states",
-    "text": "States\nFailure message\nFailure message with reload action\nAccessibility: Uses role=alert so the failure is announced; the optional reload control is a native button.\nUsage: Pass the original error to preserve stable-code mapping. Offer reload only when the current data can be refreshed, and never imply that an unknown write outcome failed.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples",
-    "text": "Examples\n**Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "SalesResults",
-    "anchor": "salesresults",
-    "text": "SalesResults\nPresents validated sales aggregates of one source, distinct units, comparisons and matched products.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-1",
-    "text": "Props\nName\nType\nMeaning\n`result`\n`SalesResult`\nGenerated SDK response containing server-owned rows, exact decimal totals, comparison periods and warnings.\n`source`\n`sankhya | vrmaster (optional)`\nSource of the result; selects its measure labels. Defaults to sankhya.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-1",
-    "text": "States\nEmpty sales\nTable\nSingle-unit monthly chart\nComparison details\nMatched products\nAccessibility: Native captioned tables, scoped headers, text values beside chart bars, pressed-state view buttons and native details controls.\nUsage: Render only validated API results. Charts are available for monthly data sharing one unit; different quantity units, including VRMaster packaging types, never share a chart or total.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-1",
-    "text": "Examples\n**Monthly sales with comparison** (`sales-monthly-results`): Synthetic decimal sales and prior-year totals; the preview makes no API or provider request.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "SalesAnswer",
-    "anchor": "salesanswer",
-    "text": "SalesAnswer\nPresents a sales answer with one labeled section per queried source: MNS (Sankhya), Pilar da Terra (VR Master) or both.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-2",
-    "text": "Props\nName\nType\nMeaning\n`answer`\n`SalesAnswer`\nGenerated SDK agent result: the selection and a section per source with its status, reason and result.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-2",
-    "text": "States\nOne source\nBoth sources\nSource unavailable\nMeasure unavailable in a source\nAccessibility: Each source is a group named by its level-2 heading, not a landmark, so repeated answers stay distinct; status text explains a missing result without relying on color.\nUsage: Never add figures across sections: each source keeps its own totals, and a failed source is reported beside the other source's result.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-2",
-    "text": "Examples\n**Both sources, one unavailable** (`sales-answer-both-sources`): Synthetic Tudo answer with a Sankhya total and an unavailable VRMaster; the preview makes no API or provider request.\n"
-  },
-  {
-    "id": "repository/docs/generated/configuration/api",
-    "title": "API Configuration Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "API Configuration Reference",
-    "anchor": "api-configuration-reference",
-    "text": "API Configuration Reference\n[Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)\nNo values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. API modules that require the database or bearer authentication stay unmounted until those settings exist, and production startup fails instead.\nEnvironment variable\nType\nRequired\nDefault\nVisibility\nClassification\nSecret\nPurpose\n`ORION_ENV`\ndevelopment | test | production\nyes\n—\nserver\nINTERNAL\nno\nRuntime environment.\n`ORION_RELEASE_ID`\nartifact identifier, 1..128 ASCII letters/digits/._-\nno\n`local`\nserver\nINTERNAL\nno\nActual artifact revision for correlated logs and traces; local for unversioned development.\n`ORION_API_HOST`\nnonempty string\nno\n`127.0.0.1`\nserver\nINTERNAL\nno\nListen address; loopback by default.\n`ORION_API_PORT`\ninteger 0..65535\nno\n`3000`\nserver\nINTERNAL\nno\nListen port; zero selects an ephemeral port.\n`ORION_LOG_LEVEL`\nPino level\nno\n`info`\nserver\nINTERNAL\nno\nStructured log threshold.\n`ORION_SHUTDOWN_TIMEOUT_MS`\ninteger 100..30000\nno\n`5000`\nserver\nINTERNAL\nno\nTotal graceful shutdown deadline.\n`ORION_OTLP_ENDPOINT`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nOptional OTLP HTTP collector base URL.\n`ORION_TRACE_SAMPLE_RATIO`\nnumber 0..1\nno\n`1`\nserver\nINTERNAL\nno\nTrace sampling probability.\n`ORION_DATABASE_URL`\nPostgreSQL URL\nno\n—\nserver\nRESTRICTED\nyes\nRuntime PostgreSQL credential; enables the database for modules that require it and adds it to readiness.\n`ORION_TOKEN_ISSUER`\nissuer URL\nno\n—\nserver\nINTERNAL\nno\nExpected access-token issuer; configure with audience and JWKS URL to enable bearer authentication.\n`ORION_TOKEN_AUDIENCE`\nnonempty string\nno\n—\nserver\nINTERNAL\nno\nExpected API access-token audience.\n`ORION_TOKEN_JWKS_URL`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nTrusted issuer public-key endpoint.\n`OPENAI_API_KEY`\nnonempty string\nno\n—\nserver\nRESTRICTED\nyes\nDedicated IA-MNS project key; required for agent routing and capability interpretation.\n`OPENAI_MODEL`\nmodel identifier\nno\n`gpt-6.1-sol`\nserver\nINTERNAL\nno\nResponses API model supporting strict function calling.\n`IA_MNS_AI_TRACE`\noff | metadata | content\nno\n`metadata`\nserver\nINTERNAL\nno\nAI turn tracing: metadata logs allowlisted decisions, timings and token counts without user content; content also stores confidential interpretation traces with each turn and is refused in production until PH-09.\n`SANKHYA_DB_USER`\nnonempty string\nno\n—\nserver\nRESTRICTED\nyes\nOracle account with CREATE SESSION and only SELECT grants on the sales reference tables.\n`SANKHYA_DB_PASSWORD`\nnonempty string\nno\n—\nserver\nRESTRICTED\nyes\nRestricted Oracle account password; configure with user and connect string.\n`SANKHYA_DB_CONNECT_STRING`\nOracle connect descriptor\nno\n—\nserver\nRESTRICTED\nyes\nOracle Easy Connect or full descriptor, without embedded credentials.\n`SANKHYA_ORACLE_CLIENT_LIB_DIR`\nlocal directory\nno\n—\nserver\nINTERNAL\nno\nOptional Oracle Client 19+ library directory; enables Thick mode when needed.\n`VRMASTER_DB_HOST`\nhost name or IP address\nno\n—\nserver\nRESTRICTED\nno\nVRMaster PostgreSQL server of the Pilar da Terra sales source; configure with name, user and password.\n`VRMASTER_DB_PORT`\ninteger 1..65535\nno\n`5432`\nserver\nINTERNAL\nno\nVRMaster PostgreSQL port.\n`VRMASTER_DB_NAME`\nPostgreSQL database name\nno\n—\nserver\nINTERNAL\nno\nVRMaster database that holds the sales reference tables.\n`VRMASTER_DB_USER`\nPostgreSQL role name\nno\n—\nserver\nRESTRICTED\nyes\nDedicated read-only VRMaster role (PH-19) with SELECT only on the sales reference tables; never the PDT Connect account.\n`VRMASTER_DB_PASSWORD`\nnonempty string\nno\n—\nserver\nRESTRICTED\nyes\nPassword of the dedicated read-only VRMaster role.\n`VRMASTER_DB_SSL_MODE`\nverify-full | disable\nno\n`verify-full`\nserver\nINTERNAL\nno\nTLS with certificate and host verification, or explicitly disabled for a server without TLS, which sends the credentials and sales data unencrypted on that network.\n`IA_MNS_LOCAL_ACCESS`\ntrue | false\nno\n`false`\nserver\nINTERNAL\nno\nExplicit local development access; forbidden in production or on a non-loopback listener.\n`IA_MNS_DEV_ACCESS_TOKEN`\n64 lowercase hexadecimal characters\nno\n—\nserver\nRESTRICTED\nyes\nTemporary bearer for an owner-controlled LAN test; non-production loopback API only, paired with origin and expiration. Never browser configuration.\n`IA_MNS_DEV_ACCESS_ORIGIN`\nprivate IPv4 HTTP origin\nno\n—\nserver\nINTERNAL\nno\nExact browser origin for the temporary LAN test; no credentials, path or wildcard.\n`IA_MNS_DEV_ACCESS_EXPIRES_AT`\nUnix timestamp in seconds\nno\n—\nserver\nINTERNAL\nno\nAbsolute temporary bearer expiry; at most two hours after startup. Checked on every request, not renewed.\n`IA_MNS_PUBLIC_ORIGIN`\nexact origin\nno\n—\nserver\nINTERNAL\nno\nBrowser origin of the IA-MNS web application; token issuer and redirect target for sign-in flows. HTTPS in production; enables identity together with the signing and encryption keys.\n`IA_MNS_IDENTITY_SIGNING_KEY`\nbase64url PKCS#8 DER P-256 private key\nno\n—\nserver\nRESTRICTED\nyes\nSigns IA-MNS access tokens (ES256). Generate with pnpm identity:keys; never browser configuration.\n`IA_MNS_IDENTITY_ENCRYPTION_KEY`\nbase64url 32-byte key\nno\n—\nserver\nRESTRICTED\nyes\nAES-256-GCM key for TOTP secrets at rest. Rotation requires re-enrollment of second factors.\n`IA_MNS_IDENTITY_AUDIENCE`\nnonempty identifier\nno\n`ia-mns-api`\nserver\nINTERNAL\nno\nAudience of IA-MNS access tokens.\n`IA_MNS_PROVIDER_GRANTS`\nnone | comma list of provider:permission\nno\n—\nserver\nINTERNAL\nno\nOptional narrowing of automatic read grants by provider link; unset uses the composed capability defaults, none disables them.\n`PDT_IDENTITY_BASE_URL`\nHTTPS origin\nno\n—\nserver\nINTERNAL\nno\nPDT Connect origin serving the identity contract; configure with issuer, client and redirect URI.\n`PDT_IDENTITY_ISSUER`\nHTTPS URL\nno\n—\nserver\nINTERNAL\nno\nExact PDT_IDENTITY_ISSUER of the PDT installation; link issuer for PDT identities.\n`PDT_IDENTITY_CLIENT_ID`\n1..64 letters, digits, _ or -\nno\n—\nserver\nINTERNAL\nno\nIA-MNS client id registered in PDT_IDENTITY_CLIENTS.\n`PDT_IDENTITY_CLIENT_SECRET`\n32+ characters\nno\n—\nserver\nRESTRICTED\nyes\nIA-MNS client secret for the PDT contract; PDT stores only its SHA-256.\n`PDT_IDENTITY_REDIRECT_URI`\nHTTPS URL\nno\n—\nserver\nINTERNAL\nno\nExact callback registered in PDT; the browser-visible URL of GET /identity/pdt/callback.\n`PDT_EMBED_ORIGIN`\nexact origin\nno\n—\nserver\nINTERNAL\nno\nOnly PDT origin allowed to host the embedded IA-MNS and exchange bridge messages.\n`SANKHYA_IDENTITY_ISSUER`\nstable identifier\nno\n—\nserver\nINTERNAL\nno\nFixed identifier of the Sankhya installation: issuer of CODUSU links (owner directory association) and expected in Om host assertions.\n`SANKHYA_IDENTITY_KEYS`\nJWKS JSON of public keys\nno\n—\nserver\nINTERNAL\nno\nPinned public keys of the Om identity add-on (RS256/ES256). Private key material is rejected.\n`SANKHYA_IDENTITY_AUTHORIZE_URL`\nHTTPS URL\nno\n—\nserver\nINTERNAL\nno\nOm add-on page that mints an assertion for the direct-URL sign-in.\n`SANKHYA_EMBED_ORIGIN`\nexact origin\nno\n—\nserver\nINTERNAL\nno\nOnly Om origin allowed to host the embedded IA-MNS and exchange bridge messages.\n`SANKHYA_DIRECTORY_VIEW`\nOracle view name (optionally SCHEMA.VIEW)\nno\n—\nserver\nINTERNAL\nno\nRead-only Sankhya user view (CODUSU, NOMEUSU, NOMEUSUCPLT, EMAIL, DTLIMACESSO) that lets owners associate real Sankhya users; unset disables the directory (PH-08).\n`SANKHYA_SESSION_TRUST`\npending | approved\nno\n`pending`\nserver\nINTERNAL\nno\nHuman gate for Om-session sign-in in production (PH-11); production refuses the Sankhya connector until approved.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Database Reference",
-    "anchor": "database-reference",
-    "text": "Database Reference\n[Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "agent_conversations",
-    "anchor": "agent_conversations",
-    "text": "agent_conversations\nActor-owned corporate agent conversation with capability-specific validated context and a bounded execution lease.\nOwner: agent. Classification: CONFIDENTIAL.\nLifecycle: Local history persists until the owner explicitly deletes the conversation. Conversation deletion cascades to turns and contexts. No automatic expiry is implemented; shared deployment requires an owner-defined retention/backups/provider policy before rollout. No vector, export or replica copies are created by the application.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPublic immutable UUID; never authorization.\n—\n—\n`owner`\n`character varying(300)`\nno\n—\nCONFIDENTIAL\nAuthenticated principal id or explicit loopback developer identity.\n—\n—\n`title`\n`character varying(100)`\nno\n—\nCONFIDENTIAL\nOwner-editable bounded title, initially derived from the first question; never model instructions.\n—\n—\n`version`\n`integer`\nno\n`0`\nCONFIDENTIAL\nMonotonically allocated turn sequence; advanced under a row lock.\n—\n—\n`contexts`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nVersioned capability contexts keyed by capability id. Sales version 2 stores structured conversation state: the last executed analysis plan and query filters, an unanswered request with its known slots and awaited information, and a bounded transcript of sales questions with application-authored clarifications or filter-only answer descriptions, never financial figures or result prose. The _agent entry records the last capability and the capability awaiting an answer. No secret credentials.\n—\n—\n`active_turn_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nCurrent execution lease holder; absence means no active execution.\nAbsent in the lifecycle states described in the field meaning.\n—\n`lease_until`\n`timestamp(3) with time zone`\nyes\n—\nCONFIDENTIAL\nDatabase-clock lease expiry, 120 seconds after acceptance; absent when inactive.\nAbsent in the lifecycle states described in the field meaning.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock creation instant.\n—\n—\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock last turn or organization change; list ordering, not an audit trail.\n—\n—\n`title_manual`\n`boolean`\nno\n`false`\nCONFIDENTIAL\nOwner explicitly named this conversation; automatic first-turn naming must not replace it.\n—\n—\n`pinned`\n`boolean`\nno\n`false`\nCONFIDENTIAL\nOwner favorite retained across archive/restore; archived favorites are excluded from the active pinned list.\n—\n—\n`archived`\n`boolean`\nno\n`false`\nCONFIDENTIAL\nHidden from active history without deleting turns or context. Restore before accepting new turns.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`agent_conversations_contexts_check`\n`CHECK ((jsonb_typeof(contexts) = 'object'::text))`\nCapability context must be a JSON object.\n`agent_conversations_lease_check`\n`CHECK (((active_turn_id IS NULL) = (lease_until IS NULL)))`\nLease holder and expiry exist together.\n`agent_conversations_owner_check`\n`CHECK ((length((owner)::text) > 0))`\nOwnership is required.\n`agent_conversations_pkey`\n`PRIMARY KEY (id)`\nImmutable conversation identity.\n`agent_conversations_version_check`\n`CHECK ((version >= 0))`\nNonnegative turn allocation.\n`agent_conversations_history_idx`\n`CREATE INDEX agent_conversations_history_idx ON public.agent_conversations USING btree (owner, archived, pinned DESC, updated_at DESC, id DESC)`\nOwner-scoped active/archive and favorite-first keyset listing.\n`agent_conversations_owner_updated_idx`\n`CREATE INDEX agent_conversations_owner_updated_idx ON public.agent_conversations USING btree (owner, updated_at, id)`\nBounded owner-scoped keyset history listing.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "agent_turns",
-    "anchor": "agent_turns",
-    "text": "agent_turns\nOne user message and its execution lifecycle, real progress, and versioned assistant outcome. Failed/interrupted turns retain no fabricated answer.\nOwner: agent. Classification: CONFIDENTIAL.\nLifecycle: Local history persists until the owner explicitly deletes the conversation. Conversation deletion cascades to turns and contexts. No automatic expiry is implemented; shared deployment requires an owner-defined retention/backups/provider policy before rollout. No vector, export or replica copies are created by the application.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nImmutable turn UUID.\n—\n—\n`conversation_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nOwning conversation; hard deletion cascades to all turns.\n—\n—\n`sequence`\n`integer`\nno\n—\nCONFIDENTIAL\nPositive conversation-local ordering allocated transactionally.\n—\n—\n`request_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nClient UUID for idempotent acceptance replay; same id with a different message or source is a conflict.\n—\n—\n`state`\n`character varying(20)`\nno\n—\nCONFIDENTIAL\nrunning, completed, failed or interrupted. Interrupted work is not automatically retried.\n—\n—\n`question`\n`character varying(2000)`\nno\n—\nCONFIDENTIAL\nBounded confidential user message; never logged.\n—\n—\n`reply`\n`jsonb`\nyes\n—\nCONFIDENTIAL\nVersion 2 envelope containing the application-authored reply and a bounded result snapshot with one section per queried sales source; version 1 envelopes (one Sankhya result) are upgraded when read. Not current ERP truth and never sent back to OpenAI as financial data.\nAbsent in the lifecycle states described in the field meaning.\n—\n`events`\n`jsonb`\nno\n`'[]'::jsonb`\nCONFIDENTIAL\nBounded ordered real progress events with stage, localized display message and instant; not durable workflow/audit infrastructure.\n—\n—\n`capability_id`\n`character varying(80)`\nyes\n—\nCONFIDENTIAL\nExecuted capability for a completed business reply; absent for social/failure turns.\nAbsent in the lifecycle states described in the field meaning.\n—\n`failure_code`\n`character varying(80)`\nyes\n—\nCONFIDENTIAL\nAllowlisted public failure code; absent unless failed/interrupted. No exception text.\nAbsent in the lifecycle states described in the field meaning.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock acceptance instant.\n—\n—\n`finished_at`\n`timestamp(3) with time zone`\nyes\n—\nCONFIDENTIAL\nDatabase-clock terminal outcome instant; absent while running.\nAbsent in the lifecycle states described in the field meaning.\n—\n`source`\n`character varying(20)`\nno\n`'sankhya'::character varying`\nCONFIDENTIAL\nSales source selected in the interface for this turn: sankhya, vrmaster or all. The message never changes it; a replay with another source is a conflict. Turns written before the selector are sankhya, the only source then.\n—\n—\n"
   }
 ]

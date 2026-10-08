@@ -18,6 +18,7 @@ import { AgentRepository } from "./prisma-repository.js";
 import { createAgentPlanner } from "./planner.js";
 import { createOpenAiModel } from "../../ai/openai.js";
 import type { AgentCapability } from "./capabilities.js";
+import type { OperationalParameters } from "../../parameters.js";
 import {
   updateConversationOperation,
   searchConversationsOperation,
@@ -37,6 +38,8 @@ export function createAgentModule(
   capabilityFactory: (resources: ModuleResources) => readonly AgentCapability[],
   injected?: CorporateAgent,
   developmentPermissions: readonly string[] = [],
+  /** Composition's operational parameters (AI model and trace level). */
+  parametersFor?: (resources: ModuleResources) => OperationalParameters,
 ): ApiModule {
   return {
     name: "agent",
@@ -59,16 +62,31 @@ export function createAgentModule(
         );
       const capabilities =
         injected?.capabilities ?? capabilityFactory(resources);
+      // Without composition parameters (isolated tests) the installation
+      // defaults apply; composition always supplies them.
+      const parameters = parametersFor?.(resources);
       const agent =
         injected ??
         (resources.database
           ? new CorporateAgent(
               new AgentRepository(resources.database),
               config.openaiApiKey
-                ? createAgentPlanner(createOpenAiModel(config), capabilities)
+                ? createAgentPlanner(
+                    createOpenAiModel(
+                      config,
+                      parameters
+                        ? () => parameters.get("ai.model")
+                        : config.openaiModel,
+                    ),
+                    capabilities,
+                  )
                 : undefined,
               capabilities,
-              { traceLevel: config.aiTrace },
+              {
+                traceLevel: parameters
+                  ? () => parameters.get("ai.traceLevel")
+                  : config.aiTrace,
+              },
             )
           : undefined);
       const configured = Boolean(agent && (injected || config.openaiApiKey));
@@ -82,11 +100,15 @@ export function createAgentModule(
             app.addHook("onReady", async () => {
               await resources.database!
                 .$queryRaw`SELECT c.pinned, c.archived, c.title_manual, c.owner, c.contexts, c.version, c.active_turn_id, c.lease_until, t.reply, t.events, t.state, t.request_id, t.sequence, t.source FROM agent_conversations c LEFT JOIN agent_turns t ON t.conversation_id = c.id LIMIT 0`;
-              // Content tracing writes with each turn outcome; refuse to start
+              // Content tracing, which an owner may enable at any time outside
+              // production, writes with each turn outcome; refuse to start
               // against a schema without its table.
-              if (config.aiTrace === "content")
+              await resources.database!
+                .$queryRaw`SELECT turn_id, conversation_id, captured_at, trace FROM agent_turn_traces LIMIT 0`;
+              // The model and trace level are read for every turn.
+              if (parameters)
                 await resources.database!
-                  .$queryRaw`SELECT turn_id, conversation_id, captured_at, trace FROM agent_turn_traces LIMIT 0`;
+                  .$queryRaw`SELECT key, value, version, updated_by, updated_at FROM operational_parameters LIMIT 0`;
             });
           void app.register(async (scope) => {
             const actors = new WeakMap<FastifyRequest, AgentActor>();

@@ -11,13 +11,16 @@ import {
 
 /**
  * OpenAI Responses adapter: one forced strict function call, no provider-side
- * storage and no automatic retries of chargeable requests.
+ * storage and no automatic retries of chargeable requests. The model is a
+ * fixed identifier (offline tools) or resolved for every request from the
+ * operational parameters, so an owner's change applies to the next call.
  */
 export function createOpenAiModel(
-  config: Pick<ServerConfig, "openaiApiKey" | "openaiModel">,
-  options: { model?: string; timeoutMs?: number } = {},
+  config: Pick<ServerConfig, "openaiApiKey">,
+  model: string | (() => Promise<string>),
+  options: { timeoutMs?: number } = {},
 ): StructuredModel {
-  const model = options.model ?? config.openaiModel;
+  let current = typeof model === "string" ? model : "";
   const client = new OpenAI({
     apiKey: config.openaiApiKey,
     // The request budget of interactive turns; offline tooling may extend it.
@@ -26,17 +29,21 @@ export function createOpenAiModel(
   });
   return {
     provider: "openai",
-    model,
+    get model() {
+      return current;
+    },
     async invoke<T extends TSchema>(
       request: StructuredRequest<T>,
       signal: AbortSignal,
     ): Promise<StructuredResult<T>> {
+      const id = typeof model === "string" ? model : await model();
+      current = id;
       const started = performance.now();
       let response: OpenAI.Responses.Response;
       try {
         response = await client.responses.create(
           {
-            model,
+            model: id,
             store: false,
             max_output_tokens: request.maxOutputTokens,
             instructions: request.instructions,
@@ -84,7 +91,7 @@ export function createOpenAiModel(
         value: candidate,
         invocation: {
           provider: "openai",
-          model,
+          model: id,
           latencyMs: Math.round(performance.now() - started),
           inputTokens: response.usage?.input_tokens ?? null,
           outputTokens: response.usage?.output_tokens ?? null,

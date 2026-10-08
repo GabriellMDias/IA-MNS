@@ -598,6 +598,23 @@
       "file": "pages/api/listIdentityPersons.json"
     },
     {
+      "id": "api/listOperationalParameters",
+      "kind": "api",
+      "title": "listOperationalParameters",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/parameters",
+      "method": "GET",
+      "path": "/identity/admin/parameters",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listOperationalParameters.json"
+    },
+    {
       "id": "api/loginLocal",
       "kind": "api",
       "title": "loginLocal",
@@ -1058,6 +1075,24 @@
       "file": "pages/api/updateIdentityMe.json"
     },
     {
+      "id": "api/updateOperationalParameter",
+      "kind": "api",
+      "title": "updateOperationalParameter",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/admin/parameters/{key}",
+      "method": "PUT",
+      "path": "/identity/admin/parameters/{key}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateOperationalParameter.json"
+    },
+    {
       "id": "api/updateSecurityPolicy",
       "kind": "api",
       "title": "updateSecurityPolicy",
@@ -1224,6 +1259,16 @@
       "summary": "Replay protection for host identity assertions: SHA-256 of each accepted assertion jti until it expires.",
       "headings": [],
       "file": "pages/database/identity_used_assertions.json"
+    },
+    {
+      "id": "database/operational_parameters",
+      "kind": "database",
+      "title": "operational_parameters",
+      "group": "runtime (operational parameters)",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Values that owners saved for the operational parameters declared by the runtime catalog in apps/api/src/parameters.ts (ADR-0028). The catalog owns each parameter's type, domain, installation default and effect; a missing row or a null value means the installation default applies. Secrets and bootstrap settings are never stored here.",
+      "headings": [],
+      "file": "pages/database/operational_parameters.json"
     },
     {
       "id": "components/ErrorNotice",
@@ -1594,6 +1639,16 @@
       "summary": "The sales capability (ADR-0018) read only the MNS sales in Sankhya (Oracle). The group's other company, Pilar da Terra, records its sales in VRMaster, a PostgreSQL database on…",
       "headings": [],
       "file": "pages/repository/docs/adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.json"
+    },
+    {
+      "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+      "kind": "repository",
+      "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
+      "group": "Decisions",
+      "source": "docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md",
+      "summary": "Every API setting was an environment variable parsed by apps/api/src/config.ts. Some of them are product behavior that the owner may need to change after deployment (which AI…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.json"
     },
     {
       "id": "repository/docs/adr/AGENTS",
@@ -2312,26 +2367,27 @@
       { "file": "search/0001.json", "count": 11, "kinds": ["api"] },
       { "file": "search/0002.json", "count": 16, "kinds": ["api"] },
       { "file": "search/0003.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0004.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0005.json", "count": 13, "kinds": ["api"] },
-      { "file": "search/0006.json", "count": 15, "kinds": ["api", "database"] },
+      { "file": "search/0004.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0006.json", "count": 11, "kinds": ["api"] },
       {
         "file": "search/0007.json",
-        "count": 74,
+        "count": 53,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0008.json", "count": 110, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 120, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 165, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 140, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 121, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 76, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 67, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 105, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 71, "kinds": ["repository"] }
+      { "file": "search/0008.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0009.json", "count": 117, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 147, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 160, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 134, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 79, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 77, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 58, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 101, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 93, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 25, "kinds": ["repository"] }
     ],
-    "count": 1320
+    "count": 1344
   }
 }

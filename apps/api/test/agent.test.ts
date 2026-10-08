@@ -21,6 +21,9 @@ import type { SalesInterpreter } from "../src/features/sales/interpreter.js";
 import { createOpenAiModel } from "../src/ai/openai.js";
 import { interpretation } from "../evals/fixtures.js";
 import { captureCandidate } from "../evals/capture.js";
+import { OperationalParameters } from "../src/parameters.js";
+import { prismaParameterStore } from "../src/parameter-store.js";
+import { parameterSetup } from "../src/modules.js";
 const actor = { id: "alice", permissions: new Set(["sales:read"]) };
 it("persists owned conversation organization, literal search, favorite pagination and archive context", async () => {
   await withMigratedDatabase(async (runtimeUrl) => {
@@ -759,6 +762,7 @@ it.each([
               ORION_ENV: "test",
               OPENAI_API_KEY: "synthetic-key",
             }),
+            "gpt-6.1-sol",
           ),
           [],
         ).route(
@@ -895,7 +899,9 @@ it("stores content traces with their turns, logs only metadata and deletes trace
       expect(second.content.sales.stateBefore).toMatchObject({
         pending: { awaiting: ["period"] },
       });
-      expect(JSON.stringify(traces)).not.toContain("987");
+      // The result figure (987.65, or 987,65 as displayed) never appears; a bare
+      // "987" could occur by chance in a timestamp or identifier.
+      expect(JSON.stringify(traces)).not.toMatch(/987[.,]65/);
       // A traced failure becomes an unreviewed candidate reproducing it.
       const candidate = await captureCandidate(database, detail.turns[1].id);
       expect(candidate).toMatchObject({
@@ -931,7 +937,7 @@ it("stores content traces with their turns, logs only metadata and deletes trace
       expect(logs).toContain("ai_turn_traced");
       expect(logs).toContain("new_completes_pending");
       expect(logs).not.toContain("sigilosa");
-      expect(logs).not.toContain("987");
+      expect(logs).not.toMatch(/987[.,]65/);
       await expect(
         database.$executeRaw`UPDATE agent_turn_traces SET trace = '{}'::jsonb`,
       ).rejects.toThrow();
@@ -1072,6 +1078,76 @@ it("records the selected source per turn, passes it to the capability and reads 
       await expect(
         database.$executeRaw`UPDATE agent_turns SET source = 'oracle' WHERE id = ${detail.turns[0].id}::uuid`,
       ).rejects.toThrow();
+    } finally {
+      await agent.close();
+      await database.$disconnect();
+    }
+  });
+}, 120000);
+
+it("applies the AI trace level an owner saves to the next turn without a restart", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const database = createDatabase(runtimeUrl);
+    const repository = new AgentRepository(database);
+    const parameters = new OperationalParameters(
+      prismaParameterStore(database),
+      parameterSetup(parseServerConfig({ ORION_ENV: "test" })),
+    );
+    const capability: AgentCapability = {
+      id: "sales",
+      title: "Consultas de vendas",
+      description: "Vendas",
+      examples: [],
+      permission: "sales:read",
+      execute: () =>
+        Promise.resolve({
+          reply: {
+            kind: "clarification",
+            message: "Qual período você quer consultar?",
+            capabilityId: "sales",
+            result: null,
+            suggestions: [],
+          },
+          context: null,
+        }),
+      close: async () => {},
+    };
+    const agent = new CorporateAgent(
+      repository,
+      {
+        route: () =>
+          Promise.resolve({ intent: "capability", capabilityId: "sales" }),
+      },
+      [capability],
+      { traceLevel: () => parameters.get("ai.traceLevel") },
+    );
+    try {
+      const conversation = await repository.create(actor.id);
+      const ask = async () => {
+        await agent.submit(
+          actor,
+          conversation.id,
+          randomUUID(),
+          "Quanto vendi?",
+          "sankhya",
+          () => "INTERNAL_ERROR",
+        );
+        return completed(repository, actor.id, conversation.id);
+      };
+      // Default level (metadata): nothing confidential is stored.
+      await ask();
+      expect(await database.agentTurnTrace.count()).toBe(0);
+      const saved = await parameters.save(
+        "ai.traceLevel",
+        "content",
+        0,
+        randomUUID(),
+        new Date(),
+      );
+      expect(saved).toMatchObject({ result: "saved", after: "content" });
+      const detail = await ask();
+      const traces = await database.agentTurnTrace.findMany();
+      expect(traces.map((item) => item.turnId)).toEqual([detail.turns[1].id]);
     } finally {
       await agent.close();
       await database.$disconnect();

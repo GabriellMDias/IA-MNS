@@ -38,6 +38,7 @@ export type StructuredResult<T extends TSchema> = Readonly<{
  */
 export interface StructuredModel {
   readonly provider: string;
+  /** Fixed model identifier, or the one used by the latest request when resolved per request. */
   readonly model: string;
   invoke<T extends TSchema>(
     this: void,
