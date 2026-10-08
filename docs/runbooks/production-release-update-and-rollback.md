@@ -70,6 +70,8 @@ sudo ia-mns-deploy rollback                 # the last healthy release
 sudo ia-mns-deploy rollback ia-mns-vA.B.C   # a named release
 ```
 
+Without a tag, the target is the current release when the API runs another image or none (a failed or stopped deployment), and the previous release only when the current release is the one running.
+
 The tool refuses when the target does not know a migration the database applied. Then choose:
 
 1. **Fix forward (preferred):** tag and deploy a corrected release.

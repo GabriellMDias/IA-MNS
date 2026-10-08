@@ -75,7 +75,7 @@ Copy the `.dump` to `/var/backups/ia-mns/pre-restore/` on the host with its `.sh
 
 ## Verification
 
-- `verify-restore` ends with `restore verified` and writes `last-restore-verification.json` with `"result": "success"`.
+- `verify-restore` ends with `restore verified` and writes `last-restore-verification.json` with `"result": "success"`. It checks the restored migration history with the current release's migration image and fails, instead of skipping that check, when the image is missing; rebuild it with `sudo ia-mns-deploy build <current tag>`.
 - After a live restore: `status` exits 0, owners sign in, recent expected data is present, and `deployments.log` records `restored`.
 
 ## Rollback / Recovery

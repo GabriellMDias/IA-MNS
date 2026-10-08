@@ -4,6 +4,15 @@
     "title": "Health Checks",
     "group": "Reliability",
     "kind": "repository",
+    "heading": "Output, monitoring, and security",
+    "anchor": "output-monitoring-and-security",
+    "text": "Output, monitoring, and security\nMachine probes need deterministic minimal state and matching transport status. Detailed diagnostics are a separate authorized surface with stable logical dependency names, not raw hostnames/IPs, configuration, topology, credentials, stack traces, or exceptions. An unauthenticated minimal probe must not become an account/tenant/session inspection endpoint. Network isolation can support probe access but never authorizes a public diagnostic dump.\nProbe response schemas and behavior are compatibility contracts for load balancers, orchestrators, deployers, and monitors. Coordinate changes with consumers. Public correlation IDs are optional and must remain safe. Prefer state-transition evidence over a log/error issue per poll; suppress/sample routine successes and avoid repeated warnings during known outages. Trace health sparingly and use underlying dependency signals where possible.\nProbe failures alone do not determine incident urgency: assess duration, replicas, traffic, error rate, and actual capability. One failed replica may recover automatically; all unready replicas can indicate a shared dependency or bad release. Uptime checks answer external DNS/TLS/routing/reachability; synthetic transactions use isolated data and separate safety controls to test real workflows. Neither replaces readiness.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
     "heading": "Health check testing and review",
     "anchor": "health-check-testing-and-review",
     "text": "Health check testing and review\nTest actual startup, required-dependency failure, optional degradation where supported, liveness independence, invalid configuration, bounded wait, drain/new-work rejection, safe response shape, and critical recovery transitions. Complex caching/hysteresis needs transition coverage. Do not use production business records as probe fixtures.\nBefore changing a check, identify consumer/owner, exact question, expected recovery action, dependency criticality, safe work during outage, runtime identity, full-scale cost, timeout/cancellation semantics, response security, compatibility, and tests. Add a real runbook only for known repeatable failures. Consult [validation](../validation.md) and the runtime README for available checks; hosting integrations remain out of scope until selected.\n"
@@ -492,7 +501,7 @@
     "kind": "repository",
     "heading": "Verification",
     "anchor": "verification",
-    "text": "Verification\n`verify-restore` ends with `restore verified` and writes `last-restore-verification.json` with `\"result\": \"success\"`.\nAfter a live restore: `status` exits 0, owners sign in, recent expected data is present, and `deployments.log` records `restored`.\n"
+    "text": "Verification\n`verify-restore` ends with `restore verified` and writes `last-restore-verification.json` with `\"result\": \"success\"`. It checks the restored migration history with the current release's migration image and fails, instead of skipping that check, when the image is missing; rebuild it with `sudo ia-mns-deploy build <current tag>`.\nAfter a live restore: `status` exits 0, owners sign in, recent expected data is present, and `deployments.log` records `restored`.\n"
   },
   {
     "id": "repository/docs/runbooks/production-backup-and-restore",
@@ -699,7 +708,7 @@
     "kind": "repository",
     "heading": "Return to an earlier release",
     "anchor": "return-to-an-earlier-release",
-    "text": "Return to an earlier release\nsudo ia-mns-deploy rollback                 # the last healthy release\nsudo ia-mns-deploy rollback ia-mns-vA.B.C   # a named release\n\nThe tool refuses when the target does not know a migration the database applied. Then choose:\n**Fix forward (preferred):** tag and deploy a corrected release.\n**Accept the newer schema:** only after reviewing that every unknown migration is additive (new tables, nullable columns, new indexes) and the target ignores it: `sudo ia-mns-deploy rollback --accept-schema-ahead`. The decision is recorded.\n**Restore the pre-deployment backup** with [backup and restore](production-backup-and-restore.md); data written since that backup is lost.\n"
+    "text": "Return to an earlier release\nsudo ia-mns-deploy rollback                 # the last healthy release\nsudo ia-mns-deploy rollback ia-mns-vA.B.C   # a named release\n\nWithout a tag, the target is the current release when the API runs another image or none (a failed or stopped deployment), and the previous release only when the current release is the one running.\nThe tool refuses when the target does not know a migration the database applied. Then choose:\n**Fix forward (preferred):** tag and deploy a corrected release.\n**Accept the newer schema:** only after reviewing that every unknown migration is additive (new tables, nullable columns, new indexes) and the target ignores it: `sudo ia-mns-deploy rollback --accept-schema-ahead`. The decision is recorded.\n**Restore the pre-deployment backup** with [backup and restore](production-backup-and-restore.md); data written since that backup is lost.\n"
   },
   {
     "id": "repository/docs/runbooks/production-release-update-and-rollback",
@@ -1159,14 +1168,5 @@
     "heading": "Data Classification",
     "anchor": "data-classification",
     "text": "Data Classification\nThis policy owns the repository's sensitivity model and data-handling baseline. [Redaction](telemetry-redaction.md), [retention](data-retention.md), [secrets management](secrets-management.md), and [production access](production-access.md) own their detailed controls. Classification follows data meaning and disclosure risk, not whether a tool can technically access it.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Classification levels",
-    "anchor": "classification-levels",
-    "text": "Classification levels\nLevel\nMeaning and examples\nRequired handling\n`PUBLIC`\nIntentionally approved for unrestricted disclosure: published documentation or product content\nMay be shared/indexed/cached; preserve integrity. Absence of secrets does not make data public.\n`INTERNAL`\nNon-public, lower-risk project/operational information\nAvailable to authorized contributors and approved tooling; review before publication.\n`CONFIDENTIAL`\nDisclosure may cause privacy, security, business, or operational harm: personal/private customer data, private content, incident details\nNeed-to-know access, protected transport, appropriate storage encryption, minimized telemetry/copies, and defined retention.\n`RESTRICTED`\nHighest sensitivity: credentials, password hashes, private keys, payment credentials, highly sensitive personal data\nStrict least privilege and purpose-built protection; no intentional inclusion in source control, telemetry, public errors, generated documentation, screenshots/support artifacts, or real-data test fixtures.\nThese are minimum protections. Use the more restrictive reasonable level when semantics or ownership are unclear, particularly for legacy fields, provider payloads, uploads, and free-form metadata. Encryption does not reduce classification.\n"
   }
 ]
