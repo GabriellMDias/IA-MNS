@@ -53,9 +53,34 @@ jobs:
         with:
           fail-on-severity: high
 
+  production-deployment:
+    name: Production image and installation rehearsal
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Lint the operational scripts
+        run: shellcheck -x infra/production/bin/ia-mns-deploy infra/production/rehearsal/run.sh
+      - name: Install the host tools the rehearsal uses
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends age
+      - name: Build the runtime image and check it
+        run: |
+          docker build -f infra/production/Dockerfile --target runtime \
+            --build-arg RELEASE_ID=ci --build-arg REVISION="$GITHUB_SHA" -t ia-mns-ci:runtime .
+          test "$(docker run --rm ia-mns-ci:runtime id -u)" != "0"
+          docker run --rm ia-mns-ci:runtime node -e \
+            "const o=require('oracledb'); o.initOracleClient({libDir: process.env.SANKHYA_ORACLE_CLIENT_LIB_DIR}); if (o.thin) process.exit(1); console.log('Oracle Client', o.oracleClientVersionString)"
+          test "$(docker run --rm ia-mns-ci:runtime cat /app/web/ia-mns-web.json)" = '{"schemaVersion":1,"documentation":false}'
+      - name: Rehearse the production installation with synthetic configuration
+        run: sudo --preserve-env=PATH infra/production/rehearsal/run.sh --source "$GITHUB_WORKSPACE" --ref "$GITHUB_SHA"
+
   required-gate:
     name: Orion required gate
-    needs: [validate, dependency-review]
+    needs: [validate, dependency-review, production-deployment]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -64,12 +89,17 @@ jobs:
       - name: Require all validation jobs to pass
         env:
           VALIDATE_RESULT: ${{ needs.validate.result }}
+          PRODUCTION_RESULT: ${{ needs.production-deployment.result }}
           DEPENDENCY_REVIEW_RESULT: ${{ needs.dependency-review.result }}
           DEPENDENCY_REVIEW_ENABLED: ${{ vars.DEPENDENCY_REVIEW_ENABLED }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$VALIDATE_RESULT" != "success" ]; then
             echo "Validation job concluded: $VALIDATE_RESULT" >&2
+            exit 1
+          fi
+          if [ "$PRODUCTION_RESULT" != "success" ]; then
+            echo "Production deployment job concluded: $PRODUCTION_RESULT" >&2
             exit 1
           fi
           if [ "$EVENT_NAME" = "pull_request" ] && [ "$DEPENDENCY_REVIEW_ENABLED" = "true" ] && [ "$DEPENDENCY_REVIEW_RESULT" != "success" ]; then

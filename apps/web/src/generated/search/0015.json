@@ -1,5 +1,77 @@
 [
   {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Authorization, audit, and derived reads",
+    "anchor": "authorization-audit-and-derived-reads",
+    "text": "Authorization, audit, and derived reads\nFor database-dependent authorization, define the consistency point between permission/ownership checks and the protected write. Immediate revocation requirements may affect transaction, token, and cache design; a distant precheck is insufficient when those semantics require freshness. Do not invent immediate revocation guarantees from short-lived tokens alone.\nWhen a required audit record and business change share a database boundary, they may need to commit atomically. External audit/event delivery requires durable intent and recovery; diagnostic logs are not authoritative business audit. Publish no event implying durable state before commit, and do not rely on unrecorded post-commit publication where delivery is required.\nRead replicas, caches, projections, and materialized views introduce staleness. Define whether an operation requires read-your-writes, its acceptable delay, canonical source, update/invalidation, repair, and failure behavior. “Eventually consistent” requires a process that actually repairs divergence. Cache stampede mitigations or single-writer/partitioned processing are optional responses to real load, not defaults; partition order does not imply global order.\nDatabase plus object storage needs partial-failure design such as temporary upload/finalization, orphan cleanup, and reconciliation. Distributed workflows must define convergence, compensation, or safe manual intervention rather than pretend to share one atomic commit. Do not claim exactly-once effects without end-to-end evidence.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Performance, observability, and repair",
+    "anchor": "performance-observability-and-repair",
+    "text": "Performance, observability, and repair\nBatch sizes affect transaction duration, lock scope, failure granularity, and memory. Large updates may need batching under [migration policy](migrations.md#backfills). Investigate hot rows/indexes, contention, and retry patterns with evidence before redesigning consistency.\nUse stable semantic operation names and bounded safe telemetry for latency, conflict/retry counts, lock waits, deadlocks, attempts, and final outcomes where useful. Trace meaningful latency/failure boundaries rather than every trivial query. Never dump rows or sensitive query values during conflict diagnostics; follow [redaction](../security/telemetry-redaction.md).\nRepair by retry, reconciliation, or intervention must be part of the design. Rare states requiring manual action must be detectable, diagnosable, and safe to repair through a concrete runbook. Separate high-risk audit requirements from diagnostic logging. Production signals can reveal duplicates, stuck work, and failed reconciliation that tests cannot exhaustively predict.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Testing and verification",
+    "anchor": "testing-and-verification",
+    "text": "Testing and verification\nUse real PostgreSQL for guarantees involving rollback, constraints, isolation, and locks. Sequential mocks cannot prove concurrent safety. Coordinate competing operations explicitly where practical rather than sleeping and hoping they overlap; avoid deadlock tests tied to undocumented scheduler timing.\nVerify relevant cases: mid-operation failure leaves no partial state; concurrent uniqueness/create claims produce one consistent result; stale versions conflict; competing transitions cannot both win; retry limits and complete-transaction restart behave safely; process interruption and response loss preserve documented recovery. The [delivery test requirements](../architecture/delivery-and-side-effects.md#verification) cover duplicate delivery, idempotency, external failure, and reconciliation when introduced. Testing and review remain necessary even where static checks can help.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "New Transaction Checklist",
+    "anchor": "new-transaction-checklist",
+    "text": "New Transaction Checklist\nBefore implementing or changing a state-changing operation:\nIdentify the invariant, owner, participating writes, concurrency sources, duplicate possibility, and applicable authorization/audit consistency.\nChoose constraints, atomic writes, versioning, isolation, locks, or explicit reservations proportionally; explain scope and maximum duration.\nDetermine conflict/error semantics, full retry boundary and owner, transient categories, attempt/time bounds, and safety of every repeated action.\nResolve halfway failure, external-success/database-failure, commit ambiguity, lost response, and crash windows without unsupported rollback or exactly-once claims.\nAdd deterministic integration evidence, safe operational signals, and recovery/repair guidance. Update the owning domain and generated contract/metadata when behavior changes.\n"
+  },
+  {
+    "id": "repository/docs/domains/corporate-agent",
+    "title": "IA-MNS Corporate Agent",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "IA-MNS Corporate Agent",
+    "anchor": "ia-mns-corporate-agent",
+    "text": "IA-MNS Corporate Agent\n[Project plan](../project/implementation-plan.md) · [Verification](../project/corporate-agent-verification.md) · [Setup](../setup.md#corporate-agent-and-local-postgresql) · [ADR-0019](../adr/0019-compose-a-corporate-agent-with-durable-conversations.md) · [Sales capability](sales-chat.md) · [AI interpretation](../architecture/ai-interpretation.md) · [AI evaluation](../architecture/ai-evaluation.md)\n"
+  },
+  {
+    "id": "repository/docs/domains/corporate-agent",
+    "title": "IA-MNS Corporate Agent",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Product and current capabilities",
+    "anchor": "product-and-current-capabilities",
+    "text": "Product and current capabilities\nIA-MNS is MNS's corporate AI agent. Its product identity and conversational experience are independent of its first business capability. It can greet users, respond to thanks/wellbeing/identity questions, explain current capabilities and route requests. The only implemented business capability is sales consultation in MNS (Sankhya) and Pilar da Terra (VR Master), chosen with the interface's source selector: net value, quantity and weight (Sankhya only); period/product breakdowns and bounded comparisons ([sources](sales-chat.md#sources)). Purchases, catalog-only product lookup, stock, production, orders, automation and external writes are unavailable. Planned capabilities never appear as available in the catalog.\nSocial and capability replies are application-authored Portuguese prose selected by a validated bounded intent. OpenAI does not author business numbers, suggest unregistered tools, answer company questions from general knowledge or compose unsupported factual claims. This deliberately limits arbitrary general conversation while allowing a natural social opening without requiring sales details. The UI welcome describes the agent; examples come from registered capabilities. Operational details live in documentation/errors rather than the ordinary conversation shell.\n"
+  },
+  {
+    "id": "repository/docs/domains/corporate-agent",
+    "title": "IA-MNS Corporate Agent",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Implemented architecture",
+    "anchor": "implemented-architecture",
+    "text": "Implemented architecture\n`apps/api/src/features/agent/` owns conversations, routing, persistence, progress and HTTP operations. `features/sales/` retains business semantics, strict interpretation, deterministic results, the source orchestration and one adapter per source (Oracle for Sankhya, PostgreSQL for VRMaster). `apps/api/src/modules.ts` injects configured capability executors into the agent; shared runtime files remain module-independent. The agent and legacy sales transport share one owned sales executor and its source pools. The agent references the sales result contract for its current renderable output, while sales implements the agent's execution interface. This intentional boundary does not grant either module mutation authority over the other's tables.\nA capability descriptor has a stable id, localized title/description/examples, required permission, executor and resource cleanup. Only configured implementations enter the catalog. General routing instructions serialize the catalog automatically. To add a future capability, implement its owned bounded tools/context/authorization/tests, provide an executor/descriptor, register it at composition, and extend the public versioned result contract and web renderer if necessary. No general prompt rewrite is required. New domains/actions still need actual product authorization and their own safety/idempotency decisions; a registry entry alone cannot implement them.\nThe route classifier emits a registered capability id or an allowlisted social/unavailable intent. It emits no user-visible prose. It sees the application's earlier replies and which capability awaits an answer; a message it marks unavailable while a permitted capability awaits an answer is offered to that capability, whose own boundary rejects unsupported requests. A sales request then uses the sales interpreter and its deterministic conversation state machine ([AI interpretation](../architecture/ai-interpretation.md)). `runAgentTurn` performs this orchestration independently of persistence, so evaluation runs the same code. User input/history are untrusted data; fixed application policy and schemas govern execution. Mixed supported/unsupported requests are not partially answered. The capability permission is checked before execution, and reading stored business answers checks current capability permission as well as ownership.\n"
+  },
+  {
+    "id": "repository/docs/domains/corporate-agent",
+    "title": "IA-MNS Corporate Agent",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Persistent conversations and context",
+    "anchor": "persistent-conversations-and-context",
+    "text": "Persistent conversations and context\nPostgreSQL/Prisma owns `agent_conversations` and `agent_turns`; [generated schema](../generated/database/schema.md) records fields, constraints and classification. Conversations have verified owner identity, a bounded editable title (initially derived from the first message), favorite/archive flags, ordering and versioned per-capability context. Turns contain one question, the sales source selected in the interface when it was sent (`sankhya`, `vrmaster` or `all`; earlier turns are `sankhya`, the only source then), client acceptance UUID, ordered sequence, lifecycle state, bounded progress events and a versioned reply snapshot. Reply version 2 holds sales results as one section per queried source; version 1 replies (one Sankhya result) are upgraded when read. No infrastructure credential is stored in these tables.\nOne turn is accepted at a time under a row lock, without holding a transaction across OpenAI/Oracle work. Acceptance saves the question before starting bounded process-local execution. Replaying the same request UUID, message and source returns the existing turn; a different message or source conflicts. The capability receives the turn's source; the router does not use it. No chargeable provider request is automatically retried. A 120-second database-clock lease handles crashes: stale work becomes interrupted when read or reclaimed, without automatic execution. The process deadline is 90 seconds. Shutdown aborts work and awaits cleanup. This is not a durable workflow engine or an authorization model for future external writes.\nRouting uses at most 12 recent completed exchanges: user questions and the application's own replies, with business answers reduced to an \"answer delivered\" marker, plus the agent context (version 2) naming the capability that awaits an answer. Each capability owns its context version. Sales context version 2 holds structured conversation state: the last executed plan and query, an unanswered request with what it already knows and awaits, and the last 12 sales exchanges, independently of intervening social turns; version 1 contexts upgrade on read. Failed/interrupted turns cannot replace trusted context. Relative periods in a new question use current Sao Paulo time; a follow-up preserves stored explicit filters unless changed. Stored result snapshots are historical answers, not a claim that the ERP remains unchanged. Financial result rows and response prose are never fed back to OpenAI; only questions, application-authored clarification and unavailable messages, filter-only analysis descriptions and structured state are sent. Social turns do not erase sales context or an unanswered sales request.\nThe generated SDK supports creation, owner-scoped keyset history pages (30), detail pages (40 turns), acceptance, explicit metadata assignment, search and deletion. Active, pinned and archived views belong to the URL via `view`; pinned conversations come first, then modification time and id. Cursor boundaries include the same ordering and filter, preventing cross-filter reuse. Manual titles survive the first turn and are never routing instructions. Rename, pin/unpin, archive/restore and deletion use ownership checks and the same row lock; active execution blocks metadata changes. Archiving preserves messages, answers, favorite state and capability context, and rejects new turns until restored. An already accepted turn can still be replayed while archived. Search uses a bounded, case-insensitive literal substring over owned titles and sent questions, including archives; it does not call OpenAI or search financial result payloads. Search terms and filter-bound cursors use a POST body, not URLs. Search is not accent-insensitive or a semantic/full-text index. The selected conversation id belongs to `/chat/:conversationId`; reloading or opening a previous conversation retrieves PostgreSQL history. Older messages/conversations load in bounded pages. New conversation opens a blank workspace and preserves existing history. Explicit deletion confirms the user's choice and hard-deletes the conversation, context and turns via cascade; active execution blocks deletion.\nNo prior temporary transcript is migrated: the old UI/process memory had no durable source. Legacy `/sales/chat` endpoints retain their existing temporary semantics for compatibility; the product uses only `/agent` operations. The original numerical/provider tests continue to protect sales behavior.\n"
+  },
+  {
     "id": "repository/docs/domains/corporate-agent",
     "title": "IA-MNS Corporate Agent",
     "group": "Domain guides",
@@ -547,104 +619,5 @@
     "heading": "identity_role_assignments",
     "anchor": "identity_role_assignments",
     "text": "identity_role_assignments\nInternal IA-MNS roles assigned to a Person. owner is the principal administrator with full IA-MNS capability and administration, independent of Sankhya or PDT roles.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Assigned by bootstrap or an existing owner with recent strong authentication; the last active owner cannot be removed. Every change is audited.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nRole holder.\n—\n—\n`role`\n`character varying(40)`\nno\n—\nCONFIDENTIAL\nInternal role code; currently owner.\n—\n—\n`granted_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner Person who assigned the role.\nAssigned by the server-side bootstrap flow.\n—\n`granted_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock assignment instant.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-8",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_role_assignments_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nRole belongs to its Person.\n`identity_role_assignments_pkey`\n`PRIMARY KEY (person_id, role)`\nA role is assigned once per Person.\n`identity_role_assignments_role_check`\n`CHECK (((role)::text = 'owner'::text))`\nOnly defined internal roles.\n`identity_role_assignments_role_idx`\n`CREATE INDEX identity_role_assignments_role_idx ON public.identity_role_assignments USING btree (role)`\nOwner counting and listing.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_capability_grants",
-    "anchor": "identity_capability_grants",
-    "text": "identity_capability_grants\nExplicit capability permissions granted to a Person by an owner, in addition to provider-policy grants derived from active links. The language model never creates grants.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Granted and revoked by owners with recent strong authentication; changes reach new access tokens within their 10-minute lifetime. Audited.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nGrantee.\n—\n—\n`permission`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nRegistered capability permission such as sales:read; validated against the composed catalog.\n—\n—\n`granted_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner Person who granted it.\nGranted by the server-side bootstrap flow.\n—\n`granted_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock grant instant.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-9",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_capability_grants_permission_check`\n`CHECK (((permission)::text ~ '^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$'::text))`\nPermission naming convention.\n`identity_capability_grants_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nGrant belongs to its Person.\n`identity_capability_grants_pkey`\n`PRIMARY KEY (person_id, permission)`\nA permission is granted once per Person.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_tickets",
-    "anchor": "identity_tickets",
-    "text": "identity_tickets\nShort-lived single-use flow state addressed by the SHA-256 of a high-entropy secret: bootstrap, enrollment, reset and link invitations, pending second factor, pending TOTP setup, provisioning choice, profile consolidation, and pending PDT or Sankhya proofs (state, nonce, PKCE verifier).\nOwner: identity. Classification: RESTRICTED.\nLifecycle: Consumed atomically once or expires (minutes; invitations up to 72 hours). Expired rows are pruned by the application after 7 days.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nTicket row UUID.\n—\n—\n`purpose`\n`character varying(24)`\nno\n—\nCONFIDENTIAL\nFlow kind; a ticket is only accepted by its own purpose.\n—\n—\n`token_hash`\n`character(64)`\nno\n—\nRESTRICTED\nSHA-256 of the secret presented by the browser or callback.\n—\n—\n`person_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nPerson the flow acts on.\nThe flow is not yet bound to a Person (sign-in, bootstrap or provisioning).\n—\n`payload`\n`jsonb`\nno\n`'{}'::jsonb`\nRESTRICTED\nAllowlisted flow state such as intent, surface, PKCE verifier, nonce or a verified external identity awaiting a choice. Never passwords.\n—\n—\n`created_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner Person who issued an invitation or reset.\nCreated by the Person's own flow or the bootstrap command.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock creation instant.\n—\n—\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nCONFIDENTIAL\nApplication-clock expiry.\n—\n—\n`consumed_at`\n`timestamp(3) with time zone`\nyes\n—\nCONFIDENTIAL\nSingle-use consumption instant.\nNot consumed.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-10",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_tickets_expiry_check`\n`CHECK ((expires_at > created_at))`\nExpiry after creation.\n`identity_tickets_payload_check`\n`CHECK ((jsonb_typeof(payload) = 'object'::text))`\nPayload is a JSON object.\n`identity_tickets_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nOptional Person binding.\n`identity_tickets_pkey`\n`PRIMARY KEY (id)`\nTicket identity.\n`identity_tickets_purpose_check`\n`CHECK (((purpose)::text = ANY ((ARRAY['bootstrap'::character varying, 'enrollment'::character varying, 'reset'::character varying, 'link_invitation'::character varying, 'mfa'::character varying, 'mfa_enrollment'::character varying, 'provision'::character varying, 'merge'::character varying, 'totp_setup'::character varying, 'pdt_login'::character varying, 'sankhya_login'::character varying])::text[])))`\nKnown flow purposes.\n`identity_tickets_expiry_idx`\n`CREATE INDEX identity_tickets_expiry_idx ON public.identity_tickets USING btree (expires_at)`\nExpired-ticket pruning.\n`identity_tickets_token_key`\n`CREATE UNIQUE INDEX identity_tickets_token_key ON public.identity_tickets USING btree (token_hash)`\nSecret lookup by hash.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_used_assertions",
-    "anchor": "identity_used_assertions",
-    "text": "identity_used_assertions\nReplay protection for host identity assertions: SHA-256 of each accepted assertion jti until it expires.\nOwner: identity. Classification: INTERNAL.\nLifecycle: Rows are pruned after their expiry.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`jti_hash`\n`character(64)`\nno\n—\nINTERNAL\nSHA-256 of the assertion identifier.\n—\n—\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nAssertion expiry; after it the jti cannot be replayed anyway.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-11",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_used_assertions_pkey`\n`PRIMARY KEY (jti_hash)`\nEach assertion is accepted once.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_audit_events",
-    "anchor": "identity_audit_events",
-    "text": "identity_audit_events\nAppend-only audit of security-relevant identity events: sign-in outcomes, provisioning, link and unlink, credential and factor changes, role and grant changes, session revocation and bootstrap.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Append-only for the runtime role. Retention requires an owner-approved policy before shared deployment (PH-09).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nEvent UUID.\n—\n—\n`occurred_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock event instant.\n—\n—\n`action`\n`character varying(48)`\nno\n—\nCONFIDENTIAL\nAllowlisted dotted action code.\n—\n—\n`actor_person_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nPerson who performed the action.\nAnonymous attempt or server-side bootstrap.\n—\n`target_person_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nPerson affected by the action.\nNo Person resolved, for example a failed anonymous sign-in.\n—\n`details`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nAllowlisted non-secret metadata such as provider, permission, role or reason codes. Never credentials, tokens or free text.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-12",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_audit_events_action_check`\n`CHECK (((action)::text ~ '^[a-z][a-z0-9_.]*$'::text))`\nAction code format.\n`identity_audit_events_details_check`\n`CHECK ((jsonb_typeof(details) = 'object'::text))`\nDetails are a JSON object.\n`identity_audit_events_pkey`\n`PRIMARY KEY (id)`\nEvent identity.\n`identity_audit_events_recent_idx`\n`CREATE INDEX identity_audit_events_recent_idx ON public.identity_audit_events USING btree (occurred_at DESC, id DESC)`\nRecent audit listing.\n`identity_audit_events_target_idx`\n`CREATE INDEX identity_audit_events_target_idx ON public.identity_audit_events USING btree (target_person_id, occurred_at DESC)`\nPer-Person audit history.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_security_policies",
-    "anchor": "identity_security_policies",
-    "text": "identity_security_policies\nThe single owner-administered authentication policy: session lifetime, inactivity timeout, recent-authentication windows, second-factor requirement and remembered browsers. Absent row means the built-in secure defaults.\nOwner: identity. Classification: INTERNAL.\nLifecycle: One row, updated in place by owners with strong recent authentication; every change is recorded in identity_audit_events with previous and new values.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`smallint`\nno\n`1`\nINTERNAL\nSingleton key; always 1.\n—\n—\n`session_max_minutes`\n`integer`\nno\n—\nINTERNAL\nLongest a direct-URL session lasts from sign-in, whatever the activity.\n—\n—\n`idle_timeout_minutes`\n`integer`\nno\n—\nINTERNAL\nLongest a direct-URL session survives without user activity reported by the browser.\n—\n—\n`recent_auth_minutes`\n`integer`\nno\n—\nINTERNAL\nHow long a sign-in or confirmation allows sensitive changes to the person's own account without confirming again.\n—\n—\n`admin_recent_auth_minutes`\n`integer`\nno\n—\nINTERNAL\nHow long a strong sign-in or confirmation allows administrative changes without confirming again.\n—\n—\n`mfa_requirement`\n`character varying(16)`\nno\n—\nINTERNAL\nWho must use a second factor with IA-MNS passwords: everyone, administrators, or none (never applied in production).\n—\n—\n`remember_device_days`\n`smallint`\nno\n—\nINTERNAL\nDays a browser that completed the second factor skips it at sign-in; 0 asks at every sign-in. Owners are remembered only while the second factor is optional, which production never allows.\n—\n—\n`updated_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner who last changed the policy.\nNever changed by a person.\n—\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nDatabase-clock instant of the last change.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-13",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_security_policies_admin_recent_check`\n`CHECK (((admin_recent_auth_minutes >= 5) AND (admin_recent_auth_minutes <= 240)))`\nAdministrative confirmation window between 5 minutes and 4 hours.\n`identity_security_policies_idle_check`\n`CHECK ((((idle_timeout_minutes >= 15) AND (idle_timeout_minutes <= 10080)) AND (idle_timeout_minutes <= session_max_minutes)))`\nInactivity timeout between 15 minutes and 7 days, never longer than the session.\n`identity_security_policies_mfa_check`\n`CHECK (((mfa_requirement)::text = ANY ((ARRAY['everyone'::character varying, 'administrators'::character varying, 'none'::character varying])::text[])))`\nKnown second-factor requirements.\n`identity_security_policies_pkey`\n`PRIMARY KEY (id)`\nSingleton policy.\n`identity_security_policies_recent_check`\n`CHECK ((((recent_auth_minutes >= 5) AND (recent_auth_minutes <= 1440)) AND (recent_auth_minutes <= session_max_minutes)))`\nAccount confirmation window between 5 minutes and 24 hours, never longer than the session.\n`identity_security_policies_remember_check`\n`CHECK (((remember_device_days >= 0) AND (remember_device_days <= 90)))`\nRemembered browsers last at most 90 days.\n`identity_security_policies_session_check`\n`CHECK (((session_max_minutes >= 60) AND (session_max_minutes <= 43200)))`\nSession lifetime between one hour and 30 days.\n`identity_security_policies_singleton_check`\n`CHECK ((id = 1))`\nOnly one policy row exists.\n`identity_security_policies_updated_by_fkey`\n`FOREIGN KEY (updated_by) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE RESTRICT`\nThe last editor is an existing Person.\n"
   }
 ]

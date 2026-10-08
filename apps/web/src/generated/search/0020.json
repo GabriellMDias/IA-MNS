@@ -1,0 +1,155 @@
+[
+  {
+    "id": "repository/docs/versioning",
+    "title": "Orion Foundation Versioning",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Compatibility meaning",
+    "anchor": "compatibility-meaning",
+    "text": "Compatibility meaning\nChoose the next version from the intended impact on the foundation contract and supported upgrade model for derived projects, not from diff size or the number of merge conflicts.\nPart\nIncrement when\nExamples\nMAJOR\nOrion intentionally makes the foundation contract or supported upgrade model incompatible, requiring deliberate project migration.\nBreaking provenance/schema changes; removal or incompatible replacement of an established foundation contract; previously valid projects becoming unsupported; incompatible derivation or baseline-upgrade rules.\nMINOR\nOrion adds backward-compatible foundation capability.\nOptional architecture or reference patterns, reusable tooling, agent/tool integrations, validation capabilities, or substantial compatible development-experience improvements.\nPATCH\nOrion makes compatible corrections or hardening without intentionally changing the foundation contract.\nBug and documentation fixes, security hardening, test or validation fixes, and small tooling or development-experience corrections.\nA project may legitimately change shared files. A three-way merge can therefore conflict even between compatible Orion releases; resolve the semantic conflict under review. A Git conflict alone does not make the foundation change MAJOR.\nStable tags are sufficient for Orion now. No pre-release tags or workflow are defined; naming such as `-alpha.1`, `-beta.1`, or `-rc.1` can be specified when an actual pre-release need arises.\n"
+  },
+  {
+    "id": "repository/docs/versioning",
+    "title": "Orion Foundation Versioning",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Derived projects and unreleased commits",
+    "anchor": "derived-projects-and-unreleased-commits",
+    "text": "Derived projects and unreleased commits\nA project may be described as derived from `Orion v1.0.0` when its recorded initialization commit equals that tag's target, or as having a `v1.0.0` foundation baseline when its recorded baseline equals the target. Its [manifest](../.orion/project.json) still stores the corresponding SHA, with no required semantic-version field. Tags neither change the [baseline-recording safety rules](project-derivation.md#upgrade-to-a-newer-orion-revision) nor replace normal Git ancestry, reviewed merge commits, and validation for upgrades.\nTo determine whether a recorded commit has a semantic version, inspect stable tags in the canonical Orion repository and compare their resolved commit SHAs with the recorded SHA (for example, `git rev-list -n 1 v1.0.0` in an Orion clone with the tag). The derived project's `orion-upstream` deliberately does not fetch tags, so use a separate Orion clone or the canonical repository's tag view. A nearby or ancestral tag does not name an untagged baseline.\nThe latest stable tag identifies the latest released human-readable version. Later commits on `main` are unreleased foundation revisions; a project can deliberately use one by its SHA. The next semantic version is assigned only when another release point is tagged. Ordinary merges require no new tag.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "IA-MNS Visual Identity",
+    "anchor": "ia-mns-visual-identity",
+    "text": "IA-MNS Visual Identity\n[Documentation index](README.md) · [Web identity assets](../apps/web/README.md#identity) · [Global styles](../apps/web/src/styles.css) · [Corporate agent](domains/corporate-agent.md)\nIA-MNS is MNS's corporate AI agent, so its identity belongs to the MNS family: the MNS blue field, bold white letters, and the red wedge that fills the lower counter of the \"N\" in the MNS logo. IA-MNS has its own marks drawn from those elements; it does not reproduce the MNS corporate logo. This document owns the colors, logos, and usage rules. The [web guide](../apps/web/README.md#identity) owns where the files live and how the derived touch icon is regenerated.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Brand colors",
+    "anchor": "brand-colors",
+    "text": "Brand colors\nSampled from the MNS logo. They are the same in both display themes and are exposed as `--brand-blue` and `--brand-red` in [`styles.css`](../apps/web/src/styles.css).\nName\nValue\nRole\nMNS blue\n`#2B3E84`\nLogo field and lettering, light-theme accent (buttons, avatars, charts).\nMNS red\n`#EC1C24`\nSignature only: the wedge in the logos and a few thin decorative details.\nWhite\n`#FFFFFF`\nLogo bubble, lettering on blue, text on accent surfaces.\nRed is a signature, not a state. It never fills buttons, links, text, or status messages; errors use the `--error-*` tokens, a deeper red on a pale background, so a failure is never confused with branding. Current red details are limited to the logos, the 3-pixel line under the documentation header, and the current-page indicator in the documentation navigation.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Logos",
+    "anchor": "logos",
+    "text": "Logos\nAll files are SVG in [`apps/web/src/assets`](../apps/web/src/assets/brand-mark.svg) except the derived touch icon.\n![IA-MNS horizontal lockup](../apps/web/src/assets/brand-lockup.svg)\nFile\nUse\nMinimum size\n[`brand-mark.svg`](../apps/web/src/assets/brand-mark.svg)\nSymbol: \"IA\" in a white speech bubble on an MNS blue tile, with the red wedge as the bubble's tail. App icon, sidebar, chat welcome, loading screen, documentation header and navigation, source of the touch icon.\n28 px\n[`brand-favicon.svg`](../apps/web/src/assets/brand-favicon.svg)\nSmall-size symbol: the same bubble and wedge without letters, drawn on a 32-unit grid. Browser favicon and the 20-pixel label on assistant replies.\n16 px, up to 24 px\n[`brand-lockup.svg`](../apps/web/src/assets/brand-lockup.svg)\nHorizontal lockup: symbol and the drawn `IA-MNS` wordmark in MNS blue, whose \"N\" keeps the red lower counter of the MNS logo. Light backgrounds; sign-in screen in the light theme.\n24 px high\n[`brand-lockup-reverse.svg`](../apps/web/src/assets/brand-lockup-reverse.svg)\nThe same lockup with a white wordmark. MNS blue or dark backgrounds; sign-in screen in the dark theme.\n24 px high\n[`brand-touch-icon.png`](../apps/web/src/assets/brand-touch-icon.png)\n180×180 raster of `brand-mark.svg` on MNS blue for Apple home screens. Derived; never edited by hand.\n—\nBelow 28 pixels the letters inside the symbol stop being legible, which is why the favicon variant exists. The lockups embed the symbol's drawing; keep them in step with `brand-mark.svg`.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Construction",
+    "anchor": "construction",
+    "text": "Construction\n**Tile**: square with a 28/128 corner radius and a subtle diagonal gradient (`#3349A0` to `#25387A`) that recalls the light sweep of the MNS background.\n**Bubble and wedge**: the tail is a right triangle with a vertical left edge and a diagonal hypotenuse, the MNS wedge turned to point down. It sits behind the bubble so only the part outside it shows.\n**Wordmark**: heavy grotesque letters drawn as paths (cap height 56 units, stems about 15 units), so the logo renders the same everywhere without a font dependency. Only the \"N\" carries red.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Usage rules",
+    "anchor": "usage-rules",
+    "text": "Usage rules\nKeep clear space of at least a quarter of the symbol's height around every logo.\nDo not recolor, outline, rotate, stretch, add shadows to, or redraw the marks; do not typeset the wordmark in another font.\nUse `brand-lockup.svg` only on light backgrounds and `brand-lockup-reverse.svg` only on MNS blue or dark ones. The symbol carries its own blue tile and works on both.\nWhere a screen shows a logo next to live text that names the product, the image is decorative (`alt=\"\"`). A lockup that stands alone has `alt=\"IA-MNS\"`.\nArtwork made for one theme uses the global `theme-light-only` and `theme-dark-only` classes so only the matching variant is displayed and exposed to assistive technology.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Interface palette",
+    "anchor": "interface-palette",
+    "text": "Interface palette\nThe web application reads colors only from the custom properties in [`styles.css`](../apps/web/src/styles.css); feature styles must use these tokens rather than literal colors. The light theme is white and cool gray with MNS blue as the accent. The dark theme is a deep navy derived from MNS blue, with a light periwinkle accent and dark text on it, because MNS blue itself is too dark to carry text or focus on a dark surface.\nToken\nLight\nDark\nRole\n`--canvas`\n`#F4F6FA`\n`#0B1020`\nPage background behind cards.\n`--surface`\n`#FFFFFF`\n`#111830`\nMain surfaces: chat, cards, dialogs.\n`--surface-muted`\n`#EEF1F7`\n`#172039`\nSidebar, user message bubbles, table headers.\n`--input`\n`#FFFFFF`\n`#1B2543`\nText fields and the composer.\n`--ink`\n`#172140`\n`#E8EBF5`\nPrimary text.\n`--muted`\n`#4D5775`\n`#A9B2CC`\nSecondary text, placeholders.\n`--border`\n`#DADFEA`\n`#2A3454`\nDividers and card outlines.\n`--border-strong`\n`#8A94AE`\n`#66729A`\nField and button outlines (at least 3:1 against surfaces).\n`--accent`\n`#2B3E84`\n`#9FB2F4`\nPrimary buttons, send button, avatars, chart bars, active tabs.\n`--accent-hover`\n`#22326A`\n`#BCCBF8`\nHover state of accent buttons.\n`--on-accent`\n`#FFFFFF`\n`#0F1733`\nText and icons on the accent.\n`--selected`\n`#E2E8F5`\n`#222D50`\nHover and selected rows.\n`--link`\n`#2A4BB0`\n`#A9BCF8`\nLinks and eyebrows.\n`--focus`\n`#3557C2`\n`#A9BCF8`\nFocus outlines.\n`--header`\n`#22326A`\n`#0E1530`\nDocumentation header.\n`--on-header` / `--on-header-muted`\n`#FFFFFF` / `#C3CDEB`\n`#FFFFFF` / `#B9C3E2`\nText on the documentation header.\n`--shadow`\n8% navy\n35% black\nCard and menu shadows.\n`--error-ink` / `--error-bg` / `--error-border`\n`#9B1C24` / `#FDEFEF` / `#EDB5B8`\n`#FFB3B6` / `#3A1823` / `#8E3A47`\nErrors and warnings that need attention.\nEvery text pair above meets WCAG 2.2 AA (4.5:1) in both themes; the lowest is `--muted` on `--selected`, at 5.8:1 in the light theme. Keep that margin when changing a value, and recheck the automated accessibility journeys in [validation](validation.md).\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Typography",
+    "anchor": "typography",
+    "text": "Typography\nInterface text uses `Inter, ui-sans-serif, system-ui, sans-serif`; no web font is downloaded, so the operating system's interface font usually renders. Where the product name appears as live text next to the symbol, it is set at weight 800 to echo the heavy wordmark. The drawn wordmark in the lockups is artwork, not text.\n"
+  },
+  {
+    "id": "repository/docs/visual-identity",
+    "title": "IA-MNS Visual Identity",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Changing the identity",
+    "anchor": "changing-the-identity",
+    "text": "Changing the identity\nEdit the SVG sources in `apps/web/src/assets`, keeping the lockups in step with the symbol.\nRegenerate the touch icon as described in the [web guide](../apps/web/README.md#identity).\nChange interface colors only through the tokens in `styles.css`, verify contrast in both themes, and review desktop and mobile screens in light and dark.\nUpdate this document in the same change.\n"
+  },
+  {
+    "id": "repository/infra/production/README",
+    "title": "Production Deployment",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Production Deployment",
+    "anchor": "production-deployment",
+    "text": "Production Deployment\nIA-MNS production runs on one Ubuntu host with Docker Compose, operated by `ia-mns-deploy` ([ADR-0031](../../docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)). Procedures live in the [runbooks](../../docs/runbooks/README.md); this directory holds what they run. Host addresses, domain names and credentials never belong here: they live in `/etc/ia-mns` on the host.\nPath\nPurpose\n[`Dockerfile`](Dockerfile)\n`runtime` and `migrate` images from one build of a release commit; Oracle Instant Client 19.32 verified by Oracle's published SHA-256\n[`compose.yaml`](compose.yaml), [`compose.tls.yaml`](compose.tls.yaml)\n`api`, `postgres` (private network, external volume) and the one-shot `migrate`; the TLS overlay mounts `/etc/ia-mns/tls`\n[`bin/ia-mns-deploy`](bin/ia-mns-deploy)\ninstall, configuration checks, secret generation, database setup, deploy, rollback, backups, restore, status\n[`postgres/pg_hba.conf`](postgres/pg_hba.conf)\nclient authentication written into the data directory by `setup`\n[`examples/`](examples/runtime.env.example)\nthe five `/etc/ia-mns/*.env` files with placeholders only\n[`systemd/`](systemd/ia-mns-backup.timer)\ndaily backup and weekly restore verification\n[`rehearsal/run.sh`](rehearsal/run.sh)\ndisposable end-to-end rehearsal of the real tool and Compose file, run in CI\nQuick reference, as root on the host:\nia-mns-deploy help\nia-mns-deploy status\nia-mns-deploy deploy ia-mns-vX.Y.Z\nia-mns-deploy rollback\nia-mns-deploy backup && ia-mns-deploy verify-restore\nia-mns-deploy logs api --tail 200\n\nThe rehearsal needs a Linux Docker host and root:\nsudo infra/production/rehearsal/run.sh --source \"$PWD\" --ref HEAD\n\nOn Windows or macOS, run it inside the runner image with the Docker socket mounted:\ndocker build -t ia-mns-rehearsal-runner -f infra/production/rehearsal/runner.Dockerfile infra/production/rehearsal\ngit bundle create rehearsal.bundle HEAD\ndocker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v \"$PWD/rehearsal.bundle:/rehearsal.bundle:ro\" \\\n  --add-host host.docker.internal:host-gateway ia-mns-rehearsal-runner bash -c \\\n  'git clone -q /rehearsal.bundle /src && /src/infra/production/rehearsal/run.sh --source /src --ref HEAD --smoke-host host.docker.internal'\n\n"
+  },
+  {
+    "id": "repository/packages/sdk/AGENTS",
+    "title": "SDK-local Instructions",
+    "group": "Agent instructions",
+    "kind": "repository",
+    "heading": "SDK-local Instructions",
+    "anchor": "sdk-local-instructions",
+    "text": "SDK-local Instructions\nUse [the package guide](README.md) for ownership and generation. Global repository instructions still apply.\n`src/index.ts` is the public surface. Keep the SDK a thin generated-contract consumer; never import API implementation, persistence, or backend business authorization.\nGenerate `src/generated/api-types.ts` from committed OpenAPI after changing the API's executable contracts. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md); never hand-edit generated types or duplicate wire schemas here.\nThe host supplies bearer tokens through `createApiClient`; do not add token storage, provider-specific identity, or authorization rules.\nPreserve structured errors and safe unknown-code fallback. Consider actual consumer compatibility when changing the client surface or generator; this private workspace package has no independent publication promise.\nRun `pnpm -C packages/sdk typecheck` and root `pnpm references:check`, then root `pnpm validate` before substantial-work handoff.\n"
+  },
+  {
+    "id": "repository/packages/sdk/README",
+    "title": "API SDK",
+    "group": "Workspace guides",
+    "kind": "repository",
+    "heading": "API SDK",
+    "anchor": "api-sdk",
+    "text": "API SDK\n[API modules](../../apps/api/README.md#modules) · [Generated OpenAPI](../../docs/generated/api/openapi.json) · [API policy](../../docs/api/principles.md) · [Web consumer](../../apps/web/README.md)\nThis private workspace package (`packages/sdk`) is the client boundary for the API. [`src/index.ts`](src/index.ts) exports `createApiClient(baseUrl, getAccessToken)`, `ApiClient`, and generated `paths` types. The host provides credentials through the callback; the SDK adds the bearer header without issuing, refreshing, persisting, or logging tokens. It contains no business authorization, persistence, or provider-specific identity model.\nThe API owns executable TypeBox schemas and stable operation IDs. Generated OpenAPI feeds `openapi-typescript`, which produces [`src/generated/api-types.ts`](src/generated/api-types.ts); `openapi-fetch` supplies the thin typed runtime. Never edit generated types or import server implementation models. Compile-time typing does not automatically revalidate successful responses at runtime.\nFrom the repository root, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md): regenerate API OpenAPI first, run `pnpm -C packages/sdk generate`, and regenerate affected portal data. `pnpm references:check` verifies API/database/SDK freshness without editing tracked files. Run `pnpm -C packages/sdk typecheck` and the full `pnpm validate` gate for the client and web consumer.\nThis package has no independently published compatibility promise. A real independently released consumer activates [API compatibility policy](../../docs/api/versioning.md) and a human action to identify its supported baseline; SDK package versions and server contract versions are distinct. Current-source drift checks do not validate a historical released consumer.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "IA-MNS",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "IA-MNS",
+    "anchor": "ia-mns",
+    "text": "IA-MNS\nIA-MNS is MNS's corporate AI agent, built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. It provides a Portuguese conversation workspace with persistent history. Business capabilities plug into an explicit registry: the agent routes each request to an implemented capability and never presents planned ones as available. Sales consultation is the first and currently only business capability, over MNS (Sankhya) and Pilar da Terra (VRMaster) as chosen in a source selector beside the message box; the two sources are always shown separately and never summed. [Corporate agent](docs/domains/corporate-agent.md) owns the product direction; [sales semantics](docs/domains/sales-chat.md) retain the business guarantees.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "IA-MNS",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Current state",
+    "anchor": "current-state",
+    "text": "Current state\nThis repository was initialized on 2026-10-01 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It retains the foundation's architecture, policies, tooling, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). It composes the corporate agent and sales modules, PostgreSQL conversation persistence, grounded social responses, actual execution progress, and light/dark themes. Existing deterministic sales results and read-only Oracle access remain in place; a second read-only source reads Pilar da Terra sales from VRMaster PostgreSQL with the owner's reference SQL ([ADR-0027](docs/adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)), validated on synthetic PostgreSQL while its reconciliation against the real VRMaster awaits the owner. Sales interpretation keeps structured conversation state, so answers to clarification questions complete the pending request; curated multi-turn evaluation cases gate every change, and live-model evaluation, trace capture and synthetic scenarios are opt-in tools ([AI interpretation](docs/architecture/ai-interpretation.md), [AI evaluation](docs/architecture/ai-evaluation.md)). [Local setup](docs/setup.md#corporate-agent-and-local-postgresql) provisions Docker PostgreSQL and starts the application. Live OpenAI/Oracle interpretation and original-SQL reconciliation passed on 2026-10-01 using the existing owner-authorized key; [verification](docs/project/live-sales-verification.md) records the earlier provider repair. IA-MNS has its own identity ([identity](docs/domains/identity.md)): one Person per individual, reachable through an IA-MNS account (password and authenticator app), PDT Connect or Sankhya, with the same conversations and permissions whether opened directly or embedded in PDT Connect or the Sankhya Om. People who use PDT Connect or Sankhya get their profile automatically at first access; there is no public account creation, and owners create and associate everyone else. Owners also administer the operational parameters (AI model, AI trace level and automatic grants by provider link) in **Administração → Parâmetros**, which take effect without a restart; secrets and bootstrap configuration stay in the environment ([ADR-0028](docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)). Integration work follows the order direct access, Sankhya, then PDT Connect. IA-MNS reaches the Om through a thin Sankhya add-on in [`apps/sankhya-addon`](apps/sankhya-addon/README.md) that hosts the same frontend and proves the signed-in Sankhya user ([ADR-0026](docs/adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)); in the Sankhya development Om, a signed-in Om user already opens IA-MNS from the Om menu without another sign-in and is provisioned automatically at first access. Production publication still awaits review, key custody and the Om security hardening (production refuses Sankhya sign-in until approved). PDT Connect hosts IA-MNS the same way through an IA-MNS screen in the PDT Connect repository, validated with a local PDT; its HTTPS homologation is pending. For production, the emitted API serves the web build at one origin with the API under `/api`, trusts only enumerated reverse proxies, can listen with internal TLS, and ships compiled operational commands for the owner bootstrap, identity keys, configuration checks and database deployment ([ADR-0029](docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)); releases will be `ia-mns-vX.Y.Z` tags ([ADR-0030](docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)). Production runs on one Ubuntu host with Docker Compose through the `ia-mns-deploy` tool in [`infra/production`](infra/production/README.md) ([ADR-0031](docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)): verified release tags, a private PostgreSQL with separate administrator, migration and runtime roles, pre-deployment and daily backups with restore verification, and rollback only when proven safe; CI rehearses the complete installation with synthetic configuration. Nothing has been installed on the production host yet ([PH-26](docs/project/human-actions.md#ph-26)). A dedicated SELECT-only Oracle account, unit confirmation, production deployment and shared-deployment lifecycle remain owner actions. No new ERP domains or actions are implemented. The repository is published at https://github.com/GabriellMDias/IA-MNS. Its `main` branch requires pull requests and the `Orion required gate` check, Renovate is enabled, and the applicable GitHub security controls are on.\nThe [corporate agent verification](docs/project/corporate-agent-verification.md) records current real-provider, persistence and gate evidence. The [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "IA-MNS",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Start here",
+    "anchor": "start-here",
+    "text": "Start here\nTask\nEntry point\nFind the policy for a change\n[Documentation task index](docs/README.md)\nUnderstand contributor and agent obligations\n[Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)\nUnderstand architecture and code placement\n[Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)\nAdd a product capability\n[API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation)\nFind a selected technology or its rationale\n[Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)\nDetermine available verification\n[Validation](docs/validation.md)\nReproduce the local workflow\n[Development setup](docs/setup.md)\nExplore local guides, architecture, API routes, data, and components\n[Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data)\nFind outstanding work or required owner decisions\nThe plan and human actions linked from [Current state](#current-state)\nInspect provenance or adopt a newer Orion revision\n[Project derivation](docs/project-derivation.md)\nCreate an operational procedure\n[Runbooks](docs/runbooks/README.md)\nAccepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate.\nDirectory trees in architecture documents describe intended responsibilities, not proof that those directories exist. The physical repository takes precedence over illustrations. English is the canonical repository language; product localization is separate.\n"
+  },
+  {
+    "id": "repository/README",
+    "title": "IA-MNS",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "License",
+    "anchor": "license",
+    "text": "License\nIA-MNS is licensed under the [Apache License 2.0](LICENSE), which covers both the project's own work and the material inherited from Orion. [ADR-0021](docs/adr/0021-license-ia-mns-under-apache-2-0.md) records the decision. The repository is public. Never commit credentials, local configuration, or confidential business data.\n"
+  }
+]

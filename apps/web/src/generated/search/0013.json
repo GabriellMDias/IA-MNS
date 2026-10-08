@@ -1,5 +1,122 @@
 [
   {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Division of work",
+    "anchor": "division-of-work",
+    "text": "Division of work\nConcern\nModel\nApplication\nChoose a capability or social intent\nRouter proposes an allowlisted intent or catalog id\nValidates the id, checks permission, applies the pending-request rule\nRead a sales message\nInterpreter reports decision, relation and what the message states\nValidates schema and consistency, never trusts relation blindly\nKeep earlier values\nNever\nHolds active and pending analyses; merges deterministically\nDecide what is missing\nMay flag genuine ambiguity\nComputes missing required slots and asks\nDates\nNames a period form; computes dates only for explicit ranges\nResolves forms against the Sao Paulo date; refuses unstarted periods; bounds length\nConstraints\nProposes filters from catalog dimensions\nRequires each new filter to be written by the user\nExecution and answers\nNever\nCompiles a fixed parameterized query; computes and writes every figure and message\nEach model call is one forced, strict tool call with a schema derived from the application. The provider receives user messages, application-authored replies (clarification and unavailable messages), filter-only descriptions of earlier answers and the structured state; never result rows, figures, response prose with numbers, credentials or schema details.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Turn pipeline",
+    "anchor": "turn-pipeline",
+    "text": "Turn pipeline\nThe agent loads its own context (last capability, capability awaiting an answer) and the capability contexts of the conversation.\nThe router receives the message, the recent transcript with application replies (an answer is shared only as \"answer delivered\") and the pending request. If it returns `unavailable` while a permitted capability awaits an answer, the message goes to that capability, whose boundary rejects unsupported requests itself. Social intents are respected.\nThe sales capability loads its state, upgrading version 1 contexts. It also receives the turn's source selection from the interface; nothing in the model's output can change it.\nThe interpreter returns an interpretation; the adapter rejects schema violations and inconsistent combinations (for example a clarification without a category or a filter action without text).\nThe state machine (`advance` in [`conversation-state.ts`](../../apps/api/src/features/sales/conversation-state.ts)) normalizes the relation, grounds filters, merges, checks completeness, resolves the period and compiles the query, or returns a clarification or rejection.\nOnly an executed plan reaches a database, and only the adapters of the selected sources that support its measure run ([sources](../domains/sales-chat.md#sources)). The plan is the same for every source; results, answers and suggestions stay deterministic and per source. A source or company name in the message only adds an application-authored notice, and a source name the model placed in a filter is dropped (`source_named_as_product`).\nThe exchange is appended to the transcript; the capability returns its new state and what it awaits; the agent stores both with the turn and records the trace.\nA failed turn changes neither state nor transcript.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Structured conversation state",
+    "anchor": "structured-conversation-state",
+    "text": "Structured conversation state\nSales context version 2 ([schema](../../apps/api/src/features/sales/conversation-state.ts)):\nField\nMeaning\n`active`\nThe last executed plan and its compiled query; the base of refinements.\n`pending`\nAn unanswered request: the partial plan (`draft`), what it awaits (`awaiting`, for example `period`) and the clarification asked.\n`transcript`\nUp to 12 recent sales exchanges: user text and the application's reply text, or a filter-only description of an answer.\nThe agent context `_agent` (version 2) records the last capability and `pending: { capabilityId, awaiting }`. Social turns do not change capability contexts, so a pending request survives \"obrigado\" and similar interjections. A pending request ends when it is completed, when a new analysis starts, or when another request replaces it; unsupported requests leave it open.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Relation normalization",
+    "anchor": "relation-normalization",
+    "text": "Relation normalization\nThe model's relation is a proposal. The application applies it against the state it holds:\nModel relation\nState\nApplied\n`answer_pending`\nno pending request\n`refine` if an active analysis exists, else `new`\n`refine`\npending request\n`answer_pending` (the open question is the focus)\n`new`\npending request, and the message supplies an awaited slot while every other stated value restates the request\n`answer_pending`\n`refine`\nno active analysis and no pending request\ncontext clarification\nThe third rule is general slot filling: a message that only answers what was asked, or restates the request with the answer, completes it; a message that changes the product or another value starts a new analysis. Each normalization is recorded as an issue code (`pending_absent`, `refine_applied_to_pending`, `new_completes_pending`, `refine_without_context`).\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Merge, grounding and completeness",
+    "anchor": "merge-grounding-and-completeness",
+    "text": "Merge, grounding and completeness\nThe base is the pending draft, the active plan or an empty draft. Stated values replace; a filter `clear` removes; unstated values are retained. A new analysis retains nothing, so earlier filters cannot leak.\nA filter value set by the message must appear, as a contiguous accent- and case-insensitive word sequence, in the current or an earlier user message of the transcript. Common Portuguese plural forms map to their singular (`maçãs`, `pães`, `limões`). An ungrounded filter is dropped and the user is asked for the product (`ungrounded_product`).\n`period` is the only required slot; measure, grouping and comparison default to net value, total and none, as documented in the [sales semantics](../domains/sales-chat.md#interpretation-and-computation). A model clarification is honored only for ambiguity the fields cannot express.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Analytical plan",
+    "anchor": "analytical-plan",
+    "text": "Analytical plan\n[`analysis.ts`](../../apps/api/src/features/sales/analysis.ts) defines the plan independently of wording and SQL:\n`salesCatalog`: measures (`net_value`, `quantity`, `weight`), dimensions (`product`), groupings (`total`, `month`, `product`), comparisons (`none`, `previous_year`, `previous_period`) and defaults. Interpretation schemas are generated from these values; a test keeps them identical.\n`AnalysisSpec` (complete plan) and `AnalysisDraft` (partial plan): measure, dimension filters, period expression, grouping, comparison.\n`compileAnalysis` resolves the period and maps the plan to the existing `SalesQuery`, which `validateQuery` and the reconciled [query](../../apps/api/src/features/sales/query.ts) execute unchanged.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Period expressions",
+    "anchor": "period-expressions",
+    "text": "Period expressions\n[`period.ts`](../../apps/api/src/features/sales/period.ts) resolves named forms against the Sao Paulo business date:\nForm\nMeaning\n`current` day/month/year\ntoday, month to date, year to date\n`previous` day/month/year\nyesterday, previous complete month or year\n`last` day + count\nN dates including today (or ending yesterday when the current day is excluded)\n`last` month + count\nN completed months before the current one, or N months including the current one to date\n`month` + month (+ year)\nthat month; without a year, its latest non-future occurrence; the current month runs to date\n`year` + year\nthat calendar year; the current year runs to date\n`range`\nexplicit inclusive dates\nA started period is clamped to today. A period that has not started, an invalid date, one before 2000 or one longer than 366 days becomes a period clarification (the length limit has its own message). Comparisons are derived by the existing domain rules.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Adding a dimension",
+    "anchor": "adding-a-dimension",
+    "text": "Adding a dimension\nA future dimension (for example salesperson) requires, in one reviewed change: the business definition and ERP columns with owner confirmation, reconciled query support and bindings, a catalog entry, its filter grounding rule if it differs from a description phrase, execution validation, renderer and answer changes if needed, curated evaluation cases and documentation. The interpretation schema, state, merge, transcript and evaluation framework need no structural change. Until then the model cannot express that filter, and requests for it are rejected as unsupported.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Validation layers",
+    "anchor": "validation-layers",
+    "text": "Validation layers\nProvider boundary: exactly one call of the expected tool, completed status, JSON that satisfies the generated schema.\nSemantic consistency of the interpretation.\nState normalization, grounding and completeness.\nPeriod resolution and `validateQuery` bounds (dates, length, comparison period, description length).\nOracle result shape and scope checks and result limits ([sales capability](../domains/sales-chat.md)).\nAny failure in layers 1–2 is `SALES_PROVIDER_UNAVAILABLE` or `AGENT_PROVIDER_UNAVAILABLE`; layers 3–4 produce clarifications or `SALES_QUERY_INVALID`; nothing partially executes.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Model port",
+    "anchor": "model-port",
+    "text": "Model port\n[`src/ai/model.ts`](../../apps/api/src/ai/model.ts) defines `StructuredModel.invoke(request)`: instructions, messages, one strict tool, an output budget. It returns schema-valid output plus `ModelInvocation` metadata (provider, model, latency, token counts). [`openai.ts`](../../apps/api/src/ai/openai.ts) implements it with the Responses API, `store:false`, forced tool choice, no parallel calls, no retries and a 20-second request timeout for interactive turns (offline tooling may pass a longer one). The router and interpreter instructions carry version identifiers (`agentRouterVersion`, `salesInterpreterVersion`) recorded in traces and evaluation reports; change the identifier whenever instructions change. Another provider would implement the same interface; none is integrated.\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "AI tracing and observability",
+    "anchor": "ai-tracing-and-observability",
+    "text": "AI tracing and observability\nThe trace level is the [operational parameter](configuration.md#operational-parameters) `ai.traceLevel`: owners change it in **Administração → Parâmetros** and each agent turn uses the level in force when it starts; `IA_MNS_AI_TRACE` ([configuration reference](../generated/configuration/api.md)) is its installation default. The AI model is likewise the parameter `ai.model` (installation default `OPENAI_MODEL`), resolved for every model request. The levels are explicit:\nLevel\nCaptured\nDestination\n`off`\nNothing beyond existing failure diagnostics\n—\n`metadata` (default)\nRoute intent and capability, override, interpretation decision and relation, applied relation, issue codes, missing slots, period form, outcome, clarification category, unsupported reason, prompt versions, model, latency, token counts, result row count\nOne `ai_turn_traced` structured log event per agent turn\n`content`\nMetadata plus the interpretation, sales state before and after, the agent context before, the business date and the executed query filters\n`agent_turn_traces`, written with the turn outcome\nMetadata never includes user text, filter values, dates, figures or provider payloads; tests assert this with synthetic confidential markers. Content traces are CONFIDENTIAL, never contain result rows or answer prose, are bounded to 256 KB (content omitted, not truncated, beyond that) and are deleted with their turn or conversation. The runtime role can only insert and read them. Production refuses `content` until [PH-09](../project/human-actions.md#ph-09) approves retention and access, whether it comes from the environment or from administration (a stored `content` is used as `metadata` there); because an owner may select `content` at any time elsewhere, the API checks the table at every startup. The [telemetry redaction](../security/telemetry-redaction.md) policy continues to govern logs and spans.\nReproduction path: enable `content` locally, reproduce the conversation, then run `pnpm eval capture --turn <turn-id>` ([evaluation](ai-evaluation.md#from-trace-to-regression-case)).\n"
+  },
+  {
+    "id": "repository/docs/architecture/ai-interpretation",
+    "title": "AI Interpretation Architecture",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\n`apps/api/test/sales-analysis.test.ts` covers period forms, plurals and grounding, catalog/schema identity, every relation normalization, retention and leakage, unqueryable periods and context upgrades. `agent-turn.test.ts` covers pending routing, the override rule, figure-free router transcripts and trace redaction. `agent.test.ts` verifies content traces on migrated PostgreSQL with the restricted role, cascade deletion, metadata-only logs and capture. `sales-providers.test.ts` covers the strict OpenAI boundary through the port. The [curated evaluation dataset](ai-evaluation.md) replays reference model readings through the whole pipeline in `pnpm test`.\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Application Boundaries",
+    "anchor": "application-boundaries",
+    "text": "Application Boundaries\n[Documentation index](../README.md) · [Repository placement](repository-structure.md) · [Dependency rules](dependency-rules.md)\nApplications are executable boundaries with explicit ownership; sharing a monorepo does not merge their runtime, trust, or persistence responsibilities. This page owns runtime separation and composition. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) governs the API adapter and [ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md) the web stack.\n"
+  },
+  {
     "id": "repository/docs/architecture/application-boundaries",
     "title": "Application Boundaries",
     "group": "Architecture",
@@ -222,7 +339,7 @@
     "kind": "repository",
     "heading": "Current implementation and activation",
     "anchor": "current-implementation-and-activation",
-    "text": "Current implementation and activation\nThe [repository workflow](../../.github/workflows/ci.yml) validates pull requests to `main`, pushes to `main`, merge-queue commits, and manual dispatches. It uses repository-pinned Node.js/pnpm and frozen installation, installs Playwright Chromium/system libraries, and runs `pnpm validate` on GitHub-hosted Ubuntu. It fetches Git history and supplies the base commit for release-history validation. The stable branch-protection check name is **Orion required gate**; it fails if validation fails or does not finish successfully. Superseded pull-request runs are cancelled; primary-branch runs are not. No diagnostic artifacts are uploaded. Future uploads need bounded retention and must exclude secrets/sensitive data.\nThe workflow passes the PR base SHA, merge-group base SHA, or `github.event.before` unchanged to the release-history validator. That shared validator handles GitHub's first-push zero-SHA sentinel under the [release-history rules](../database/release-evolution.md#record-the-first-durable-migration-boundary), so local and CI checks enforce the same missing-base and append-only protections. Manual dispatches without an explicit base use the validator's local Git-base discovery.\nThe dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=true` and blocks newly introduced high/critical vulnerabilities. The aggregate gate treats an enabled review that fails or skips as a failure. The repository's human actions record dated evidence and how to reverify the variable, security settings, and actual review execution.\nThe [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. The repository's human actions own app activation/Dashboard and effective branch-protection evidence.\nCI does not build `apps/sankhya-addon`: its Gradle build needs Sankhya's partner artifacts and Java 8 ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)). Renovate's recommended preset also detects Gradle and Gradle wrapper files once they reach `main`; check such updates against the Om runtime and the Sankhya plugin before merging.\nCommitted workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Effective settings belong to each repository: a project derived from Orion inherits this configuration but none of Orion's activation evidence, and tracks its own settings in its [project human actions](../project-derivation.md#content-ownership). Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.\n"
+    "text": "Current implementation and activation\nThe [repository workflow](../../.github/workflows/ci.yml) validates pull requests to `main`, pushes to `main`, merge-queue commits, and manual dispatches. It uses repository-pinned Node.js/pnpm and frozen installation, installs Playwright Chromium/system libraries, and runs `pnpm validate` on GitHub-hosted Ubuntu. It fetches Git history and supplies the base commit for release-history validation. The stable branch-protection check name is **Orion required gate**; it fails if validation fails or does not finish successfully. Superseded pull-request runs are cancelled; primary-branch runs are not. No diagnostic artifacts are uploaded. Future uploads need bounded retention and must exclude secrets/sensitive data.\nThe workflow passes the PR base SHA, merge-group base SHA, or `github.event.before` unchanged to the release-history validator. That shared validator handles GitHub's first-push zero-SHA sentinel under the [release-history rules](../database/release-evolution.md#record-the-first-durable-migration-boundary), so local and CI checks enforce the same missing-base and append-only protections. Manual dispatches without an explicit base use the validator's local Git-base discovery.\nThe production-deployment job builds the runtime image from `infra/production/Dockerfile`, checks that it runs as a non-root user, loads the Oracle Instant Client in Thick mode and contains a web build without the `/docs` portal, lints the operational scripts with ShellCheck, and runs [`infra/production/rehearsal/run.sh`](../../infra/production/rehearsal/run.sh) as root: the real `ia-mns-deploy` and Compose file, with synthetic configuration on disposable resources, through install, setup, deployment, persistence, backups, restore verification, upgrade, failed releases, rollback and restore ([ADR-0031](../adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)). It publishes no image and uses no credential; Oracle, OpenAI, VRMaster and PDT are never contacted. The aggregate gate requires it.\nThe dependency-review job runs on pull requests when `DEPENDENCY_REVIEW_ENABLED=true` and blocks newly introduced high/critical vulnerabilities. The aggregate gate treats an enabled review that fails or skips as a failure. The repository's human actions record dated evidence and how to reverify the variable, security settings, and actual review execution.\nThe [Renovate configuration](../../renovate.json) selects the recommended baseline, Dependency Dashboard, weekly routine cadence, grouped compatible TypeScript/lint updates, majors requiring dashboard approval, SHA-pin maintenance, and no automerge. Vulnerability-remediation pull requests are not held to the routine schedule. The repository's human actions own app activation/Dashboard and effective branch-protection evidence.\nCI does not build `apps/sankhya-addon`: its Gradle build needs Sankhya's partner artifacts and Java 8 ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)). Renovate's recommended preset also detects Gradle and Gradle wrapper files once they reach `main`; check such updates against the Om runtime and the Sankhya plugin before merging.\nCommitted workflow/configuration does not prove current GitHub activation, entitlement, branch protection, or a successful remote run. Effective settings belong to each repository: a project derived from Orion inherits this configuration but none of Orion's activation evidence, and tracks its own settings in its [project human actions](../project-derivation.md#content-ownership). Reverify effective settings when relying on them; do not turn dated acceptance evidence into an undated live assertion.\n"
   },
   {
     "id": "repository/docs/architecture/continuous-integration",
@@ -1015,185 +1132,5 @@
     "heading": "40. Infrastructure Should Serve the Architecture",
     "anchor": "40-infrastructure-should-serve-the-architecture",
     "text": "40. Infrastructure Should Serve the Architecture\nIntroduce brokers, caches, orchestration, microservices, search, or extra databases only for concrete requirements and with their operational cost understood.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "41. Monolith First Unless Boundaries Require Otherwise",
-    "anchor": "41-monolith-first-unless-boundaries-require-otherwise",
-    "text": "41. Monolith First Unless Boundaries Require Otherwise\nPrefer logical modularity before distribution. Separate services only for justified scaling, isolation, deployment autonomy, security, ownership, or runtime needs.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "42. Generated Code Must Remain Replaceable",
-    "anchor": "42-generated-code-must-remain-replaceable",
-    "text": "42. Generated Code Must Remain Replaceable\nKnow every generated file's canonical input and regeneration process. Do not hand-edit derived output except at an explicit extension point; keep it reproducible and replaceable.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "43. Tooling Is Part of Developer Experience",
-    "anchor": "43-tooling-is-part-of-developer-experience",
-    "text": "43. Tooling Is Part of Developer Experience\nDesign commands, generators, setup, and diagnostics for deterministic behavior, clear names, actionable output, and little hidden state. Tooling is an internal product for humans and agents.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "44. AI Agents Must Operate Through Verifiable Feedback",
-    "anchor": "44-ai-agents-must-operate-through-verifiable-feedback",
-    "text": "44. AI Agents Must Operate Through Verifiable Feedback\nPair instructions with compiler, type, lint, architecture, test, schema, generation, and build feedback that can prove important changes valid. Increase mechanical coverage as real capabilities arrive.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "45. AI-Specific Architecture Must Also Benefit Humans",
-    "anchor": "45-ai-specific-architecture-must-also-benefit-humans",
-    "text": "45. AI-Specific Architecture Must Also Benefit Humans\nAgent-oriented structure should improve clarity, consistency, discoverability, automation, maintenance, or onboarding for people too. Do not optimize the repository for one AI tool's quirks.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "46. Important Decisions Must Preserve Rationale",
-    "anchor": "46-important-decisions-must-preserve-rationale",
-    "text": "46. Important Decisions Must Preserve Rationale\nFor consequential architecture, retain context, alternatives, choice, tradeoffs, and consequences in an ADR when the [authoring policy](../adr/authoring.md) calls for one. Distinguish deliberate constraints from accidents.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "47. Prefer Reversible Decisions Early",
-    "anchor": "47-prefer-reversible-decisions-early",
-    "text": "47. Prefer Reversible Decisions Early\nWhen evidence is incomplete, preserve flexibility with clear boundaries, explicit contracts, limited coupling, and documented decisions rather than speculative abstraction. Commit to specifics when requirements justify them.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "48. Complexity Must Pay Rent",
-    "anchor": "48-complexity-must-pay-rent",
-    "text": "48. Complexity Must Pay Rent\nEvery layer, dependency, service, package, process, or technology adds knowledge cost. Use it only when its concrete benefit exceeds a simpler alternative.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "49. Prefer Consistency Over Personal Preference",
-    "anchor": "49-prefer-consistency-over-personal-preference",
-    "text": "49. Prefer Consistency Over Personal Preference\nFollow established good patterns unless there is a concrete reason to improve them. Change an inadequate pattern deliberately rather than creating silent competing conventions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "50. The Architecture Must Be Able to Evolve",
-    "anchor": "50-the-architecture-must-be-able-to-evolve",
-    "text": "50. The Architecture Must Be Able to Evolve\nWhen evidence invalidates a fundamental choice, identify the limit, evaluate alternatives, document the new decision, migrate deliberately, remove obsolete architecture, and update validation/documentation. Do not accumulate contradictory generations of policy.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Decision Priority",
-    "anchor": "decision-priority",
-    "text": "Decision Priority\nWhen principles conflict, consider correctness, security/privacy, data integrity, production safety, explicit contracts/boundaries, observability, maintainability, simplicity, consistency, then development convenience. This is guidance, not a substitute for explaining significant tradeoffs.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Exceptions",
-    "anchor": "exceptions",
-    "text": "Exceptions\nAn exception needs a concrete reason, understood consequences, explicit scope, documentation when significant, and no silent competing pattern. Give temporary deviations a removal path where practical.\n"
-  },
-  {
-    "id": "repository/docs/architecture/principles",
-    "title": "Architecture Principles",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Relationship to Other Documentation",
-    "anchor": "relationship-to-other-documentation",
-    "text": "Relationship to Other Documentation\nThis page owns architectural principles, not implementation recipes. [Policies](../README.md) own current requirements, [ADRs](../adr/README.md) own decision rationale, [setup](../setup.md) owns development commands, and [AGENTS.md](../../AGENTS.md) owns global contributor/agent instructions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Repository Structure",
-    "anchor": "repository-structure",
-    "text": "Repository Structure\n[Documentation index](../README.md) · [Application boundaries](application-boundaries.md) · [Dependency rules](dependency-rules.md)\nThis page owns repository placement and local discovery. [ADR-0002](../adr/0002-select-pnpm-for-package-and-workspace-management.md) governs workspace management; [ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) governs enforcement. Organize by responsibility so humans and agents can change one area without loading the whole repository.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "High-Level Structure",
-    "anchor": "high-level-structure",
-    "text": "High-Level Structure\nThese locations exist:\nLocation\nResponsibility and entry point\nRepository root\nRepository-wide instructions, workspace/lockfile, dependency and validation configuration. Start with [README](../../README.md) and [AGENTS.md](../../AGENTS.md).\n`apps/api/`\nFastify executable, composed API modules, API-owned contracts, Prisma schema/migrations, and runtime/generation tests. Start with its [README](../../apps/api/README.md).\n`apps/web/`\nReact/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md).\n`apps/sankhya-addon/`\nSankhya Om add-on that hosts IA-MNS inside the Om; a Gradle project with its own Java 8 toolchain, outside the pnpm workspace and the Node validation tooling ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)). Start with its [README](../../apps/sankhya-addon/README.md).\n`packages/sdk/`\nPublic API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md).\n`docs/`\nCurrent policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md).\n`tooling/validate/`\nRepository documentation, agent-instruction, environment-example, and release-history checks.\n`tooling/documentation/`\nPortal dataset and component-reference generation.\n`tooling/project/`\nProject initialization, pruning, provenance, and Orion upgrade commands and the project-owned file templates; see [project derivation](../project-derivation.md).\n`.orion/`\n[`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance; [`derivation.json`](../../.orion/derivation.json): the clean-baseline contract of foundation-only and project-owned content.\n`.gemini/`\nGemini CLI discovery adapter only; see [agent instructions](agent-instructions.md).\n`.github/`\nGitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings.\n`docs/project/` exists only in projects derived from Orion, where it holds the project-owned plan and human actions. There is no `infra/`, mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.\nKeep the root small: application-specific implementation belongs to its application; runtime sharing belongs to a meaningful package; repository automation belongs under `tooling/`. Introduce `infra/` only for real declarative deployment/operational infrastructure, never ordinary business logic. Infrastructure may consume application artifacts and configuration requirements; runtime code must not import infrastructure definitions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "apps/",
-    "anchor": "apps",
-    "text": "`apps/`\nAn application is an independently meaningful executable runtime or delivery surface. It owns its entry point, lifecycle, configuration, dependency composition, build, runtime integrations, telemetry initialization, and platform-specific behavior. Its local guide should make purpose, public interfaces, dependencies, commands, operational characteristics, and any deployment assumptions discoverable.\nApplications must not import another application's implementation or become shared backend libraries. Runtime communication uses explicit contracts; genuine shared implementation may move into a package. See [application boundaries](application-boundaries.md) for trust, persistence, communication, and extraction decisions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Creating a New Application",
-    "anchor": "creating-a-new-application",
-    "text": "Creating a New Application\nEstablish the concrete runtime/delivery need, why an existing application cannot own it, public contracts, dependencies, data ownership, configuration, observability, failure modes, and deployment/distribution expectations. A significant new boundary normally requires an ADR. Prefer logical modularity before physical distribution; code size alone does not justify another runtime.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "packages/",
-    "anchor": "packages",
-    "text": "`packages/`\nPackages define cohesive shared responsibilities, intentional public APIs, allowed consumers/dependencies, private implementation, and runtime/platform compatibility. Consume a package through its public exports rather than arbitrary internal paths. Packages must not depend on applications. Avoid both one package per small utility and broad `common`, `shared`, or `utils` dumping grounds.\nThe SDK is currently the only shared package. Extract other capabilities only when ownership or reuse warrants it:\nResponsibility\nConstraint if extracted\nDomain concepts and business behavior\nPlatform-independent where useful; no unnecessary HTTP, UI, database, telemetry-vendor, or filesystem dependency. A domain package is not mandatory for application-local business logic.\nCommunication contracts\nCanonical wire schemas, identifiers, errors, or events; internal models do not automatically become public contracts.\nDatabase infrastructure\nSchema, migrations, client setup, metadata, or shared persistence primitives; sharing infrastructure does not grant unrestricted table access.\nObservability\nConsistent logging, context, propagation, metrics, reporting, and redaction semantics; isolate vendors only where that provides a meaningful boundary.\nConfiguration\nShared validation/loading primitives; application-specific configuration remains owned by its application.\nTesting\nGenuinely reusable fixtures, factories, assertions, or infrastructure; behavior tests remain near their owner.\nUI\nShared design tokens or components only where runtime, interaction, and accessibility semantics are compatible; do not force cross-platform component reuse.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Creating a New Package",
-    "anchor": "creating-a-new-package",
-    "text": "Creating a New Package\nFirst search existing owners. Explain the cohesive responsibility, actual consumers, public API, allowed dependency directions, platform constraints, and architectural benefit. A second consumer alone does not justify extraction: consumers must share meaning, not just similar code. Prefer simple local duplication over an abstraction with conflicting responsibilities. A package should make ownership and the dependency graph clearer.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Feature Organization",
-    "anchor": "feature-organization",
-    "text": "Feature Organization\nKeep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. API modules live in `apps/api/src/features/<module>/`, typically as flat domain, service, persistence, contracts, errors, and route files; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) is a complete example. Domain behavior may stay application-local until sharing has value.\nTests normally live near the behavior they protect or in the owning application's test directory; broader system tests may need dedicated locations. Use the [testing strategy](testing-strategy.md) for existing topology and test boundaries. Name directories/packages in English by domain, capability, or responsibility rather than historical accidents.\n"
   }
 ]

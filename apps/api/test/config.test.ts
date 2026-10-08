@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   clientConfigFrom,
@@ -242,5 +243,28 @@ describe("API configuration boundary", () => {
         ORION_WEB_DOCS: "disabled",
       }).webDocumentation,
     ).toBe("disabled");
+  });
+
+  it("accepts only a P-256 PKCS#8 signing key for the IA-MNS issuer", () => {
+    const der = (curve: string) =>
+      generateKeyPairSync("ec", { namedCurve: curve })
+        .privateKey.export({ type: "pkcs8", format: "der" })
+        .toString("base64url");
+    const identity = (key: string) => ({
+      ORION_ENV: "test",
+      IA_MNS_PUBLIC_ORIGIN: "https://ia.example.test",
+      IA_MNS_IDENTITY_SIGNING_KEY: key,
+      IA_MNS_IDENTITY_ENCRYPTION_KEY: Buffer.alloc(32).toString("base64url"),
+    });
+    expect(() => parseServerConfig(identity(der("P-256")))).not.toThrow();
+    // SEC1 (what OpenSSL 3 writes for EC keys by default), another curve, or
+    // arbitrary text are refused at startup with the setting's name.
+    const sec1 = generateKeyPairSync("ec", { namedCurve: "P-256" })
+      .privateKey.export({ type: "sec1", format: "der" })
+      .toString("base64url");
+    for (const key of [sec1, der("P-384"), "a".repeat(64)])
+      expect(() => parseServerConfig(identity(key))).toThrow(
+        "IA_MNS_IDENTITY_SIGNING_KEY must be a base64url PKCS#8 P-256 private key",
+      );
   });
 });

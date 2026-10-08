@@ -1671,6 +1671,16 @@
       "file": "pages/repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.json"
     },
     {
+      "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+      "kind": "repository",
+      "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+      "group": "Decisions",
+      "source": "docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md",
+      "summary": "The owner approved on 2026-10-07 running IA-MNS in production on one Ubuntu host of the company network behind the corporate TLS reverse proxy, with its own PostgreSQL in…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -2211,12 +2221,52 @@
       "file": "pages/repository/docs/runbooks/authoring.json"
     },
     {
+      "id": "repository/docs/runbooks/production-backup-and-restore",
+      "kind": "repository",
+      "title": "Runbook: Production Backup and Restore",
+      "group": "Runbooks",
+      "source": "docs/runbooks/production-backup-and-restore.md",
+      "summary": "Take, verify and restore logical backups of the IA-MNS PostgreSQL database.",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/production-backup-and-restore.json"
+    },
+    {
+      "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+      "kind": "repository",
+      "title": "Runbook: Production Host Setup and First Deployment",
+      "group": "Runbooks",
+      "source": "docs/runbooks/production-host-setup-and-first-deployment.md",
+      "summary": "Follow authoring policy, production access, incident response, and redaction. This procedure grants no authority by itself.",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/production-host-setup-and-first-deployment.json"
+    },
+    {
+      "id": "repository/docs/runbooks/production-release-update-and-rollback",
+      "kind": "repository",
+      "title": "Runbook: Production Release Update and Rollback",
+      "group": "Runbooks",
+      "source": "docs/runbooks/production-release-update-and-rollback.md",
+      "summary": "Install a newer IA-MNS release, and return to an earlier one when that is proven safe.",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/production-release-update-and-rollback.json"
+    },
+    {
+      "id": "repository/docs/runbooks/production-secret-rotation",
+      "kind": "repository",
+      "title": "Runbook: Production Secret Rotation",
+      "group": "Runbooks",
+      "source": "docs/runbooks/production-secret-rotation.md",
+      "summary": "Follow secrets policy, production access, and incident response for suspected exposure.",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/production-secret-rotation.json"
+    },
+    {
       "id": "repository/docs/runbooks/README",
       "kind": "repository",
       "title": "Runbooks",
       "group": "Runbooks",
       "source": "docs/runbooks/README.md",
-      "summary": "No operational runbooks exist yet. This directory contains the authoring policy, template, and local instructions. Add index entries only for real procedures when the…",
+      "summary": "This directory contains the authoring policy, template, local instructions, and the production procedures for the single-host deployment of ADR-0031. They are drafts: every…",
       "headings": [],
       "file": "pages/repository/docs/runbooks/README.json"
     },
@@ -2351,6 +2401,16 @@
       "file": "pages/repository/docs/visual-identity.json"
     },
     {
+      "id": "repository/infra/production/README",
+      "kind": "repository",
+      "title": "Production Deployment",
+      "group": "Project guides",
+      "source": "infra/production/README.md",
+      "summary": "IA-MNS production runs on one Ubuntu host with Docker Compose, operated by ia-mns-deploy (ADR-0031). Procedures live in the runbooks; this directory holds what they run. Host…",
+      "headings": [],
+      "file": "pages/repository/infra/production/README.json"
+    },
+    {
       "id": "repository/packages/sdk/AGENTS",
       "kind": "repository",
       "title": "SDK-local Instructions",
@@ -2399,15 +2459,16 @@
       { "file": "search/0009.json", "count": 117, "kinds": ["repository"] },
       { "file": "search/0010.json", "count": 146, "kinds": ["repository"] },
       { "file": "search/0011.json", "count": 162, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 120, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 133, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 84, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 64, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 70, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 106, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 61, "kinds": ["repository"] }
+      { "file": "search/0012.json", "count": 122, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 126, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 96, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 69, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 75, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 60, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 130, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 82, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 17, "kinds": ["repository"] }
     ],
-    "count": 1379
+    "count": 1446
   }
 }

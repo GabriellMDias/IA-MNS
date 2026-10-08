@@ -1,0 +1,10 @@
+[Unit]
+Description=IA-MNS restore verification in a disposable database
+Wants=docker.service
+After=docker.service ia-mns-backup.service
+
+[Service]
+Type=oneshot
+ExecStart=@BIN_DIR@/ia-mns-deploy verify-restore
+Nice=10
+IOSchedulingClass=idle

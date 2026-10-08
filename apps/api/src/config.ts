@@ -1,3 +1,4 @@
+import { createPrivateKey } from "node:crypto";
 import { isIP } from "node:net";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
@@ -867,6 +868,23 @@ function secureUrl(
 
 const privateJwkFields = ["d", "p", "q", "dp", "dq", "qi", "k"];
 
+/** The signing key must parse as the ES256 key the issuer uses. */
+function isP256Pkcs8(value: string): boolean {
+  try {
+    const key = createPrivateKey({
+      key: Buffer.from(value, "base64url"),
+      format: "der",
+      type: "pkcs8",
+    });
+    return (
+      key.asymmetricKeyType === "ec" &&
+      key.asymmetricKeyDetails?.namedCurve === "prime256v1"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function validateIdentity(candidate: Static<typeof serverConfigSchema>): void {
   const environment = candidate.environment;
   const core = [
@@ -897,6 +915,10 @@ function validateIdentity(candidate: Static<typeof serverConfigSchema>): void {
       Buffer.from(candidate.identityEncryptionKey!, "base64url").length !== 32
     )
       throw new Error("Invalid API configuration: identity encryption key");
+    if (!isP256Pkcs8(candidate.identitySigningKey!))
+      throw new Error(
+        "Invalid API configuration: IA_MNS_IDENTITY_SIGNING_KEY must be a base64url PKCS#8 P-256 private key",
+      );
   }
   const pdt = [
     candidate.pdtBaseUrl,

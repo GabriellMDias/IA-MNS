@@ -71,3 +71,48 @@ else if (actual !== expected) {
   console.log(
     ".env.example matches the API configuration reference and parses safely.",
   );
+
+// The production runtime example (ADR-0031) may name only real, non-development
+// settings, set or commented, and must not hold a value that looks real: its
+// values are placeholders, safe defaults or names of files in the container.
+const productionExample = path.join(
+  root,
+  "infra/production/examples/runtime.env.example",
+);
+const known = new Map<string, (typeof configReference)[number]>(
+  configReference.map((item) => [item.name, item] as const),
+);
+const imageOwned = new Set([
+  "ORION_RELEASE_ID",
+  "ORION_WEB_ROOT",
+  "ORION_API_HOST",
+  "ORION_API_PORT",
+  "SANKHYA_ORACLE_CLIENT_LIB_DIR",
+]);
+const problems: string[] = [];
+for (const line of (await readFile(productionExample, "utf8")).split(/\r?\n/)) {
+  const match = /^#?\s?([A-Z][A-Z0-9_]+)=(.*)$/.exec(line);
+  if (!match) continue;
+  const [, name, value] = match as unknown as [string, string, string];
+  const item = known.get(name);
+  if (!item) problems.push(`${name} is not an API setting`);
+  else if (item.role === "development")
+    problems.push(`${name} is a development setting`);
+  else if (imageOwned.has(name))
+    problems.push(`${name} is set by the production image`);
+  else if (
+    item.secret &&
+    value &&
+    !/^(CHANGE_ME|postgresql:\/\/[a-z_]+:__GENERATE_[A-Z_]+__@postgres:5432\/ia_mns|__GENERATE_[A-Z_]+__)$/.test(
+      value,
+    )
+  )
+    problems.push(`${name} must hold a placeholder, never a value`);
+}
+if (problems.length)
+  throw new Error(
+    `infra/production/examples/runtime.env.example: ${problems.join("; ")}`,
+  );
+console.log(
+  "The production runtime example names only API settings, with placeholders for secrets.",
+);

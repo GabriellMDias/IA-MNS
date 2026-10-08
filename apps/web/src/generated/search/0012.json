@@ -297,6 +297,141 @@
     "text": "References\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), [foundation versioning](../versioning.md), [release workflow](../database/release-evolution.md), [migration policy](../database/migrations.md)\n[Configuration policy](../architecture/configuration.md) (`ORION_RELEASE_ID`)\n"
   },
   {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "anchor": "adr-0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "text": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool\n**Status:** accepted\n**Date:** 2026-10-07\n**Extends:** [ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) (production runtime shape) and [ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) (release tags). Selects the deployment platform, secret delivery, database roles, backups and operational tooling the [technology map](../architecture/technology-decisions.md) left to deployment.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner approved on 2026-10-07 running IA-MNS in production on one Ubuntu host of the company network behind the corporate TLS reverse proxy, with its own PostgreSQL in Docker, similar in spirit to how PDT Connect runs but without copying its implementation: PDT runs as root, publishes PostgreSQL, keeps credentials beside the code and runs migrations and seed in the container command at every start. IA-MNS already separates the runtime and migration credentials, refuses unsafe production configuration, and freezes released migrations. The production host, proxy and external systems are operated by people; the repository must provide a reproducible artifact and a procedure an operator can follow without inventing steps. The Sankhya database needs Oracle Instant Client Thick mode (Oracle 12.1); the hop between the proxy and the application and several operational policies are still undecided ([PH-09](../project/human-actions.md#ph-09), [PH-22](../project/human-actions.md#ph-22) to [PH-25](../project/human-actions.md#ph-25)).\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\n**Platform.** One Ubuntu host runs Docker Engine and the Compose plugin (2.24 or newer). [`infra/production/compose.yaml`](../../infra/production/compose.yaml) defines three services: `api` (the runtime image, publishing container port 3000 only on the configured host address and port, 4490 by default), `postgres` (PostgreSQL 16, pinned by digest, on an internal network with no published port and no outbound route, data in an external named volume that no Compose command removes) and `migrate` (a one-shot service in an `ops` profile that `up` never starts). Containers run read-only with all capabilities dropped and `no-new-privileges`; logs rotate (local driver, 5 × 20 MB).\n**Images.** [`infra/production/Dockerfile`](../../infra/production/Dockerfile) builds two targets from one build stage of a release commit: `runtime` (Node.js 24.13.0 on Debian bookworm slim, pinned by digest; production dependencies only; the web build without the `/docs` portal; Oracle Instant Client Basic 19.32 for Linux, downloaded from Oracle's public endpoint and checked against the size and SHA-256 Oracle publishes; user `node`; a loopback healthcheck that follows the internal TLS setting) and `migrate` (the Prisma CLI and `database-deploy`). Images are built on the host from the release tag, labeled with the tag and commit, and never pushed; the Oracle binaries are never committed. The Oracle Free Use Terms shipped with the client cover running it for internal business operations.\n**Database roles.** The PostgreSQL superuser only connects through the container's local socket (`peer`), for setup and backups. `ia_mns_migrator` owns the database and applies migrations; `orion_runtime` holds exactly the declared table privileges. A hardened `pg_hba.conf` admits only these two roles over the private network. Roles and passwords are created once, and re-synchronized from the configuration files on demand, by `ia-mns-deploy setup`.\n**Secrets.** Configuration lives in `/etc/ia-mns` (root, mode 700): `compose.env` (deployment settings, no secrets), `postgres.env` (superuser, initialization only), `migration.env` (migration credential, `migrate` only), `runtime.env` (the application's environment) and `backup.env`. Each file is root-only (600) and each service receives only its own; the tool refuses a runtime file that holds the migration or administrator credential, development settings or image-owned settings. `ia-mns-deploy init-secrets` generates database passwords and identity keys in place without displaying them. This is a single-host store: files on the host disk, protected by host access control, with the identity encryption key also kept in the company password vault; a secret manager would need a new decision.\n**Release tool.** [`ia-mns-deploy`](../../infra/production/bin/ia-mns-deploy) is installed to `/usr/local/sbin` and holds a host-wide lock for every state-changing command. `deploy ia-mns-vX.Y.Z` accepts only an annotated tag on `main` whose required CI check passed (read from GitHub's public API), checks it out as an immutable worktree, continues with that release's own copy of the tool, builds both images, validates the configuration with the new image (`config-check`, no network), takes a mandatory pre-deployment backup, compares the database's migration history with the release (`database-deploy status`) and refuses unknown, failed or modified migrations, runs `migrate`, replaces the API container, waits for health, runs a smoke test through the published address, then records the result. It never runs migrations from the API's command.\n**Rollback.** After a failed start, the tool returns to the previous release automatically only when no migration ran during that deployment, because the previous release then meets exactly the schema it ran against. Otherwise it stops and leaves the decision to an operator: `rollback` refuses a release that does not know an applied migration unless `--accept-schema-ahead` records a reviewed decision that the newer migrations are additive; `restore` replaces the database with a backup and keeps the replaced database. Migrations are never edited or reversed in place.\n**Backups.** `pg_dump` custom-format archives with a SHA-256, written under `/var/backups/ia-mns` (root, 700): daily by a systemd timer, before every deployment and before every restore, kept 14 and 10 deep by default pending [PH-09](../project/human-actions.md#ph-09). Copies leave the host only encrypted with `age` for a recipient whose private key is kept offline, to a mounted directory or an rsync-over-SSH target. A weekly timer restores the latest backup into a disposable database on an isolated network and checks it against the running release. `status` exits non-zero when the API is unhealthy, the last daily backup is older than 26 hours or the last restore check is older than 8 days; an optional alert command receives failures.\n**Verification.** [`infra/production/rehearsal/run.sh`](../../infra/production/rehearsal/run.sh) exercises the real tool and Compose file end to end with synthetic configuration on disposable resources, and runs in CI with the image checks.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nOne host with Compose is what the owner approved and what the company already operates for PDT Connect; it needs no orchestrator, registry or cloud account. Building on the host from a verified tag removes a registry and its credentials, at the cost of build time on the host. A release-tool script keeps the documented procedure and the executed procedure identical: every step the runbooks name is a command that the rehearsal and CI run. Running each release's own tooling avoids a host tool drifting from the Compose file and Dockerfile it deploys.\nSeparate roles with a peer-only superuser keep the application unable to change the schema or its own privileges even if it is compromised, and keep the migration credential out of the running process. Automatic rollback is limited to the case where compatibility is proven; a schema the old release does not know is a human decision because an old release may misbehave against it without failing its health check. Backups are not considered real until a restore succeeds, so the restore check performs an actual `pg_restore` and a compatibility check rather than listing the archive.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Migrations in the container command, as PDT Connect does",
+    "anchor": "migrations-in-the-container-command-as-pdt-connect-does",
+    "text": "Migrations in the container command, as PDT Connect does\nEvery start would need the migration credential in the API container, failures would become restart loops, and there would be no point to take a backup before a migration.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A depends_on: service_completed_successfully migration service",
+    "anchor": "a-depends_on-service_completed_successfully-migration-service",
+    "text": "A `depends_on: service_completed_successfully` migration service\nIt would run migrations on every `docker compose up`, including routine restarts, with no place for the pre-deployment backup and compatibility check.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Building in CI and pulling from a registry",
+    "anchor": "building-in-ci-and-pulling-from-a-registry",
+    "text": "Building in CI and pulling from a registry\nIt moves builds off the host but needs a private registry, its credentials on the host, and image retention; worth revisiting if build time on the host becomes a problem.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A secret manager",
+    "anchor": "a-secret-manager",
+    "text": "A secret manager\nNot available in this environment; root-only files on one host with the encryption key escrowed in the password vault are the proportionate first step, recorded here as a limitation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alpine images",
+    "anchor": "alpine-images",
+    "text": "Alpine images\nnode-oracledb's Thick mode and Oracle Instant Client require glibc.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOne command deploys a verified release with backup, migration, health and smoke checks, and refuses unsafe states before touching the running service.\nThe application cannot alter its schema or read the migration and administrator credentials.\nBackups are restore-tested regularly, and copies leave the host encrypted.\nThe rehearsal proves install, upgrade, failure handling, rollback and restore on every change in CI.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nEach deployment replaces a single API container: requests are refused for the seconds between stop and readiness.\nImages (about 1.3 GB with the Oracle client) are built on the host, which needs network access to GitHub, npm, Docker Hub, Debian and Oracle during builds.\nSecrets are files on the host disk; host compromise exposes them.\nRetention, external destination, alert channel, proxy hop protection and Oracle transport protection remain owner decisions; until made, `status` and `check-config` report the gaps rather than hiding them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOperators follow the [production runbooks](../runbooks/README.md); the infrastructure administrator configures DNS, TLS, the reverse proxy and the host firewall, including Docker's `DOCKER-USER` chain, because published container ports bypass `ufw`.\nThe first production deployment records the first durable release under ADR-0030.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md), [ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md), [ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\n[Secrets policy](../security/secrets-management.md), [retention](../security/data-retention.md), [production access](../security/production-access.md), [migrations](../database/migrations.md), [release workflow](../database/release-evolution.md)\n[Oracle Instant Client for Linux x86-64 downloads](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -384,7 +519,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n[ADR-0021](0021-license-ia-mns-under-apache-2-0.md)\nLicense IA-MNS under Apache-2.0\n[ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md)\nOwn the IA-MNS Identity with Verified External Links\n[ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\nServe One Frontend to Three Surfaces with Host Identity Proofs\n[ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\nInterpret Analytics through Structured State and Evaluate AI Behavior\n[ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)\nAdminister the Authentication Policy within Fixed Safeguards\n[ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nHost IA-MNS in Sankhya Om through an In-Repository Add-on\n[ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)\nSelect the Sales Source in the Interface and Read Each Source Separately\n[ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)\nAdminister Operational Parameters Separately from Secrets and Bootstrap Configuration\n[ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)\nServe the Web and API from One Origin behind Restricted Trusted Proxies\n[ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)\nName IA-MNS Releases with Product Tags Distinct from Orion\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n[ADR-0021](0021-license-ia-mns-under-apache-2-0.md)\nLicense IA-MNS under Apache-2.0\n[ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md)\nOwn the IA-MNS Identity with Verified External Links\n[ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\nServe One Frontend to Three Surfaces with Host Identity Proofs\n[ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\nInterpret Analytics through Structured State and Evaluate AI Behavior\n[ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)\nAdminister the Authentication Policy within Fixed Safeguards\n[ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nHost IA-MNS in Sankhya Om through an In-Repository Add-on\n[ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)\nSelect the Sales Source in the Interface and Read Each Source Separately\n[ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)\nAdminister Operational Parameters Separately from Secrets and Bootstrap Configuration\n[ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)\nServe the Web and API from One Origin behind Restricted Trusted Proxies\n[ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)\nName IA-MNS Releases with Product Tags Distinct from Orion\n[ADR-0031](0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)\nDeploy on One Ubuntu Host with Docker Compose and a Release Tool\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -961,122 +1096,5 @@
     "heading": "Implemented today and not implemented",
     "anchor": "implemented-today-and-not-implemented",
     "text": "Implemented today and not implemented\nImplemented: structured sales conversation state (context version 2), deterministic relation normalization and merging, filter grounding, named period expressions resolved by the application, a catalog-derived analytical vocabulary with one dimension (product), pending-request routing, the structured-model port with an OpenAI adapter, metadata and content AI tracing, and the [evaluation framework](ai-evaluation.md).\nNot implemented: dimensions other than product (customer/partner, company, project, salesperson, product group), several measures in one query, week or quarter period forms (weeks are counted in days; other periods use explicit ranges), other model providers, expiry of unanswered requests, AI traces for the legacy `/sales/chat` endpoint, and any automatic prompt, code or deployment change. Any of these requires its own reviewed change.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Division of work",
-    "anchor": "division-of-work",
-    "text": "Division of work\nConcern\nModel\nApplication\nChoose a capability or social intent\nRouter proposes an allowlisted intent or catalog id\nValidates the id, checks permission, applies the pending-request rule\nRead a sales message\nInterpreter reports decision, relation and what the message states\nValidates schema and consistency, never trusts relation blindly\nKeep earlier values\nNever\nHolds active and pending analyses; merges deterministically\nDecide what is missing\nMay flag genuine ambiguity\nComputes missing required slots and asks\nDates\nNames a period form; computes dates only for explicit ranges\nResolves forms against the Sao Paulo date; refuses unstarted periods; bounds length\nConstraints\nProposes filters from catalog dimensions\nRequires each new filter to be written by the user\nExecution and answers\nNever\nCompiles a fixed parameterized query; computes and writes every figure and message\nEach model call is one forced, strict tool call with a schema derived from the application. The provider receives user messages, application-authored replies (clarification and unavailable messages), filter-only descriptions of earlier answers and the structured state; never result rows, figures, response prose with numbers, credentials or schema details.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Turn pipeline",
-    "anchor": "turn-pipeline",
-    "text": "Turn pipeline\nThe agent loads its own context (last capability, capability awaiting an answer) and the capability contexts of the conversation.\nThe router receives the message, the recent transcript with application replies (an answer is shared only as \"answer delivered\") and the pending request. If it returns `unavailable` while a permitted capability awaits an answer, the message goes to that capability, whose boundary rejects unsupported requests itself. Social intents are respected.\nThe sales capability loads its state, upgrading version 1 contexts. It also receives the turn's source selection from the interface; nothing in the model's output can change it.\nThe interpreter returns an interpretation; the adapter rejects schema violations and inconsistent combinations (for example a clarification without a category or a filter action without text).\nThe state machine (`advance` in [`conversation-state.ts`](../../apps/api/src/features/sales/conversation-state.ts)) normalizes the relation, grounds filters, merges, checks completeness, resolves the period and compiles the query, or returns a clarification or rejection.\nOnly an executed plan reaches a database, and only the adapters of the selected sources that support its measure run ([sources](../domains/sales-chat.md#sources)). The plan is the same for every source; results, answers and suggestions stay deterministic and per source. A source or company name in the message only adds an application-authored notice, and a source name the model placed in a filter is dropped (`source_named_as_product`).\nThe exchange is appended to the transcript; the capability returns its new state and what it awaits; the agent stores both with the turn and records the trace.\nA failed turn changes neither state nor transcript.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Structured conversation state",
-    "anchor": "structured-conversation-state",
-    "text": "Structured conversation state\nSales context version 2 ([schema](../../apps/api/src/features/sales/conversation-state.ts)):\nField\nMeaning\n`active`\nThe last executed plan and its compiled query; the base of refinements.\n`pending`\nAn unanswered request: the partial plan (`draft`), what it awaits (`awaiting`, for example `period`) and the clarification asked.\n`transcript`\nUp to 12 recent sales exchanges: user text and the application's reply text, or a filter-only description of an answer.\nThe agent context `_agent` (version 2) records the last capability and `pending: { capabilityId, awaiting }`. Social turns do not change capability contexts, so a pending request survives \"obrigado\" and similar interjections. A pending request ends when it is completed, when a new analysis starts, or when another request replaces it; unsupported requests leave it open.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Relation normalization",
-    "anchor": "relation-normalization",
-    "text": "Relation normalization\nThe model's relation is a proposal. The application applies it against the state it holds:\nModel relation\nState\nApplied\n`answer_pending`\nno pending request\n`refine` if an active analysis exists, else `new`\n`refine`\npending request\n`answer_pending` (the open question is the focus)\n`new`\npending request, and the message supplies an awaited slot while every other stated value restates the request\n`answer_pending`\n`refine`\nno active analysis and no pending request\ncontext clarification\nThe third rule is general slot filling: a message that only answers what was asked, or restates the request with the answer, completes it; a message that changes the product or another value starts a new analysis. Each normalization is recorded as an issue code (`pending_absent`, `refine_applied_to_pending`, `new_completes_pending`, `refine_without_context`).\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Merge, grounding and completeness",
-    "anchor": "merge-grounding-and-completeness",
-    "text": "Merge, grounding and completeness\nThe base is the pending draft, the active plan or an empty draft. Stated values replace; a filter `clear` removes; unstated values are retained. A new analysis retains nothing, so earlier filters cannot leak.\nA filter value set by the message must appear, as a contiguous accent- and case-insensitive word sequence, in the current or an earlier user message of the transcript. Common Portuguese plural forms map to their singular (`maçãs`, `pães`, `limões`). An ungrounded filter is dropped and the user is asked for the product (`ungrounded_product`).\n`period` is the only required slot; measure, grouping and comparison default to net value, total and none, as documented in the [sales semantics](../domains/sales-chat.md#interpretation-and-computation). A model clarification is honored only for ambiguity the fields cannot express.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Analytical plan",
-    "anchor": "analytical-plan",
-    "text": "Analytical plan\n[`analysis.ts`](../../apps/api/src/features/sales/analysis.ts) defines the plan independently of wording and SQL:\n`salesCatalog`: measures (`net_value`, `quantity`, `weight`), dimensions (`product`), groupings (`total`, `month`, `product`), comparisons (`none`, `previous_year`, `previous_period`) and defaults. Interpretation schemas are generated from these values; a test keeps them identical.\n`AnalysisSpec` (complete plan) and `AnalysisDraft` (partial plan): measure, dimension filters, period expression, grouping, comparison.\n`compileAnalysis` resolves the period and maps the plan to the existing `SalesQuery`, which `validateQuery` and the reconciled [query](../../apps/api/src/features/sales/query.ts) execute unchanged.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Period expressions",
-    "anchor": "period-expressions",
-    "text": "Period expressions\n[`period.ts`](../../apps/api/src/features/sales/period.ts) resolves named forms against the Sao Paulo business date:\nForm\nMeaning\n`current` day/month/year\ntoday, month to date, year to date\n`previous` day/month/year\nyesterday, previous complete month or year\n`last` day + count\nN dates including today (or ending yesterday when the current day is excluded)\n`last` month + count\nN completed months before the current one, or N months including the current one to date\n`month` + month (+ year)\nthat month; without a year, its latest non-future occurrence; the current month runs to date\n`year` + year\nthat calendar year; the current year runs to date\n`range`\nexplicit inclusive dates\nA started period is clamped to today. A period that has not started, an invalid date, one before 2000 or one longer than 366 days becomes a period clarification (the length limit has its own message). Comparisons are derived by the existing domain rules.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Adding a dimension",
-    "anchor": "adding-a-dimension",
-    "text": "Adding a dimension\nA future dimension (for example salesperson) requires, in one reviewed change: the business definition and ERP columns with owner confirmation, reconciled query support and bindings, a catalog entry, its filter grounding rule if it differs from a description phrase, execution validation, renderer and answer changes if needed, curated evaluation cases and documentation. The interpretation schema, state, merge, transcript and evaluation framework need no structural change. Until then the model cannot express that filter, and requests for it are rejected as unsupported.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Validation layers",
-    "anchor": "validation-layers",
-    "text": "Validation layers\nProvider boundary: exactly one call of the expected tool, completed status, JSON that satisfies the generated schema.\nSemantic consistency of the interpretation.\nState normalization, grounding and completeness.\nPeriod resolution and `validateQuery` bounds (dates, length, comparison period, description length).\nOracle result shape and scope checks and result limits ([sales capability](../domains/sales-chat.md)).\nAny failure in layers 1–2 is `SALES_PROVIDER_UNAVAILABLE` or `AGENT_PROVIDER_UNAVAILABLE`; layers 3–4 produce clarifications or `SALES_QUERY_INVALID`; nothing partially executes.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Model port",
-    "anchor": "model-port",
-    "text": "Model port\n[`src/ai/model.ts`](../../apps/api/src/ai/model.ts) defines `StructuredModel.invoke(request)`: instructions, messages, one strict tool, an output budget. It returns schema-valid output plus `ModelInvocation` metadata (provider, model, latency, token counts). [`openai.ts`](../../apps/api/src/ai/openai.ts) implements it with the Responses API, `store:false`, forced tool choice, no parallel calls, no retries and a 20-second request timeout for interactive turns (offline tooling may pass a longer one). The router and interpreter instructions carry version identifiers (`agentRouterVersion`, `salesInterpreterVersion`) recorded in traces and evaluation reports; change the identifier whenever instructions change. Another provider would implement the same interface; none is integrated.\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "AI tracing and observability",
-    "anchor": "ai-tracing-and-observability",
-    "text": "AI tracing and observability\nThe trace level is the [operational parameter](configuration.md#operational-parameters) `ai.traceLevel`: owners change it in **Administração → Parâmetros** and each agent turn uses the level in force when it starts; `IA_MNS_AI_TRACE` ([configuration reference](../generated/configuration/api.md)) is its installation default. The AI model is likewise the parameter `ai.model` (installation default `OPENAI_MODEL`), resolved for every model request. The levels are explicit:\nLevel\nCaptured\nDestination\n`off`\nNothing beyond existing failure diagnostics\n—\n`metadata` (default)\nRoute intent and capability, override, interpretation decision and relation, applied relation, issue codes, missing slots, period form, outcome, clarification category, unsupported reason, prompt versions, model, latency, token counts, result row count\nOne `ai_turn_traced` structured log event per agent turn\n`content`\nMetadata plus the interpretation, sales state before and after, the agent context before, the business date and the executed query filters\n`agent_turn_traces`, written with the turn outcome\nMetadata never includes user text, filter values, dates, figures or provider payloads; tests assert this with synthetic confidential markers. Content traces are CONFIDENTIAL, never contain result rows or answer prose, are bounded to 256 KB (content omitted, not truncated, beyond that) and are deleted with their turn or conversation. The runtime role can only insert and read them. Production refuses `content` until [PH-09](../project/human-actions.md#ph-09) approves retention and access, whether it comes from the environment or from administration (a stored `content` is used as `metadata` there); because an owner may select `content` at any time elsewhere, the API checks the table at every startup. The [telemetry redaction](../security/telemetry-redaction.md) policy continues to govern logs and spans.\nReproduction path: enable `content` locally, reproduce the conversation, then run `pnpm eval capture --turn <turn-id>` ([evaluation](ai-evaluation.md#from-trace-to-regression-case)).\n"
-  },
-  {
-    "id": "repository/docs/architecture/ai-interpretation",
-    "title": "AI Interpretation Architecture",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Verification",
-    "anchor": "verification",
-    "text": "Verification\n`apps/api/test/sales-analysis.test.ts` covers period forms, plurals and grounding, catalog/schema identity, every relation normalization, retention and leakage, unqueryable periods and context upgrades. `agent-turn.test.ts` covers pending routing, the override rule, figure-free router transcripts and trace redaction. `agent.test.ts` verifies content traces on migrated PostgreSQL with the restricted role, cascade deletion, metadata-only logs and capture. `sales-providers.test.ts` covers the strict OpenAI boundary through the port. The [curated evaluation dataset](ai-evaluation.md) replays reference model readings through the whole pipeline in `pnpm test`.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Application Boundaries",
-    "anchor": "application-boundaries",
-    "text": "Application Boundaries\n[Documentation index](../README.md) · [Repository placement](repository-structure.md) · [Dependency rules](dependency-rules.md)\nApplications are executable boundaries with explicit ownership; sharing a monorepo does not merge their runtime, trust, or persistence responsibilities. This page owns runtime separation and composition. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) governs the API adapter and [ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md) the web stack.\n"
   }
 ]

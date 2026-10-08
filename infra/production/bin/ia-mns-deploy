@@ -1,0 +1,1229 @@
+#!/usr/bin/env bash
+# ia-mns-deploy: install, deploy, back up and recover IA-MNS on one Ubuntu host
+# with Docker Compose (ADR-0031). Run as root. `ia-mns-deploy help` lists the
+# commands; docs/runbooks/production-*.md describe the procedures.
+#
+# Never prints secret values: configuration checks name keys only, and secrets
+# reach containers through env files, never through command arguments.
+set -Eeuo pipefail
+umask 077
+shopt -s nullglob
+
+readonly TOOL_VERSION="1"
+# Single source of the PostgreSQL image for the service, restore checks and
+# backups (pg_dump and pg_restore run inside the same major version).
+readonly POSTGRES_IMAGE="postgres:16.15-bookworm@sha256:0ea6700a3b4f0ae6ce746519073558aed4d88a79d8d07622a9a644946c7319c4"
+readonly TAG_PATTERN='^ia-mns-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+readonly MIN_COMPOSE="2.24.0"
+
+# Locations; the IA_MNS_* overrides exist for disposable rehearsals.
+readonly CONFIG_DIR="${IA_MNS_CONFIG_DIR:-/etc/ia-mns}"
+readonly STATE_DIR="${IA_MNS_STATE_DIR:-/var/lib/ia-mns}"
+readonly BACKUP_DIR="${IA_MNS_BACKUP_DIR:-/var/backups/ia-mns}"
+readonly HOME_DIR="${IA_MNS_HOME:-/opt/ia-mns}"
+readonly BIN_DIR="${IA_MNS_BIN_DIR:-/usr/local/sbin}"
+readonly SYSTEMD_DIR="${IA_MNS_SYSTEMD_DIR:-/etc/systemd/system}"
+readonly PROJECT="${IA_MNS_COMPOSE_PROJECT:-ia-mns}"
+readonly IMAGE_REPOSITORY="${IA_MNS_IMAGE_REPOSITORY:-ia-mns}"
+readonly VOLUME="${IA_MNS_POSTGRES_VOLUME:-ia-mns-postgres}"
+readonly MAIN_BRANCH="${IA_MNS_MAIN_BRANCH:-main}"
+readonly REPO_DIR="$HOME_DIR/repo.git"
+readonly RELEASES_DIR="$HOME_DIR/releases"
+readonly TOOLING_DIR="$HOME_DIR/tooling"
+readonly KEEP_RELEASES=4
+
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+readonly SCRIPT_PATH
+# Running from a checkout (infra/production/bin) or as the installed command.
+if [[ -f "$(dirname "$SCRIPT_PATH")/../compose.yaml" ]]; then
+  SOURCE_DIR="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
+else
+  SOURCE_DIR="$TOOLING_DIR"
+fi
+readonly SOURCE_DIR
+
+COMMAND="${1:-help}"
+RELEASE="unset-release"
+
+# --- Output, failure and alerts ------------------------------------------------
+
+log() { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" >&2; }
+warn() { log "WARNING: $*"; }
+
+alert() {
+  local message="IA-MNS $COMMAND: $*"
+  local command=""
+  [[ -f "$CONFIG_DIR/compose.env" ]] && command="$(env_value "$CONFIG_DIR/compose.env" IA_MNS_ALERT_COMMAND || true)"
+  if [[ -n "$command" ]]; then
+    # The configured notifier receives the message on stdin, never secrets.
+    printf '%s\n' "$message" | bash -c "$command" >/dev/null 2>&1 || log "alert command failed"
+  fi
+}
+
+die() {
+  log "ERROR: $*"
+  case "$COMMAND" in
+    deploy | deploy-release | backup | verify-restore | restore | rollback) alert "$*" ;;
+  esac
+  exit 1
+}
+
+require_root() {
+  [[ "$(id -u)" -eq 0 ]] || die "run as root (sudo ia-mns-deploy $COMMAND ...)"
+}
+
+require_tools() {
+  local tool
+  for tool in "$@"; do
+    command -v "$tool" >/dev/null 2>&1 || die "missing required tool: $tool"
+  done
+}
+
+version_at_least() {
+  [[ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n1)" == "$2" ]]
+}
+
+require_docker() {
+  require_tools docker
+  docker info >/dev/null 2>&1 || die "the Docker daemon is not reachable"
+  local version
+  version="$(docker compose version --short 2>/dev/null | sed 's/^v//')" || die "the Docker Compose plugin is missing"
+  version_at_least "$version" "$MIN_COMPOSE" || die "Docker Compose $MIN_COMPOSE or newer is required (found $version)"
+}
+
+# --- Locking -----------------------------------------------------------------
+
+take_lock() {
+  # Every state-changing command holds one host-wide lock; a re-executed
+  # release script inherits it.
+  [[ "${IA_MNS_LOCK_HELD:-}" == "1" ]] && return 0
+  mkdir -p "$STATE_DIR"
+  exec 9>"$STATE_DIR/operation.lock"
+  local wait="${1:-0}"
+  if ! flock -w "$wait" 9; then
+    die "another ia-mns-deploy operation is running (lock $STATE_DIR/operation.lock)"
+  fi
+  export IA_MNS_LOCK_HELD=1
+}
+
+# --- Configuration files ---------------------------------------------------------
+
+# Last value of KEY in an env file, without sourcing it.
+env_value() {
+  local file="$1" key="$2" line value=""
+  [[ -f "$file" ]] || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ ^[[:space:]]*# || "$line" != *=* ]] && continue
+    if [[ "${line%%=*}" == "$key" ]]; then value="${line#*=}"; fi
+  done <"$file"
+  printf '%s' "$value"
+}
+
+env_has() {
+  local file="$1" key="$2" line
+  [[ -f "$file" ]] || return 1
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ "${line%%=*}" == "$key" ]] && return 0
+  done <"$file"
+  return 1
+}
+
+setting() { env_value "$CONFIG_DIR/compose.env" "$1" || true; }
+backup_setting() { env_value "$CONFIG_DIR/backup.env" "$1" || true; }
+
+tls_enabled() { env_has "$CONFIG_DIR/runtime.env" ORION_TLS_CERT_FILE; }
+
+# Password part of postgresql://user:password@host:port/db.
+url_password() { local rest="${1#*://}"; rest="${rest%%@*}"; printf '%s' "${rest#*:}"; }
+url_user() { local rest="${1#*://}"; rest="${rest%%@*}"; printf '%s' "${rest%%:*}"; }
+url_target() { printf '%s' "${1##*@}"; }
+
+compose() {
+  # compose <infra/production dir> <compose arguments...>
+  local dir="$1"
+  shift
+  local files=(-f "$dir/compose.yaml")
+  tls_enabled && files+=(-f "$dir/compose.tls.yaml")
+  IA_MNS_CONFIG_DIR="$CONFIG_DIR" \
+    IA_MNS_POSTGRES_IMAGE="$POSTGRES_IMAGE" \
+    IA_MNS_POSTGRES_VOLUME="$VOLUME" \
+    IA_MNS_IMAGE_REPOSITORY="$IMAGE_REPOSITORY" \
+    IA_MNS_RELEASE="$RELEASE" \
+    docker compose -p "$PROJECT" --env-file "$CONFIG_DIR/compose.env" \
+    --project-directory "$dir" "${files[@]}" "$@"
+}
+
+psql_admin() {
+  # SQL from stdin as the superuser over the container's local socket.
+  compose "$SOURCE_DIR" exec -T -u postgres postgres \
+    psql -X -q -v ON_ERROR_STOP=1 -d "${1:-postgres}"
+}
+
+psql_value() {
+  compose "$SOURCE_DIR" exec -T -u postgres postgres \
+    psql -X -q -t -A -v ON_ERROR_STOP=1 -d "${2:-ia_mns}" -c "$1"
+}
+
+check_secret_file() {
+  local file="$1" owner mode
+  [[ -f "$file" ]] || { echo "missing $file"; return; }
+  owner="$(stat -c %u "$file")"
+  mode="$(stat -c %a "$file")"
+  [[ "$owner" == "0" ]] || echo "$file must be owned by root"
+  [[ "$mode" =~ ^[46]00$ ]] || echo "$file must be readable only by root (chmod 600; found $mode)"
+}
+
+# Prints one problem per line, names only; empty output means valid.
+config_problems() {
+  local file key value
+  if [[ ! -d "$CONFIG_DIR" ]]; then
+    echo "missing configuration directory $CONFIG_DIR"
+    return
+  fi
+  [[ "$(stat -c %u "$CONFIG_DIR")" == "0" && "$(stat -c %a "$CONFIG_DIR")" =~ ^[57]00$ ]] ||
+    echo "$CONFIG_DIR must be owned by root with mode 700"
+  for file in compose postgres migration runtime; do
+    check_secret_file "$CONFIG_DIR/$file.env"
+  done
+  [[ -f "$CONFIG_DIR/backup.env" ]] && check_secret_file "$CONFIG_DIR/backup.env"
+  for file in "$CONFIG_DIR"/*.env; do
+    while IFS= read -r key; do
+      echo "$(basename "$file"): $key still holds a placeholder"
+    done < <(grep -E '^[A-Z0-9_]+=.*(__GENERATE_[A-Z_]+__|CHANGE_ME)' "$file" | cut -d= -f1 || true)
+  done
+
+  local compose_env="$CONFIG_DIR/compose.env" runtime="$CONFIG_DIR/runtime.env"
+  local migration="$CONFIG_DIR/migration.env" postgres_env="$CONFIG_DIR/postgres.env"
+  if [[ -f "$compose_env" ]]; then
+    value="$(env_value "$compose_env" IA_MNS_BIND_ADDRESS)"
+    if [[ -z "$value" ]]; then
+      echo "compose.env: IA_MNS_BIND_ADDRESS is required"
+    elif [[ "$value" == "0.0.0.0" || "$value" == "::" || "$value" == "[::]" ]]; then
+      echo "compose.env: IA_MNS_BIND_ADDRESS must be one host address, not every interface"
+    fi
+    value="$(env_value "$compose_env" IA_MNS_HTTP_PORT)"
+    [[ -z "$value" || "$value" =~ ^[1-9][0-9]{0,4}$ ]] || echo "compose.env: IA_MNS_HTTP_PORT must be a port number"
+  fi
+  if [[ -f "$postgres_env" ]]; then
+    [[ -n "$(env_value "$postgres_env" POSTGRES_PASSWORD)" ]] || echo "postgres.env: POSTGRES_PASSWORD is required"
+    for key in $(grep -oE '^[A-Z0-9_]+=' "$postgres_env" | tr -d '=' | sort -u); do
+      [[ "$key" == POSTGRES_PASSWORD ]] || echo "postgres.env: $key does not belong here"
+    done
+  fi
+  local migrator_password="" runtime_password=""
+  if [[ -f "$migration" ]]; then
+    value="$(env_value "$migration" ORION_MIGRATION_DATABASE_URL)"
+    if [[ -z "$value" ]]; then
+      echo "migration.env: ORION_MIGRATION_DATABASE_URL is required"
+    else
+      [[ "$(url_user "$value")" == "ia_mns_migrator" ]] || echo "migration.env: the migration URL must use the role ia_mns_migrator"
+      [[ "$(url_target "$value")" == "postgres:5432/ia_mns" ]] || echo "migration.env: the migration URL must target postgres:5432/ia_mns"
+      migrator_password="$(url_password "$value")"
+    fi
+    for key in $(grep -oE '^[A-Z0-9_]+=' "$migration" | tr -d '=' | sort -u); do
+      [[ "$key" == ORION_MIGRATION_DATABASE_URL ]] || echo "migration.env: $key does not belong here"
+    done
+  fi
+  if [[ -f "$runtime" ]]; then
+    [[ "$(env_value "$runtime" ORION_ENV)" == "production" ]] || echo "runtime.env: ORION_ENV must be production"
+    for key in ORION_DATABASE_URL IA_MNS_PUBLIC_ORIGIN IA_MNS_IDENTITY_SIGNING_KEY IA_MNS_IDENTITY_ENCRYPTION_KEY OPENAI_API_KEY SANKHYA_DB_USER SANKHYA_DB_PASSWORD SANKHYA_DB_CONNECT_STRING; do
+      [[ -n "$(env_value "$runtime" "$key")" ]] || echo "runtime.env: $key is required"
+    done
+    # The runtime never holds migration or administrator credentials.
+    for key in ORION_MIGRATION_DATABASE_URL POSTGRES_PASSWORD POSTGRES_USER IA_MNS_LOCAL_ACCESS IA_MNS_DEV_ACCESS_TOKEN IA_MNS_DEV_ACCESS_ORIGIN IA_MNS_DEV_ACCESS_EXPIRES_AT; do
+      env_has "$runtime" "$key" && echo "runtime.env: $key must not be set for the application"
+    done
+    # Fixed by the image so the published port, build and release stay true.
+    for key in ORION_RELEASE_ID ORION_WEB_ROOT ORION_API_HOST ORION_API_PORT SANKHYA_ORACLE_CLIENT_LIB_DIR; do
+      env_has "$runtime" "$key" && echo "runtime.env: $key is set by the image and must not be overridden"
+    done
+    value="$(env_value "$runtime" ORION_DATABASE_URL)"
+    if [[ -n "$value" ]]; then
+      [[ "$(url_user "$value")" == "orion_runtime" ]] || echo "runtime.env: ORION_DATABASE_URL must use the role orion_runtime"
+      [[ "$(url_target "$value")" == "postgres:5432/ia_mns" ]] || echo "runtime.env: ORION_DATABASE_URL must target postgres:5432/ia_mns"
+      runtime_password="$(url_password "$value")"
+    fi
+    value="$(env_value "$runtime" IA_MNS_PUBLIC_ORIGIN)"
+    [[ -z "$value" || "$value" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?$ ]] || echo "runtime.env: IA_MNS_PUBLIC_ORIGIN must be an exact https:// origin"
+    if env_has "$runtime" ORION_TLS_CERT_FILE; then
+      for key in ORION_TLS_CERT_FILE ORION_TLS_KEY_FILE; do
+        value="$(env_value "$runtime" "$key")"
+        if [[ "$value" != /run/ia-mns/tls/* ]]; then
+          echo "runtime.env: $key must point into /run/ia-mns/tls/ (the mounted $CONFIG_DIR/tls)"
+        elif [[ ! -f "$CONFIG_DIR/tls/${value#/run/ia-mns/tls/}" ]]; then
+          echo "runtime.env: $key names a file missing from $CONFIG_DIR/tls"
+        fi
+      done
+    fi
+  fi
+  # Passwords are embedded in setup SQL, so they must be plain and strong.
+  for value in "$migrator_password" "$runtime_password"; do
+    [[ -z "$value" || "$value" =~ ^[A-Za-z0-9]{32,}$ ]] || echo "database role passwords must be 32 or more letters or digits (openssl rand -hex 32)"
+  done
+  if [[ -n "$migrator_password" && "$migrator_password" == "$runtime_password" ]]; then
+    echo "the migration and runtime roles must have different passwords"
+  fi
+}
+
+config_warnings() {
+  local runtime="$CONFIG_DIR/runtime.env"
+  [[ -f "$runtime" ]] || return 0
+  env_has "$runtime" ORION_TRUSTED_PROXIES || echo "runtime.env: ORION_TRUSTED_PROXIES is unset, so rate limits see the proxy as every client (PH-22)"
+  env_has "$runtime" ORION_TLS_CERT_FILE || echo "the proxy-to-application hop is plain HTTP; acceptable only on a confirmed private segment (PH-22)"
+  [[ -n "$(setting IA_MNS_CI_REPOSITORY)" ]] || echo "compose.env: IA_MNS_CI_REPOSITORY is empty, so deployments cannot verify CI"
+  [[ -n "$(backup_setting IA_MNS_BACKUP_EXTERNAL_TARGET)" ]] || echo "no external backup destination: this installation does not meet the production backup requirement (PH-24)"
+}
+
+cmd_check_config() {
+  require_root
+  local problems warnings
+  problems="$(config_problems)"
+  warnings="$(config_warnings)"
+  if [[ -n "$warnings" ]]; then
+    while IFS= read -r line; do warn "$line"; done <<<"$warnings"
+  fi
+  if [[ -n "$problems" ]]; then
+    while IFS= read -r line; do log "problem: $line"; done <<<"$problems"
+    die "configuration in $CONFIG_DIR is incomplete or unsafe"
+  fi
+  log "configuration in $CONFIG_DIR is complete (values not displayed)"
+}
+
+# --- Secrets ----------------------------------------------------------------------
+
+base64url() { base64 -w0 | tr '+/' '-_' | tr -d '='; }
+
+generate_secret() {
+  case "$1" in
+    POSTGRES_PASSWORD | MIGRATOR_PASSWORD | RUNTIME_PASSWORD) openssl rand -hex 32 ;;
+    IDENTITY_SIGNING_KEY)
+      # PKCS#8 DER explicitly: OpenSSL 3 writes EC keys as SEC1 otherwise.
+      openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 2>/dev/null |
+        openssl pkcs8 -topk8 -nocrypt -outform DER | base64url
+      ;;
+    IDENTITY_ENCRYPTION_KEY) openssl rand 32 | base64url ;;
+    *) return 1 ;;
+  esac
+}
+
+cmd_init_secrets() {
+  require_root
+  require_tools openssl base64
+  take_lock
+  local file token name secret content generated=()
+  for file in "$CONFIG_DIR"/*.env; do
+    content="$(<"$file")"
+    while [[ "$content" =~ __GENERATE_([A-Z_]+)__ ]]; do
+      token="${BASH_REMATCH[0]}"
+      name="${BASH_REMATCH[1]}"
+      secret="$(generate_secret "$name")" || die "unknown placeholder $token in $(basename "$file")"
+      [[ -n "$secret" ]] || die "could not generate $name"
+      # Bash replacement keeps the value out of any command line.
+      content="${content//"$token"/"$secret"}"
+      generated+=("$(basename "$file"):$name")
+    done
+    if [[ "$content" != "$(<"$file")" ]]; then
+      printf '%s\n' "$content" >"$file.new"
+      chmod 600 "$file.new"
+      mv "$file.new" "$file"
+    fi
+  done
+  secret=""
+  content=""
+  if ((${#generated[@]})); then
+    log "generated (values not displayed): ${generated[*]}"
+    log "keep a copy of IA_MNS_IDENTITY_ENCRYPTION_KEY in the company password vault: without it, restored second factors cannot be read"
+  else
+    log "no placeholders left to generate"
+  fi
+}
+
+# --- Installation -----------------------------------------------------------------
+
+install_tooling() {
+  # install_tooling <infra/production dir>
+  local from="$1" staging="$HOME_DIR/.tooling.new"
+  rm -rf "$staging"
+  mkdir -p "$staging"
+  cp -a "$from/." "$staging/"
+  rm -rf "$staging/rehearsal/.work"
+  rm -rf "$TOOLING_DIR.old"
+  [[ -d "$TOOLING_DIR" ]] && mv "$TOOLING_DIR" "$TOOLING_DIR.old"
+  mv "$staging" "$TOOLING_DIR"
+  rm -rf "$TOOLING_DIR.old"
+  chmod -R go-w "$TOOLING_DIR"
+  install -m 0755 "$from/bin/ia-mns-deploy" "$BIN_DIR/ia-mns-deploy.new"
+  mv "$BIN_DIR/ia-mns-deploy.new" "$BIN_DIR/ia-mns-deploy"
+}
+
+cmd_install() {
+  require_root
+  require_tools git curl openssl python3 flock install
+  [[ -f "$SOURCE_DIR/compose.yaml" && "$SOURCE_DIR" != "$TOOLING_DIR" ]] ||
+    die "run install from a checkout: sudo infra/production/bin/ia-mns-deploy install"
+  take_lock
+  install -d -m 0700 "$CONFIG_DIR" "$STATE_DIR" "$BACKUP_DIR" \
+    "$BACKUP_DIR/daily" "$BACKUP_DIR/pre-deploy" "$BACKUP_DIR/pre-restore"
+  install -d -m 0755 "$HOME_DIR" "$RELEASES_DIR" "$BIN_DIR"
+  install_tooling "$SOURCE_DIR"
+  local name
+  for name in compose postgres migration runtime backup; do
+    if [[ ! -e "$CONFIG_DIR/$name.env" ]]; then
+      install -m 0600 "$SOURCE_DIR/examples/$name.env.example" "$CONFIG_DIR/$name.env"
+      log "created $CONFIG_DIR/$name.env from the example"
+    fi
+  done
+  if [[ ! -d "$REPO_DIR" ]]; then
+    local remote
+    remote="$(setting IA_MNS_GIT_REMOTE)"
+    [[ -n "$remote" ]] || remote="https://github.com/GabriellMDias/IA-MNS.git"
+    git clone --quiet --bare --no-tags "$remote" "$REPO_DIR"
+    git -C "$REPO_DIR" config remote.origin.fetch "+refs/heads/$MAIN_BRANCH:refs/remotes/origin/$MAIN_BRANCH"
+    git -C "$REPO_DIR" config remote.origin.tagOpt --no-tags
+    log "cloned the release repository into $REPO_DIR"
+  fi
+  if [[ "${IA_MNS_SKIP_SYSTEMD:-}" != "1" ]] && command -v systemctl >/dev/null 2>&1 && [[ -d "$SYSTEMD_DIR" ]]; then
+    local unit
+    for unit in "$SOURCE_DIR"/systemd/*; do
+      sed "s#@BIN_DIR@#$BIN_DIR#g" "$unit" >"$SYSTEMD_DIR/$(basename "$unit")"
+      chmod 0644 "$SYSTEMD_DIR/$(basename "$unit")"
+    done
+    systemctl daemon-reload
+    log "installed systemd units; enable them after the first deployment: ia-mns-deploy enable-timers"
+  fi
+  log "installed ia-mns-deploy $TOOL_VERSION into $BIN_DIR; next: edit $CONFIG_DIR/*.env, then ia-mns-deploy init-secrets"
+}
+
+cmd_enable_timers() {
+  require_root
+  require_tools systemctl
+  systemctl enable --now ia-mns-backup.timer ia-mns-verify-restore.timer
+  systemctl list-timers 'ia-mns-*' --no-pager
+}
+
+# --- Database setup ---------------------------------------------------------------
+
+postgres_running() {
+  [[ "$(compose "$SOURCE_DIR" ps --status running --format '{{.Service}}' postgres 2>/dev/null)" == "postgres" ]]
+}
+
+start_postgres() {
+  docker volume inspect "$VOLUME" >/dev/null 2>&1 ||
+    die "the database volume $VOLUME does not exist; run ia-mns-deploy setup first"
+  compose "$SOURCE_DIR" up -d --wait --wait-timeout 180 postgres >/dev/null ||
+    die "PostgreSQL did not become healthy"
+}
+
+database_prepared() {
+  [[ "$(psql_value "SELECT count(*) FROM pg_roles WHERE rolname IN ('ia_mns_migrator', 'orion_runtime')" postgres 2>/dev/null)" == "2" ]] ||
+    return 1
+  # shellcheck disable=SC2016 # PGDATA expands inside the container.
+  compose "$SOURCE_DIR" exec -T -u postgres postgres sh -c 'grep -q ia-mns-hardened-hba-v1 "$PGDATA/pg_hba.conf"' 2>/dev/null
+}
+
+cmd_setup() {
+  require_root
+  require_docker
+  take_lock
+  cmd_check_config
+  if ! docker volume inspect "$VOLUME" >/dev/null 2>&1; then
+    docker volume create --label br.com.ia-mns.data=postgres "$VOLUME" >/dev/null
+    log "created the database volume $VOLUME"
+  fi
+  start_postgres
+  # Client authentication: superuser by local socket only, the two
+  # application roles by password over the private network.
+  # shellcheck disable=SC2016 # PGDATA expands inside the container.
+  compose "$SOURCE_DIR" exec -T -u postgres postgres sh -c 'cat > "$PGDATA/pg_hba.conf"' \
+    <"$SOURCE_DIR/postgres/pg_hba.conf"
+  [[ "$(psql_value "SELECT pg_reload_conf()" postgres)" == "t" ]] || die "PostgreSQL did not reload its configuration"
+  [[ "$(psql_value "SELECT count(*) FROM pg_hba_file_rules WHERE error IS NOT NULL" postgres)" == "0" ]] ||
+    die "the hardened pg_hba.conf has errors"
+  local migrator runtime
+  migrator="$(url_password "$(env_value "$CONFIG_DIR/migration.env" ORION_MIGRATION_DATABASE_URL)")"
+  runtime="$(url_password "$(env_value "$CONFIG_DIR/runtime.env" ORION_DATABASE_URL)")"
+  # Passwords travel on stdin; failing statements are not written to the
+  # server log in this session.
+  psql_admin postgres <<SQL
+SET log_min_error_statement = panic;
+SET log_statement = 'none';
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ia_mns_migrator') THEN
+    CREATE ROLE ia_mns_migrator LOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'orion_runtime') THEN
+    CREATE ROLE orion_runtime LOGIN;
+  END IF;
+END
+\$\$;
+ALTER ROLE ia_mns_migrator WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT PASSWORD '$migrator';
+ALTER ROLE orion_runtime WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS INHERIT PASSWORD '$runtime';
+ALTER DATABASE ia_mns OWNER TO ia_mns_migrator;
+REVOKE ALL ON DATABASE ia_mns FROM PUBLIC;
+SQL
+  migrator=""
+  runtime=""
+  psql_admin ia_mns <<'SQL'
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+SQL
+  database_prepared || die "database setup could not be verified"
+  log "database prepared: hardened client authentication, roles ia_mns_migrator (owner) and orion_runtime (restricted)"
+}
+
+# --- Releases ----------------------------------------------------------------------
+
+verify_ci() {
+  local commit="$1" repository check result
+  repository="$(setting IA_MNS_CI_REPOSITORY)"
+  check="$(setting IA_MNS_REQUIRED_CHECK)"
+  [[ -n "$check" ]] || check="Orion required gate"
+  if [[ -z "$repository" ]]; then
+    warn "CI not verified: IA_MNS_CI_REPOSITORY is empty"
+    CI_RESULT="not-verified"
+    return 0
+  fi
+  result="$(curl --fail --silent --show-error --max-time 30 \
+    -H 'Accept: application/vnd.github+json' \
+    "https://api.github.com/repos/$repository/commits/$commit/check-runs?per_page=100" |
+    CHECK="$check" python3 -c '
+import json, os, sys
+runs = [r for r in json.load(sys.stdin).get("check_runs", []) if r.get("name") == os.environ["CHECK"]]
+runs.sort(key=lambda r: r.get("completed_at") or "", reverse=True)
+print(runs[0].get("conclusion") or runs[0].get("status") if runs else "missing")
+')" || die "could not read the CI result of $commit from GitHub"
+  [[ "$result" == "success" ]] || die "the required check \"$check\" is $result on $commit"
+  CI_RESULT="success"
+}
+
+# Fetches and verifies a release tag; sets RELEASE, COMMIT and RELEASE_DIR.
+prepare_release() {
+  local tag="$1" remote
+  [[ "$tag" =~ $TAG_PATTERN ]] || die "release tags look like ia-mns-v1.2.3 (got: $tag)"
+  [[ -d "$REPO_DIR" ]] || die "the release repository is missing; run ia-mns-deploy install"
+  remote="$(setting IA_MNS_GIT_REMOTE)"
+  [[ -n "$remote" ]] && git -C "$REPO_DIR" remote set-url origin "$remote"
+  git -C "$REPO_DIR" fetch --quiet --prune origin \
+    "+refs/heads/$MAIN_BRANCH:refs/remotes/origin/$MAIN_BRANCH" ||
+    die "could not fetch $MAIN_BRANCH"
+  # Without --force, a tag that moved since it was first fetched is refused.
+  git -C "$REPO_DIR" fetch --quiet origin "refs/tags/$tag:refs/tags/$tag" ||
+    die "could not fetch $tag, or it moved since this host first saw it"
+  [[ "$(git -C "$REPO_DIR" cat-file -t "refs/tags/$tag")" == "tag" ]] ||
+    die "$tag must be an annotated tag"
+  COMMIT="$(git -C "$REPO_DIR" rev-parse "refs/tags/$tag^{commit}")"
+  git -C "$REPO_DIR" merge-base --is-ancestor "$COMMIT" "refs/remotes/origin/$MAIN_BRANCH" ||
+    die "$tag is not on $MAIN_BRANCH"
+  RELEASE="$tag"
+  RELEASE_DIR="$RELEASES_DIR/$tag"
+  if [[ -d "$RELEASE_DIR" ]]; then
+    [[ "$(git -C "$RELEASE_DIR" rev-parse HEAD)" == "$COMMIT" ]] ||
+      die "$RELEASE_DIR does not hold $tag"
+    [[ -z "$(git -C "$RELEASE_DIR" status --porcelain)" ]] ||
+      die "$RELEASE_DIR has local changes; inspect it, it is never reused modified"
+  else
+    git -C "$REPO_DIR" worktree prune
+    git -C "$REPO_DIR" worktree add --quiet --detach "$RELEASE_DIR" "$COMMIT"
+  fi
+  [[ -f "$RELEASE_DIR/infra/production/compose.yaml" ]] ||
+    die "$tag predates the production deployment tooling"
+}
+
+image_revision() {
+  docker image inspect "$1" --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' 2>/dev/null || true
+}
+
+build_images() {
+  local target image logfile
+  mkdir -p "$STATE_DIR/logs"
+  for target in runtime migrate; do
+    image="$IMAGE_REPOSITORY:$RELEASE"
+    [[ "$target" == migrate ]] && image="$IMAGE_REPOSITORY-migrate:$RELEASE"
+    if [[ "$(image_revision "$image")" == "$COMMIT" ]]; then
+      log "image $image already built from $COMMIT"
+      continue
+    fi
+    logfile="$STATE_DIR/logs/build-$RELEASE-$target.log"
+    log "building $image (log: $logfile)"
+    if ! DOCKER_BUILDKIT=1 docker build --progress=plain \
+      -f "$RELEASE_DIR/infra/production/Dockerfile" --target "$target" \
+      --build-arg "RELEASE_ID=$RELEASE" --build-arg "REVISION=$COMMIT" \
+      -t "$image" "$RELEASE_DIR" >"$logfile" 2>&1; then
+      tail -n 30 "$logfile" >&2
+      die "building $image failed"
+    fi
+  done
+}
+
+preflight() {
+  local tls=()
+  tls_enabled && tls=(-v "$CONFIG_DIR/tls:/run/ia-mns/tls:ro")
+  docker run --rm --network none --read-only --tmpfs /tmp \
+    --env-file "$CONFIG_DIR/runtime.env" "${tls[@]}" \
+    "$IMAGE_REPOSITORY:$RELEASE" node dist/cli/config-check.js >&2 ||
+    die "the release refuses this configuration (see the line above); nothing changed"
+}
+
+migration_status() {
+  # Prints the JSON state; returns 3 when the release is incompatible.
+  local dir="$1"
+  compose "$dir" run --rm -T migrate node dist/cli/database-deploy.js status
+}
+
+json_field() { python3 -c 'import json,sys; v=json.load(sys.stdin)[sys.argv[1]]; print(" ".join(v) if isinstance(v, list) else str(v).lower())' "$1"; }
+
+smoke_url() {
+  local url scheme
+  url="$(setting IA_MNS_SMOKE_URL)"
+  if [[ -z "$url" ]]; then
+    scheme="http"
+    tls_enabled && scheme="https"
+    url="$scheme://$(setting IA_MNS_BIND_ADDRESS):$(setting IA_MNS_HTTP_PORT)"
+    [[ "$url" == *: ]] && url="${url}4490"
+  fi
+  printf '%s' "$url"
+}
+
+smoke() {
+  local base headers body code
+  base="$(smoke_url)"
+  headers="$(mktemp)"
+  body="$(mktemp)"
+  # -k only on the internal TLS hop: the certificate names the proxy target.
+  local curl_args=(--silent --max-time 15 -k)
+  for path in /health/ready /api/health/ready /api/identity/status; do
+    code="$(curl "${curl_args[@]}" -o /dev/null -w '%{http_code}' "$base$path" || true)"
+    [[ "$code" == "200" ]] || { rm -f "$headers" "$body"; log "smoke: $path answered $code"; return 1; }
+  done
+  code="$(curl "${curl_args[@]}" -H 'Accept: text/html' -D "$headers" -o "$body" -w '%{http_code}' "$base/" || true)"
+  if [[ "$code" != "200" ]] || ! grep -q 'id="root"' "$body" ||
+    ! grep -qi "^content-security-policy: frame-ancestors 'none'" "$headers" ||
+    ! grep -qi '^referrer-policy: no-referrer' "$headers"; then
+    rm -f "$headers" "$body"
+    log "smoke: the web shell or its security headers are wrong"
+    return 1
+  fi
+  code="$(curl "${curl_args[@]}" -o /dev/null -w '%{http_code}' "$base/api/does-not-exist" || true)"
+  rm -f "$headers" "$body"
+  [[ "$code" == "404" ]] || { log "smoke: unknown API paths answered $code"; return 1; }
+  # The running container is the expected release, as a non-root user.
+  [[ "$(running_release)" == "$RELEASE" ]] || { log "smoke: the running image is not $RELEASE"; return 1; }
+  [[ "$(compose "$RELEASE_DIR/infra/production" exec -T api id -u 2>/dev/null)" != "0" ]] || { log "smoke: the API runs as root"; return 1; }
+  return 0
+}
+
+running_release() {
+  local id
+  id="$(compose "$SOURCE_DIR" ps -q api 2>/dev/null | head -n1)"
+  [[ -n "$id" ]] || return 0
+  docker inspect "$id" --format '{{index .Config.Labels "org.opencontainers.image.version"}}' 2>/dev/null || true
+}
+
+state_get() { [[ -f "$STATE_DIR/$1" ]] && cat "$STATE_DIR/$1" || true; }
+state_set() { printf '%s\n' "$2" >"$STATE_DIR/$1.new" && mv "$STATE_DIR/$1.new" "$STATE_DIR/$1"; }
+
+record() {
+  # record <result> [details]
+  mkdir -p "$STATE_DIR"
+  RESULT="$1" DETAILS="${2:-}" TAG="$RELEASE" REVISION="${COMMIT:-}" PREVIOUS="${PREVIOUS:-}" \
+    APPLIED="${APPLIED:-}" BACKUP="${LAST_BACKUP_FILE:-}" CI="${CI_RESULT:-}" ACTION="$COMMAND" \
+    OPERATOR="${SUDO_USER:-$(id -un)}" python3 -c '
+import json, os, datetime
+keys = ["ACTION", "RESULT", "DETAILS", "TAG", "REVISION", "PREVIOUS", "APPLIED", "BACKUP", "CI", "OPERATOR"]
+entry = {"at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")}
+entry.update({k.lower(): os.environ.get(k, "") for k in keys})
+entry["applied"] = entry["applied"].split()
+print(json.dumps(entry))
+' >>"$STATE_DIR/deployments.log"
+}
+
+release_dir_of() { printf '%s/%s/infra/production' "$RELEASES_DIR" "$1"; }
+
+start_release() {
+  # start_release <tag>: replace the API container and wait until healthy.
+  local tag="$1"
+  RELEASE="$tag" compose "$(release_dir_of "$tag")" up -d --no-deps --wait --wait-timeout 180 api >&2
+}
+
+prune_releases() {
+  local current previous dir tag kept=0
+  current="$(state_get current)"
+  previous="$(state_get previous)"
+  while IFS= read -r dir; do
+    tag="$(basename "$dir")"
+    if [[ "$tag" == "$current" || "$tag" == "$previous" ]]; then continue; fi
+    kept=$((kept + 1))
+    ((kept <= KEEP_RELEASES - 2)) && continue
+    git -C "$REPO_DIR" worktree remove --force "$dir" >/dev/null 2>&1 || true
+    docker image rm "$IMAGE_REPOSITORY:$tag" "$IMAGE_REPOSITORY-migrate:$tag" >/dev/null 2>&1 || true
+    log "pruned release $tag (worktree and images)"
+  done < <(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2-)
+}
+
+cmd_build() {
+  require_root
+  require_docker
+  local tag="${1:-}"
+  [[ -n "$tag" ]] || die "usage: ia-mns-deploy build <ia-mns-vX.Y.Z>"
+  take_lock
+  prepare_release "$tag"
+  build_images
+  log "images for $tag are ready"
+}
+
+cmd_deploy() {
+  require_root
+  require_docker
+  require_tools git curl python3 flock
+  local tag="${1:-}"
+  [[ -n "$tag" ]] || die "usage: ia-mns-deploy deploy <ia-mns-vX.Y.Z>"
+  [[ "$tag" =~ $TAG_PATTERN ]] || die "release tags look like ia-mns-v1.2.3 (got: $tag)"
+  take_lock
+  cmd_check_config
+  prepare_release "$tag"
+  verify_ci "$COMMIT"
+  # Each release deploys itself with the tooling it was tested with.
+  local own="$RELEASE_DIR/infra/production/bin/ia-mns-deploy"
+  if ! cmp -s "$own" "$SCRIPT_PATH"; then
+    log "continuing with the deployment tooling of $tag"
+    exec env CI_RESULT="$CI_RESULT" bash "$own" deploy-release "$tag"
+  fi
+  CI_RESULT="$CI_RESULT" deploy_release "$tag"
+}
+
+cmd_deploy_release() {
+  [[ "${IA_MNS_LOCK_HELD:-}" == "1" ]] || die "deploy-release is internal; use ia-mns-deploy deploy <tag>"
+  local tag="$1"
+  prepare_release "$tag"
+  deploy_release "$tag"
+}
+
+deploy_release() {
+  local tag="$1" dir state code
+  dir="$RELEASE_DIR/infra/production"
+  CI_RESULT="${CI_RESULT:-not-verified}"
+  PREVIOUS="$(state_get current)"
+  APPLIED=""
+  log "deploying $tag ($COMMIT); running release: ${PREVIOUS:-none}"
+
+  build_images
+  preflight
+  start_postgres
+  database_prepared || die "the database is not prepared; run ia-mns-deploy setup"
+
+  run_backup pre-deploy "pre-deploy-$tag" || die "the pre-deployment backup failed; nothing changed"
+
+  set +e
+  state="$(migration_status "$dir")"
+  code=$?
+  set -e
+  [[ "$code" -eq 0 || "$code" -eq 3 ]] ||
+    die "could not read the database migration history with the migration credential (database unreachable or credential refused); nothing changed"
+  if [[ "$code" -ne 0 ]]; then
+    record refused "incompatible database: $state"
+    die "$tag is incompatible with the database history (unknown, failed or modified migrations); nothing changed: $state"
+  fi
+  local pending
+  pending="$(printf '%s' "$state" | json_field pending)"
+  log "pending migrations: ${pending:-none}"
+
+  if ! compose "$dir" run --rm -T migrate >&2; then
+    record failed "database deployment failed"
+    die "database deployment failed; the running release was not touched. Inspect: ia-mns-deploy logs; the pre-deployment backup is $LAST_BACKUP_FILE"
+  fi
+  APPLIED="$pending"
+
+  if start_release "$tag" && smoke; then
+    state_set previous "$PREVIOUS"
+    state_set current "$tag"
+    record success
+    install_tooling "$dir"
+    prune_releases
+    log "deployed $tag"
+    return 0
+  fi
+
+  log "$tag did not become healthy"
+  compose "$dir" logs --no-color --tail 60 api >&2 || true
+  if [[ -n "$PREVIOUS" && -z "$APPLIED" ]]; then
+    # No migration ran, so the previous release meets exactly the schema it
+    # was running against: returning to it is proven safe.
+    log "no migration was applied: returning to $PREVIOUS"
+    RELEASE="$PREVIOUS"
+    RELEASE_DIR="$RELEASES_DIR/$PREVIOUS"
+    if start_release "$PREVIOUS" && smoke; then
+      RELEASE="$tag"
+      record rolled-back "returned to $PREVIOUS"
+      die "$tag failed its health checks; $PREVIOUS is running again"
+    fi
+    RELEASE="$tag"
+    record failed "automatic return to $PREVIOUS also failed"
+    die "$tag failed and $PREVIOUS did not recover; follow the rollback runbook"
+  fi
+  record failed "not rolled back automatically: migrations applied (${APPLIED:-none}) or no previous release"
+  die "$tag failed after applying migrations (${APPLIED:-none}); automatic rollback is not proven safe. See ia-mns-deploy rollback --help and the pre-deployment backup $LAST_BACKUP_FILE"
+}
+
+cmd_rollback() {
+  require_root
+  require_docker
+  local target="" accept_ahead=0 arg
+  for arg in "$@"; do
+    case "$arg" in
+      --accept-schema-ahead) accept_ahead=1 ;;
+      --help) printf 'usage: ia-mns-deploy rollback [<ia-mns-vX.Y.Z>] [--accept-schema-ahead]\n'; return 0 ;;
+      *) target="$arg" ;;
+    esac
+  done
+  take_lock
+  cmd_check_config
+  local current running
+  current="$(state_get current)"
+  running="$(running_release)"
+  if [[ -z "$target" ]]; then
+    # After a failed deployment the last healthy release is the target.
+    if [[ -n "$running" && "$running" != "$current" ]]; then target="$current"; else target="$(state_get previous)"; fi
+  fi
+  [[ -n "$target" ]] || die "no previous release is recorded; name the release to return to"
+  prepare_release "$target"
+  build_images
+  start_postgres
+  local dir="$RELEASE_DIR/infra/production" state code
+  set +e
+  state="$(migration_status "$dir")"
+  code=$?
+  set -e
+  [[ "$code" -eq 0 || "$code" -eq 3 ]] ||
+    die "could not read the database migration history with the migration credential (database unreachable or credential refused); nothing changed"
+  PREVIOUS="$running"
+  local unknown pending
+  unknown="$(printf '%s' "$state" | json_field unknown 2>/dev/null || true)"
+  pending="$(printf '%s' "$state" | json_field pending 2>/dev/null || true)"
+  if [[ -n "$pending" ]]; then
+    die "$target expects migrations the database has not applied ($pending); deploy it instead"
+  fi
+  if [[ "$code" -ne 0 ]]; then
+    if [[ -n "$unknown" && "$accept_ahead" -eq 1 && "$(printf '%s' "$state" | json_field failed)" == "" && "$(printf '%s' "$state" | json_field modified)" == "" ]]; then
+      warn "running $target against migrations it does not know ($unknown), as explicitly accepted"
+    else
+      record refused "schema ahead of $target: $state"
+      die "$target does not know migrations the database has applied (${unknown:-see state}); rolling back is not proven safe. Review the migrations; only if they are additive and $target ignores them, repeat with --accept-schema-ahead; otherwise restore the pre-deployment backup (runbook)"
+    fi
+  fi
+  preflight
+  if start_release "$target" && smoke; then
+    # Returning to the current release after a failed deployment keeps the
+    # recorded previous release.
+    if [[ "$target" != "$current" ]]; then
+      state_set previous "$current"
+      state_set current "$target"
+    fi
+    record success "rollback from ${running:-none}"
+    log "running $target"
+    return 0
+  fi
+  record failed "rollback to $target failed"
+  die "$target did not become healthy; see ia-mns-deploy logs"
+}
+
+# --- Backups ----------------------------------------------------------------------
+
+LAST_BACKUP_FILE=""
+
+run_backup() {
+  # run_backup <daily|pre-deploy|pre-restore> <label>
+  local kind="$1" label="$2" stamp dir base partial keep
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  dir="$BACKUP_DIR/$kind"
+  install -d -m 0700 "$dir"
+  base="$dir/ia-mns-$stamp-$label.dump"
+  partial="$base.partial"
+  postgres_running || start_postgres
+  if ! compose "$SOURCE_DIR" exec -T -u postgres postgres pg_dump --format=custom --compress=6 -d ia_mns >"$partial"; then
+    rm -f "$partial"
+    log "pg_dump failed"
+    return 1
+  fi
+  # The archive must be readable as a whole by pg_restore and, once the
+  # database has a migration history, contain it. (Before the first
+  # deployment the database is legitimately empty.)
+  local history
+  history="$(psql_value "SELECT to_regclass('public._prisma_migrations') IS NOT NULL")" || history=""
+  if ! compose "$SOURCE_DIR" exec -T -u postgres postgres pg_restore --list <"$partial" >"$base.toc" ||
+    ! grep -q '^; Archive created at' "$base.toc" ||
+    { [[ "$history" == "t" ]] && ! grep -q 'TABLE DATA public _prisma_migrations' "$base.toc"; }; then
+    rm -f "$partial" "$base.toc"
+    log "the backup archive is unreadable or incomplete"
+    return 1
+  fi
+  mv "$partial" "$base"
+  (cd "$dir" && sha256sum "$(basename "$base")" >"$base.sha256")
+  LAST_BACKUP_FILE="$base"
+  local size external="not-configured"
+  size="$(stat -c %s "$base")"
+  log "backup written: $base ($size bytes)"
+
+  keep="$(backup_setting IA_MNS_BACKUP_KEEP_DAILY)"
+  [[ "$kind" == pre-deploy ]] && keep="$(backup_setting IA_MNS_BACKUP_KEEP_PREDEPLOY)"
+  [[ "$keep" =~ ^[1-9][0-9]*$ ]] || keep=14
+  [[ "$kind" == pre-deploy && -z "$(backup_setting IA_MNS_BACKUP_KEEP_PREDEPLOY)" ]] && keep=10
+  local old
+  while IFS= read -r old; do
+    rm -f "$old" "$old.sha256" "$old.toc" "$old.age"
+    log "retention removed $(basename "$old")"
+  done < <(find "$dir" -maxdepth 1 -name 'ia-mns-*.dump' | sort -r | tail -n +"$((keep + 1))")
+
+  if [[ "$kind" != pre-deploy && -n "$(backup_setting IA_MNS_BACKUP_EXTERNAL_TARGET)" ]]; then
+    if copy_external "$base"; then external="copied"; else external="failed"; fi
+  fi
+  STAMP="$stamp" FILE="$base" SIZE="$size" KIND="$kind" EXTERNAL="$external" python3 -c '
+import json, os
+print(json.dumps({k.lower(): os.environ[k] for k in ["STAMP", "FILE", "SIZE", "KIND", "EXTERNAL"]}))
+' >"$STATE_DIR/last-backup-$kind.json"
+  [[ "$external" != "failed" ]]
+}
+
+copy_external() {
+  local file="$1" target recipient encrypted key
+  target="$(backup_setting IA_MNS_BACKUP_EXTERNAL_TARGET)"
+  recipient="$(backup_setting IA_MNS_BACKUP_AGE_RECIPIENT)"
+  if [[ -z "$recipient" ]]; then
+    log "IA_MNS_BACKUP_AGE_RECIPIENT is required to copy backups off the host"
+    return 1
+  fi
+  command -v age >/dev/null 2>&1 || { log "the age tool is required for external backups (apt install age)"; return 1; }
+  encrypted="$file.age"
+  age --encrypt --recipient "$recipient" --output "$encrypted" "$file" || return 1
+  if [[ "$target" == /* ]]; then
+    install -d -m 0700 "$target" && cp "$encrypted" "$target/" || return 1
+  else
+    key="$(backup_setting IA_MNS_BACKUP_SSH_KEY)"
+    local ssh="ssh -o BatchMode=yes"
+    [[ -n "$key" ]] && ssh="$ssh -i $key"
+    rsync -e "$ssh" --chmod=F600 "$encrypted" "$target/" || return 1
+  fi
+  log "encrypted copy sent to the external destination"
+}
+
+cmd_backup() {
+  require_root
+  require_docker
+  local kind="daily" label="manual"
+  while (($#)); do
+    case "$1" in
+      --kind) kind="$2"; shift 2 ;;
+      --label) label="$2"; shift 2 ;;
+      *) die "usage: ia-mns-deploy backup [--kind daily|pre-deploy] [--label name]" ;;
+    esac
+  done
+  [[ "$kind" =~ ^(daily|pre-deploy)$ ]] || die "unknown backup kind $kind"
+  [[ "$label" =~ ^[a-z0-9.-]{1,40}$ ]] || die "labels use lowercase letters, digits, dots and dashes"
+  take_lock 3600
+  run_backup "$kind" "$label" || die "backup failed"
+  [[ -n "$(backup_setting IA_MNS_BACKUP_EXTERNAL_TARGET)" ]] ||
+    warn "no external backup destination: this installation does not meet the production backup requirement (PH-24)"
+}
+
+latest_backup() {
+  find "$BACKUP_DIR" -name 'ia-mns-*.dump' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -n1 | cut -d' ' -f2-
+}
+
+check_backup_file() {
+  local file="$1"
+  [[ -f "$file" && -f "$file.sha256" ]] || die "backup $file or its checksum is missing"
+  (cd "$(dirname "$file")" && sha256sum --check --status "$(basename "$file").sha256") ||
+    die "backup $file does not match its checksum"
+}
+
+VERIFY_CONTAINER=""
+VERIFY_NETWORK=""
+cleanup_verify() {
+  [[ -n "$VERIFY_CONTAINER" ]] && docker rm -f "$VERIFY_CONTAINER" >/dev/null 2>&1
+  [[ -n "$VERIFY_NETWORK" ]] && docker network rm "$VERIFY_NETWORK" >/dev/null 2>&1
+  return 0
+}
+
+cmd_verify_restore() {
+  require_root
+  require_docker
+  local file="${1:-}"
+  [[ -n "$file" ]] || file="$(latest_backup)"
+  [[ -n "$file" ]] || die "no backup to verify"
+  check_backup_file "$file"
+  take_lock 3600
+  local stamp name network password counts state="" code=0 current
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  name="ia-mns-restore-check-$stamp"
+  network="ia-mns-restore-check-$stamp"
+  password="$(openssl rand -hex 24)"
+  # The disposable container and network go away however this command ends.
+  VERIFY_CONTAINER="$name"
+  VERIFY_NETWORK="$network"
+  trap cleanup_verify EXIT
+  # A disposable database on an isolated network: production data and volume
+  # are never touched.
+  docker network create --internal "$network" >/dev/null
+  POSTGRES_PASSWORD="$password" docker run -d --name "$name" --network "$network" \
+    --tmpfs /var/lib/postgresql/data -e POSTGRES_PASSWORD \
+    --label br.com.ia-mns.purpose=restore-check "$POSTGRES_IMAGE" >/dev/null
+  local ready=0
+  for _ in $(seq 1 60); do
+    if docker exec -u postgres "$name" pg_isready -q 2>/dev/null &&
+      docker exec -u postgres "$name" psql -X -q -t -A -c 'SELECT 1' >/dev/null 2>&1; then
+      ready=1
+      break
+    fi
+    sleep 1
+  done
+  ((ready)) || die "the disposable database did not start"
+  docker exec -i -u postgres "$name" psql -X -q -v ON_ERROR_STOP=1 <<SQL >/dev/null
+CREATE ROLE ia_mns_migrator LOGIN PASSWORD '$password';
+CREATE ROLE orion_runtime NOLOGIN;
+CREATE DATABASE ia_mns OWNER ia_mns_migrator;
+SQL
+  if ! docker exec -i -u postgres "$name" pg_restore --exit-on-error -d ia_mns <"$file"; then
+    die "restoring $file into a disposable database failed"
+  fi
+  counts="$(docker exec -u postgres "$name" psql -X -q -t -A -d ia_mns -c "
+    SELECT json_build_object(
+      'migrations', (SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL),
+      'failed_migrations', (SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL),
+      'tables', (SELECT count(*) FROM pg_tables WHERE schemaname = 'public'),
+      'persons', (SELECT count(*) FROM identity_persons),
+      'conversations', (SELECT count(*) FROM agent_conversations),
+      'turns', (SELECT count(*) FROM agent_turns))")" || die "the restored database cannot be queried"
+  # The restored history must be compatible with the running release.
+  current="$(state_get current)"
+  if [[ -n "$current" && -n "$(docker image ls -q "$IMAGE_REPOSITORY-migrate:$current")" ]]; then
+    set +e
+    state="$(ORION_MIGRATION_DATABASE_URL="postgresql://ia_mns_migrator:$password@$name:5432/ia_mns" \
+      docker run --rm --network "$network" -e ORION_MIGRATION_DATABASE_URL \
+      "$IMAGE_REPOSITORY-migrate:$current" node dist/cli/database-deploy.js status)"
+    code=$?
+    set -e
+    [[ "$code" -eq 0 ]] || die "the restored database is incompatible with $current: $state"
+  fi
+  password=""
+  FILE="$file" COUNTS="$counts" STATE="$state" RELEASE_CHECKED="$current" python3 -c '
+import json, os, datetime
+print(json.dumps({"at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+  "file": os.environ["FILE"], "result": "success", "counts": json.loads(os.environ["COUNTS"]),
+  "release": os.environ["RELEASE_CHECKED"], "migrations": json.loads(os.environ["STATE"]) if os.environ["STATE"] else None}))
+' >"$STATE_DIR/last-restore-verification.json"
+  log "restore verified: $file restored into a disposable database ($counts)"
+}
+
+cmd_restore() {
+  require_root
+  require_docker
+  local file="" confirm=0 skip_safety=0 arg
+  for arg in "$@"; do
+    case "$arg" in
+      --confirm) confirm=1 ;;
+      --skip-safety-backup) skip_safety=1 ;;
+      *) file="$arg" ;;
+    esac
+  done
+  [[ -n "$file" ]] || die "usage: ia-mns-deploy restore <backup.dump> --confirm [--skip-safety-backup]"
+  check_backup_file "$file"
+  ((confirm)) || die "restore replaces the live database with $file; repeat with --confirm after following the restore runbook"
+  take_lock
+  cmd_check_config
+  local current
+  current="$(state_get current)"
+  [[ -n "$current" ]] || die "no deployed release is recorded"
+  RELEASE="$current"
+  RELEASE_DIR="$RELEASES_DIR/$current"
+  start_postgres
+  if ((skip_safety)); then
+    warn "no safety backup of the current database (explicitly skipped)"
+  else
+    run_backup pre-restore "before-restore" || die "the safety backup of the current database failed; nothing changed"
+  fi
+  local stamp target retained
+  stamp="$(date -u +%Y%m%d%H%M%S)"
+  target="ia_mns_restore_$stamp"
+  retained="ia_mns_before_restore_$stamp"
+  compose "$SOURCE_DIR" stop api >&2 || true
+  psql_admin postgres <<SQL
+CREATE DATABASE $target OWNER ia_mns_migrator;
+REVOKE ALL ON DATABASE $target FROM PUBLIC;
+SQL
+  if ! compose "$SOURCE_DIR" exec -T -u postgres postgres pg_restore --exit-on-error -d "$target" <"$file"; then
+    psql_admin postgres <<<"DROP DATABASE $target;" || true
+    start_release "$current" || true
+    die "the backup could not be restored; the live database was not changed and $current was restarted"
+  fi
+  # Swap names; the replaced database is kept, never dropped automatically.
+  psql_admin postgres <<SQL
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'ia_mns' AND pid <> pg_backend_pid();
+ALTER DATABASE ia_mns RENAME TO $retained;
+ALTER DATABASE $target RENAME TO ia_mns;
+SQL
+  local dir="$RELEASE_DIR/infra/production" state code
+  set +e
+  state="$(migration_status "$dir")"
+  code=$?
+  set -e
+  if [[ "$code" -ne 0 && "$code" -ne 3 ]]; then
+    state="the history could not be read"
+    code=3
+  fi
+  if [[ "$code" -ne 0 ]]; then
+    psql_admin postgres <<SQL || true
+ALTER DATABASE ia_mns RENAME TO $target;
+ALTER DATABASE $retained RENAME TO ia_mns;
+SQL
+    start_release "$current" || true
+    die "the restored database is incompatible with $current ($state); the previous database is back in place"
+  fi
+  compose "$dir" run --rm -T migrate >&2 || die "re-applying migrations and grants to the restored database failed; the previous database is kept as $retained"
+  if ! start_release "$current" || ! smoke; then
+    die "$current did not become healthy on the restored database; the previous database is kept as $retained"
+  fi
+  record restored "from $file; previous database kept as $retained"
+  log "restored $file; the replaced database is kept as $retained until you drop it after verification (runbook)"
+}
+
+# --- Day-to-day -------------------------------------------------------------------
+
+age_hours() {
+  python3 -c 'import os,sys,time; print(int((time.time()-os.path.getmtime(sys.argv[1]))//3600))' "$1"
+}
+
+cmd_status() {
+  require_root
+  local problems=0 current previous running health file hours
+  current="$(state_get current)"
+  previous="$(state_get previous)"
+  printf 'tooling            %s (installed from %s)\n' "$TOOL_VERSION" "$SOURCE_DIR"
+  printf 'current release    %s\n' "${current:-none}"
+  printf 'previous release   %s\n' "${previous:-none}"
+  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    running="$(running_release)"
+    printf 'running image      %s\n' "${running:-none}"
+    compose "$SOURCE_DIR" ps --format 'table {{.Service}}\t{{.Status}}\t{{.Ports}}' 2>/dev/null || true
+    health="$(compose "$SOURCE_DIR" ps --format '{{.Service}} {{.Health}}' api 2>/dev/null || true)"
+    [[ "$health" == "api healthy" ]] || { echo "PROBLEM: the API is not healthy"; problems=1; }
+    [[ -z "$current" || "$running" == "$current" ]] || { echo "PROBLEM: the running image differs from the current release"; problems=1; }
+  else
+    echo "PROBLEM: the Docker daemon is not reachable"
+    problems=1
+  fi
+  file="$STATE_DIR/last-backup-daily.json"
+  if [[ -f "$file" ]]; then
+    hours="$(age_hours "$file")"
+    printf 'last daily backup  %sh ago: %s\n' "$hours" "$(cat "$file")"
+    ((hours <= 26)) || { echo "PROBLEM: no daily backup in the last 26 hours"; problems=1; }
+    grep -q '"external": "failed"' "$file" && { echo "PROBLEM: the last external backup copy failed"; problems=1; }
+  else
+    echo "PROBLEM: no daily backup recorded"
+    problems=1
+  fi
+  file="$STATE_DIR/last-restore-verification.json"
+  if [[ -f "$file" ]]; then
+    hours="$(age_hours "$file")"
+    printf 'restore verified   %sh ago\n' "$hours"
+    ((hours <= 192)) || { echo "PROBLEM: no restore verification in the last 8 days"; problems=1; }
+  else
+    echo "PROBLEM: no restore verification recorded"
+    problems=1
+  fi
+  local line
+  while IFS= read -r line; do [[ -n "$line" ]] && echo "PRODUCTION REQUIREMENT: $line"; done < <(config_warnings 2>/dev/null || true)
+  [[ -f "$STATE_DIR/deployments.log" ]] && { echo "last operations:"; tail -n 5 "$STATE_DIR/deployments.log"; }
+  return "$problems"
+}
+
+cmd_logs() {
+  require_root
+  local service="api" tail=200
+  while (($#)); do
+    case "$1" in
+      --tail) tail="$2"; shift 2 ;;
+      api | postgres) service="$1"; shift ;;
+      *) die "usage: ia-mns-deploy logs [api|postgres] [--tail N]" ;;
+    esac
+  done
+  compose "$SOURCE_DIR" logs --no-color --tail "$tail" "$service"
+}
+
+cmd_restart() {
+  require_root
+  require_docker
+  take_lock
+  local current
+  current="$(state_get current)"
+  [[ -n "$current" ]] || die "no deployed release is recorded"
+  RELEASE="$current"
+  RELEASE_DIR="$RELEASES_DIR/$current"
+  start_postgres
+  RELEASE="$current" compose "$(release_dir_of "$current")" restart api >&2
+  RELEASE="$current" compose "$(release_dir_of "$current")" up -d --no-deps --wait --wait-timeout 180 api >&2 ||
+    die "the API did not become healthy after the restart"
+  smoke || die "the post-restart smoke test failed"
+  log "restarted $current"
+}
+
+cmd_bootstrap_owner() {
+  require_root
+  require_docker
+  local current
+  current="$(state_get current)"
+  [[ -n "$current" ]] || die "deploy a release first"
+  RELEASE="$current" compose "$(release_dir_of "$current")" exec -T api node dist/cli/identity-bootstrap.js "$@"
+}
+
+cmd_help() {
+  cat <<'HELP'
+ia-mns-deploy: operate IA-MNS on this host (run as root)
+
+  install                 install this tooling, directories, examples and units
+                          (from a checkout: sudo infra/production/bin/ia-mns-deploy install)
+  init-secrets            fill __GENERATE_*__ placeholders with new secrets (never shown)
+  check-config            validate /etc/ia-mns/*.env (names only, never values)
+  setup                   create the database volume, harden PostgreSQL, create roles
+  build <tag>             fetch, verify and build the images of a release
+  deploy <tag>            back up, migrate and start a release, with health and smoke checks
+  rollback [<tag>] [--accept-schema-ahead]
+                          return to a release when the database schema allows it
+  backup [--kind daily|pre-deploy] [--label name]
+  verify-restore [file]   restore a backup into a disposable database and check it
+  restore <file> --confirm [--skip-safety-backup]
+                          replace the live database with a backup (keeps the old one)
+  status                  releases, health, backups; exit code 1 on any problem
+  logs [api|postgres] [--tail N]
+  restart                 restart the API of the current release
+  bootstrap-owner [--break-glass]
+                          print the one-time first-owner invitation URL
+  enable-timers           enable the daily backup and weekly restore-check timers
+HELP
+}
+
+main() {
+  shift || true
+  case "$COMMAND" in
+    install) cmd_install "$@" ;;
+    init-secrets) cmd_init_secrets ;;
+    check-config) cmd_check_config ;;
+    setup) cmd_setup ;;
+    build) cmd_build "$@" ;;
+    deploy) cmd_deploy "$@" ;;
+    deploy-release) cmd_deploy_release "$@" ;;
+    rollback) cmd_rollback "$@" ;;
+    backup) cmd_backup "$@" ;;
+    verify-restore) cmd_verify_restore "$@" ;;
+    restore) cmd_restore "$@" ;;
+    status) cmd_status ;;
+    logs) cmd_logs "$@" ;;
+    restart) cmd_restart ;;
+    bootstrap-owner) cmd_bootstrap_owner "$@" ;;
+    enable-timers) cmd_enable_timers ;;
+    version) echo "ia-mns-deploy $TOOL_VERSION" ;;
+    help | --help | -h) cmd_help ;;
+    *) cmd_help >&2; exit 2 ;;
+  esac
+}
+
+main "$@"
