@@ -6,9 +6,11 @@
 #
 #   install → init-secrets → check-config (and its refusals) → setup → deploy
 #   → persist data → restarts → backup → external encrypted copy → restore
-#   verification → upgrade with a migration → refused rollback across a newer
+#   verification (refused without the release image) → upgrade with a
+#   migration → refused rollback across a newer
 #   schema → failed release rolled back automatically → failed release after a
 #   migration (no automatic rollback) → explicit rollback → forward fix →
+#   rollback with no API container (returns to the current release) →
 #   restore of an older backup.
 #
 # Synthetic only: no company credential, database or provider is contacted.
@@ -296,6 +298,11 @@ assert record["migrations"]["compatible"] and not record["migrations"]["pending"
 PY
 [[ -z "$(docker ps -aq --filter label=br.com.ia-mns.purpose=restore-check)" ]] || fail "restore check left a container"
 tool status >/dev/null 2>&1 || fail "status reports a problem"
+# Without the current release's migration image the check cannot be skipped.
+docker image rm "$IA_MNS_IMAGE_REPOSITORY-migrate:ia-mns-v0.0.1" >/dev/null
+expect_failure "verify-restore without the release's migration image" "$TOOL" verify-restore "$dump"
+tool build ia-mns-v0.0.1
+tool verify-restore "$dump"
 pass "backup restored into a disposable database; external copy decrypts; status clean"
 
 step "Upgrade ia-mns-v0.0.2 with an additive migration"
@@ -331,6 +338,15 @@ tool deploy ia-mns-v0.0.5
 [[ "$(state current)" == "ia-mns-v0.0.5" && "$(running_release)" == "ia-mns-v0.0.5" ]] || fail "forward fix"
 tail -n1 "$IA_MNS_STATE_DIR/deployments.log" | python3 -c 'import json,sys; assert json.load(sys.stdin)["applied"] == []' || fail "no migration should remain"
 pass "forward fix deployed; schema already current"
+
+step "Rollback with no API container returns to the current release"
+compose_project rm --force --stop api >/dev/null 2>&1
+[[ -z "$(running_release)" ]] || fail "the API container should be gone"
+tool rollback
+[[ "$(running_release)" == "ia-mns-v0.0.5" && "$(state current)" == "ia-mns-v0.0.5" ]] || fail "not back on the current release"
+[[ "$(state previous)" == "ia-mns-v0.0.2" ]] || fail "previous release overwritten"
+[[ "$(curl -s -o /dev/null -w '%{http_code}' "http://$SMOKE_HOST:$PORT/api/health/ready")" == "200" ]] || fail "not ready after rollback"
+pass "a missing API container is replaced by the current release, not the previous one"
 
 step "Restore an older backup into the live database"
 tool backup --label before-change

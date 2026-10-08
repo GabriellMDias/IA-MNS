@@ -784,8 +784,16 @@ cmd_rollback() {
   current="$(state_get current)"
   running="$(running_release)"
   if [[ -z "$target" ]]; then
-    # After a failed deployment the last healthy release is the target.
-    if [[ -n "$running" && "$running" != "$current" ]]; then target="$current"; else target="$(state_get previous)"; fi
+    # After a failed deployment the API may run another image or none at all
+    # (a crashed container is not listed); the last healthy release is then
+    # the target. Only when the current release is running does rollback go
+    # back to the previous one.
+    if [[ -n "$current" && "$running" != "$current" ]]; then
+      target="$current"
+      log "the running API (${running:-none}) is not the current release; returning to $current"
+    else
+      target="$(state_get previous)"
+    fi
   fi
   [[ -n "$target" ]] || die "no previous release is recorded; name the release to return to"
   prepare_release "$target"
@@ -997,7 +1005,11 @@ SQL
       'turns', (SELECT count(*) FROM agent_turns))")" || die "the restored database cannot be queried"
   # The restored history must be compatible with the running release.
   current="$(state_get current)"
-  if [[ -n "$current" && -n "$(docker image ls -q "$IMAGE_REPOSITORY-migrate:$current")" ]]; then
+  if [[ -n "$current" ]]; then
+    # Without the release's migration image the check cannot run; a
+    # verification that skipped it would prove nothing.
+    [[ -n "$(docker image ls -q "$IMAGE_REPOSITORY-migrate:$current")" ]] ||
+      die "the migration image of the current release $current is missing, so compatibility cannot be checked; rebuild it with: ia-mns-deploy build $current"
     set +e
     state="$(ORION_MIGRATION_DATABASE_URL="postgresql://ia_mns_migrator:$password@$name:5432/ia_mns" \
       docker run --rm --network "$network" -e ORION_MIGRATION_DATABASE_URL \
