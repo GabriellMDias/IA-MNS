@@ -19,6 +19,7 @@ export function prismaParameterStore(database: Database): ParameterStore {
       expectedVersion: number,
       actor: string,
       now: Date,
+      record?: (transaction: unknown) => Promise<void>,
     ) {
       const data = {
         value:
@@ -26,18 +27,25 @@ export function prismaParameterStore(database: Database): ParameterStore {
         updatedBy: actor,
         updatedAt: now,
       };
-      if (expectedVersion === 0) {
-        const { count } = await database.operationalParameter.createMany({
-          data: [{ key, version: 1, ...data }],
-          skipDuplicates: true,
-        });
-        return count === 1 ? 1 : null;
-      }
-      const { count } = await database.operationalParameter.updateMany({
-        where: { key, version: expectedVersion },
-        data: { ...data, version: expectedVersion + 1 },
+      // The change and its record (the audit event) commit together or not at all.
+      return database.$transaction(async (transaction) => {
+        let version: number | null;
+        if (expectedVersion === 0) {
+          const { count } = await transaction.operationalParameter.createMany({
+            data: [{ key, version: 1, ...data }],
+            skipDuplicates: true,
+          });
+          version = count === 1 ? 1 : null;
+        } else {
+          const { count } = await transaction.operationalParameter.updateMany({
+            where: { key, version: expectedVersion },
+            data: { ...data, version: expectedVersion + 1 },
+          });
+          version = count === 1 ? expectedVersion + 1 : null;
+        }
+        if (version !== null && record) await record(transaction);
+        return version;
       });
-      return count === 1 ? expectedVersion + 1 : null;
     },
   };
 }

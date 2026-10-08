@@ -1,4 +1,5 @@
 import { aiTraceLevels, type AiTraceLevel } from "./ai/trace.js";
+import { aiModelPattern } from "./config.js";
 
 /**
  * Operational parameters: product behavior that an owner may change at run
@@ -75,7 +76,10 @@ export interface ParameterStore {
   /**
    * Saves `value` (null resets to the default) when the stored version equals
    * `expectedVersion` (0 when nothing was ever saved). Returns the new
-   * version, or null when another change came first.
+   * version, or null when another change came first. `record` runs after a
+   * successful write in the same transaction (its argument is the store's
+   * transaction handle); if it fails, the write is undone and the error
+   * propagates, so a change never exists without its record.
    */
   write(
     key: ParameterKey,
@@ -83,6 +87,7 @@ export interface ParameterStore {
     expectedVersion: number,
     actor: string,
     now: Date,
+    record?: (transaction: unknown) => Promise<void>,
   ): Promise<number | null>;
 }
 
@@ -104,7 +109,7 @@ export type ParameterCheck<K extends ParameterKey> =
   | { ok: true; value: ParameterValues[K] }
   | { ok: false; reason: "invalid" | "not_allowed" };
 
-const modelPattern = "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$";
+const modelPattern = aiModelPattern;
 
 export class OperationalParameters {
   readonly definitions: readonly ParameterDefinition[];
@@ -207,7 +212,8 @@ export class OperationalParameters {
 
   /**
    * Saves an owner's value (null resets to the default). The caller authorizes
-   * the owner and audits the returned before/after values.
+   * the owner; `record` (for example the audit event) commits atomically with
+   * the change, receiving the before/after values and the store transaction.
    */
   async save<K extends ParameterKey>(
     key: K,
@@ -215,6 +221,14 @@ export class OperationalParameters {
     expectedVersion: number,
     actor: string,
     now: Date,
+    record?: (
+      change: {
+        before: ParameterValues[K];
+        after: ParameterValues[K];
+        version: number;
+      },
+      transaction: unknown,
+    ) => Promise<void>,
   ): Promise<
     | {
         result: "saved";
@@ -232,21 +246,26 @@ export class OperationalParameters {
       saved = checked.value;
     }
     const before = this.resolve(key, await this.store.read(key)).value;
+    // The conditional write succeeds only from expectedVersion.
+    const next = expectedVersion + 1;
+    const after = this.resolve(key, {
+      key,
+      value: saved,
+      version: next,
+      updatedBy: actor,
+      updatedAt: now,
+    }).value;
     const version = await this.store.write(
       key,
       saved,
       expectedVersion,
       actor,
       now,
+      record
+        ? (transaction) => record({ before, after, version: next }, transaction)
+        : undefined,
     );
     if (version === null) return { result: "conflict" };
-    const after = this.resolve(key, {
-      key,
-      value: saved,
-      version,
-      updatedBy: actor,
-      updatedAt: now,
-    }).value;
     return { result: "saved", before, after, version };
   }
 
