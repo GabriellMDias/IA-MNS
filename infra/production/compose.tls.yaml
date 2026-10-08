@@ -1,0 +1,7 @@
+# Added by ia-mns-deploy when runtime.env sets ORION_TLS_CERT_FILE: mounts the
+# internal TLS listener's certificate and key, read-only, for the
+# proxy-to-application hop (PH-22). The key must be readable by uid 1000.
+services:
+  api:
+    volumes:
+      - ${IA_MNS_CONFIG_DIR:-/etc/ia-mns}/tls:/run/ia-mns/tls:ro

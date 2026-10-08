@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { Type } from "typebox";
 import { configReference, parseServerConfig } from "../src/config.js";
@@ -69,7 +70,12 @@ function parametersFor(
 
 const identityEnv = {
   IA_MNS_PUBLIC_ORIGIN: "https://ia.example.test",
-  IA_MNS_IDENTITY_SIGNING_KEY: "a".repeat(43),
+  // The parser checks that the signing key is a real P-256 PKCS#8 key.
+  IA_MNS_IDENTITY_SIGNING_KEY: generateKeyPairSync("ec", {
+    namedCurve: "P-256",
+  })
+    .privateKey.export({ type: "pkcs8", format: "der" })
+    .toString("base64url"),
   IA_MNS_IDENTITY_ENCRYPTION_KEY: Buffer.alloc(32).toString("base64url"),
 };
 

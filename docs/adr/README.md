@@ -38,3 +38,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md) | Administer Operational Parameters Separately from Secrets and Bootstrap Configuration       |
 | [ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) | Serve the Web and API from One Origin behind Restricted Trusted Proxies |
 | [ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) | Name IA-MNS Releases with Product Tags Distinct from Orion |
+| [ADR-0031](0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md) | Deploy on One Ubuntu Host with Docker Compose and a Release Tool |

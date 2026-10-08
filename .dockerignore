@@ -1,0 +1,31 @@
+# Production image build context (infra/production/Dockerfile). Keep local
+# configuration, credentials, build output and machine-specific files out.
+.git
+**/node_modules
+**/dist
+**/coverage
+**/test-results
+**/playwright-report
+**/*.tsbuildinfo
+apps/api/src/generated/prisma
+apps/api/evals/.local
+
+# Credentials and local configuration, whatever their name.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/local.properties
+
+# Not part of the server images.
+apps/sankhya-addon
+# Deployment definitions are not image content; a release that only changes
+# them reuses its image layers.
+infra
+.gemini
+.github

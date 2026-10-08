@@ -1,5 +1,185 @@
 [
   {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "41. Monolith First Unless Boundaries Require Otherwise",
+    "anchor": "41-monolith-first-unless-boundaries-require-otherwise",
+    "text": "41. Monolith First Unless Boundaries Require Otherwise\nPrefer logical modularity before distribution. Separate services only for justified scaling, isolation, deployment autonomy, security, ownership, or runtime needs.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "42. Generated Code Must Remain Replaceable",
+    "anchor": "42-generated-code-must-remain-replaceable",
+    "text": "42. Generated Code Must Remain Replaceable\nKnow every generated file's canonical input and regeneration process. Do not hand-edit derived output except at an explicit extension point; keep it reproducible and replaceable.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "43. Tooling Is Part of Developer Experience",
+    "anchor": "43-tooling-is-part-of-developer-experience",
+    "text": "43. Tooling Is Part of Developer Experience\nDesign commands, generators, setup, and diagnostics for deterministic behavior, clear names, actionable output, and little hidden state. Tooling is an internal product for humans and agents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "44. AI Agents Must Operate Through Verifiable Feedback",
+    "anchor": "44-ai-agents-must-operate-through-verifiable-feedback",
+    "text": "44. AI Agents Must Operate Through Verifiable Feedback\nPair instructions with compiler, type, lint, architecture, test, schema, generation, and build feedback that can prove important changes valid. Increase mechanical coverage as real capabilities arrive.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "45. AI-Specific Architecture Must Also Benefit Humans",
+    "anchor": "45-ai-specific-architecture-must-also-benefit-humans",
+    "text": "45. AI-Specific Architecture Must Also Benefit Humans\nAgent-oriented structure should improve clarity, consistency, discoverability, automation, maintenance, or onboarding for people too. Do not optimize the repository for one AI tool's quirks.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "46. Important Decisions Must Preserve Rationale",
+    "anchor": "46-important-decisions-must-preserve-rationale",
+    "text": "46. Important Decisions Must Preserve Rationale\nFor consequential architecture, retain context, alternatives, choice, tradeoffs, and consequences in an ADR when the [authoring policy](../adr/authoring.md) calls for one. Distinguish deliberate constraints from accidents.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "47. Prefer Reversible Decisions Early",
+    "anchor": "47-prefer-reversible-decisions-early",
+    "text": "47. Prefer Reversible Decisions Early\nWhen evidence is incomplete, preserve flexibility with clear boundaries, explicit contracts, limited coupling, and documented decisions rather than speculative abstraction. Commit to specifics when requirements justify them.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "48. Complexity Must Pay Rent",
+    "anchor": "48-complexity-must-pay-rent",
+    "text": "48. Complexity Must Pay Rent\nEvery layer, dependency, service, package, process, or technology adds knowledge cost. Use it only when its concrete benefit exceeds a simpler alternative.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "49. Prefer Consistency Over Personal Preference",
+    "anchor": "49-prefer-consistency-over-personal-preference",
+    "text": "49. Prefer Consistency Over Personal Preference\nFollow established good patterns unless there is a concrete reason to improve them. Change an inadequate pattern deliberately rather than creating silent competing conventions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "50. The Architecture Must Be Able to Evolve",
+    "anchor": "50-the-architecture-must-be-able-to-evolve",
+    "text": "50. The Architecture Must Be Able to Evolve\nWhen evidence invalidates a fundamental choice, identify the limit, evaluate alternatives, document the new decision, migrate deliberately, remove obsolete architecture, and update validation/documentation. Do not accumulate contradictory generations of policy.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Decision Priority",
+    "anchor": "decision-priority",
+    "text": "Decision Priority\nWhen principles conflict, consider correctness, security/privacy, data integrity, production safety, explicit contracts/boundaries, observability, maintainability, simplicity, consistency, then development convenience. This is guidance, not a substitute for explaining significant tradeoffs.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Exceptions",
+    "anchor": "exceptions",
+    "text": "Exceptions\nAn exception needs a concrete reason, understood consequences, explicit scope, documentation when significant, and no silent competing pattern. Give temporary deviations a removal path where practical.\n"
+  },
+  {
+    "id": "repository/docs/architecture/principles",
+    "title": "Architecture Principles",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Relationship to Other Documentation",
+    "anchor": "relationship-to-other-documentation",
+    "text": "Relationship to Other Documentation\nThis page owns architectural principles, not implementation recipes. [Policies](../README.md) own current requirements, [ADRs](../adr/README.md) own decision rationale, [setup](../setup.md) owns development commands, and [AGENTS.md](../../AGENTS.md) owns global contributor/agent instructions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Repository Structure",
+    "anchor": "repository-structure",
+    "text": "Repository Structure\n[Documentation index](../README.md) · [Application boundaries](application-boundaries.md) · [Dependency rules](dependency-rules.md)\nThis page owns repository placement and local discovery. [ADR-0002](../adr/0002-select-pnpm-for-package-and-workspace-management.md) governs workspace management; [ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) governs enforcement. Organize by responsibility so humans and agents can change one area without loading the whole repository.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "High-Level Structure",
+    "anchor": "high-level-structure",
+    "text": "High-Level Structure\nThese locations exist:\nLocation\nResponsibility and entry point\nRepository root\nRepository-wide instructions, workspace/lockfile, dependency and validation configuration. Start with [README](../../README.md) and [AGENTS.md](../../AGENTS.md).\n`apps/api/`\nFastify executable, composed API modules, API-owned contracts, Prisma schema/migrations, and runtime/generation tests. Start with its [README](../../apps/api/README.md).\n`apps/web/`\nReact/Vite workflow and Living Documentation Portal, browser configuration, components, and tests. Start with its [README](../../apps/web/README.md).\n`apps/sankhya-addon/`\nSankhya Om add-on that hosts IA-MNS inside the Om; a Gradle project with its own Java 8 toolchain, outside the pnpm workspace and the Node validation tooling ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)). Start with its [README](../../apps/sankhya-addon/README.md).\n`packages/sdk/`\nPublic API client and generated OpenAPI types. Start with its [README](../../packages/sdk/README.md).\n`docs/`\nCurrent policy, domain meaning, accepted decisions, implementation tracking, and generated references. Start with the [task index](../README.md).\n`tooling/validate/`\nRepository documentation, agent-instruction, environment-example, and release-history checks.\n`tooling/documentation/`\nPortal dataset and component-reference generation.\n`tooling/project/`\nProject initialization, pruning, provenance, and Orion upgrade commands and the project-owned file templates; see [project derivation](../project-derivation.md).\n`.orion/`\n[`project.json`](../../.orion/project.json): repository identity and, in derived projects, Orion provenance; [`derivation.json`](../../.orion/derivation.json): the clean-baseline contract of foundation-only and project-owned content.\n`.gemini/`\nGemini CLI discovery adapter only; see [agent instructions](agent-instructions.md).\n`.github/`\nGitHub CI configuration; [CI policy](continuous-integration.md) separates repository configuration from effective remote settings.\n`docs/project/` exists only in projects derived from Orion, where it holds the project-owned plan and human actions. There is no `infra/`, mobile, desktop, worker, or general shared domain/database/UI package. Their possible responsibilities below are placement rules, not an instruction to create them. Do not create empty directories to mirror a conceptual architecture. The physical repository must represent the current system.\nKeep the root small: application-specific implementation belongs to its application; runtime sharing belongs to a meaningful package; repository automation belongs under `tooling/`. Introduce `infra/` only for real declarative deployment/operational infrastructure, never ordinary business logic. Infrastructure may consume application artifacts and configuration requirements; runtime code must not import infrastructure definitions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "apps/",
+    "anchor": "apps",
+    "text": "`apps/`\nAn application is an independently meaningful executable runtime or delivery surface. It owns its entry point, lifecycle, configuration, dependency composition, build, runtime integrations, telemetry initialization, and platform-specific behavior. Its local guide should make purpose, public interfaces, dependencies, commands, operational characteristics, and any deployment assumptions discoverable.\nApplications must not import another application's implementation or become shared backend libraries. Runtime communication uses explicit contracts; genuine shared implementation may move into a package. See [application boundaries](application-boundaries.md) for trust, persistence, communication, and extraction decisions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Creating a New Application",
+    "anchor": "creating-a-new-application",
+    "text": "Creating a New Application\nEstablish the concrete runtime/delivery need, why an existing application cannot own it, public contracts, dependencies, data ownership, configuration, observability, failure modes, and deployment/distribution expectations. A significant new boundary normally requires an ADR. Prefer logical modularity before physical distribution; code size alone does not justify another runtime.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "packages/",
+    "anchor": "packages",
+    "text": "`packages/`\nPackages define cohesive shared responsibilities, intentional public APIs, allowed consumers/dependencies, private implementation, and runtime/platform compatibility. Consume a package through its public exports rather than arbitrary internal paths. Packages must not depend on applications. Avoid both one package per small utility and broad `common`, `shared`, or `utils` dumping grounds.\nThe SDK is currently the only shared package. Extract other capabilities only when ownership or reuse warrants it:\nResponsibility\nConstraint if extracted\nDomain concepts and business behavior\nPlatform-independent where useful; no unnecessary HTTP, UI, database, telemetry-vendor, or filesystem dependency. A domain package is not mandatory for application-local business logic.\nCommunication contracts\nCanonical wire schemas, identifiers, errors, or events; internal models do not automatically become public contracts.\nDatabase infrastructure\nSchema, migrations, client setup, metadata, or shared persistence primitives; sharing infrastructure does not grant unrestricted table access.\nObservability\nConsistent logging, context, propagation, metrics, reporting, and redaction semantics; isolate vendors only where that provides a meaningful boundary.\nConfiguration\nShared validation/loading primitives; application-specific configuration remains owned by its application.\nTesting\nGenuinely reusable fixtures, factories, assertions, or infrastructure; behavior tests remain near their owner.\nUI\nShared design tokens or components only where runtime, interaction, and accessibility semantics are compatible; do not force cross-platform component reuse.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Creating a New Package",
+    "anchor": "creating-a-new-package",
+    "text": "Creating a New Package\nFirst search existing owners. Explain the cohesive responsibility, actual consumers, public API, allowed dependency directions, platform constraints, and architectural benefit. A second consumer alone does not justify extraction: consumers must share meaning, not just similar code. Prefer simple local duplication over an abstraction with conflicting responsibilities. A package should make ownership and the dependency graph clearer.\n"
+  },
+  {
+    "id": "repository/docs/architecture/repository-structure",
+    "title": "Repository Structure",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Feature Organization",
+    "anchor": "feature-organization",
+    "text": "Feature Organization\nKeep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. API modules live in `apps/api/src/features/<module>/`, typically as flat domain, service, persistence, contracts, errors, and route files; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) is a complete example. Domain behavior may stay application-local until sharing has value.\nTests normally live near the behavior they protect or in the owning application's test directory; broader system tests may need dedicated locations. Use the [testing strategy](testing-strategy.md) for existing topology and test boundaries. Name directories/packages in English by domain, capability, or responsibility rather than historical accidents.\n"
+  },
+  {
     "id": "repository/docs/architecture/repository-structure",
     "title": "Repository Structure",
     "group": "Architecture",
@@ -51,7 +231,7 @@
     "kind": "repository",
     "heading": "Deliberately unresolved or conditional choices",
     "anchor": "deliberately-unresolved-or-conditional-choices",
-    "text": "Deliberately unresolved or conditional choices\nThe API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.\nUI/design systems, styling, accessibility primitives, charts, grids, and forms depend on product needs. No general global-state library or full-stack web framework is selected by default.\nGraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.\nBearer access-token verification is implemented as shared API infrastructure under ADR-0012. IA-MNS issues its own tokens, sessions, local accounts and external links ([ADR-0022](../adr/0022-own-the-ia-mns-identity-with-verified-external-links.md)) and serves embedded hosts through host identity proofs ([ADR-0023](../adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)); a general external identity server remains unselected. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.\nQueue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements.\nMobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery remain product/deployment decisions. Testcontainers does not select an application deployment platform. The production runtime shape is decided: the API process serves the web build at one origin behind enumerated trusted proxies, with optional internal TLS and compiled operational commands ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)); releases are `ia-mns-vX.Y.Z` tags ([ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)).\nObservability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.\nCompatible version evolution follows the individual ADRs. These recorded baselines are not installed-version claims. Implementation progress belongs in normal work tracking and capability documentation, not new ADR statuses.\n"
+    "text": "Deliberately unresolved or conditional choices\nThe API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.\nUI/design systems, styling, accessibility primitives, charts, grids, and forms depend on product needs. No general global-state library or full-stack web framework is selected by default.\nGraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.\nBearer access-token verification is implemented as shared API infrastructure under ADR-0012. IA-MNS issues its own tokens, sessions, local accounts and external links ([ADR-0022](../adr/0022-own-the-ia-mns-identity-with-verified-external-links.md)) and serves embedded hosts through host identity proofs ([ADR-0023](../adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)); a general external identity server remains unselected. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.\nQueue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements.\nMobile and desktop stacks, cloud provider, infrastructure as code beyond the host's Compose project, and continuous delivery remain product/deployment decisions. Testcontainers does not select an application deployment platform. IA-MNS production runs on one Ubuntu host with Docker Compose, images built on the host from a release tag, and the `ia-mns-deploy` tool ([ADR-0031](../adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)). The production runtime shape is decided: the API process serves the web build at one origin behind enumerated trusted proxies, with optional internal TLS and compiled operational commands ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)); releases are `ia-mns-vX.Y.Z` tags ([ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)).\nObservability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.\nCompatible version evolution follows the individual ADRs. These recorded baselines are not installed-version claims. Implementation progress belongs in normal work tracking and capability documentation, not new ADR statuses.\n"
   },
   {
     "id": "repository/docs/architecture/testing-strategy",
@@ -682,77 +862,5 @@
     "heading": "Database Retry Boundary",
     "anchor": "database-retry-boundary",
     "text": "Database Retry Boundary\nRetry the complete logical transaction, including its reads and business assumptions, not only the last failed statement. Everything in that boundary can execute again. Inspect driver, repository, service, SDK, proxy, and caller policies to avoid multiplying retries; normally one layer owns retries for a failure.\nA timeout/cancellation or lost connection during commit may mean the operation committed and the response was lost. Propagate cancellation where supported and safe, clean up transactions reliably, and preserve unknown outcomes when relevant. Idempotency, state lookup, or reconciliation must resolve retry safety; a transient connection failure does not prove a write did not occur. Follow the owning module's recovery conventions for current behavior and [delivery retry rules](../architecture/delivery-and-side-effects.md) for broader workflows.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Authorization, audit, and derived reads",
-    "anchor": "authorization-audit-and-derived-reads",
-    "text": "Authorization, audit, and derived reads\nFor database-dependent authorization, define the consistency point between permission/ownership checks and the protected write. Immediate revocation requirements may affect transaction, token, and cache design; a distant precheck is insufficient when those semantics require freshness. Do not invent immediate revocation guarantees from short-lived tokens alone.\nWhen a required audit record and business change share a database boundary, they may need to commit atomically. External audit/event delivery requires durable intent and recovery; diagnostic logs are not authoritative business audit. Publish no event implying durable state before commit, and do not rely on unrecorded post-commit publication where delivery is required.\nRead replicas, caches, projections, and materialized views introduce staleness. Define whether an operation requires read-your-writes, its acceptable delay, canonical source, update/invalidation, repair, and failure behavior. “Eventually consistent” requires a process that actually repairs divergence. Cache stampede mitigations or single-writer/partitioned processing are optional responses to real load, not defaults; partition order does not imply global order.\nDatabase plus object storage needs partial-failure design such as temporary upload/finalization, orphan cleanup, and reconciliation. Distributed workflows must define convergence, compensation, or safe manual intervention rather than pretend to share one atomic commit. Do not claim exactly-once effects without end-to-end evidence.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Performance, observability, and repair",
-    "anchor": "performance-observability-and-repair",
-    "text": "Performance, observability, and repair\nBatch sizes affect transaction duration, lock scope, failure granularity, and memory. Large updates may need batching under [migration policy](migrations.md#backfills). Investigate hot rows/indexes, contention, and retry patterns with evidence before redesigning consistency.\nUse stable semantic operation names and bounded safe telemetry for latency, conflict/retry counts, lock waits, deadlocks, attempts, and final outcomes where useful. Trace meaningful latency/failure boundaries rather than every trivial query. Never dump rows or sensitive query values during conflict diagnostics; follow [redaction](../security/telemetry-redaction.md).\nRepair by retry, reconciliation, or intervention must be part of the design. Rare states requiring manual action must be detectable, diagnosable, and safe to repair through a concrete runbook. Separate high-risk audit requirements from diagnostic logging. Production signals can reveal duplicates, stuck work, and failed reconciliation that tests cannot exhaustively predict.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "Testing and verification",
-    "anchor": "testing-and-verification",
-    "text": "Testing and verification\nUse real PostgreSQL for guarantees involving rollback, constraints, isolation, and locks. Sequential mocks cannot prove concurrent safety. Coordinate competing operations explicitly where practical rather than sleeping and hoping they overlap; avoid deadlock tests tied to undocumented scheduler timing.\nVerify relevant cases: mid-operation failure leaves no partial state; concurrent uniqueness/create claims produce one consistent result; stale versions conflict; competing transitions cannot both win; retry limits and complete-transaction restart behave safely; process interruption and response loss preserve documented recovery. The [delivery test requirements](../architecture/delivery-and-side-effects.md#verification) cover duplicate delivery, idempotency, external failure, and reconciliation when introduced. Testing and review remain necessary even where static checks can help.\n"
-  },
-  {
-    "id": "repository/docs/database/transactions-and-concurrency",
-    "title": "Transactions and Concurrency",
-    "group": "Database guides",
-    "kind": "repository",
-    "heading": "New Transaction Checklist",
-    "anchor": "new-transaction-checklist",
-    "text": "New Transaction Checklist\nBefore implementing or changing a state-changing operation:\nIdentify the invariant, owner, participating writes, concurrency sources, duplicate possibility, and applicable authorization/audit consistency.\nChoose constraints, atomic writes, versioning, isolation, locks, or explicit reservations proportionally; explain scope and maximum duration.\nDetermine conflict/error semantics, full retry boundary and owner, transient categories, attempt/time bounds, and safety of every repeated action.\nResolve halfway failure, external-success/database-failure, commit ambiguity, lost response, and crash windows without unsupported rollback or exactly-once claims.\nAdd deterministic integration evidence, safe operational signals, and recovery/repair guidance. Update the owning domain and generated contract/metadata when behavior changes.\n"
-  },
-  {
-    "id": "repository/docs/domains/corporate-agent",
-    "title": "IA-MNS Corporate Agent",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "IA-MNS Corporate Agent",
-    "anchor": "ia-mns-corporate-agent",
-    "text": "IA-MNS Corporate Agent\n[Project plan](../project/implementation-plan.md) · [Verification](../project/corporate-agent-verification.md) · [Setup](../setup.md#corporate-agent-and-local-postgresql) · [ADR-0019](../adr/0019-compose-a-corporate-agent-with-durable-conversations.md) · [Sales capability](sales-chat.md) · [AI interpretation](../architecture/ai-interpretation.md) · [AI evaluation](../architecture/ai-evaluation.md)\n"
-  },
-  {
-    "id": "repository/docs/domains/corporate-agent",
-    "title": "IA-MNS Corporate Agent",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Product and current capabilities",
-    "anchor": "product-and-current-capabilities",
-    "text": "Product and current capabilities\nIA-MNS is MNS's corporate AI agent. Its product identity and conversational experience are independent of its first business capability. It can greet users, respond to thanks/wellbeing/identity questions, explain current capabilities and route requests. The only implemented business capability is sales consultation in MNS (Sankhya) and Pilar da Terra (VR Master), chosen with the interface's source selector: net value, quantity and weight (Sankhya only); period/product breakdowns and bounded comparisons ([sources](sales-chat.md#sources)). Purchases, catalog-only product lookup, stock, production, orders, automation and external writes are unavailable. Planned capabilities never appear as available in the catalog.\nSocial and capability replies are application-authored Portuguese prose selected by a validated bounded intent. OpenAI does not author business numbers, suggest unregistered tools, answer company questions from general knowledge or compose unsupported factual claims. This deliberately limits arbitrary general conversation while allowing a natural social opening without requiring sales details. The UI welcome describes the agent; examples come from registered capabilities. Operational details live in documentation/errors rather than the ordinary conversation shell.\n"
-  },
-  {
-    "id": "repository/docs/domains/corporate-agent",
-    "title": "IA-MNS Corporate Agent",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Implemented architecture",
-    "anchor": "implemented-architecture",
-    "text": "Implemented architecture\n`apps/api/src/features/agent/` owns conversations, routing, persistence, progress and HTTP operations. `features/sales/` retains business semantics, strict interpretation, deterministic results, the source orchestration and one adapter per source (Oracle for Sankhya, PostgreSQL for VRMaster). `apps/api/src/modules.ts` injects configured capability executors into the agent; shared runtime files remain module-independent. The agent and legacy sales transport share one owned sales executor and its source pools. The agent references the sales result contract for its current renderable output, while sales implements the agent's execution interface. This intentional boundary does not grant either module mutation authority over the other's tables.\nA capability descriptor has a stable id, localized title/description/examples, required permission, executor and resource cleanup. Only configured implementations enter the catalog. General routing instructions serialize the catalog automatically. To add a future capability, implement its owned bounded tools/context/authorization/tests, provide an executor/descriptor, register it at composition, and extend the public versioned result contract and web renderer if necessary. No general prompt rewrite is required. New domains/actions still need actual product authorization and their own safety/idempotency decisions; a registry entry alone cannot implement them.\nThe route classifier emits a registered capability id or an allowlisted social/unavailable intent. It emits no user-visible prose. It sees the application's earlier replies and which capability awaits an answer; a message it marks unavailable while a permitted capability awaits an answer is offered to that capability, whose own boundary rejects unsupported requests. A sales request then uses the sales interpreter and its deterministic conversation state machine ([AI interpretation](../architecture/ai-interpretation.md)). `runAgentTurn` performs this orchestration independently of persistence, so evaluation runs the same code. User input/history are untrusted data; fixed application policy and schemas govern execution. Mixed supported/unsupported requests are not partially answered. The capability permission is checked before execution, and reading stored business answers checks current capability permission as well as ownership.\n"
-  },
-  {
-    "id": "repository/docs/domains/corporate-agent",
-    "title": "IA-MNS Corporate Agent",
-    "group": "Domain guides",
-    "kind": "repository",
-    "heading": "Persistent conversations and context",
-    "anchor": "persistent-conversations-and-context",
-    "text": "Persistent conversations and context\nPostgreSQL/Prisma owns `agent_conversations` and `agent_turns`; [generated schema](../generated/database/schema.md) records fields, constraints and classification. Conversations have verified owner identity, a bounded editable title (initially derived from the first message), favorite/archive flags, ordering and versioned per-capability context. Turns contain one question, the sales source selected in the interface when it was sent (`sankhya`, `vrmaster` or `all`; earlier turns are `sankhya`, the only source then), client acceptance UUID, ordered sequence, lifecycle state, bounded progress events and a versioned reply snapshot. Reply version 2 holds sales results as one section per queried source; version 1 replies (one Sankhya result) are upgraded when read. No infrastructure credential is stored in these tables.\nOne turn is accepted at a time under a row lock, without holding a transaction across OpenAI/Oracle work. Acceptance saves the question before starting bounded process-local execution. Replaying the same request UUID, message and source returns the existing turn; a different message or source conflicts. The capability receives the turn's source; the router does not use it. No chargeable provider request is automatically retried. A 120-second database-clock lease handles crashes: stale work becomes interrupted when read or reclaimed, without automatic execution. The process deadline is 90 seconds. Shutdown aborts work and awaits cleanup. This is not a durable workflow engine or an authorization model for future external writes.\nRouting uses at most 12 recent completed exchanges: user questions and the application's own replies, with business answers reduced to an \"answer delivered\" marker, plus the agent context (version 2) naming the capability that awaits an answer. Each capability owns its context version. Sales context version 2 holds structured conversation state: the last executed plan and query, an unanswered request with what it already knows and awaits, and the last 12 sales exchanges, independently of intervening social turns; version 1 contexts upgrade on read. Failed/interrupted turns cannot replace trusted context. Relative periods in a new question use current Sao Paulo time; a follow-up preserves stored explicit filters unless changed. Stored result snapshots are historical answers, not a claim that the ERP remains unchanged. Financial result rows and response prose are never fed back to OpenAI; only questions, application-authored clarification and unavailable messages, filter-only analysis descriptions and structured state are sent. Social turns do not erase sales context or an unanswered sales request.\nThe generated SDK supports creation, owner-scoped keyset history pages (30), detail pages (40 turns), acceptance, explicit metadata assignment, search and deletion. Active, pinned and archived views belong to the URL via `view`; pinned conversations come first, then modification time and id. Cursor boundaries include the same ordering and filter, preventing cross-filter reuse. Manual titles survive the first turn and are never routing instructions. Rename, pin/unpin, archive/restore and deletion use ownership checks and the same row lock; active execution blocks metadata changes. Archiving preserves messages, answers, favorite state and capability context, and rejects new turns until restored. An already accepted turn can still be replayed while archived. Search uses a bounded, case-insensitive literal substring over owned titles and sent questions, including archives; it does not call OpenAI or search financial result payloads. Search terms and filter-bound cursors use a POST body, not URLs. Search is not accent-insensitive or a semantic/full-text index. The selected conversation id belongs to `/chat/:conversationId`; reloading or opening a previous conversation retrieves PostgreSQL history. Older messages/conversations load in bounded pages. New conversation opens a blank workspace and preserves existing history. Explicit deletion confirms the user's choice and hard-deletes the conversation, context and turns via cascade; active execution blocks deletion.\nNo prior temporary transcript is migrated: the old UI/process memory had no durable source. Legacy `/sales/chat` endpoints retain their existing temporary semantics for compatibility; the product uses only `/agent` operations. The original numerical/provider tests continue to protect sales behavior.\n"
   }
 ]

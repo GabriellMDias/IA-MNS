@@ -130,7 +130,7 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 **Request and reason:** Before shared deployment, choose conversation retention/deletion duration, provider data policy, backup/restore requirements and permitted operators. Include confidential AI content traces (`agent_turn_traces`, enabled by `IA_MNS_AI_TRACE=content`): whether production may capture them, for how long, who may export them to evaluation candidates, and how they are anonymized; production refuses content tracing until this decision exists. Local history currently persists until its owner explicitly deletes it; no automatic expiry or backup promise is made. Select real employee authentication/permission mapping at that point, not in this task.
 **Configuration:** Existing ORION_DATABASE_URL and verifier settings; no new secret or provider is required for local operation. `IA_MNS_AI_TRACE` (non-secret: `off`, `metadata` or `content`).
 **Verification:** Approved lifecycle controls, recovery evidence and deployment-specific identity exist before sharing confidential history.
-**Evidence / blocker:** Local Docker volume, restricted runtime grants and explicit cascade deletion implemented on 2026-10-01; shared-operation policy remains intentionally undecided. On 2026-10-04 the IA-MNS identity (Persons, local accounts, PDT/Sankhya links, sessions, permissions, owner administration) was implemented under PJ-15 ([identity](../domains/identity.md)); retention of identity data, sessions and audit is part of this pending policy. Shared deployment has not been triggered.
+**Evidence / blocker:** Local Docker volume, restricted runtime grants and explicit cascade deletion implemented on 2026-10-01; shared-operation policy remains intentionally undecided. On 2026-10-07 [PJ-33](implementation-plan.md#current-work) implemented production backups with conservative defaults that this decision replaces: 14 daily and 10 pre-deployment backups on the host, an age-encrypted external copy when a destination is configured, a weekly restore verification, and no automatic deletion of a database replaced by a restore ([backup runbook](../runbooks/production-backup-and-restore.md)). Retention, provider data policy and permitted operators are still undecided. On 2026-10-04 the IA-MNS identity (Persons, local accounts, PDT/Sankhya links, sessions, permissions, owner administration) was implemented under PJ-15 ([identity](../domains/identity.md)); retention of identity data, sessions and audit is part of this pending policy. Shared deployment has not been triggered.
 
 ## PH-10
 
@@ -234,7 +234,7 @@ Record the HTTPS evidence.
 - An owner reviewing **Administração → Parâmetros** before opening production: the AI model in use (evaluated with `pnpm eval` before any change), the trace level (content tracing is refused in production), and the automatic grants by provider link ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)). Values saved in a development database do not travel to production; production starts from its environment defaults.
   **Configuration:** `IA_MNS_PUBLIC_ORIGIN`, `IA_MNS_IDENTITY_SIGNING_KEY`, `IA_MNS_IDENTITY_ENCRYPTION_KEY` (both secret), optional `IA_MNS_IDENTITY_AUDIENCE`.
   **Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP, the reviewed authentication policy and operational parameters are verified in the deployed environment.
-  **Evidence / blocker:** No deployment environment yet. On 2026-10-07 [PJ-32](implementation-plan.md#current-work) implemented the application side: the API serves the web build at one origin with per-surface framing from `PDT_EMBED_ORIGIN`/`SANKHYA_EMBED_ORIGIN`, `pnpm identity:keys` (or `dist/cli/identity-keys.js`) writes fresh keys to a new owner-only file, and `dist/cli/identity-bootstrap.js` issues the owner invitation from a build ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)). Nothing was configured in an environment.
+  **Evidence / blocker:** No deployment environment yet. On 2026-10-07 [PJ-32](implementation-plan.md#current-work) implemented the application side: the API serves the web build at one origin with per-surface framing from `PDT_EMBED_ORIGIN`/`SANKHYA_EMBED_ORIGIN`, `pnpm identity:keys` (or `dist/cli/identity-keys.js`) writes fresh keys to a new owner-only file, and `dist/cli/identity-bootstrap.js` issues the owner invitation from a build ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)). Nothing was configured in an environment. On 2026-10-07 [PJ-33](implementation-plan.md#current-work) added `ia-mns-deploy init-secrets` (generates the identity keys and database passwords in `/etc/ia-mns` without displaying them) and `ia-mns-deploy bootstrap-owner` ([host setup runbook](../runbooks/production-host-setup-and-first-deployment.md)).
 
 ## PH-16
 
@@ -322,7 +322,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 
 **Configuration:** `ORION_TRUSTED_PROXIES`, optionally `ORION_TLS_CERT_FILE` and `ORION_TLS_KEY_FILE` ([generated configuration reference](../generated/configuration/api.md)); `IA_MNS_PUBLIC_ORIGIN`.
 **Verification:** The application sees the real client address only through the listed proxy, the hop protection matches the decision, and anonymous HTTPS checks show the redirect, HSTS and per-path framing.
-**Evidence / blocker:** Not started. The application side is implemented by [PJ-32](implementation-plan.md#current-work) ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)).
+**Evidence / blocker:** Not started. The application side is implemented by [PJ-32](implementation-plan.md#current-work) ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)); [PJ-33](implementation-plan.md#current-work) supports both outcomes (`ORION_TRUSTED_PROXIES`, and the TLS overlay that mounts `/etc/ia-mns/tls`), and `check-config` and `status` report a plain HTTP hop and an unset trusted proxy as open production requirements.
 
 ## PH-23
 
@@ -352,7 +352,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 
 **Configuration:** none in IA-MNS beyond the PJ-33 deployment settings.
 **Verification:** Each decision is recorded here with its date and reflected in the PJ-33 configuration; nothing is assumed.
-**Evidence / blocker:** Not started.
+**Evidence / blocker:** Not started. [PJ-33](implementation-plan.md#current-work) prepared each decision as configuration: `IA_MNS_BIND_ADDRESS` and `IA_MNS_HTTP_PORT` (required, no default), `IA_MNS_BACKUP_EXTERNAL_TARGET` with `IA_MNS_BACKUP_AGE_RECIPIENT`, and `IA_MNS_ALERT_COMMAND`; `status` reports a missing external backup destination as an unmet production requirement.
 
 ## PH-25
 
@@ -364,6 +364,17 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Configuration:** `SANKHYA_DB_CONNECT_STRING` (secret); any Oracle Net client setting the decision requires belongs to the deployment, not this repository.
 **Verification:** The connection is encrypted as decided, or the dated acceptance with its scope is recorded here.
 **Evidence / blocker:** Not started.
+
+## PH-26
+
+- [ ] **Install IA-MNS on the Ubuntu host and record homologation evidence.**
+
+**Status:** pending (blocks [PJ-34](implementation-plan.md#current-work)). **Owner:** project owner, with the infrastructure administrator for host access.
+**Dependency / trigger:** [PJ-33](implementation-plan.md#current-work) (tooling ready); a merged release tagged `ia-mns-vX.Y.Z`; [PH-08](#ph-08), [PH-22](#ph-22), [PH-23](#ph-23) and [PH-24](#ph-24) for production values.
+**Request and reason:** Follow the [host setup and first deployment runbook](../runbooks/production-host-setup-and-first-deployment.md) on the production host. The rehearsal proves the tooling on disposable resources only; the host's network, proxy, firewall, external systems and real configuration can only be verified there, by people with access to them. Keep the host address, domain and credentials out of this repository.
+**Configuration:** the five `/etc/ia-mns/*.env` files on the host; never in this repository.
+**Verification:** `ia-mns-deploy status` exits 0 on the host; the public origin serves the application through the proxy with HSTS and per-path framing; an owner signs in with a second factor; `verify-restore` succeeds; the external encrypted copy exists. Record dated, non-sensitive evidence here.
+**Evidence / blocker:** Not started; nothing has been installed on the host.
 
 ## New action template
 

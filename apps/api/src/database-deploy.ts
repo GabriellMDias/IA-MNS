@@ -1,4 +1,5 @@
 import { execFile, spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { access, readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
@@ -16,6 +17,7 @@ export const runtimeRole = "orion_runtime";
 // src/ and dist/ both sit directly under the API package root.
 const appRoot = resolve(import.meta.dirname, "..");
 const grantsDirectory = resolve(appRoot, "prisma/runtime-grants");
+const migrationsDirectory = resolve(appRoot, "prisma/migrations");
 const run = promisify(execFile);
 
 export async function runtimeGrantStatements(
@@ -169,16 +171,127 @@ export async function applyRuntimeGrants(
   };
 }
 
-/** Migrations, then grants and their verification, with one credential. */
+/**
+ * Migrations, then grants and their verification, with one credential.
+ * Refuses a database whose history is incompatible with this release.
+ */
 export async function deployDatabase(
   migrationUrl: string,
   options: { output?: "inherit" | "capture" } = {},
-): Promise<{ tables: number; privileges: number }> {
+): Promise<{ tables: number; privileges: number; applied: readonly string[] }> {
+  const before = await inspectDatabase(migrationUrl);
+  if (!before.compatible)
+    throw new Error(
+      "The database migration history is incompatible with this release; nothing was applied",
+    );
   await applyMigrations(migrationUrl, options);
   const client = new pg.Client({ connectionString: migrationUrl });
   await client.connect();
   try {
-    return await applyRuntimeGrants(client);
+    const after = await migrationState(client);
+    if (!after.compatible || after.pending.length)
+      throw new Error(
+        "The database did not reach this release's migration history after deployment",
+      );
+    return { ...(await applyRuntimeGrants(client)), applied: before.pending };
+  } finally {
+    await client.end();
+  }
+}
+
+export type MigrationState = Readonly<{
+  /** Release migrations the database finished applying. */
+  applied: readonly string[];
+  /** Release migrations the database has not applied yet. */
+  pending: readonly string[];
+  /** Finished migrations this release does not contain (database ahead). */
+  unknown: readonly string[];
+  /** Migrations that started without finishing or rolling back. */
+  failed: readonly string[];
+  /** Applied migrations whose recorded checksum differs from this release's file. */
+  modified: readonly string[];
+  /** True when this release can run against the database after applying `pending`. */
+  compatible: boolean;
+}>;
+
+/** This release's migrations with the SHA-256 of each migration.sql as shipped. */
+export async function releaseMigrations(
+  directory = migrationsDirectory,
+): Promise<ReadonlyMap<string, string>> {
+  const migrations = new Map<string, string>();
+  for (const entry of (await readdir(directory, { withFileTypes: true }))
+    .filter((item) => item.isDirectory())
+    .map((item) => item.name)
+    .sort())
+    migrations.set(
+      entry,
+      createHash("sha256")
+        .update(await readFile(resolve(directory, entry, "migration.sql")))
+        .digest("hex"),
+    );
+  return migrations;
+}
+
+/**
+ * Compares the database's Prisma migration history with this release, read
+ * only. A database that finished migrations this release does not know, holds
+ * a failed migration, or recorded a different checksum for a migration file is
+ * incompatible: deploying or rolling back to this release would run code
+ * against a schema it was not built for, or rewrite released history.
+ */
+export async function migrationState(
+  client: pg.Client,
+  release?: ReadonlyMap<string, string>,
+): Promise<MigrationState> {
+  const files = release ?? (await releaseMigrations());
+  const table = await client.query<{ present: boolean }>(
+    "SELECT to_regclass('public._prisma_migrations') IS NOT NULL AS present",
+  );
+  const rows = table.rows[0]?.present
+    ? (
+        await client.query<{
+          migration_name: string;
+          checksum: string;
+          finished_at: Date | null;
+          rolled_back_at: Date | null;
+        }>(
+          "SELECT migration_name, checksum, finished_at, rolled_back_at FROM public._prisma_migrations ORDER BY started_at",
+        )
+      ).rows
+    : [];
+  const finished = rows.filter(
+    (row) => row.finished_at !== null && row.rolled_back_at === null,
+  );
+  const done = new Set(finished.map((row) => row.migration_name));
+  const failed = rows
+    .filter((row) => row.finished_at === null && row.rolled_back_at === null)
+    .map((row) => row.migration_name);
+  const unknown = [...done].filter((name) => !files.has(name));
+  const modified = finished
+    .filter(
+      (row) =>
+        files.has(row.migration_name) &&
+        files.get(row.migration_name) !== row.checksum,
+    )
+    .map((row) => row.migration_name);
+  return {
+    applied: [...files.keys()].filter((name) => done.has(name)),
+    pending: [...files.keys()].filter((name) => !done.has(name)),
+    unknown,
+    failed,
+    modified,
+    compatible: !unknown.length && !failed.length && !modified.length,
+  };
+}
+
+/** The migration state with the migration credential, without changing it. */
+export async function inspectDatabase(
+  migrationUrl: string,
+): Promise<MigrationState> {
+  const client = new pg.Client({ connectionString: migrationUrl });
+  await client.connect();
+  try {
+    return await migrationState(client);
   } finally {
     await client.end();
   }

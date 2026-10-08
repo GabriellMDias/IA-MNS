@@ -1,5 +1,113 @@
 [
   {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Output, monitoring, and security",
+    "anchor": "output-monitoring-and-security",
+    "text": "Output, monitoring, and security\nMachine probes need deterministic minimal state and matching transport status. Detailed diagnostics are a separate authorized surface with stable logical dependency names, not raw hostnames/IPs, configuration, topology, credentials, stack traces, or exceptions. An unauthenticated minimal probe must not become an account/tenant/session inspection endpoint. Network isolation can support probe access but never authorizes a public diagnostic dump.\nProbe response schemas and behavior are compatibility contracts for load balancers, orchestrators, deployers, and monitors. Coordinate changes with consumers. Public correlation IDs are optional and must remain safe. Prefer state-transition evidence over a log/error issue per poll; suppress/sample routine successes and avoid repeated warnings during known outages. Trace health sparingly and use underlying dependency signals where possible.\nProbe failures alone do not determine incident urgency: assess duration, replicas, traffic, error rate, and actual capability. One failed replica may recover automatically; all unready replicas can indicate a shared dependency or bad release. Uptime checks answer external DNS/TLS/routing/reachability; synthetic transactions use isolated data and separate safety controls to test real workflows. Neither replaces readiness.\n"
+  },
+  {
+    "id": "repository/docs/reliability/health-checks",
+    "title": "Health Checks",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Health check testing and review",
+    "anchor": "health-check-testing-and-review",
+    "text": "Health check testing and review\nTest actual startup, required-dependency failure, optional degradation where supported, liveness independence, invalid configuration, bounded wait, drain/new-work rejection, safe response shape, and critical recovery transitions. Complex caching/hysteresis needs transition coverage. Do not use production business records as probe fixtures.\nBefore changing a check, identify consumer/owner, exact question, expected recovery action, dependency criticality, safe work during outage, runtime identity, full-scale cost, timeout/cancellation semantics, response security, compatibility, and tests. Add a real runbook only for known repeatable failures. Consult [validation](../validation.md) and the runtime README for available checks; hosting integrations remain out of scope until selected.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Logging",
+    "anchor": "logging",
+    "text": "Logging\nThis policy owns structured operational log events, levels, correlation, and reporting boundaries. [Observability](observability.md) explains signal selection; [redaction](../security/telemetry-redaction.md) owns what may be captured. Logs are diagnostic evidence, not an authoritative audit ledger, business database, analytics warehouse, or substitute for metrics/traces/error reporting.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation and contract",
+    "anchor": "current-implementation-and-contract",
+    "text": "Current implementation and contract\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects Pino production JSON logs and centralized `request_id`, `trace_id`, `span_id` correlation, with `trace_flags` when useful. Local pretty output is permitted. Public API field naming remains a separate contract.\nThe API [logger](../../apps/api/src/logging.ts) emits JSON with service, environment, release identifier, redaction, and active `trace_id`/`span_id` where available. Fastify supplies `request_id` in request-scoped logs. The [request/error boundary](../../apps/api/src/app.ts) reports safe status and diagnostics without request bodies or URLs, and suppresses successful health-request logs. Existing underscore-separated messages such as `http_request` are current event names; the examples below explain semantics, not replacement names to adopt silently.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Event and field design",
+    "anchor": "event-and-field-design",
+    "text": "Event and field design\nUse stable semantic event names plus explicit fields, optionally with a concise English message. Names should survive ordinary refactoring rather than describe private methods. Existing event names, fields, units, and meanings consumed by alerts/dashboards/runbooks are operational contracts; do not rename them casually. Human sentence text is not a query contract. Prefer standard conventions where suitable and avoid several spellings for one concept.\nCommon context includes producer, environment, release when available, operation, bounded result, explicit duration unit, and relevant request/trace/span/error/job/event IDs. Actor and resource owner must not share an ambiguous field meaning. Do not redefine reserved platform fields. Logs can support justified high-cardinality IDs better than metrics, but classification, search/index cost, and access still apply.\nCross-cutting infrastructure owns logger creation, serialization, redaction, context, and transport; application owners choose useful event meaning/fields. Inject a logger or use safe scoped runtime context/child loggers rather than unrestricted mutable globals. Enrich shared fields centrally where practical. Context from one request/job must never reach another, including pooled or asynchronous execution. Typed critical-event helpers may help but do not require a custom type for every trivial log.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Logging levels",
+    "anchor": "logging-levels",
+    "text": "Logging levels\nPino level\nMeaning\n`trace`\nRare detailed diagnostics; disabled in normal production, safe even if enabled\n`debug`\nInvestigation detail too verbose for routine production; normal diagnosability must not depend on it\n`info`\nMeaningful normal operation/lifecycle, not every successful function call\n`warn`\nUnexpected degradation, retry, fallback, or deprecated use worth investigation if frequent\n`error`\nUnexpected failed operation or terminal failure needing investigation\n`fatal`\nProcess cannot continue safely; termination is normally expected\nSeverity follows operational meaning, not HTTP status, exception existence, monetary value, or business importance. Expected validation, missing resources, invalid credentials, permission denials, normal duplicate delivery, and business rejections do not automatically warrant warnings/errors. They can contribute to aggregate or security signals where justified. Avoid level inflation.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Reporting boundaries",
+    "anchor": "reporting-boundaries",
+    "text": "Reporting boundaries\nReport an unexpected failure once at an explicit authoritative boundary, with safe context and correlation. Intermediate layers may enrich/translate/rethrow without logging identical failure again. Adapter and caller must agree who reports; a dedicated error tracker does not require duplicate stacks at every layer. Follow [error reporting](error-reporting.md) and [error handling](../architecture/error-handling.md).\nUseful boundaries include request completion, job lifecycle/outcome, significant dependency interactions, process startup/shutdown, and the unexpected-error handler. Completion logs usually provide more value than separate request-start logs; justify both before doubling volume. Expected client errors should not generate stacks. Important jobs/messages need stable identity, type/consumer, attempt, duration, outcome, and safe retry/terminal-failure evidence; never log whole payloads.\nCapture safe dependency name/operation/duration/result/reason where useful, keeping provider codes distinct from the API's public codes. Database diagnostics favor normalized operations, latency, and conflict categories, not rows. [Migration logs](../database/migrations.md) should identify migration/release/environment and start/completion/duration/result without secrets. Lifecycle logs should make readiness, shutdown, drain, and startup failure understandable.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Safe content and volume",
+    "anchor": "safe-content-and-volume",
+    "text": "Safe content and volume\nEmit explicit allowlisted projections, not entire requests/responses, ORM/domain objects, collections, configuration, environments, SQL parameters, or exception payloads. Do not embed sensitive runtime values in arbitrary interpolated messages. Credentials are prohibited even in debug/development modes; protected headers/query strings, filenames, IP/device/location/user content, and provider data require the [redaction policy](../security/telemetry-redaction.md). Trusted internal stacks require safe authoritative handling and must not be returned publicly.\nBound event size, field lengths, collection summaries, nesting, and line structure. Truncation is not secret removal; hashing is not automatic anonymization. Avoid uncontrolled multiline messages and arbitrary console output in runtime application code now that a canonical logger exists; tooling scripts can have different output requirements. Remove temporary debugging output before completion.\nSuccessful health checks and frequent polling should generally be suppressed, reduced, or sampled; failures/state changes may matter. High-volume success logs require demonstrated value. Do not blindly sample errors, security, migration, or rare events where complete visibility matters. Deterministic request/trace sampling can preserve correlation when appropriate. Logs must not be the sole source of important numeric metrics when dedicated measurements fit, nor duplicate every trace span or canonical business event.\nDynamic production verbosity, if introduced, must be authorized, bounded in time/scope, auditable where appropriate, and safe. It must not disable redaction, dump payloads/environment, or expose stacks. Temporary incident diagnostics need an owner/removal plan. Collection, storage, indexing, retention, and sampling remain deployment concerns; do not make an unavailable backend a business dependency.\n"
+  },
+  {
+    "id": "repository/docs/reliability/logging",
+    "title": "Logging",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Testing and review",
+    "anchor": "testing-and-review",
+    "text": "Testing and review\nTest redaction, correlation/isolation, security-sensitive logging, and meaningful operational event contracts using captured/in-memory output rather than requiring a production vendor. Use synthetic secrets and assert absence as well as safe evidence presence. Do not test every ordinary message or wording edit. Quiet successful tests should surface relevant captured diagnostics when failures occur.\nBefore adding an event/field, identify its operational question, owner, stable meaning, level, required fields/classification, units/vocabulary, volume/bounds, existing equivalent signal, duplicate-report risk, automatic context opportunity, and tests. When evidence is missing, choose the smallest useful log, span, metric, error context, or runbook change. Future schema/static enforcement should follow real value; current checks are listed in [validation](../validation.md).\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metrics",
+    "anchor": "metrics",
+    "text": "Metrics\nThis policy owns aggregate measurements, units, dimensions, cardinality, and measurement semantics. Use [logs](logging.md), [traces](tracing.md), or [error reports](error-reporting.md) to investigate individual requests/resources. A custom metric must answer a recurring numerical operational question rather than measure every available value.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Current implementation",
+    "anchor": "current-implementation",
+    "text": "Current implementation\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md) selects OpenTelemetry metrics and OTLP. The API [telemetry configuration](../../apps/api/src/telemetry.ts) installs a periodic OTLP metric reader when an endpoint is configured and an attribute allowlist for all instruments. No metric reader is configured without that endpoint. HTTP/framework instrumentation supplies the current baseline; these settings do not imply a custom metric registry, production dashboard, SLO, or backend exists.\nNew dimensions must survive the actual allowlist and preserve its security/cardinality guarantees. Inspect existing instrumentation before adding custom HTTP, database, process, messaging, or resource measurements. Prefer authoritative standard/platform metrics over duplicate custom implementations. Backend, retention, resolution, histogram tuning, dashboards, SLOs, and formal budgets remain requirement-driven decisions.\n"
+  },
+  {
+    "id": "repository/docs/reliability/metrics",
+    "title": "Metrics",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Metric types and units",
+    "anchor": "metric-types-and-units",
+    "text": "Metric types and units\nType\nMeaning\nDesign constraints\nCounter\nCumulative events/items, normally increasing\nLet the backend handle process-reset/rate semantics. Persist only if the meaning explicitly requires durable state. Distinguish logical outcomes from attempts.\nGauge\nCurrent/recent value that may rise or fall, such as backlog or active connections\nIdentify its authoritative source and local/global scope. Multiple replicas must not ambiguously report one global value.\nHistogram\nDistribution of durations/sizes\nPrefer to averages or min/max alone, which conceal tail behavior/frequency. Choose buckets and percentiles against real workload ranges.\nLocal summary/quantile instruments require deliberate multi-instance aggregation and cost evaluation; histograms often aggregate more usefully. Units must be explicit and consistent with the selected standard: avoid mixing equivalent durations across ms/seconds without reason or ambiguous byte/count units. Define timing start/end and whether a duration includes queue wait, retries, or user-visible completion.\nUse primitive counts/distributions and let the backend derive rates, ratios, percentages, and rolling windows where it can do so correctly. Do not implement competing application aggregation or custom temporality. Metrics are observational; business correctness must not depend on their delivery.\n"
+  },
+  {
     "id": "repository/docs/reliability/metrics",
     "title": "Metrics",
     "group": "Reliability",
@@ -288,13 +396,463 @@
     "text": "Creation and follow-up\nConfirm a real repeatable condition, copy the template, identify ownership/access, write triggers and preconditions, then diagnosis, action, verification, recovery, warnings, and escalation. Review security and operational safety and exercise the procedure where practical.\nAfter recovery, consider permanent correction, regression tests, alert/observability changes, automation, revised warnings or verification, a runbook update, an ADR, and post-incident review based on observed evidence. Incident tooling, provider queries, command wrappers, metadata format, index generation, and review cadence remain dependent on actual operational needs and tooling.\n"
   },
   {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook: Production Backup and Restore",
+    "anchor": "runbook-production-backup-and-restore",
+    "text": "Runbook: Production Backup and Restore\n**Owner:** IA-MNS project owner; the holder of the backup decryption key ([PH-24](../project/human-actions.md#ph-24))\n**Status:** draft — backup, encrypted external copy, disposable restore verification and live restore are exercised by the disposable [installation rehearsal](../../infra/production/rehearsal/run.sh) in CI; not yet executed on the production host\n**Environment / applicability:** a host prepared by [host setup and first deployment](production-host-setup-and-first-deployment.md)\n**Related alerts:** `ia-mns-deploy status` problems; the `IA_MNS_ALERT_COMMAND` notification of a failed backup or restore verification\n**Required access:** an attributable sudo account on the host; for off-host recovery, the age private key held offline\nFollow [authoring policy](authoring.md), [production access](../security/production-access.md), [retention](../security/data-retention.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Purpose",
+    "anchor": "purpose",
+    "text": "Purpose\nTake, verify and restore logical backups of the IA-MNS PostgreSQL database.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Trigger / Symptoms",
+    "anchor": "trigger--symptoms",
+    "text": "Trigger / Symptoms\nRoutine verification; a request to recover data; lost or corrupted database files; a failed migration that requires returning to the pre-deployment state.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Impact",
+    "anchor": "impact",
+    "text": "Impact\nBackups hold confidential data (identity, conversations, audit). A live restore replaces the database: everything written after the backup is lost, and deleted data that the backup still contains comes back ([retention](../security/data-retention.md#backups-restore-and-deletion-replay)). The API is stopped during a restore.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Preconditions",
+    "anchor": "preconditions",
+    "text": "Preconditions\n`sudo ia-mns-deploy status` to see the current release and the last backup and verification.\nFor a live restore: the project owner authorized it, users were told, and the backup to use was chosen.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis",
+    "anchor": "diagnosis",
+    "text": "Diagnosis\nsudo ls -lt /var/backups/ia-mns/daily /var/backups/ia-mns/pre-deploy /var/backups/ia-mns/pre-restore\nsudo cat /var/lib/ia-mns/last-backup-daily.json /var/lib/ia-mns/last-restore-verification.json\nsystemctl list-timers 'ia-mns-*' --no-pager\n\nBackups are `pg_dump` custom-format archives (`.dump`) with a `.sha256` and a `.toc` listing. Daily backups run at 02:30 and keep 14; pre-deployment backups keep 10; pre-restore backups are kept until removed. These are defaults pending [PH-09](../project/human-actions.md#ph-09).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Mitigation / Procedure",
+    "anchor": "mitigation--procedure",
+    "text": "Mitigation / Procedure\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Back up now",
+    "anchor": "back-up-now",
+    "text": "Back up now\nsudo ia-mns-deploy backup --label before-maintenance\n\nWith `IA_MNS_BACKUP_EXTERNAL_TARGET` and `IA_MNS_BACKUP_AGE_RECIPIENT` set, the archive is encrypted with age and copied off the host. Without them the command warns that the installation does not meet the production backup requirement.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Verify a backup",
+    "anchor": "verify-a-backup",
+    "text": "Verify a backup\nsudo ia-mns-deploy verify-restore                       # the latest backup\nsudo ia-mns-deploy verify-restore /var/backups/ia-mns/daily/<file>.dump\n\nIt restores the archive with `pg_restore` into a disposable PostgreSQL on an isolated Docker network, counts the main tables, and checks the restored migration history against the running release. Nothing in production is touched.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Restore the live database",
+    "anchor": "restore-the-live-database",
+    "text": "Restore the live database\nsudo ia-mns-deploy restore /var/backups/ia-mns/<kind>/<file>.dump --confirm\n\nIt checks the archive's SHA-256, takes a safety backup (`pre-restore`), stops the API, restores into a new database, swaps names, keeps the replaced database as `ia_mns_before_restore_<timestamp>`, re-applies migrations and grants for the current release, starts it and runs the smoke test. If the database cannot be backed up first (damaged files), add `--skip-safety-backup` deliberately.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Recover from the external copy",
+    "anchor": "recover-from-the-external-copy",
+    "text": "Recover from the external copy\nOn a machine holding the age private key:\nage --decrypt -i <private key file> -o <file>.dump <file>.dump.age\nsha256sum <file>.dump    # compare with the .sha256 kept beside the encrypted copy, when available\n\nCopy the `.dump` to `/var/backups/ia-mns/pre-restore/` on the host with its `.sha256` (`sha256sum <file>.dump > <file>.dump.sha256`), then restore it as above. To rebuild a lost host, follow [host setup](production-host-setup-and-first-deployment.md) up to `setup`, deploy the same release, then restore.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\n`verify-restore` ends with `restore verified` and writes `last-restore-verification.json` with `\"result\": \"success\"`. It checks the restored migration history with the current release's migration image and fails, instead of skipping that check, when the image is missing; rebuild it with `sudo ia-mns-deploy build <current tag>`.\nAfter a live restore: `status` exits 0, owners sign in, recent expected data is present, and `deployments.log` records `restored`.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Rollback / Recovery",
+    "anchor": "rollback--recovery",
+    "text": "Rollback / Recovery\nA live restore keeps the replaced database. If the restored state is wrong, restore the `pre-restore` safety backup the same way. Once the restored state is verified, drop the retained database deliberately (irreversible):\nsudo docker exec -u postgres $(sudo docker compose -p ia-mns ps -q postgres) psql -c 'DROP DATABASE ia_mns_before_restore_<timestamp>'\n\nAfter any restore, reapply deletions and revocations made after the backup's time when the retention policy requires it.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Escalation",
+    "anchor": "escalation",
+    "text": "Escalation\nStop if a checksum does not match, if `pg_restore` reports errors, or if the restored history is incompatible with the running release. Do not delete backups to free space during an incident; escalate disk capacity instead.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-backup-and-restore",
+    "title": "Runbook: Production Backup and Restore",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Follow-Up",
+    "anchor": "follow-up",
+    "text": "Follow-Up\nRecord verification evidence for [PH-24](../project/human-actions.md#ph-24) and adjust retention when [PH-09](../project/human-actions.md#ph-09) is decided.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook: Production Host Setup and First Deployment",
+    "anchor": "runbook-production-host-setup-and-first-deployment",
+    "text": "Runbook: Production Host Setup and First Deployment\n**Owner:** IA-MNS project owner (application); company infrastructure administrator (host, network, proxy)\n**Status:** draft — every command is exercised by the disposable [installation rehearsal](../../infra/production/rehearsal/run.sh) in CI; not yet executed on the production host\n**Environment / applicability:** the single Ubuntu production host of [ADR-0031](../adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md), before any IA-MNS release runs there\n**Related alerts:** none yet ([PH-24](../project/human-actions.md#ph-24) selects the alert channel)\n**Required access:** an attributable sudo account on the host; the values listed under Preconditions from their owners\nFollow [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md). This procedure grants no authority by itself.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Purpose",
+    "anchor": "purpose",
+    "text": "Purpose\nPrepare an Ubuntu host, install the `ia-mns-deploy` tool, configure IA-MNS, prepare its PostgreSQL and run the first release.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Trigger / Symptoms",
+    "anchor": "trigger--symptoms",
+    "text": "Trigger / Symptoms\nA new production (or homologation) host must run IA-MNS. Do not use this on a host where `ia-mns-deploy status` already shows a current release: follow [release update and rollback](production-release-update-and-rollback.md) instead.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Impact",
+    "anchor": "impact",
+    "text": "Impact\nCreates `/etc/ia-mns`, `/var/lib/ia-mns`, `/var/backups/ia-mns`, `/opt/ia-mns`, the Docker volume `ia-mns-postgres` and the containers of the Compose project `ia-mns`. Publishes the application only on the configured host address and port. No external system is changed.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Preconditions",
+    "anchor": "preconditions",
+    "text": "Preconditions\nUbuntu 22.04 or 24.04 on x86-64, at least 2 vCPU, 4 GB RAM and 30 GB free disk (images are built on the host), with NTP synchronized (`timedatectl` shows `System clock synchronized: yes`; second factors and tokens depend on it).\nOutbound HTTPS from the host to GitHub, Docker Hub, the npm registry, the Debian mirrors and `download.oracle.com` for builds, and to the OpenAI API at run time; outbound access to the Sankhya Oracle listener, and to VRMaster and PDT Connect when those integrations are enabled ([PH-24](../project/human-actions.md#ph-24)).\nA merged `main` and an annotated `ia-mns-vX.Y.Z` tag whose `Orion required gate` passed ([ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)).\nFrom their owners, never through chat or the repository: the public HTTPS origin; the reverse proxy's source address(es) ([PH-22](../project/human-actions.md#ph-22)); the production OpenAI key ([PH-23](../project/human-actions.md#ph-23)); the SELECT-only Oracle reader ([PH-08](../project/human-actions.md#ph-08)); the external backup destination and age recipient ([PH-24](../project/human-actions.md#ph-24)).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis",
+    "anchor": "diagnosis",
+    "text": "Diagnosis\nCheck the host before changing it:\nlsb_release -ds; uname -m; nproc; free -h; df -h /var /opt\ntimedatectl | grep -i synchronized\nPORT=\"<chosen host port>\"\nsudo ss -ltnp | grep -E \":($PORT|5432)\\b\" || echo \"$PORT and 5432 are free\"\ndocker --version 2>/dev/null; docker compose version 2>/dev/null\n\nIf the chosen port is in use, pick another and set it in `compose.env`; the container port stays 3000.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Mitigation / Procedure",
+    "anchor": "mitigation--procedure",
+    "text": "Mitigation / Procedure\n**Docker Engine and Compose** from Docker's repository (Ubuntu's `docker.io` lacks the Compose plugin version this needs):\nsudo apt-get update && sudo apt-get install -y ca-certificates curl git python3 openssl age util-linux rsync\nsudo install -m 0755 -d /etc/apt/keyrings\nsudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc\necho \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo \"$VERSION_CODENAME\") stable\" | sudo tee /etc/apt/sources.list.d/docker.list\nsudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin\nsudo systemctl enable --now docker\ndocker compose version   # 2.24 or newer\n\nDo not add operators to the `docker` group: it is equivalent to root. Run IA-MNS commands with `sudo`.\n**Install the tool** from a checkout of the release:\ngit clone --branch ia-mns-vX.Y.Z --depth 1 https://github.com/GabriellMDias/IA-MNS.git /tmp/ia-mns-install\nsudo /tmp/ia-mns-install/infra/production/bin/ia-mns-deploy install\n\nIt creates the directories, `/usr/local/sbin/ia-mns-deploy`, the systemd units (not yet enabled), the release repository in `/opt/ia-mns/repo.git`, and `/etc/ia-mns/*.env` from the [examples](../../infra/production/examples/runtime.env.example) without overwriting existing files.\n**Configure.** Edit with `sudo nano /etc/ia-mns/<file>.env` and replace every `CHANGE_ME`:\n`compose.env`: `IA_MNS_BIND_ADDRESS` (the host address the proxy reaches, never `0.0.0.0`) and `IA_MNS_HTTP_PORT` (the chosen host port; there is no default).\n`runtime.env`: `IA_MNS_PUBLIC_ORIGIN`, `ORION_TRUSTED_PROXIES`, `OPENAI_API_KEY`, `SANKHYA_DB_*`; leave PDT, Sankhya sign-in and VRMaster commented until their human actions are resolved.\n`backup.env`: `IA_MNS_BACKUP_AGE_RECIPIENT` and `IA_MNS_BACKUP_EXTERNAL_TARGET`.\nInternal TLS on the proxy hop, if [PH-22](../project/human-actions.md#ph-22) requires it: place `tls.crt` and `tls.key` in `/etc/ia-mns/tls/` (`sudo chown root:1000 /etc/ia-mns/tls/tls.key && sudo chmod 640 /etc/ia-mns/tls/tls.key`) and uncomment the two `ORION_TLS_*` lines.\n**Generate the secrets** that no person needs to know, then validate:\nsudo ia-mns-deploy init-secrets\nsudo ia-mns-deploy check-config\n\n`init-secrets` fills every `__GENERATE_*__` (database passwords and the identity keys) without displaying them. Copy `IA_MNS_IDENTITY_ENCRYPTION_KEY` into the company password vault now: second factors cannot be read without it. `check-config` names problems (never values) and warns about open production requirements.\n**Prepare the database:** `sudo ia-mns-deploy setup`. It creates the volume, starts PostgreSQL, admits only the two application roles over the private network, and creates `ia_mns_migrator` (owner) and `orion_runtime` (restricted).\n**Deploy:** `sudo ia-mns-deploy deploy ia-mns-vX.Y.Z`. The first build takes several minutes. The command ends with `deployed ia-mns-vX.Y.Z`, or stops before touching anything it cannot prove safe.\n**First owner:** `sudo ia-mns-deploy bootstrap-owner` prints a single-use URL valid for 30 minutes. Open it through the public HTTPS origin on a trusted device, create the owner and enroll the authenticator app. Create a second owner for recovery ([PH-15](../project/human-actions.md#ph-15)), then review **Administração → Autenticação e segurança** and **Administração → Parâmetros**.\n**Timers:** `sudo ia-mns-deploy enable-timers` (daily backup, weekly restore verification).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\n`sudo ia-mns-deploy status` exits 0 after the first daily backup and restore verification (run `sudo ia-mns-deploy backup` and `sudo ia-mns-deploy verify-restore` once to verify immediately); every remaining `PRODUCTION REQUIREMENT` line names an open human action.\n`curl -s -o /dev/null -w '%{http_code}\\n' http://<bind address>:<port>/health/ready` answers `200` from the host; through the proxy, `https://<public origin>/api/health/ready` answers `200`.\nThe owner signs in with the second factor at the public origin.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Rollback / Recovery",
+    "anchor": "rollback--recovery",
+    "text": "Rollback / Recovery\nBefore the first successful deployment nothing serves traffic: fix the reported problem and repeat the failed step; every step is safe to repeat. `setup` re-applies roles and passwords from the files. To start over on a host that never held real data, stop with `sudo docker compose -p ia-mns down` and remove the volume explicitly with `sudo docker volume rm ia-mns-postgres` — destructive, only before real use.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Escalation",
+    "anchor": "escalation",
+    "text": "Escalation\nStop if `check-config` reports problems you cannot resolve from the files, if a build cannot reach a required endpoint (network rules), or if `setup` fails twice. Keep `ia-mns-deploy logs` output, which contains no secret values, and contact the project owner.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-host-setup-and-first-deployment",
+    "title": "Runbook: Production Host Setup and First Deployment",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Follow-Up",
+    "anchor": "follow-up",
+    "text": "Follow-Up\nRecord the first durable release ([PH-10](../project/human-actions.md#ph-10)) and update the human actions with dated evidence.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook: Production Release Update and Rollback",
+    "anchor": "runbook-production-release-update-and-rollback",
+    "text": "Runbook: Production Release Update and Rollback\n**Owner:** IA-MNS project owner\n**Status:** draft — update, automatic return, refused rollback, explicit rollback and forward fix are exercised by the disposable [installation rehearsal](../../infra/production/rehearsal/run.sh) in CI; not yet executed on the production host\n**Environment / applicability:** a host prepared by [host setup and first deployment](production-host-setup-and-first-deployment.md)\n**Related alerts:** the `IA_MNS_ALERT_COMMAND` notification of a failed `deploy` or `rollback`\n**Required access:** an attributable sudo account on the host\nFollow [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Purpose",
+    "anchor": "purpose",
+    "text": "Purpose\nInstall a newer IA-MNS release, and return to an earlier one when that is proven safe.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Trigger / Symptoms",
+    "anchor": "trigger--symptoms",
+    "text": "Trigger / Symptoms\nA reviewed change was merged to `main` and tagged; or a deployed release misbehaves and an earlier release must serve again.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Impact",
+    "anchor": "impact",
+    "text": "Impact\nThe API container is replaced: requests are refused for the seconds between stop and readiness. Migrations change the database schema and are never reversed in place.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Preconditions",
+    "anchor": "preconditions",
+    "text": "Preconditions\nThe release is an annotated `ia-mns-vX.Y.Z` tag on `main` whose `Orion required gate` passed ([ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)). Create it after merging:\ngit switch main && git pull --ff-only\ngit tag -a ia-mns-vX.Y.Z -m \"IA-MNS vX.Y.Z\" && git push origin ia-mns-vX.Y.Z\n\nNever move or reuse a published tag; the host refuses a tag that moved.\nRead the release's pull requests for migrations and their compatibility notes.\n`sudo ia-mns-deploy status` shows the API healthy, or the failure you are recovering from.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis",
+    "anchor": "diagnosis",
+    "text": "Diagnosis\nsudo ia-mns-deploy status\nsudo ia-mns-deploy logs --tail 200\nsudo tail -n 5 /var/lib/ia-mns/deployments.log\n\n`deployments.log` holds one JSON line per operation: action, result, release, commit, previous release, applied migrations, pre-deployment backup and CI result.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Mitigation / Procedure",
+    "anchor": "mitigation--procedure",
+    "text": "Mitigation / Procedure\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Update",
+    "anchor": "update",
+    "text": "Update\nsudo ia-mns-deploy deploy ia-mns-vX.Y.Z\n\nThe tool verifies the tag and CI, builds the images, validates the configuration with the new image, takes a pre-deployment backup, refuses a database whose migration history the release does not match, applies pending migrations, starts the release and runs a smoke test. Outcomes:\nMessage\nState\nNext step\n`deployed <tag>`\nnew release current\nVerify (below)\nrefused before migrations (CI, tag, configuration, backup, incompatible history)\nnothing changed\nFix the cause; repeat\n`database deployment failed`\nold release still running; a migration may be partially applied\nStop. Escalate with the logs; do not retry blindly\n`<tag> failed its health checks; <previous> is running again`\nno migration ran; returned automatically\nInvestigate the release; fix forward\n`failed after applying migrations`\nmigrations applied; the failed release is not serving\nDecide below\nRepeating `deploy` with the same tag is safe: it reuses verified images and skips applied migrations.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Return to an earlier release",
+    "anchor": "return-to-an-earlier-release",
+    "text": "Return to an earlier release\nsudo ia-mns-deploy rollback                 # the last healthy release\nsudo ia-mns-deploy rollback ia-mns-vA.B.C   # a named release\n\nWithout a tag, the target is the current release when the API runs another image or none (a failed or stopped deployment), and the previous release only when the current release is the one running.\nThe tool refuses when the target does not know a migration the database applied. Then choose:\n**Fix forward (preferred):** tag and deploy a corrected release.\n**Accept the newer schema:** only after reviewing that every unknown migration is additive (new tables, nullable columns, new indexes) and the target ignores it: `sudo ia-mns-deploy rollback --accept-schema-ahead`. The decision is recorded.\n**Restore the pre-deployment backup** with [backup and restore](production-backup-and-restore.md); data written since that backup is lost.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\n`sudo ia-mns-deploy status` exits 0 and shows the expected `current release` and `running image`.\nThe public origin loads, an owner signs in, and a normal question succeeds.\n`deployments.log` records the operation with `\"result\": \"success\"`.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Rollback / Recovery",
+    "anchor": "rollback--recovery",
+    "text": "Rollback / Recovery\nAutomatic return happens only when no migration ran during the failed deployment, because the previous release then meets exactly its own schema. After a migration, return is a human decision as above. Migrations are never edited or reversed in place ([migrations policy](../database/migrations.md)).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Escalation",
+    "anchor": "escalation",
+    "text": "Escalation\nStop and escalate if a migration fails, if both the new and the previous release fail to start, or if the pre-deployment backup is missing. Preserve `deployments.log` and the logs.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Follow-Up",
+    "anchor": "follow-up",
+    "text": "Follow-Up\nAfter the first production release, and every release that applies migrations, record the release in `release-history.json` as [ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) describes ([PH-10](../project/human-actions.md#ph-10)).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook: Production Secret Rotation",
+    "anchor": "runbook-production-secret-rotation",
+    "text": "Runbook: Production Secret Rotation\n**Owner:** IA-MNS project owner; each external credential's issuing administrator\n**Status:** draft — the database password path (`setup` re-synchronizing passwords, then `restart`) uses commands exercised by the disposable [installation rehearsal](../../infra/production/rehearsal/run.sh); rotation itself has not been exercised on the production host\n**Environment / applicability:** a host prepared by [host setup and first deployment](production-host-setup-and-first-deployment.md)\n**Related alerts:** none\n**Required access:** an attributable sudo account on the host; the issuer of the external credential being rotated\nFollow [secrets policy](../security/secrets-management.md#secret-rotation), [production access](../security/production-access.md), and [incident response](../security/incident-response.md) for suspected exposure.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Purpose",
+    "anchor": "purpose",
+    "text": "Purpose\nReplace an IA-MNS credential or key without printing it.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Trigger / Symptoms",
+    "anchor": "trigger--symptoms",
+    "text": "Trigger / Symptoms\nScheduled rotation, personnel change, or suspected exposure (then also follow incident response).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Impact",
+    "anchor": "impact",
+    "text": "Impact\nThe API restarts (seconds of refused requests). Rotating the identity signing key signs every user out; rotating the identity encryption key makes enrolled second factors unreadable, so every user must enroll again.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Preconditions",
+    "anchor": "preconditions",
+    "text": "Preconditions\n`sudo ia-mns-deploy status` is healthy and a fresh backup exists (`sudo ia-mns-deploy backup --label before-rotation`).\nThe new external credential exists at its issuer (OpenAI, Oracle, VRMaster, PDT), and the old one stays valid until verification.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis",
+    "anchor": "diagnosis",
+    "text": "Diagnosis\n`sudo ia-mns-deploy check-config` names the configuration keys involved without showing values.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Mitigation / Procedure",
+    "anchor": "mitigation--procedure",
+    "text": "Mitigation / Procedure\n**External credentials** (`OPENAI_API_KEY`, `SANKHYA_DB_PASSWORD`, `VRMASTER_DB_PASSWORD`, `PDT_IDENTITY_CLIENT_SECRET`): edit the line in `/etc/ia-mns/runtime.env` with `sudo nano`, then `sudo ia-mns-deploy check-config && sudo ia-mns-deploy restart`.\n**Database role passwords:** replace the password in `ORION_MIGRATION_DATABASE_URL` (`migration.env`) or `ORION_DATABASE_URL` (`runtime.env`) with a new `openssl rand -hex 32` value, then `sudo ia-mns-deploy setup` (re-synchronizes role passwords from the files) and `sudo ia-mns-deploy restart`.\n**PostgreSQL superuser:** only used to initialize the data directory and never over the network; `POSTGRES_PASSWORD` changes take effect on a new data directory only. Rotate it if exposed by updating the file and running `ALTER ROLE postgres PASSWORD` through `docker exec -u postgres ... psql` with the value typed interactively.\n**Identity keys:** replace the value with the placeholder `__GENERATE_IDENTITY_SIGNING_KEY__` or `__GENERATE_IDENTITY_ENCRYPTION_KEY__`, run `sudo ia-mns-deploy init-secrets`, store the new encryption key in the password vault, then `sudo ia-mns-deploy restart`. Inform users of the consequences listed under Impact.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\n`status` exits 0; owners sign in; a question that uses the rotated integration succeeds. Then revoke the old credential at its issuer.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Rollback / Recovery",
+    "anchor": "rollback--recovery",
+    "text": "Rollback / Recovery\nUntil the old credential is revoked, putting the old value back and restarting restores the previous state.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Escalation",
+    "anchor": "escalation",
+    "text": "Escalation\nStop if the application does not become healthy after a restart; restore the previous value, then escalate to the credential's issuer.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Follow-Up",
+    "anchor": "follow-up",
+    "text": "Follow-Up\nRecord the rotation date in the secret inventory, never the value.\n"
+  },
+  {
     "id": "repository/docs/runbooks/README",
     "title": "Runbooks",
     "group": "Runbooks",
     "kind": "repository",
     "heading": "Runbooks",
     "anchor": "runbooks",
-    "text": "Runbooks\nNo operational runbooks exist yet. This directory contains the [authoring policy](authoring.md), [template](template.md), and [local instructions](AGENTS.md). Add index entries only for real procedures when the corresponding runtime and operational tooling exist.\nExisting contributor procedures have narrower owners: [local setup](../setup.md), [validation](../validation.md), and [database release/evolution](../database/release-evolution.md). No production environment is selected; authoring guidance does not activate deployment-specific work.\nRunbooks describe current repeatable operations, not hypothetical systems or historical incident narratives. A procedure does not grant authority: [production access](../security/production-access.md) and [incident response](../security/incident-response.md) continue to apply.\n"
+    "text": "Runbooks\nThis directory contains the [authoring policy](authoring.md), [template](template.md), [local instructions](AGENTS.md), and the production procedures for the single-host deployment of [ADR-0031](../adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md). They are drafts: every command is exercised by the disposable installation rehearsal in CI, and none has run on the production host yet.\nProcedure\nUse when\n[Production host setup and first deployment](production-host-setup-and-first-deployment.md)\nPreparing a host and running the first release\n[Production release update and rollback](production-release-update-and-rollback.md)\nInstalling a newer release or returning to an earlier one\n[Production backup and restore](production-backup-and-restore.md)\nTaking, verifying or restoring database backups\n[Production secret rotation](production-secret-rotation.md)\nReplacing a credential or key\nThe files these procedures run are described in [`infra/production`](../../infra/production/README.md). Add index entries only for real procedures when the corresponding runtime and operational tooling exist.\nExisting contributor procedures have narrower owners: [local setup](../setup.md), [validation](../validation.md), and [database release/evolution](../database/release-evolution.md).\nRunbooks describe current repeatable operations, not hypothetical systems or historical incident narratives. A procedure does not grant authority: [production access](../security/production-access.md) and [incident response](../security/incident-response.md) continue to apply.\n"
   },
   {
     "id": "repository/docs/runbooks/README",
@@ -610,347 +1168,5 @@
     "heading": "Data Classification",
     "anchor": "data-classification",
     "text": "Data Classification\nThis policy owns the repository's sensitivity model and data-handling baseline. [Redaction](telemetry-redaction.md), [retention](data-retention.md), [secrets management](secrets-management.md), and [production access](production-access.md) own their detailed controls. Classification follows data meaning and disclosure risk, not whether a tool can technically access it.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Classification levels",
-    "anchor": "classification-levels",
-    "text": "Classification levels\nLevel\nMeaning and examples\nRequired handling\n`PUBLIC`\nIntentionally approved for unrestricted disclosure: published documentation or product content\nMay be shared/indexed/cached; preserve integrity. Absence of secrets does not make data public.\n`INTERNAL`\nNon-public, lower-risk project/operational information\nAvailable to authorized contributors and approved tooling; review before publication.\n`CONFIDENTIAL`\nDisclosure may cause privacy, security, business, or operational harm: personal/private customer data, private content, incident details\nNeed-to-know access, protected transport, appropriate storage encryption, minimized telemetry/copies, and defined retention.\n`RESTRICTED`\nHighest sensitivity: credentials, password hashes, private keys, payment credentials, highly sensitive personal data\nStrict least privilege and purpose-built protection; no intentional inclusion in source control, telemetry, public errors, generated documentation, screenshots/support artifacts, or real-data test fixtures.\nThese are minimum protections. Use the more restrictive reasonable level when semantics or ownership are unclear, particularly for legacy fields, provider payloads, uploads, and free-form metadata. Encryption does not reduce classification.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Data categories",
-    "anchor": "data-categories",
-    "text": "Data categories\nCategory describes what data represents; classification describes required protection. Classify fields by meaning rather than assigning one level blindly to an entire table.\nCategory\nBaseline and important distinctions\nPersonal data\nNormally at least `CONFIDENTIAL` unless intentionally and lawfully public. Includes linked account/device/IP/location information, not just names and email.\nSensitive personal data\nNormally `RESTRICTED` or equivalent specialized controls. Health, biometrics, government identifiers, and other sensitive characteristics require evaluation against actual jurisdiction/product requirements.\nAuthentication\nPasswords, hashes, bearer/session/refresh tokens, recovery codes, and private API keys are `RESTRICTED`; non-credential metadata can differ. Public keys/client identifiers are classified by capability, not the word “key.”\nAuthorization\nAssignments, memberships, and ownership are generally `CONFIDENTIAL`; policy definitions may be internal or confidential according to risk.\nFinancial/payment\nFinancial records are generally at least `CONFIDENTIAL`; payment and banking credentials are `RESTRICTED`. Prefer specialized providers retaining sensitive payment credentials.\nUser content/files\nNormally `CONFIDENTIAL` unless intentionally public; arbitrary content can contain restricted data. File type does not prove safety. Preview, scanning, indexing, and AI processing inherit the content's constraints.\nBusiness/security/operations\nNon-public business information is generally confidential. Infrastructure topology, unresolved vulnerabilities, investigations, and configuration require content-specific classification.\nTelemetry/derived data\nInherits sensitivity of included information and inferences. A log is not automatically internal, and aggregation can increase sensitivity.\nOpaque actor/resource/tenant IDs may be used in controlled telemetry when necessary but can remain confidential if linked to private data. Generate request/trace/error/job correlation IDs without sensitive information; safe correlation IDs may be shown as support references. Do not treat all identifiers as interchangeable.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Collection, ownership, and copies",
-    "anchor": "collection-ownership-and-copies",
-    "text": "Collection, ownership, and copies\nCollect only data with a concrete product, operational, security, or legal purpose. Identify the owner of semantics, schema changes, access, retention, and incident response. Before adding a field, determine purpose, sensitivity, consumers, storage duration, telemetry eligibility, compliance implications, and whether a less sensitive representation suffices. A new use of existing data needs deliberate review.\nEvery copy retains its handling obligations: database dumps, exports, caches, search indexes, warehouse/analytics records, backups, generated artifacts, screenshots, chat messages, support evidence, and AI prompts. Derived profiles, risk scores, embeddings, or aggregated behavior may remain identifying. Pseudonymization and hashing do not automatically anonymize data; predictable identifiers can be enumerated. Anonymity requires that re-identification is not reasonably possible in context. Partial masking may be useful for permitted non-secret data; remove authentication secrets entirely.\nTemporary storage still needs bounded access and deletion. Do not let downloaded logs, exports, local databases, scratch files, or tool caches become indefinite uncontrolled copies. Soft deletion retains data and is not a substitute for actual removal. [Retention policy](data-retention.md) covers deletion propagation and backup restoration; understand real capability before making external deletion promises.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Access, storage, and transport",
-    "anchor": "access-storage-and-transport",
-    "text": "Access, storage, and transport\nApply least privilege to users, services, support, administrators, CI, and AI agents. Technical availability is not authorization. Routine development must not depend on unrestricted production database access. Encryption supplements access control; confidential/restricted data crossing untrusted networks must use protected transport without silent downgrade.\nChoose storage, backup, device, and any field-level encryption against the threat model. Application-level encryption is justified only by meaningful added protection and must account for key rotation, search limitations, migration, recovery, and operations; significant strategy requires an ADR. Minimize sensitive local client data and use platform-protected storage for credentials as required by [authentication policy](authentication.md).\nAuthorize exports, minimize fields, use secure delivery, avoid unnecessary persistence, and audit where appropriate. Bulk access deserves additional scrutiny. Support access does not imply unrestricted customer/telemetry access. Email is not a safe channel for arbitrary restricted data; minimize transactional email and prefer authenticated flows where appropriate. Notifications can appear on lock screens/shared devices and must not disclose highly sensitive content without an explicit design.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "APIs, providers, and generated artifacts",
-    "anchor": "apis-providers-and-generated-artifacts",
-    "text": "APIs, providers, and generated artifacts\nUse deliberate request/response/event schemas. Do not serialize whole entities, publish complete provider payloads, or forward arbitrary JSON merely for convenience. Known important data should use explicit schemas; generic metadata needs conservative controls before logging, indexing, tracing, or provider transmission. Generated SDKs must contain only supported client contracts, never server-only restricted fields.\nExternal providers create data-processing boundaries. Before transmission, determine required fields and purpose, security, access, retention/deletion, residency, and relevant subprocessors. Send only the needed subset. Apply this to analytics, search, webhooks, error reporting, file processing, and AI providers. A warehouse or cache does not reduce sensitivity or remove authorization requirements.\nSchema comments and documentation describe semantics with fictional examples, not real customer records, credentials, production identifiers, or infrastructure addresses. Generated artifacts inherit source classification; inspect generators for unintended exposure. Configuration templates use placeholders and document the source of a value, not its secret contents. Environment variables are not automatically secure: never dump them into startup logs, build output, diagnostics, or telemetry.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Telemetry and AI access",
-    "anchor": "telemetry-and-ai-access",
-    "text": "Telemetry and AI access\n[Telemetry redaction](telemetry-redaction.md) governs collection: public/internal fields may be captured when useful, confidential fields only with justified minimized controls, and restricted data never intentionally. Review SDK defaults, including locals, breadcrumbs, requests, and context. Metrics should remain aggregate and avoid personal/entity-specific dimensions. Audit records have distinct integrity/access/retention requirements but must still omit credentials and unnecessary payloads.\nAI tooling follows the same classification and authorization boundaries as other consumers. Approved project agents may use authorized internal repository context. Confidential data requires an authorized task and an environment approved for that data; minimize context. Restricted data must not be supplied by default: any exceptional interaction requires an explicitly designed, approved workflow with suitable controls, never incidental exposure through environment dumps or logs.\nPrefer investigation through a safe error ID, sanitized metadata, traces, redacted logs, and relevant source rather than customer records and raw requests. Screenshots, replay, and diagnostic attachments are separate collection capabilities, not automatic debugging entitlements.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Development, testing, and exposure",
-    "anchor": "development-testing-and-exposure",
-    "text": "Development, testing, and exposure\nUse synthetic or purpose-created development, test, seed, demo, and documentation data. Tests must not contain real credentials or customer records; synthetic secrets must be clearly non-production and incapable of granting real access. Production data must not be copied to development/test by default. A justified exception should prefer synthetic reproduction, minimal extraction, redaction, or appropriately anonymized/pseudonymized data before raw copies.\nCI secrets must be scoped to jobs that need them; less-trusted pull requests must not receive privileged credentials. Never commit restricted secrets, including into Git history. If a credential is exposed, deleting the current file or log does not restore secrecy: treat it as potentially compromised and follow [secrets management](secrets-management.md) and [incident response](incident-response.md) for containment, revocation/rotation, usage review, and recurrence prevention. Evaluate confidential-data exposure by scope, subjects, access, duration, and applicable notification obligations.\n"
-  },
-  {
-    "id": "repository/docs/security/data-classification",
-    "title": "Data Classification",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Classification review and enforcement",
-    "anchor": "classification-review-and-enforcement",
-    "text": "Classification review and enforcement\nReview classification when field meaning, boundaries, providers, telemetry, AI access, or retention changes. New restricted/personal-data collection, bulk exports, credentials, encryption strategies, or production access paths warrant security review. Use clear sensitive-field names and keep classification near canonical schema/configuration metadata where practical; [schema documentation](../database/schema-documentation.md) and [configuration](../architecture/configuration.md) describe current metadata sources.\nMechanical checks can extend protection against unsafe serialization, telemetry, generated output, secret imports, and production fixtures, but metadata is not evidence of end-to-end enforcement. Consult [validation](../validation.md) for available checks. Do not claim a universal classification/redaction engine exists or create speculative registries before their consumers and ownership are clear.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Data Retention",
-    "anchor": "data-retention",
-    "text": "Data Retention\nThis policy owns data lifecycle, retention, deletion, archival, and recovery requirements. [Classification](data-classification.md) determines sensitivity; domain owners define purpose and meaning. Deployment-specific schedules, legal durations, provider lifecycle rules, legal-hold tooling, and recovery objectives have not been selected here. Undefined retention is a visible design gap, not permission to keep data forever.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Data lifecycle",
-    "anchor": "data-lifecycle",
-    "text": "Data lifecycle\nSchema and product design must consider creation, updates, active use, retention, deletion/anonymization/archival, derived copies, and backups. Collect only necessary data before deciding how long to keep it. Retain for an identified product, security, legal, or operational purpose; a new use requires review. More sensitive data needs stronger justification, tighter access, and shorter retention where possible.\nRetention and disposition are a contract: why data exists, who owns it, what begins/ends retention, what happens afterward, and how copies converge. Do not invent a universal duration or legal obligation. Indefinite retention needs explicit justification such as a durable ledger or permanent product artifact, not missing cleanup. Cancellation or another domain state does not imply an undocumented deletion rule.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Retention policy metadata",
-    "anchor": "retention-policy-metadata",
-    "text": "Retention policy metadata\nFor important datasets, document category, owner, classification, purpose, canonical source, trigger, justified duration or lifecycle condition, whether limits are minimum/maximum, disposition, derived systems/providers, backup behavior, and monitoring. Keep policy meaning at its owner and reference it from canonical schemas; avoid copying the whole policy onto every table. A generated data inventory/registry can help when real consumers justify one, but this document does not claim such governance tooling exists.\nTriggers may be creation, last activity, account/contract termination, incident closure, export generation, job completion, or credential expiration. State them unambiguously. Changes need rationale, affected scope, retroactivity, treatment of existing older data, copy/provider changes, and migration/cleanup plans. Shortening retention can affect recovery, support, analytics, and obligations; extending it increases privacy, security, and cost exposure.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Deletion and soft delete",
-    "anchor": "deletion-and-soft-delete",
-    "text": "Deletion and soft delete\nHard deletion removes active records; other systems may still retain copies until their documented convergence/expiry. Soft deletion retains the row and is not a privacy deletion. Use it only for concrete restore, audit, or lifecycle needs, with deliberate query filtering, authorization, uniqueness, restore window, and eventual hard-delete/anonymization/archive behavior. Do not add `deletedAt` to every table by default.\nArchival changes storage/access, not classification or deletion obligations; define queryability, security, recovery, and later disposition. Tombstones should retain only the minimum required to represent nonexistence or distributed consistency. Anonymization must address reasonable re-identification; renaming a user while keeping email/IP/external IDs is insufficient. Pseudonymization, hashes, and small/precise aggregates can remain personal data.\nPreserve referential integrity and intentional ownership through cascade, restrict, nulling, anonymized references, or tombstones. Account deletion must not automatically cascade through unrelated business history. Account, organization, and shared-content deletion need distinct domain semantics: revoke credentials, remove private profiles/content, preserve organization-owned or legally required records, and retain only necessary historical attribution. Audit purpose does not justify retaining unrelated sensitive content. Intentional orphan records need documented meaning and lifecycle.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Data classes and copies",
-    "anchor": "data-classes-and-copies",
-    "text": "Data classes and copies\nData\nLifecycle requirements\nCredentials and identity\nRemove obsolete hashes and expired/revoked sessions when no longer needed; define refresh rotation/replay retention. Invalidate used/revoked recovery credentials immediately without retaining secret history. Current authorization state and audit history are separate datasets.\nAudit/security/financial records\nDefine purpose-specific retention and integrity independently. Financial/legal durations come from actual obligations; security/fraud evidence needs separate justification from analytics. Prefer provider-owned/tokenized payment credentials.\nUser content and objects\nInclude original objects, versions, incomplete multipart uploads, staging, thumbnails/previews, converted media, and derived files. Derivatives normally follow the source unless a separate purpose justifies another lifecycle.\nCaches and search\nIdentify canonical source, rebuildability, expiration, and deletion/invalidation propagation. A cache is not permanent storage; use explicit invalidation when TTL exceeds acceptable deletion delay.\nClient storage\nInclude local databases/files/offline caches and operating-system backups. Logout must define credential/sensitive cache removal without assuming all non-sensitive offline product data must be erased.\nLogs/traces/errors/metrics\nSeparate diagnostics, audit/security, debug data, raw high-resolution records, and long-term aggregates. Match diagnostic/SLO/capacity/regression value, privacy, and cost. Traces are not permanent execution history. Temporary verbose diagnostics need expiration.\nExports/reports/support bundles\nDefine both access-link lifetime and underlying-file deletion; expiring a URL does not delete the file. Minimize fields, authorize and protect delivery, and avoid indefinite personal-workstation/shared-folder/email copies.\nTemporary/job artifacts\nClean after success, failure, and cancellation where practical; incomplete uploads and scratch files must not persist by omission.\nQueues/events/DLQs/replay archives\nInclude expected processing delay, retries, dead-letter and replay windows, and privacy. Minimize payloads. A DLQ is not a permanent archive; event sourcing is not a default and requires resolving immutable-history/deletion conflicts.\nAnalytics/warehouses/data lakes\nDistinguish raw events, identifiable derived records, and aggregates. Every dataset has ownership and lifecycle; analytical copies are not exempt from deletion.\nAI datasets/embeddings/prompts\nTraining/evaluation/retrieval use is not authorized by ordinary collection. Define policy before ingestion, including provider retention/training and deletion limits. Source deletion may require vector/embedding removal; investigation transcripts inherit included sensitivity.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Deletion is a distributed workflow",
-    "anchor": "deletion-is-a-distributed-workflow",
-    "text": "Deletion is a distributed workflow\nInventory meaningful copies in primary stores, caches, search, object derivatives, analytics, exports, replicas, and providers. For asynchronous deletion define convergence expectations, retries, reconciliation, failure monitoring, and completion evidence. Prefer idempotent operations; after timeout inspect actual state rather than blindly repeating an unsafe action. Partial failure must remain visible and retryable, not silently marked complete.\nUse the same inventory for applicable access, correction, portability, and deletion requests. Determine high-risk completion evidence from actual obligations. Provider evaluation must address stored fields, default/configurable retention, per-record deletion, backup/subprocessor behavior, and compatibility with this policy. Offboarding may require export, deletion confirmation, and credential revocation. Deleting the application's primary record does not automatically delete provider copies.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Cleanup and verification",
-    "anchor": "cleanup-and-verification",
-    "text": "Cleanup and verification\nRetention jobs should be bounded, idempotent, observable, and safely retryable. Use batches and efficient indexed expiry selection when workloads justify them; avoid unbounded destructive transactions that create locks, replication pressure, or long rollbacks. Expiration fields represent lifecycle meaning. Storage TTL must not silently bypass required audit, domain effects, or derived deletion.\nObserve failures, overdue age, backlog, and backup-expiry failures when relevant; alerts must reflect real obligations or risk. Log safe scope, count, duration, result, and bounded reason categories rather than deleted contents. Required deletion audit records capture actor/system, operation, scope, time, and result without preserving the sensitive payload.\nManual/bulk production deletion follows [production access](production-access.md) and a real [runbook](../runbooks/authoring.md): use purpose-built workflows, scope previews, appropriate authorization, batching, verification, and recovery planning. Tests should cover expiry selection, filtering, propagation, idempotency, partial failure, and restoration semantics where applicable.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Backups, restore, and deletion replay",
-    "anchor": "backups-restore-and-deletion-replay",
-    "text": "Backups, restore, and deletion replay\nBackups inherit source classification and need encryption, access control, retention/expiry, and restore tests. Choose frequency/generations against actual Recovery Point Objective (acceptable loss) and Recovery Time Objective (restoration time), cost, and obligations; do not invent strict objectives prematurely or keep backups forever because storage is cheap.\nDeleted live data may remain until backup expiry. Document that limit and never promise immediate total deletion when old copies remain. Restoration may reintroduce deleted/expired records or credentials: reconcile current lifecycle state and reapply applicable deletions, retention changes, and revocations. A minimal durable deletion ledger may be justified. Restore tests must verify usable recovery and retention correctness, not merely backup creation success.\nBackups must not bypass ordinary access controls. Snapshots, offline/cross-region copies, migration/forensic/restore-test copies, and detached or lagging replicas need explicit scope, owner, access, and expiry. Production snapshots are not default development data; any authorized copy needs minimization/anonymization, restricted access, and bounded retention.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Non-production and collaboration",
-    "anchor": "non-production-and-collaboration",
-    "text": "Non-production and collaboration\nPreview environments and their storage should expire when their purpose ends. Synthetic isolated test databases need cleanup; CI logs/reports/screenshots/artifacts, development logs, and tool/AI caches need appropriate lifetimes. Retention cannot make secret-bearing artifacts safe.\nGit, documentation, issues, pull requests, and chat are durable surfaces, not stores for production samples, exports, or customer records. Use sanitized references. Incident records can retain useful learning without copying raw sensitive evidence; minimize/redact screenshots. Follow [incident response](incident-response.md) for leaked sensitive data rather than waiting for ordinary expiration.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Holds and exceptions",
-    "anchor": "holds-and-exceptions",
-    "text": "Holds and exceptions\nApplicable legal minimums and maximums must be identified from actual jurisdiction/product requirements; a minimum does not justify indefinite retention. Legal holds suspend deletion only for authorized, scoped records/categories and need authority, start, review, release, and auditability. After release, resume normal retention and remove already-expired data as required.\nSecurity/incident or other exceptions need data scope, purpose, owner, authority, duration/review, affected backups/providers, and disposition at expiry. They must not default to permanence or a system-wide hold. This policy does not select legal-hold tooling or grant authority for operational actions.\n"
-  },
-  {
-    "id": "repository/docs/security/data-retention",
-    "title": "Data Retention",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "New persistent data checklist",
-    "anchor": "new-persistent-data-checklist",
-    "text": "New persistent data checklist\nBefore adding a field, record, file, event, or provider copy, identify purpose, owner, classification, canonical source, trigger/duration/disposition, derived copies, backup/restore effect, deletion propagation, partial-failure detection, and tests. Before soft delete, explain why hard deletion is insufficient and how filtering, uniqueness, restoration, and eventual removal work. Surface unknown product/operational requirements explicitly; do not silently substitute “forever” or promise unavailable deletion/recovery capabilities.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Incident Response",
-    "anchor": "incident-response",
-    "text": "Incident Response\nThis policy owns coordinated response to material reliability, security, and data incidents. It defines requirements, not deployed incident tooling or authority. Paging/escalation channels, concrete roles, severity names, legal notifications, forensic storage, and exercise schedules must follow actual product, organization, jurisdiction, and infrastructure decisions. Real repeatable procedures belong in [runbooks](../runbooks/README.md).\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Declaration and ownership",
-    "anchor": "declaration-and-ownership",
-    "text": "Declaration and ownership\nAn incident requires coordinated action because service behavior, trust, confidentiality, integrity, or data lifecycle may be materially violated. Reliability, security, and data classes can overlap. An isolated transient timeout, recovered job, or replaced replica is not automatically an incident; assess impact, risk, investigation, mitigation, and coordination needs.\nDetection can come from [alerts](../reliability/alerting.md), error reports, support/customers, providers, operators, or integrity checks. Declare serious incidents explicitly without waiting for perfect root cause. Every active incident must have an owner. Significant incidents may divide coordination, technical response, communication, security, and scribing; small teams can combine these responsibilities without inventing organizational roles.\nRecord the observed signal, environment, affected service/operation/data, first known impact, scope, trend, active release, and relevant recent changes. Maintain a useful timeline with consistent absolute timestamps and important decisions/rationale. Use one authoritative status location rather than conflicting chat threads.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Severity",
-    "anchor": "severity",
-    "text": "Severity\nUse a small consistent severity model based on user impact, scope, urgency, data classification, privilege/trust risk, and recovery complexity. Do not confuse technical difficulty or error count with severity. A single signing-key leak can be more urgent than many benign failures. Unknown scope can justify higher urgency until evidence narrows it; change severity explicitly as facts improve.\nA possible future scale distinguishes critical widespread outage/active privileged compromise/severe corruption, major workflow degradation or suspected serious compromise, localized recoverable impact, and minor contained anomalies. These categories are guidance, not a selected `SEV-*` contract or response-time promise.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Triage and containment",
-    "anchor": "triage-and-containment",
-    "text": "Triage and containment\nDetermine what is failing, who is affected, whether impact is increasing, what changed, and whether security or data is at risk. Prefer scoped reversible containment where safe, but broader containment can be justified by high risk and uncertain scope. Stop active harm before perfecting diagnosis or preserving every artifact.\nContainment may disable a capability, remove traffic, pause workers/writes/deletion/exports, revoke access, or isolate affected data. These are conditional options, not authorization to execute them. Establish target scope, needed privilege, data-loss/evidence risks, reversibility, success criteria, and recovery before action where practical. Preserve evidence when safe without delaying urgent containment.\nInspect deployment, migration, configuration, feature-flag, infrastructure, and provider changes as clues. Temporal correlation is not proof. Roll back only when the earlier version remains compatible and reversal is safe; irreversible database changes, data-loss risk, or incompatible old releases may require a forward fix. A temporary freeze on unrelated changes can reduce confusion but must not block necessary mitigation.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Evidence and credentials",
-    "anchor": "evidence-and-credentials",
-    "text": "Evidence and credentials\nUse relevant logs, traces, errors, audit, deployments, configuration, provider, and access records. For important forensic artifacts preserve source, collection time, collector, and scope without unnecessary modification. Copies remain classified production data with restricted access, secure storage, and [retention](data-retention.md). Prefer authorized references over raw records in chat, issues, PRs, email, or documentation. Minimize/redact screenshots.\nDisk images, database exports, memory dumps, and network captures can contain credentials and broad private data. Require scoped, authorized, bounded collection and suitable protection. Incident urgency does not suspend privacy or justify unrestricted exports, secrets in incident channels, or indefinite raw evidence retention. Authorized holds/extensions must remain scoped under retention policy.\nTreat potentially exposed credentials as compromised according to risk; absence of observed abuse is not proof of safety. Follow [secrets management](secrets-management.md#secret-rotation). Depending on active harm, either revoke immediately or introduce replacement, update consumers, verify, then revoke old material. Consider dependent user/admin/service/refresh sessions, signing-key compatibility, and invalidation. Review access, permission changes, affected resources, and attacker persistence. Deleting leaked files or telemetry does not restore credential secrecy.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Correction and recovery",
-    "anchor": "correction-and-recovery",
-    "text": "Correction and recovery\nContainment reduces harm; eradication removes cause or malicious persistence. Track temporary mitigations separately from permanent fixes. Correct the actual defect, vulnerable dependency, unauthorized account/grant, injected configuration, or broken lifecycle rather than declaring a feature disablement a permanent solution.\nRestore normal operation only with reasonable evidence that harm is contained, critical invariants hold, and dependencies/monitoring and renewed containment options are ready. Recovery may need canaries, gradual traffic, controlled queue resume, rate limits, priority, or batching. Backlog processing must account for duplicate/stale messages, idempotency, current authorization, and provider side effects.\nDistinguish provider failure from application integration defects; provider status pages are supporting evidence, not proof of application behavior. Provider compromise can require rotation, exposure assessment, disablement, and coordinated communication.\nFor corruption/loss, choose the smallest correct repair or restore. A production restore can overwrite current data and requires explicit authorization plus recovery-point/data-loss, schema compatibility, and retention/deletion analysis. Point-in-time recovery, if supported, still needs scoped verification and reconciliation. Follow [data retention and restoration](data-retention.md#backups-restore-and-deletion-replay) and applicable migration/compatibility policy.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Recovery verification and incident closure",
-    "anchor": "recovery-verification-and-incident-closure",
-    "text": "Recovery verification and incident closure\nA cleared alert or successful command alone does not establish recovery. Verify affected user behavior, relevant error/latency/progress/health signals, backlog control, data counts/invariants/reconciliation, and security properties. Confirm compromised credentials are unusable, unauthorized permissions/persistence are removed, and protective controls work. High-impact recovery may need a justified observation period to detect relapse.\nClose only after impact has ended, safe operation and critical recovery are verified, final scope/severity are understood, required communication is complete, evidence is safely stored, and emergency access is revoked or handled under its explicit expiry. Any unresolved cause or temporary mitigation needs owned follow-up; do not silently leave it as permanent architecture.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Communication and authority",
-    "anchor": "communication-and-authority",
-    "text": "Communication and authority\nShare accurate, timely, audience-appropriate updates when impact/severity/scope changes, major mitigation occurs, recovery begins, or resolution is verified. State confirmed facts, working hypotheses, and open questions separately. Include affected function, impact onset, current mitigation, and required user action where appropriate without exposing secrets or unnecessary active-vulnerability detail.\nCoordinate relevant responders, support, customers, partners, leadership, and security/legal stakeholders according to real need; not every incident reaches every audience. External disclosure timing and legal notification obligations depend on actual jurisdiction, data, scope, contracts, and organization. This document invents neither deadlines nor authority to send messages.\n[Production access](production-access.md) still applies during incidents. Scoped temporary elevation and emergency timing do not create universal administration. Break-glass is for genuine normal-control-path failure/insufficiency and must be reviewed afterward. Reconcile emergency repository-managed configuration or infrastructure changes back into source control.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "AI assistance and automation",
-    "anchor": "ai-assistance-and-automation",
-    "text": "AI assistance and automation\nAuthorized agents can correlate safe evidence, synthesize timelines, inspect source, find runbooks, and propose hypotheses. An incident does not grant an agent extra production authority. Keep raw secrets outside its context and prefer sanitized evidence to broad exports. Plausible AI explanations remain hypotheses until supported; never execute destructive mitigation solely because one sounds convincing. Agent recommendations/actions need the same authorization and verification as human actions.\nAutomation can collect safe diagnostics or perform explicit bounded actions when tested. High-impact automated containment requires confidence and acceptable false-positive risk; prefer reversibility. Repeated self-healing may expose underlying instability and should be observable. Do not introduce automated containment, arbitrary incident channels, or new operational tooling as a documentation placeholder.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Post-incident review",
-    "anchor": "post-incident-review",
-    "text": "Post-incident review\nSignificant incidents need a durable proportional review of impact/timeline, detection, cause/contributors, response/recovery, what worked, friction, and where luck limited harm. Avoid blame and simplistic “human error” conclusions: identify why unsafe action was possible, detection delayed, and recovery hard. Blameless review still requires accountable owners and corrections.\nPrioritize concrete actions by recurrence risk, impact reduction, and effort. Prefer tests, schema constraints, safer defaults/permissions, CI checks, bounded repair tools, better alerts, and tested recovery over reminders or many low-value tasks. Confirmed software defects should receive meaningful regression tests whenever practical. Add targeted safe telemetry rather than dumping payloads after an investigation gap.\nIncident histories may live in the incident system; durable policy, tests, tooling, runbooks, and significant ADR decisions belong in the repository. Update recurring-response runbooks only for real repeatable conditions. Track temporary mitigation removal, detection gaps, access/redaction/retention improvements, and completion ownership.\nIncident metrics may assess detection, containment, recovery, and recurrence, but must define ambiguous terms such as MTTR and not rank individuals simplistically. Averages hide distributions; incident count alone ignores severity. Exercise relevant response through safe tabletop scenarios, synthetic security cases, restore/rotation drills, or controlled failure injection as maturity permits. Untested recovery capabilities must not be assumed reliable.\n"
-  },
-  {
-    "id": "repository/docs/security/incident-response",
-    "title": "Incident Response",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Incident response checklist",
-    "anchor": "incident-response-checklist",
-    "text": "Incident response checklist\nAt declaration, identify owner, impact/time/environment, scope/severity, security/data risk, current trend, safe containment, evidence, relevant changes, and communication audience. For security, include affected identity/credential/boundary, continuing access/persistence, revocation and verification. For data, include affected subjects/copies, safe writes, restore/reconciliation and obligations. For reliability, include user capability, dependencies, release compatibility, backlog, and recovery evidence.\nBefore closure, verify service/security/data recovery, temporary-access handling, evidence retention, communication, and owned mitigation/corrective follow-up. Significant lessons must update their canonical policy or implementation rather than remaining only in incident prose.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Production Access",
-    "anchor": "production-access",
-    "text": "Production Access\nThis policy owns privileged operational access. [Authentication](authentication.md), [authorization](authorization.md), [secrets](secrets-management.md), and [classification](data-classification.md) supply the underlying controls. [Incident response](incident-response.md) and [runbooks](../runbooks/README.md) do not expand anyone's authority.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Scope and current availability",
-    "anchor": "scope-and-current-availability",
-    "text": "Scope and current availability\nProduction is a separate trust boundary from local development, CI, tests, staging, and previews. Routine development and maintenance should work through local/synthetic environments and sanitized observability without broad production access. Human access requires an operational purpose and the minimum capability for the necessary time.\nProvider IAM, concrete operational roles, just-in-time access, approval/break-glass workflows, bastions/private networking, device trust, and session recording remain deployment-specific decisions. [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) governs accepted CI/supply-chain direction; it does not mean production access tooling is deployed. Do not invent provider commands or begin deployment work to complete this policy.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Identities, privilege, and access request",
-    "anchor": "identities-privilege-and-access-request",
-    "text": "Identities, privilege, and access request\nUse attributable identities and distinguish humans from service, CI, and deployment actors. Shared human accounts and borrowing an automation identity undermine audit/revocation and should be avoided. Match authentication strength and any recent/step-up requirement to risk. Named cloud-console access must use narrow roles; provider root/owner accounts are break-glass capabilities, not routine accounts.\nSeparate observation, data read/write, deployment, infrastructure, IAM/security administration, and secret administration where practical. An actor who grants privileges need not hold every resource permission. Deploying must not imply viewing raw credentials. Prefer delegated use, workload identity, temporary credentials, or controlled tooling over secret disclosure. Scope by system, resource, operation, environment, time, and classification; add region/tenant scope only where needed.\nAn access request should identify actor, task/reason, target environment/resource, minimum capability, duration, related incident/work item, data classification, and whether safer telemetry/read-only tools suffice. Temporary access should expire automatically where supported; standing privilege needs operational justification, narrow scope, and review. Bounded sessions/idle timeouts reduce unattended access risk; concurrency/device/session-recording controls are requirement-driven, not mandated products.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Approval",
-    "anchor": "approval",
-    "text": "Approval\nHigher-risk capabilities may require stronger approval according to privilege, destructiveness, classification, and urgency. Read-only diagnostics and unrestricted administration do not need identical workflows. Avoid unrestricted self-approval for high-risk access where separation is practical; small teams may combine requester/approver/responder with compensating auditability, time limits, and controls.\nHonor explicit delegated authority and the actual operational approval mechanism. A runbook, repository access, or technical ability is not authorization. Security-sensitive access must fail closed if permission cannot be established; access-system outage does not justify an implicit bypass.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Break-glass access",
-    "anchor": "break-glass-access",
-    "text": "Break-glass access\nUse break-glass only for genuine emergencies when normal mechanisms are unavailable or insufficient. Additional normal workflow steps are not an emergency. Protect emergency identities/credentials according to the selected architecture and [secrets policy](secrets-management.md); ordinary notes, chat, Git, or unapproved stores are not acceptable credential locations.\nGrant only necessary privilege, make use visible promptly to appropriate operators where practical, preserve attribution/audit, limit duration, revoke afterward, and review every use. Record why it was needed, why normal access failed, scope/owner, affected credentials, notifications, and improvements. Offline emergency access requires an explicit strongly controlled design; do not fabricate one in an incident.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Investigation and operational tools",
-    "anchor": "investigation-and-operational-tools",
-    "text": "Investigation and operational tools\nPrefer metrics, logs, traces, error reports, safe diagnostics, and scoped read-only inspection before shells, writes, secret reveal, or administrators. Read-only still exposes confidential data and can exhaust CPU, memory, I/O, locks, or connections. Query tooling should enforce bounded results/timeouts, safe exports, and appropriate audit. Masked/field-limited views can reduce exposure; masking does not automatically declassify data. Sensitive search inputs must not be logged indiscriminately.\nPurpose-built tools should expose only required capabilities, such as safe status inspection or a bounded repair. Admin APIs require strong authentication, authorization, validation, bounds, and audit even on internal networks. Internal placement is defense in depth, not authority. Prefer reviewed repository-controlled infrastructure/configuration and deployment automation where they exist. Emergency manual changes must be reconciled back into the repository afterward.\nShell/container/filesystem access can expose mounted credentials, private data, and network capabilities; do not enable SSH out of habit or make it the first debugging step. Remote debuggers can pause or mutate production and expose memory; require explicit operational justification. Profilers need low-overhead design and access control. Memory/core dumps are highly sensitive artifacts and need reviewed, restricted handling.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Manual data changes",
-    "anchor": "manual-data-changes",
-    "text": "Manual data changes\nDirect production writes bypass validation, domain rules, authorization, audit, and delivery behavior. Prefer application-aware admin operations, reviewed repair scripts, controlled migrations, or reconciliation. Separate runtime, migration, human-read, and administrative database identities; elevated migration credentials must not become normal runtime credentials.\nA repair must identify the violated invariant, affected records, desired canonical state, why ordinary workflow is insufficient, required side effects, concurrency handling, idempotency, verification, failure handling, and real rollback or forward recovery. Significant/reusable scripts should live in the repository for review/testing; retain the exact significant one-off procedure in an appropriate script, incident record, migration, or runbook. Repair tooling must not become a permanent unrestricted admin interface.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Destructive operations",
-    "anchor": "destructive-operations",
-    "text": "Destructive operations\nDeletes, drops, truncation, queue purges, broad revocation, signing-key changes, and restores need authorization/confirmation proportionate to their concrete risk. Confirmation does not replace permission or review. Make the environment obvious and require explicit production selection; production must never be an implicit destructive-tooling default. Prefer read-only, dry-run, non-production, and bounded scope where practical.\nMeaningful dry runs should show affected scope, planned changes, and validation errors without mutation, but cannot guarantee unchanged concurrent state at execution. Batch operations need bounds, progress, pause/resume where supported, failure handling, and safe retry. Resolve uncertain outcomes by inspecting state. Verify actual final conditions and document when rollback is impossible or unsafe, with a forward-recovery path.\nBackups, replicas, analytics, search, caches, and queues remain production data. Restore can overwrite state and requires explicit authorization, compatibility checks, and [retention/deletion reconciliation](data-retention.md#backups-restore-and-deletion-replay). Avoid backup downloads to personal machines. Message replay must account for duplicates, stale data, current authorization, idempotency, and provider effects; blindly releasing a backlog can cause another incident.\n"
   }
 ]

@@ -1,0 +1,97 @@
+# IA-MNS production services on one host (ADR-0031). Run through
+# ia-mns-deploy, which sets the release, the image references and the project
+# name; it is not meant for a bare `docker compose up`.
+#
+# Host addresses, names and credentials never live here: they come from the
+# files in ${IA_MNS_CONFIG_DIR} (default /etc/ia-mns), readable only by root.
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
+x-logging: &logging
+  logging:
+    driver: local
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  postgres:
+    image: ${IA_MNS_POSTGRES_IMAGE:?set by ia-mns-deploy}
+    env_file:
+      - path: ${IA_MNS_CONFIG_DIR:-/etc/ia-mns}/postgres.env
+        required: true
+    environment:
+      POSTGRES_DB: ia_mns
+      POSTGRES_USER: postgres
+      # Local socket connections use peer authentication from initialization
+      # on; ia-mns-deploy setup then admits only the two application roles
+      # over the private network.
+      POSTGRES_INITDB_ARGS: "--auth-local=peer --auth-host=scram-sha-256"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks: [backend]
+    # No published port: only containers on the private network reach it.
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U postgres -d ia_mns -h /var/run/postgresql"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    restart: unless-stopped
+    stop_grace_period: 60s
+    shm_size: 256mb
+    <<: *logging
+
+  # One-shot database deployment with the migration credential. Never started
+  # by `up`; ia-mns-deploy runs it explicitly before starting a release.
+  migrate:
+    image: ${IA_MNS_IMAGE_REPOSITORY:-ia-mns}-migrate:${IA_MNS_RELEASE:?set by ia-mns-deploy}
+    profiles: [ops]
+    env_file:
+      - path: ${IA_MNS_CONFIG_DIR:-/etc/ia-mns}/migration.env
+        required: true
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    tmpfs: [/tmp, /home/node]
+    <<: [*hardening, *logging]
+
+  api:
+    image: ${IA_MNS_IMAGE_REPOSITORY:-ia-mns}:${IA_MNS_RELEASE:?set by ia-mns-deploy}
+    env_file:
+      - path: ${IA_MNS_CONFIG_DIR:-/etc/ia-mns}/runtime.env
+        required: true
+    # Published only on the configured host address; protect it with the
+    # host firewall (DOCKER-USER), which Docker-published ports bypass in ufw.
+    ports:
+      - "${IA_MNS_BIND_ADDRESS:?set IA_MNS_BIND_ADDRESS in compose.env}:${IA_MNS_HTTP_PORT:?set IA_MNS_HTTP_PORT in compose.env}:3000"
+    networks: [backend, egress]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    # The Oracle client may write diagnostics under the home directory.
+    tmpfs: [/tmp, /home/node]
+    <<: [*hardening, *logging]
+
+networks:
+  # The database network has no route outside the host.
+  backend:
+    internal: true
+  # Outbound access for the API: OpenAI, Sankhya Oracle, VRMaster, PDT.
+  egress: {}
+
+volumes:
+  # Created once by ia-mns-deploy setup and declared external, so no Compose
+  # command (including `down -v`) can remove the database files.
+  postgres:
+    external: true
+    name: ${IA_MNS_POSTGRES_VOLUME:-ia-mns-postgres}

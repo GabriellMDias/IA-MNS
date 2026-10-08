@@ -1,0 +1,10 @@
+[Unit]
+Description=IA-MNS daily PostgreSQL backup
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=@BIN_DIR@/ia-mns-deploy backup --kind daily --label daily
+Nice=10
+IOSchedulingClass=idle
