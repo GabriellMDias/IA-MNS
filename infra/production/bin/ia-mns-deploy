@@ -620,7 +620,9 @@ running_release() {
   docker inspect "$id" --format '{{index .Config.Labels "org.opencontainers.image.version"}}' 2>/dev/null || true
 }
 
-state_get() { [[ -f "$STATE_DIR/$1" ]] && cat "$STATE_DIR/$1" || true; }
+state_get() {
+  if [[ -f "$STATE_DIR/$1" ]]; then cat "$STATE_DIR/$1"; fi
+}
 state_set() { printf '%s\n' "$2" >"$STATE_DIR/$1.new" && mv "$STATE_DIR/$1.new" "$STATE_DIR/$1"; }
 
 record() {
@@ -896,7 +898,7 @@ copy_external() {
   encrypted="$file.age"
   age --encrypt --recipient "$recipient" --output "$encrypted" "$file" || return 1
   if [[ "$target" == /* ]]; then
-    install -d -m 0700 "$target" && cp "$encrypted" "$target/" || return 1
+    if ! install -d -m 0700 "$target" || ! cp "$encrypted" "$target/"; then return 1; fi
   else
     key="$(backup_setting IA_MNS_BACKUP_SSH_KEY)"
     local ssh="ssh -o BatchMode=yes"
