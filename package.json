@@ -16,6 +16,7 @@
     "sankhya:local": "pnpm -C apps/api sankhya:local",
     "pdt:local": "pnpm -C apps/api pdt:local",
     "identity:bootstrap": "pnpm -C apps/api identity:bootstrap",
+    "identity:keys": "pnpm -C apps/api identity:keys",
     "dev:lan": "pnpm -C apps/api dev:lan",
     "lint": "eslint .",
     "typecheck": "pnpm db:generate && tsc --noEmit && pnpm -C apps/api typecheck && pnpm -C packages/sdk typecheck && pnpm -C apps/web typecheck",

@@ -1,5 +1,41 @@
 [
   {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion source has a clear, standard distribution license.\nDerived projects can identify the terms of inherited Orion material without changing SHA-based provenance or upgrade mechanics.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nRedistributors must satisfy applicable Apache-2.0 conditions for Orion material; choosing a different license for their own code does not remove those obligations.\nThe root license does not settle separate rights or obligations for package dependencies or independently created project code.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo manifest, package publication, application, or deployment change is required. The licensing change is a compatible PATCH candidate after PR review, merge, and CI verification. No `NOTICE` or copyright holder statement is added without supporting repository evidence.\n"
+  },
+  {
+    "id": "repository/docs/adr/0016-license-the-orion-foundation-under-apache-2-0",
+    "title": "ADR-0016: License the Orion Foundation under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Canonical Apache-2.0 license](../../LICENSE)\n[Repository README](../../README.md#license)\n[Foundation versioning](../versioning.md) and [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\n[Project derivation](../project-derivation.md)\n"
+  },
+  {
     "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
     "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
     "group": "Decisions",
@@ -1420,23 +1456,5 @@
     "heading": "Consequences",
     "anchor": "consequences",
     "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
-    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nThe owner changes the AI model, trace level and automatic grants from administration, with validation, concurrency protection and audit, and without a restart.\nThe classification of every environment variable is explicit and checked where it is defined.\nExisting installations keep their behavior until an owner saves a value.\n"
-  },
-  {
-    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
-    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nA wrong model identifier saved by an owner makes AI requests fail until it is corrected or reset; the screen asks for evaluation before changing it in production.\nAutomatic grants are an authorization policy: an owner can narrow (never widen beyond the catalog) who receives read capabilities, and issued access tokens keep their permissions for up to 10 minutes.\nEach new parameter needs a catalog entry, a migration extending the table checks, web labels and tests.\n"
   }
 ]

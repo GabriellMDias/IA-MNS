@@ -2,17 +2,16 @@
 // Runs on the server with the runtime database configuration; refuses when an
 // active owner exists unless --break-glass is given (audited either way).
 // The printed URL carries the secret in the fragment, which browsers do not send.
-import { parseServerConfig } from "../src/config.js";
-import { createDatabase } from "../src/database.js";
-import { identityServiceFor } from "../src/features/identity/module.js";
-import { identityPorts, permissionCatalog } from "../src/modules.js";
+import { parseServerConfig } from "../config.js";
+import { createDatabase } from "../database.js";
+import { identityService } from "../modules.js";
 
 const breakGlass = process.argv.includes("--break-glass");
 const unknown = process.argv
   .slice(2)
   .filter((argument) => argument !== "--break-glass");
 if (unknown.length) {
-  process.stderr.write("Usage: identity:bootstrap [--break-glass]\n");
+  process.stderr.write("Usage: identity-bootstrap [--break-glass]\n");
   process.exit(2);
 }
 delete process.env.ORION_MIGRATION_DATABASE_URL;
@@ -25,12 +24,7 @@ if (!config.databaseUrl || !config.publicOrigin) {
 }
 const database = createDatabase(config.databaseUrl);
 try {
-  const service = identityServiceFor(
-    config,
-    { config, database },
-    permissionCatalog,
-    identityPorts,
-  );
+  const service = identityService(config, database);
   if (!service) throw new Error("Identity is not configured");
   const token = await service.createBootstrapTicket(breakGlass);
   process.stdout.write(

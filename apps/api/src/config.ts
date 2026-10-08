@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
 
@@ -28,6 +29,19 @@ export const serverConfigSchema = Type.Object(
       Type.Literal("trace"),
     ]),
     shutdownTimeoutMs: Type.Integer({ minimum: 100, maximum: 30000 }),
+    trustedProxies: Type.Optional(
+      Type.Array(Type.String({ minLength: 1, maxLength: 64 }), {
+        minItems: 1,
+        maxItems: 16,
+      }),
+    ),
+    tlsCertFile: Type.Optional(Type.String({ minLength: 1 })),
+    tlsKeyFile: Type.Optional(Type.String({ minLength: 1 })),
+    webRoot: Type.Optional(Type.String({ minLength: 1 })),
+    webDocumentation: Type.Union([
+      Type.Literal("enabled"),
+      Type.Literal("disabled"),
+    ]),
     otlpEndpoint: Type.Optional(Type.String({ format: "uri" })),
     traceSampleRatio: Type.Number({ minimum: 0, maximum: 1 }),
     databaseUrl: Type.Optional(Type.String({ minLength: 1 })),
@@ -204,6 +218,71 @@ export const configReference = Object.freeze([
     classification: "INTERNAL",
     secret: false,
     purpose: "Total graceful shutdown deadline.",
+  },
+  {
+    key: "trustedProxies",
+    name: "ORION_TRUSTED_PROXIES",
+    role: "bootstrap",
+    type: "comma list of IP addresses or narrow CIDRs (IPv4 /24+, IPv6 /64+)",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Reverse proxies whose X-Forwarded-For and X-Forwarded-Proto are honored; unset trusts none, so the client address is the direct peer.",
+  },
+  {
+    key: "tlsCertFile",
+    name: "ORION_TLS_CERT_FILE",
+    role: "bootstrap",
+    type: "file path (PEM)",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Certificate chain for an HTTPS listener on the proxy-to-application hop; configure with ORION_TLS_KEY_FILE.",
+  },
+  {
+    key: "tlsKeyFile",
+    name: "ORION_TLS_KEY_FILE",
+    role: "bootstrap",
+    type: "file path (PEM)",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Private key of ORION_TLS_CERT_FILE; the path is configuration, the file is a secret readable only by the process.",
+  },
+  {
+    key: "webRoot",
+    name: "ORION_WEB_ROOT",
+    role: "bootstrap",
+    type: "directory path of a built apps/web",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Serves the web build from this process at the same origin; the API then answers under /api, as the development proxy does.",
+  },
+  {
+    key: "webDocumentation",
+    name: "ORION_WEB_DOCS",
+    role: "bootstrap",
+    type: "enabled | disabled",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Whether the served web build may contain the /docs portal; disabled by default in production, enabled otherwise. Requires ORION_WEB_ROOT.",
   },
   {
     key: "otlpEndpoint",
@@ -623,7 +702,7 @@ export const configReference = Object.freeze([
     classification: "INTERNAL",
     secret: false,
     purpose:
-      "Exact callback registered in PDT; the browser-visible URL of GET /identity/pdt/callback.",
+      "Exact callback registered in PDT; the browser-visible URL of GET /identity/pdt/callback, which the web origin serves under /api.",
   },
   {
     key: "pdtEmbedOrigin",
@@ -731,6 +810,26 @@ export function isPrivateIpv4(value: string): boolean {
     (first === 172 && second >= 16 && second <= 31) ||
     (first === 192 && second === 168)
   );
+}
+
+/**
+ * A trusted proxy is an exact address or a narrow range: trusting a broad
+ * network would let any host in it forge the client address.
+ */
+export function isTrustedProxyEntry(value: string): boolean {
+  const [address, prefix, extra] = value.split("/");
+  if (extra !== undefined || !address) return false;
+  const family = isIP(address);
+  if (family === 0) return false;
+  if (prefix === undefined) return true;
+  if (!/^(0|[1-9]\d{0,2})$/.test(prefix)) return false;
+  const bits = Number(prefix);
+  return family === 4 ? bits >= 24 && bits <= 32 : bits >= 64 && bits <= 128;
+}
+
+function listFromEnv(value: string | undefined): string[] | undefined {
+  if (value === undefined) return undefined;
+  return value.split(/[\s,]+/).filter(Boolean);
 }
 
 function numberFromEnv(value: string | undefined, fallback: number): number {
@@ -987,6 +1086,15 @@ export function parseServerConfig(
     port: numberFromEnv(env.ORION_API_PORT, 3000),
     logLevel: env.ORION_LOG_LEVEL ?? "info",
     shutdownTimeoutMs: numberFromEnv(env.ORION_SHUTDOWN_TIMEOUT_MS, 5000),
+    ...(env.ORION_TRUSTED_PROXIES === undefined
+      ? {}
+      : { trustedProxies: listFromEnv(env.ORION_TRUSTED_PROXIES) }),
+    ...optional("tlsCertFile", env.ORION_TLS_CERT_FILE),
+    ...optional("tlsKeyFile", env.ORION_TLS_KEY_FILE),
+    ...optional("webRoot", env.ORION_WEB_ROOT),
+    webDocumentation:
+      env.ORION_WEB_DOCS ??
+      (env.ORION_ENV === "production" ? "disabled" : "enabled"),
     ...(env.ORION_OTLP_ENDPOINT === undefined
       ? {}
       : { otlpEndpoint: env.ORION_OTLP_ENDPOINT }),
@@ -1069,6 +1177,29 @@ export function parseServerConfig(
         "Invalid API configuration: temporary access requires an exact private IPv4 HTTP origin",
       );
   }
+  if (candidate.trustedProxies !== undefined) {
+    if (!candidate.trustedProxies.every(isTrustedProxyEntry))
+      throw new Error(
+        "Invalid API configuration: ORION_TRUSTED_PROXIES accepts only IP addresses and narrow CIDRs",
+      );
+    // Local and temporary access trust the peer address; a forwarded one
+    // must never satisfy them.
+    if (candidate.localAccess || candidate.devAccessToken !== undefined)
+      throw new Error(
+        "Invalid API configuration: trusted proxies cannot be combined with local or temporary access",
+      );
+  }
+  if (
+    (candidate.tlsCertFile === undefined) !==
+    (candidate.tlsKeyFile === undefined)
+  )
+    throw new Error(
+      "Invalid API configuration: ORION_TLS_CERT_FILE and ORION_TLS_KEY_FILE go together",
+    );
+  if (env.ORION_WEB_DOCS !== undefined && candidate.webRoot === undefined)
+    throw new Error(
+      "Invalid API configuration: ORION_WEB_DOCS requires ORION_WEB_ROOT",
+    );
   const oracleValues = [
     candidate.sankhyaUser,
     candidate.sankhyaPassword,

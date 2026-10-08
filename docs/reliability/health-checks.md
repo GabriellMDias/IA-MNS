@@ -12,6 +12,8 @@ The implemented [health contracts](../../apps/api/src/health-contracts.ts), [han
 | `/health/live` | Successful until lifecycle reaches `stopped`; does not query PostgreSQL |
 | `/health/ready` | Successful only in `ready`, plus the feature's database check when configured; dependency failure or a 500 ms wait deadline makes it unavailable |
 
+When the API serves the web build at one origin, the same three endpoints also answer under `/api/health/*`, the path the browser contract uses; orchestration keeps the root paths ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)).
+
 [Bootstrap](../../apps/api/src/main.ts) validates configuration, checks configured database connectivity, listens, then marks ready. Shutdown begins drain before closing HTTP and resources. Ordinary requests during draining/stopped receive a safe unavailable response. The readiness wait deadline does not itself cancel the underlying database operation. The current handler verifies connectivity, not full schema compatibility or every business capability.
 
 Health paths/status/schema are implemented contracts, not deferred choices. Orchestrator probe frequency/thresholds, deployed routing, diagnostics authorization, uptime/synthetic monitors, and recovery objectives remain deployment-specific. Global response logging/instrumentation currently includes health traffic; the noise guidance below is an intended improvement, not existing exclusion behavior.

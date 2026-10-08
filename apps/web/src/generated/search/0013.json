@@ -1,5 +1,167 @@
 [
   {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Types of Boundaries",
+    "anchor": "types-of-boundaries",
+    "text": "Types of Boundaries\nBoundary\nRequired reasoning\nRuntime/process\nSeparate processes are distributed participants even when deployed together. Use explicit protocols and account for network failure, timeouts, partial results, retries, and duplicate requests. Remote operations are not local function calls.\nDeployment/distribution\nVersions may coexist. Define supported old/new combinations and migration requirements under [compatibility policy](versioning-and-compatibility.md).\nTrust\nValidate data crossing security contexts, including external-provider responses. Client applications remain untrusted regardless of repository proximity.\nPersistence\nAccess follows explicit application/domain ownership. A shared database client does not authorize every module to access every table.\nApplications must not import another application's internal implementation. Share genuinely common capabilities through public package APIs and communicate through deliberate runtime contracts. A package must not become an indirect way to bypass another application's boundary.\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Backend API Application",
+    "anchor": "backend-api-application",
+    "text": "Backend API Application\nThe implemented `apps/api` uses Fastify and Pino. It owns HTTP parsing/validation, authentication integration, authorization enforcement, correlation, transport error mapping, application orchestration, dependency composition, telemetry, and health endpoints. Plugins organize runtime integration; they do not define business domains.\nKeep HTTP requests/responses, status codes, headers, cookies, and framework concepts at the transport boundary unless the operation is inherently transport-specific. Map validated application input to business operations and map their outcomes back to public responses. Exposing a rule through HTTP does not make it transport logic.\nThe API is also IA-MNS's identity of record: it verifies host proofs, provisions and links Persons, issues sessions and computes permissions for every surface ([identity](../domains/identity.md)). The API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Web Application",
+    "anchor": "web-application",
+    "text": "Web Application\nThe implemented `apps/web` is a React/Vite client-first SPA. TanStack Router owns URLs/navigation, TanStack Query owns server state through the generated SDK, and React state/context owns local UI state. The accepted direction includes React Compiler when compatible. No general global-state library or full-stack web framework is selected by default; server rendering requires product justification. Fastify retains authoritative backend responsibilities.\nIt is IA-MNS's only frontend: the same build serves the direct URL and the PDT Connect and Sankhya Om embedded surfaces ([ADR-0023](../adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)). The web application owns pages/layouts, interactions, accessibility, browser rendering/storage, local state, web authentication integration, client composition, localization, and any frontend telemetry. Keep DOM/navigation and other browser-specific behavior local unless a genuinely compatible shared responsibility exists. UI components can share visual concepts without sharing implementation across platforms.\nThe browser can be inspected, modified, bypassed, replayed, or automated. Client validation and hidden/disabled controls improve experience; trusted backend boundaries still enforce validation, identity, permissions, and business invariants. Clients receive neither database credentials nor privileged server secrets. See [authentication](../security/authentication.md) and [authorization](../security/authorization.md).\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Sankhya Om Add-on",
+    "anchor": "sankhya-om-add-on",
+    "text": "Sankhya Om Add-on\n`apps/sankhya-addon` is an Add-on Studio project built with Gradle for the Sankhya Om runtime (Java 8 on WildFly), not a pnpm workspace member ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)). It adapts and hosts IA-MNS inside the Om and nothing more: a menu screen that frames `/embed/sankhya`, the bridge answer, the identity assertion minted from the server-side Om session, and the authorize page of the direct-URL Sankhya sign-in. Its runtime contracts with IA-MNS are bridge protocol v1 and the [assertion contract](../domains/identity.md#sankhya-om-add-on-assertion-contract).\nThe add-on must not become a second IA-MNS frontend or hold IA-MNS business rules, conversations, permissions, Persons, links or data; those belong to `apps/web` and `apps/api`. It runs with the Om's privileges and the API trusts only its signed assertion, never browser-supplied identity. Its [local guide](../../apps/sankhya-addon/README.md) describes its build, development environment and repository cautions.\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Shared Contracts",
+    "anchor": "shared-contracts",
+    "text": "Shared Contracts\nCross-application requests, responses, events, errors, identifiers, and serialization/validation rules need explicit ownership. Current API wire contracts generate OpenAPI and the SDK; the web application does not consume API implementation types. See [API principles](../api/principles.md) and [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage).\nDatabase records, domain entities, application results, wire responses, and view models have different responsibilities even when their shapes match. Share representations only when their meaning matches; otherwise map deliberately. Do not expose ORM models as public responses accidentally or manually duplicate a canonical public contract.\nCompile-time sharing and runtime communication are different: a shared type does not execute another application's behavior. Choose HTTP, messages, events, IPC, or another explicit mechanism from actual needs. Prefer synchronous calls when callers require immediate results; introduce asynchronous work for real latency, retry isolation, temporal decoupling, or independent-consumer needs. A queue is not a remedy for an unwanted import dependency.\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Composition and Ownership",
+    "anchor": "composition-and-ownership",
+    "text": "Composition and Ownership\nExecutable applications select and wire concrete adapters at bootstrap. Dependencies should be visible through explicit composition; a dependency-injection framework is not required. Minimize mutable globals and service locators. Process-scoped connection pools and telemetry providers are reasonable when lifecycle and access are intentional.\nBusiness capabilities have one identifiable home regardless of how many applications expose them. Delivery-specific feature directories do not authorize cross-application imports or independent reimplementation of core rules. Workers and administrative CLIs must preserve the same invariants as equivalent API operations.\nThe default data path is client → trusted backend → owned persistence → database. Multiple trusted runtimes may share controlled persistence when they belong to an explicitly shared logical ownership model. Modifying another service's owned tables is architectural coupling, not a shortcut. See [database ownership](../database/principles.md).\nExternal providers should be isolated enough to contain meaningful provider-specific risk and ownership. Do not spread a provider SDK throughout business behavior, but do not wrap every third-party library without benefit. A Backend for Frontend requires a concrete client orchestration, latency, identity, aggregation, or independent-evolution need; multiple clients alone do not justify it.\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Additional Runtime Boundaries",
+    "anchor": "additional-runtime-boundaries",
+    "text": "Additional Runtime Boundaries\nThese are conditional rules, not implemented applications:\nRuntime\nLocal responsibility and additional obligations\nMobile\nDevice capabilities, native UI/navigation, secure local storage, offline behavior, notifications, permissions, and lifecycle. It remains an untrusted client; installed old versions may require a documented longer API support window.\nDesktop\nOS/filesystem integration, local caching, credential storage, updates, UI, and lifecycle. Possession of a binary does not confer backend trust.\nWorker\nQueue/schedule/event processing or long-running work. Define retries, idempotency, duplicate delivery, ordering, dead letters, poison messages, concurrency, timeouts, telemetry, and graceful shutdown; never assume exactly-once execution without evidence.\nCLI\nCommand parsing, terminal interaction/output, command lifecycle, and identity integration. Administrative convenience cannot bypass domain or access controls.\nEvents must describe meaningful facts or integration signals with owned schemas, delivery guarantees, ordering, and compatibility. Follow [delivery and side effects](delivery-and-side-effects.md) for reliable processing. Remote calls need deliberate bounded timeout/retry behavior; evaluate whether an error is transient, effects can repeat safely, and retry load will worsen the failure.\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Creating a New Application Boundary",
+    "anchor": "creating-a-new-application-boundary",
+    "text": "Creating a New Application Boundary\nBefore creating or splitting an application, identify:\nThe runtime/product responsibility and why an existing application cannot own it.\nNeeded scaling, deployment/distribution independence, security, failure isolation, or operational ownership.\nExposed/consumed contracts, shared packages, persistent-data ownership, and trust boundaries.\nConfiguration, lifecycle, telemetry, compatibility, and new failure modes.\nWhether the value justifies its operational complexity and requires an ADR.\nEstablish a logical modular boundary before extracting another process. Size alone does not justify splitting; merging is appropriate when separate applications add no meaningful independence. Microservices are not a default goal, and serverless deployment units do not determine domain boundaries. Prefer modular ownership within one backend until separation has a concrete benefit.\nLocal [README and agent instructions](repository-structure.md#local-agent-instructions) make each application independently understandable without repeating repository policy. When placement is unclear, distinguish runtime-specific behavior, genuinely shared domain meaning, shared wire contracts, development tooling, and operational infrastructure before creating a new owner.\n"
+  },
+  {
+    "id": "repository/docs/architecture/application-boundaries",
+    "title": "Application Boundaries",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Boundary Enforcement",
+    "anchor": "boundary-enforcement",
+    "text": "Boundary Enforcement\nThe existing [dependency checks](dependency-rules.md#mechanical-enforcement) reject cross-application imports and other forbidden edges. They do not prove runtime trust, data ownership, or contract compatibility. When a boundary obstructs a legitimate requirement, identify the correct owner, try its existing public contract, then deliberately extend or revise the boundary and its tests/enforcement. Document significant changes through the ADR process; do not bypass constraints silently.\n"
+  },
+  {
+    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
+    "title": "Backend Execution and Generated Artifacts",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Backend Execution and Generated Artifacts",
+    "anchor": "backend-execution-and-generated-artifacts",
+    "text": "Backend Execution and Generated Artifacts\n[Documentation index](../README.md) · [Validation availability](../validation.md) · [Local setup](../setup.md)\nThis page owns API execution and generated-artifact storage conventions. The implemented pipeline follows [TypeScript/Node.js](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md), [pnpm](../adr/0002-select-pnpm-for-package-and-workspace-management.md), [API generation](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md), [Prisma/PostgreSQL](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [validation](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) decisions. [Setup](../setup.md#validate-regenerate-and-build) owns the regeneration sequence; [validation](../validation.md) lists current commands and prerequisites.\n"
+  },
+  {
+    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
+    "title": "Backend Execution and Generated Artifacts",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "API development and build",
+    "anchor": "api-development-and-build",
+    "text": "API development and build\nKeep the API as an ESM TypeScript workspace application under `apps/api`. Use pnpm package scripts as the stable interface and native workspace filtering for orchestration; no dedicated monorepo task runner or backend bundler is needed initially.\nThe `apps/api` scripts expose `dev` (Node's optional root `.env.local` loading and watch mode with pinned `tsx`), `typecheck` (`tsc --noEmit`), `build` (`tsc` emitting Node-compatible ESM JavaScript to an ignored `dist/` directory), and `start` (`node dist/main.js`). The [setup guide](../setup.md) owns local environment-file instructions. Source imports and compiler settings resolve in the emitted Node.js ESM output. `tsx` is an execution convenience, never a substitute for TypeScript checking or a production runtime dependency.\nInstall dependencies from the shared frozen lockfile. Generate tool-managed Prisma client code before typecheck/build when required; keep its cache/output out of hand-edited source and commit history. Build and start must work without a development transpiler at runtime. The existing process and feature smokes exercise the emitted application.\nRoot `pnpm validate` and CI include application typechecks, tests, builds, smokes, and generated-output freshness. Integrate new capabilities into that same gate. Keep validation non-mutating with respect to tracked source; generation is a separate explicit write command. Update [validation availability](../validation.md) when scripts change.\n"
+  },
+  {
+    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
+    "title": "Backend Execution and Generated Artifacts",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Artifact ownership and storage",
+    "anchor": "artifact-ownership-and-storage",
+    "text": "Artifact ownership and storage\nDerived artifact\nCanonical input\nOutput and handling\nOpenAPI 3.1 description\nExecutable TypeBox wire schemas and stable route `operationId` metadata owned by the API\nCommitted `docs/generated/api/openapi.json` is regenerated and checked; clients and documentation consume that file, with no independently authored copy.\nTypeScript API client types\nCommitted generated OpenAPI\nCommitted `packages/sdk/src/generated/api-types.ts` comes from `openapi-typescript`; a thin `openapi-fetch` client lives outside the generated file. `pnpm -C packages/sdk generate` writes it and `references:check` verifies it without editing tracked files. The web app does not import API implementation types.\nAPI configuration reference\nAPI-owned TypeBox bootstrap configuration schema and metadata\nCommitted `docs/generated/configuration/api.md` is regenerated and checked from the API source. It contains safe types/defaults, never secrets or a real `.env`.\nAPI error registry reference\nAPI-owned registry and envelope schema\nCommitted `docs/generated/api/errors.md` is regenerated and checked from the API source. Feature errors join the same registry when their routes exist.\nDatabase reference\nMigrated PostgreSQL plus canonical schema-adjacent semantic metadata; Prisma schema and reviewed migrations are inputs\nCommitted `docs/generated/database/schema.md` is generated and checked from a fresh Testcontainers PostgreSQL, including custom SQL constraints and indexes; it is not authored independently. With no application tables it states that explicitly.\nPortal catalog, pages, search, and component reference\nRepository Markdown, current generated API/database/error references, and web-owned component source/examples/metadata\nCommitted `apps/web/src/generated/manifest.json`, page/search assets, and `docs/generated/components/web.md` are written/checked by `pnpm docs:references:write` / `pnpm docs:references:check`. [Living documentation](living-documentation.md) owns portal behavior and limitations.\nPrisma Client and emitted JavaScript\nPrisma schema and TypeScript source\nGenerate into ignored, tool-managed outputs for each build; do not commit platform/tool-generated client code or `dist/`. Reviewed SQL migrations are authored release history, not disposable generated output.\nMark generated files clearly and never edit them to repair a source defect. A generation command may update tracked derived artifacts intentionally; a separate check must regenerate in a temporary location or compare deterministically without changing tracked files. The current gate fails on generated drift. Rebuildability does not waive public API or SDK compatibility responsibilities under [versioning](versioning-and-compatibility.md), nor the independent [migration-history rules](../database/migrations.md).\nDo not create planned files or directories as placeholders. Each artifact belongs with its canonical source, generator, validation check, and actual consumer. Each module's implementation conventions describe its data and contract metadata.\n"
+  },
+  {
+    "id": "repository/docs/architecture/configuration",
+    "title": "Configuration",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Configuration",
+    "anchor": "configuration",
+    "text": "Configuration\n[Documentation index](../README.md) · [Local setup](../setup.md) · [Secrets management](../security/secrets-management.md)\nConfiguration is an explicit application dependency: validate it before use, expose only safe projections, and keep its meaning discoverable without access to secret values. [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects TypeBox for bootstrap schemas. This page owns configuration policy; application sources own their settings and the setup guide owns loading commands.\n"
+  },
+  {
+    "id": "repository/docs/architecture/configuration",
+    "title": "Configuration",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Canonical Configuration Schema",
+    "anchor": "canonical-configuration-schema",
+    "text": "Canonical Configuration Schema\nEach application owns a canonical schema with derived types where practical. Define each setting's name, type, purpose, required/optional state, default, validation constraints, classification, secret status, client visibility, and operational consequences. Document the owner, permitted changes, environment scope, and whether a restart is required. Descriptions explain semantics rather than repeat the name.\nCurrent sources are:\nApplication\nCanonical input and representation\nAPI\n[`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty.\nWeb\n[`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md).\nThe API metadata records role, type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.\nAvoid independent definitions in code, READMEs, examples, and deployment files when they can derive from the schema. Generated references must never contain actual secrets. Changes to the API source require regeneration through [artifact tooling](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage); new applications need their own schema and explicit example/check.\n"
+  },
+  {
+    "id": "repository/docs/architecture/configuration",
+    "title": "Configuration",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Secrets, Bootstrap Configuration and Operational Parameters",
+    "anchor": "secrets-bootstrap-configuration-and-operational-parameters",
+    "text": "Secrets, Bootstrap Configuration and Operational Parameters\nEach API environment variable has a `role` in the metadata that says why it is configuration ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)); `.env.example` groups variables by it and the [generated reference](../generated/configuration/api.md) lists it:\nRole\nMeaning\nWhere it changes\n`secret`\nCredentials and keys: database URL, OpenAI key, Oracle and VRMaster accounts, identity signing and encryption keys, PDT client secret.\nSecret delivery under [secret policy](../security/secrets-management.md); never visible or editable in an API or interface.\n`bootstrap`\nInfrastructure, deployment and trust configuration the process needs before or independently of its own storage: environment, listener, telemetry, token issuers, public origin, provider endpoints and pinned keys, connection hosts and TLS, Oracle client, the Sankhya directory view and the PH-11 session gate.\nDeployment and restart.\n`parameter`\nInstallation default of an operational parameter.\nOwners override it at run time in administration; see below.\n`development`\nLocal development and temporary device testing aids, refused in production.\nLocal configuration only.\n"
+  },
+  {
+    "id": "repository/docs/architecture/configuration",
+    "title": "Configuration",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Operational parameters",
+    "anchor": "operational-parameters",
+    "text": "Operational parameters\nOperational parameters are product behavior an owner may change after deployment. They are declared once in the typed catalog [`apps/api/src/parameters.ts`](../../apps/api/src/parameters.ts) (type, domain, production limits and when a change applies), stored in `operational_parameters` with database checks per key, and administered in **Administração → Parâmetros** under the owner authorization and audit of the [identity domain](../domains/identity.md#operational-parameters).\nParameter\nScreen label\nInstallation default\nTakes effect\n`ai.model`\nModelo de IA\n`OPENAI_MODEL`, else `gpt-6.1-sol`\nNext AI request (routing and interpretation)\n`ai.traceLevel`\nRegistro de diagnóstico da IA\n`IA_MNS_AI_TRACE`, else `metadata`; `content` is never used in production\nNext agent turn\n`access.providerGrants`\nLiberação automática por vínculo\n`IA_MNS_PROVIDER_GRANTS`, else every catalog-eligible read grant\nNext access token (at most 10 minutes for open sessions)\nPrecedence is **valid owner value > installation default** (the environment variable, or the product default when it is unset); production limits apply to every source, and resetting a parameter returns to the installation default. No parameter requires a restart: consumers receive narrow resolvers from composition and read the current value at each use, without a cache, so every API instance applies a change at the next use. Code reads parameters only through `OperationalParameters`; no module queries the table directly. A new parameter needs a catalog entry, a migration extending the table checks, its installation default with role `parameter` when one exists, web labels, and tests. Secrets and bootstrap settings never become parameters.\n"
+  },
+  {
+    "id": "repository/docs/architecture/configuration",
+    "title": "Configuration",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Configuration Validation",
+    "anchor": "configuration-validation",
+    "text": "Configuration Validation\nParse raw strings into meaningful booleans, numbers, durations, URLs, enums, lists, or objects at the boundary. A nonempty `\"false\"` must not become true. Names/types must make units explicit, use clear positive boolean semantics, and group related settings coherently. Prefer one validated mode over conflicting enable/disable booleans.\nValidate required values, cross-field invariants, conditional requirements, ranges, protocols, and mutually exclusive modes before use. Missing or invalid required configuration normally prevents startup. Diagnostics should name the key and expected requirement where practical without echoing restricted values. After successful parsing, components can rely on the declared schema.\nDefaults must be safe, predictable, documented, and unambiguous. Require explicit configuration when no safe default exists; never silently disable expected authentication or select an unintended production database. Isolate development-only conveniences. The current API explicitly permits health-only operation in development/test, requires the database and token settings together to enable the feature, and requires that feature configuration in production.\nUnknown keys can indicate typos or obsolete deployment settings; detect them where practical, with warnings/errors appropriate to the source. The current API selects known environment keys into a validated object; it does not reject every unrelated variable in the process environment.\n"
+  },
+  {
+    "id": "repository/docs/architecture/configuration",
+    "title": "Configuration",
+    "group": "Architecture",
+    "kind": "repository",
+    "heading": "Configuration Precedence",
+    "anchor": "configuration-precedence",
+    "text": "Configuration Precedence\nSources and precedence must be deterministic and documented. Use the smallest set of mechanisms that satisfies real needs; do not add overlapping files, CLI overrides, or remote systems speculatively.\nThe API development command optionally loads the root ignored `.env.local`; existing shell environment values win. The production start command receives process environment and does not implicitly load that file. Vite owns the web application's environment loading and embeds its public build-time values. Disposable end-to-end and module stacks supply their own temporary configuration. [Setup](../setup.md#load-local-configuration) is the canonical procedure; no global remote configuration hierarchy or deployment platform is selected.\n"
+  },
+  {
     "id": "repository/docs/architecture/configuration",
     "title": "Configuration",
     "group": "Architecture",
@@ -1033,176 +1195,5 @@
     "heading": "Feature Organization",
     "anchor": "feature-organization",
     "text": "Feature Organization\nKeep related behavior together by feature/domain where practical. Technical layers may exist inside a feature, but do not impose a folder per layer on small cohesive code. API modules live in `apps/api/src/features/<module>/`, typically as flat domain, service, persistence, contracts, errors, and route files; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) is a complete example. Domain behavior may stay application-local until sharing has value.\nTests normally live near the behavior they protect or in the owning application's test directory; broader system tests may need dedicated locations. Use the [testing strategy](testing-strategy.md) for existing topology and test boundaries. Name directories/packages in English by domain, capability, or responsibility rather than historical accidents.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Documentation and Generated Artifacts",
-    "anchor": "documentation-and-generated-artifacts",
-    "text": "Documentation and Generated Artifacts\n[Contributing](../contributing.md#documentation-ownership) owns documentation placement and canonical-source rules. Repository policy lives under `docs/`; application/package knowledge belongs near its owner. Documentation may reference implementation, but ordinary application behavior must not depend on parsing human-authored policy. If behavior needs machine-readable rules, give those rules a canonical machine-readable source. Documentation-as-product content, such as the portal, is an intentional exception.\nGenerated code and references must be distinguishable from authored files, reproducible, and linked to their source/generator. Current locations and handling are defined by [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage) and [living documentation](living-documentation.md). Generated clients are consumers of contracts, never their authority. Reviewed SQL migrations follow their separate release-history rules.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Local Agent Instructions",
-    "anchor": "local-agent-instructions",
-    "text": "Local Agent Instructions\nRead root [AGENTS.md](../../AGENTS.md), then each applicable nested file before editing an area. Nested instructions add local conventions, important files, commands, or prohibited patterns; they do not remove global requirements or copy repository-wide policy. Current scopes include [API](../../apps/api/AGENTS.md), [web](../../apps/web/AGENTS.md), [Sankhya add-on](../../apps/sankhya-addon/AGENTS.md), [SDK](../../packages/sdk/AGENTS.md), [documentation](../AGENTS.md), [ADRs](../adr/AGENTS.md), and [runbooks](../runbooks/AGENTS.md).\nEvery tool reads the same files; [agent instructions](agent-instructions.md) owns tool compatibility and forbids instruction copies. Add a local instruction file only when the area needs additional guidance. Keep commands near the owner and link canonical policy so agents receive useful context without independently maintained copies.\n"
-  },
-  {
-    "id": "repository/docs/architecture/repository-structure",
-    "title": "Repository Structure",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Enforcement",
-    "anchor": "enforcement",
-    "text": "Enforcement\n[Dependency rules](dependency-rules.md#mechanical-enforcement) identify the implemented import checks and their limits. Runtime code must not depend on repository tooling; tooling may inspect application/package sources. Public package boundaries, domain/data ownership, and shared meaning still require review where no mechanical rule exists. Extend enforcement with real new boundaries rather than describing future checks as available.\n"
-  },
-  {
-    "id": "repository/docs/architecture/technology-decisions",
-    "title": "Technology Decision Map",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Technology Decision Map",
-    "anchor": "technology-decision-map",
-    "text": "Technology Decision Map\nThis is a navigation summary, not an independent technology specification. Each linked ADR owns the decision, exceptions, rationale, and version policy. Every record listed below currently states `accepted`, with ADR-0014 partly superseded by ADR-0017; workspace tooling, the API runtime with composable modules and PostgreSQL support, generated SDK, web shell, documentation portal, and project-derivation tooling exist; the Sankhya add-on in `apps/sankhya-addon` works in the Sankhya development Om. Consult [validation availability](../validation.md) before running commands.\n"
-  },
-  {
-    "id": "repository/docs/architecture/technology-decisions",
-    "title": "Technology Decision Map",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Selected directions",
-    "anchor": "selected-directions",
-    "text": "Selected directions\nGoverning decision\nDirection\nImportant scope\nCurrent policy\n[ADR-0001](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nTypeScript 6.x; Node.js 24 LTS initial baseline; ESM\nPrimary, not exclusive; exact compatible versions belong in tooling.\n[Policy](principles.md)\n[ADR-0002](../adr/0002-select-pnpm-for-package-and-workspace-management.md)\npnpm and pnpm workspaces\nShared lockfile, workspace protocol, catalogs when useful; no dedicated task runner initially.\n[Policy](repository-structure.md)\n[ADR-0003](../adr/0003-establish-repository-validation-and-architecture-enforcement.md)\ntsc, ESLint/typescript-eslint, Prettier, dependency-cruiser\nNon-mutating canonical validation and separate formatting command are implemented for current tooling.\n[Policy](../validation.md)\n[ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md)\nFastify; Pino for HTTP runtime logging\nTransport/infrastructure adapters do not define business-domain boundaries.\n[Policy](application-boundaries.md)\n[ADR-0005](../adr/0005-select-postgresql-as-the-primary-database.md)\nPostgreSQL\npgvector is preferred when a suitable vector workload requires it, not enabled by default; AI access remains authorized through application capabilities.\n[Policy](../database/principles.md)\n[ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md)\nPrisma ORM 7, Prisma Client, Prisma Migrate\nParameterized SQL/TypedSQL and custom migrations remain available; complete physical schema comes from migrated PostgreSQL.\n[Policy](../database/migrations.md)\n[ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nHTTP/JSON, TypeBox 1.x, generated OpenAPI 3.1.x initially, openapi-typescript and openapi-fetch\nWire contracts, stable operation IDs, and TypeBox bootstrap configuration; client response revalidation is not automatic.\n[Policy](../api/principles.md)\n[ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md)\nReact 19.x, React Compiler when compatible, Vite 8.x, TanStack Router and Query\nClient-first SPA; URL, server, and local UI state have distinct owners; server rendering is requirement-driven.\n[Policy](application-boundaries.md)\n[ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md)\nVitest, Testcontainers, Vitest Browser Mode with Playwright, Playwright Test\nReal migrated PostgreSQL; browser fidelity where relevant; no initial global coverage threshold.\n[Policy](testing-strategy.md)\n[ADR-0010](../adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nOpenTelemetry traces/metrics, Pino logs, W3C Trace Context, OTLP\nCollector preferred when justified, not mandatory; no global backend/vendor or baseline browser instrumentation.\n[Policy](../reliability/observability.md)\n[ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nGitHub Actions and Renovate; available GitHub security capabilities\nSame validation as local development; immutable action pins; automerge off initially; CI does not select CD.\n[Policy](continuous-integration.md)\n[ADR-0012](../adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nLocally verified JWT bearer access tokens for the first API\nProvider-independent issuer/audience/JWKS verification and stable application principal mapping; no concrete provider selected.\n[Policy](../security/authentication.md)\n[ADR-0013](../adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\n`AGENTS.md` hierarchy as the only agent instruction source\nTool-specific files are thin discovery adapters only; currently a Gemini CLI setting.\n[Policy](agent-instructions.md)\n[ADR-0014](../adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nProjects derived from Orion by Git ancestry with `.orion/project.json` provenance\nFetch-only `orion-upstream`, reviewed upgrade merges, immutable commits instead of a release scheme.\n[Policy](../project-derivation.md)\n[ADR-0017](../adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nDerived projects start from a clean baseline\n`.orion/derivation.json` separates shared, foundation-only, and project-owned content; initialization removes the reference implementation and foundation history and applies the project identity.\n[Policy](../project-derivation.md)\n[ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nSankhya Add-on Studio add-on: Gradle with the Sankhya plugin, Java 8, WildFly\nOnly for `apps/sankhya-addon`, a thin Om host outside the pnpm workspace; not a second frontend.\n[Policy](application-boundaries.md#sankhya-om-add-on)\n[ADR-0027](../adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)\nnode-postgres (`pg`) for the VRMaster sales source\nOnly the read-only VRMaster adapter; Prisma remains the access path to the IA-MNS database.\n[Policy](../domains/sales-chat.md#sources)\n"
-  },
-  {
-    "id": "repository/docs/architecture/technology-decisions",
-    "title": "Technology Decision Map",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Deliberately unresolved or conditional choices",
-    "anchor": "deliberately-unresolved-or-conditional-choices",
-    "text": "Deliberately unresolved or conditional choices\nThe API's [development/build convention](backend-execution-and-generated-artifacts.md#api-development-and-build) is implemented. A dedicated task orchestrator, TypeScript project references, and advanced unused-code analysis are not initial requirements.\nUI/design systems, styling, accessibility primitives, charts, grids, and forms depend on product needs. No general global-state library or full-stack web framework is selected by default.\nGraphQL, tRPC, gRPC, rich SDK generators, and other-language clients require a concrete consumer or boundary. They do not replace the accepted interoperable API by implication.\nBearer access-token verification is implemented as shared API infrastructure under ADR-0012. IA-MNS issues its own tokens, sessions, local accounts and external links ([ADR-0022](../adr/0022-own-the-ia-mns-identity-with-verified-external-links.md)) and serves embedded hosts through host identity proofs ([ADR-0023](../adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)); a general external identity server remains unselected. Other applications' authorization and tenancy choices and AI delegation mechanisms depend on their requirements. Existing security policies still apply.\nQueue/messaging infrastructure, background-job infrastructure, cache, search, dedicated vector infrastructure, and object-storage providers are not global defaults. Introduce them only for demonstrated requirements.\nMobile and desktop stacks, deployment platform, application containerization, cloud provider, infrastructure as code, and continuous delivery remain product/deployment decisions. Testcontainers does not select an application deployment platform.\nObservability storage/vendors, error-reporting providers, alerting/paging, sampling rates, and retention depend on operational requirements. Do not introduce a provider abstraction solely to hide a vendor without a genuine responsibility.\nCompatible version evolution follows the individual ADRs. These recorded baselines are not installed-version claims. Implementation progress belongs in normal work tracking and capability documentation, not new ADR statuses.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Testing Strategy",
-    "anchor": "testing-strategy",
-    "text": "Testing Strategy\n[Documentation index](../README.md) · [Validation commands](../validation.md) · [Local setup](../setup.md)\nTests protect behavior, contracts, invariants, security, and architectural boundaries. Ask which important defect a test would detect, then choose the cheapest reliable boundary. [ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md) owns the accepted tools and rationale; [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) owns CI policy. These tools and the suites below are implemented.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Test Categories",
-    "anchor": "test-categories",
-    "text": "Test Categories\nBoundary/risk\nExecution and existing location\nPure domain, parser, client logic\nVitest in Node; API tests under `apps/api/test/`, web API tests under `apps/web/test/`.\nAPI transport/application\nFastify request injection with real owned behavior; real sockets when listener, network, or process lifecycle is the subject.\nPostgreSQL persistence/transactions\nVitest with Testcontainers and committed migrations; API integration/failure tests use the migrated-database helper.\nBrowser components\nVitest Browser Mode with Playwright, `apps/web/test/*.browser.test.tsx`; Windows uses installed Edge, other environments use Chromium.\nFull user journeys\nPlaywright Test, `apps/web/test/e2e/`; the real built API and web app for the shell and portal, plus migrated PostgreSQL and synthetic signed identities in module journeys under `test/e2e/<module>/`.\nAI behavior\nCurated multi-turn evaluation cases in `apps/api/evals/` replay reference model readings through the real agent and sales pipeline inside `pnpm test`; live-model runs, trace capture, synthetic generation and simulation are opt-in commands ([AI evaluation](ai-evaluation.md)).\nEmitted runtime\nAPI process and feature smoke scripts verify startup/lifecycle and the real feature flow.\nStructure and generation\nType/lint/import checks, documentation links/metadata, environment example, release-history checks, API/SDK/portal freshness.\nCoverage, performance/load/stress, mutation testing, additional browser matrices, external provider sandboxes, and deployment smoke/monitoring are introduced only when their risk or product requirement exists. Performance tests need measurable targets; stable microbenchmarks can inform critical algorithms but do not replace realistic system measurements. Chromium is the routine E2E baseline; browser support must not be guessed globally. V8 is the selected Vitest coverage provider when coverage becomes useful, with no initial global coverage threshold.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Test Selection",
-    "anchor": "test-selection",
-    "text": "Test Selection\nPrefer focused tests for local rules, real integration for infrastructure semantics, browser component tests for browser behavior, and a small set of representative critical E2E success/failure journeys. A rigid numerical pyramid is not required. Do not use a browser for a pure calculation, a mock for a database constraint, or a full stack for a component interaction a smaller test can prove.\nA unit is a cohesive responsibility, not necessarily one function/class/file. Test stable public behavior; avoid private-helper choreography, framework-dependent domain code, test-only production APIs, and interfaces created only to make everything mockable. Explicit dependencies improve testability when they reflect real architecture.\nBefore changing behavior, inspect existing tests and contracts, identify failure risks and missing coverage, and select meaningful layers. Fixes should reproduce the defect with a test that fails before and passes after where practical; otherwise document the reason and verification. Low-impact prose/formatting changes need appropriate checks, not ceremonial behavior tests. Security, data loss, financial impact, irreversibility, compatibility, and rollout complexity warrant stronger complementary evidence.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Real Database Tests",
-    "anchor": "real-database-tests",
-    "text": "Real Database Tests\nUse PostgreSQL when correctness depends on constraints, SQL/types, indexes, ORM mapping, locking, transactions, or custom migrations. SQLite, mocked Prisma, or an in-memory repository cannot prove those semantics. Create isolated disposable infrastructure using committed migrations; never rely on a manually maintained shared database or silently skip core checks when the container runtime is unavailable.\nCurrent helpers own disposable PostgreSQL and separate migration/runtime roles. Preserve reliable isolation when reordering, selecting, or parallelizing tests. Rollback wrappers can hide commits, multiple connections, background work, and transaction boundaries; use them only when suitable. Choose reset/schema/database/unique-data strategies by correctness first, then measured cost.\nMigration validation covers fresh creation and, when an actual supported release exists, upgrade from that exact baseline with representative permitted data and supported old/new application combinations. A fresh database is not upgrade proof. [Migration policy](../database/migrations.md) governs verified unreleased history versus immutable released history; [release evolution](../database/release-evolution.md) owns the procedure.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Contracts and Failure Behavior",
-    "anchor": "contracts-and-failure-behavior",
-    "text": "Contracts and Failure Behavior\nValidate requests/responses/errors/serialization against canonical contracts rather than independently copied expectations. Exercise the actual API transport for routing, validation, identity, headers, status, and safe serialization; reserve network-level execution for behavior that needs it. Contract compatibility must reflect real independently evolving consumers.\nImportant tests include atomic rollback, concurrent writes/stale versions, repeat idempotency, duplicate/reordered delivery, transient/permanent retry classification, attempt bounds, timeout/unknown outcomes, final failure, partial effects, and failed compensation where applicable. Use controlled time to avoid waiting production timeout durations. Follow [delivery](delivery-and-side-effects.md), [error](error-handling.md), [configuration](configuration.md), and [transaction](../database/transactions-and-concurrency.md) policies for their detailed guarantees.\nGenerated artifacts need deterministic generation, freshness, and consumer compatibility checks at their source/generation boundaries. Never hand-edit outputs or blindly accept changed golden files. Small meaningful snapshots can help; large DOM/response snapshots should not replace focused assertions. Visual screenshot checks are useful only when visual stability matters and fonts/platform/animation/timing are controlled.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Security Tests",
-    "anchor": "security-tests",
-    "text": "Security Tests\nTest denied behavior, not just successful access: anonymous/invalid/expired/wrong-signature or audience credentials, insufficient capability, wrong owner/tenant, forbidden fields, revoked access, and webhook signatures where those models exist. Tests must follow the actual [authentication](../security/authentication.md) and [authorization](../security/authorization.md) contracts, without inventing unimplemented revocation or tenancy behavior.\nVerify that secrets/restricted fields do not reach responses, logs, traces, reports, or client builds. Missing credentials and insecure defaults must fail safely. Redaction tests need positive correlation assertions and negative sensitive-data assertions. Current source/generation checks and bundle markers are useful controls, not proofs of all security semantics.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Client and Observability Tests",
-    "anchor": "client-and-observability-tests",
-    "text": "Client and Observability Tests\nClient tests own presentation, interaction, navigation/state, API failures, and accessibility rather than repeating every backend invariant. Prefer real browsers when semantics matter; jsdom is not the browser-fidelity default. Use locators, readiness signals, and automatic waiting instead of arbitrary sleeps. Automated accessibility tests supplement human review.\nTest telemetry when it protects production behavior: request/trace propagation, safe unexpected-error reporting, bounded labels, release context where available, and redaction. Mobile device/offline/permission/storage tests, desktop OS/update tests, and worker delivery tests become relevant only when those capabilities exist.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Determinism, Doubles, and Data",
-    "anchor": "determinism-doubles-and-data",
-    "text": "Determinism, Doubles, and Data\nTests establish their own minimal synthetic state and must not depend on order, unrelated machine environment, locale/timezone, current wall clock, unseeded relevant randomness, uncontrolled internet, or shared mutable rows/files/caches. Control or make irrelevant time/randomness and use collision-safe identifiers. State cleanup must work under failure and parallel execution; all tests have appropriate bounded timeouts.\nFactories should expose the fields that explain the behavior, especially ownership/permissions, and must not become a hidden application layer. Large shared development seeds are not test fixtures. Never use production database dumps or credentials as ordinary fixtures. Use clearly synthetic static secrets unless testing credential detection itself; ephemeral signed test identities remain isolated. Production-derived data needs explicit classification handling and meaningful protection against re-identification; synthetic data remains preferred.\nMocks/fakes isolate external responsibilities such as clocks/providers when the integration itself is outside scope. They must respect the real capability contract and should not make impossible states appear valid except for deliberate failure injection. Mocking every internal class tests choreography. Official provider sandbox suites, when needed, must be isolated, credential-safe, clearly categorized, and separated from uncontrolled dependencies in the ordinary loop; document emulator fidelity limits.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Test Maintenance and Diagnostics",
-    "anchor": "test-maintenance-and-diagnostics",
-    "text": "Test Maintenance and Diagnostics\nName tests for behavior, arrange clear inputs/action/outcomes, and assert the actual result/effect/error code. One coherent behavior can need several assertions. A test should fail for a meaningful defect, remain understandable, and add distinct confidence; some cross-layer overlap is justified for critical guarantees.\nFlakiness is a defect. Retries may diagnose environmental instability but must not conceal it. A temporary quarantine needs owner, reason, tracking issue, and removal condition. Skips must be explicit; core correctness cannot disappear because infrastructure is missing. Remove tests only when the protected behavior deliberately changes/disappears, stronger coverage replaces them, or they test obsolete implementation details. Never weaken valid tests to make a change pass.\nTreat a failure as evidence: investigate implementation, expectation, intentional contract change, or environment, and reproduce CI locally when possible. Diagnostics should show behavior, expected/actual result, and safe identifiers without noisy dumps. Reports, screenshots, traces, source maps, and logs follow classification/access/retention rules. Current CI does not upload diagnostic artifacts; future uploads need bounded retention.\nKeep tests near the owning feature/application; system journeys may have dedicated suites. Shared test infrastructure must have genuine reuse. Document complex suite prerequisites, commands, debugging, and limitations; avoid a speculative taxonomy or orchestrator. Measure/optimize slow suites when feedback cost becomes material, without sacrificing isolation or correctness. Any future affected-test selection must preserve complete dependency coverage rather than trading correctness for speed.\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Canonical Test Commands",
-    "anchor": "canonical-test-commands",
-    "text": "Canonical Test Commands\n[Validation](../validation.md) owns the available script list and prerequisites; [setup](../setup.md) owns reproducible installation/browser/container preparation. Iterate with the relevant owning package command, then run the repository-required `pnpm validate` gate before substantial completion. CI calls the same gate. Runtime tests do not replace TypeScript, architectural checks, or generated-source validation.\nThe repository gate includes API tests, web Node/browser tests, emitted builds/smokes, and full E2E. Release-history tests intentionally use Node's built-in runner for isolated tooling. No generic root `test:integration` or coverage command should be assumed. Report missing prerequisites, failed checks, and unrun remote checks honestly.\nCoverage percentages and branch coverage can reveal missing paths but cannot prove assertions, authorization, or concurrency correct. Use risk-based review instead of arbitrary targets. A complete change preserves meaningful tests, contracts, architecture, and the broader [completion criteria](../contributing.md#change-workflow).\n"
-  },
-  {
-    "id": "repository/docs/architecture/testing-strategy",
-    "title": "Testing Strategy",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Initial Testing Policy",
-    "anchor": "initial-testing-policy",
-    "text": "Initial Testing Policy\nThe implemented baseline above remains the default for new features. Additional suites must serve actual risk; load/stress tests run only in isolated authorized environments, never as accidental production traffic. Never run destructive integration suites against production data. Any production test must be narrowly scoped and safe, such as an authorized synthetic health check. Production synthetic monitoring and deployment validation require separate operational design and authority; this testing strategy does not start deployment work.\n"
-  },
-  {
-    "id": "repository/docs/architecture/versioning-and-compatibility",
-    "title": "Versioning and Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Versioning and Compatibility",
-    "anchor": "versioning-and-compatibility",
-    "text": "Versioning and Compatibility\n[Documentation index](../README.md) · [API versioning](../api/versioning.md) · [Database release evolution](../database/release-evolution.md)\nCompatibility protects consumers that cannot change atomically. This page owns cross-boundary evolution; API, database, configuration, and security policies own their specific contracts. Prefer compatible evolution over reflexively adding versions or preserving obsolete internal interfaces forever. Significant support/versioning strategies require an ADR; ordinary compatible changes do not.\n"
-  },
-  {
-    "id": "repository/docs/architecture/versioning-and-compatibility",
-    "title": "Versioning and Compatibility",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Compatibility Boundary",
-    "anchor": "compatibility-boundary",
-    "text": "Compatibility Boundary\nIdentify the producer, consumer, canonical contract, independent deployment/distribution, persisted-state lifetime, release status, support window, and rollback requirements. Internal monorepo code can often change atomically; installed clients, queued jobs, durable database state, published SDKs, external automation, and independently managed configuration cannot necessarily do so.\nCompatibility includes structure, meaning, behavior, wire serialization, source compilation, security, and operational assumptions such as capacity or startup requirements. An additive field can still break a strict consumer; an unchanged string type can conceal changed meaning. Binary compatibility becomes relevant only if compiled/native artifacts are distributed.\nDefine the required combinations explicitly: new provider with old consumer, old reader with new data, and both directions during overlap where necessary. No universal compatibility matrix or global system version is required. Application release, API version, database migration state, SDK/package version, and configuration schema version serve different purposes; a release can identify a compatible set without changing all their versions.\n"
   }
 ]

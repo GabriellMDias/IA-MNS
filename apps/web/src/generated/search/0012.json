@@ -4,6 +4,24 @@
     "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nThe owner changes the AI model, trace level and automatic grants from administration, with validation, concurrency protection and audit, and without a restart.\nThe classification of every environment variable is explicit and checked where it is defined.\nExisting installations keep their behavior until an owner saves a value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nA wrong model identifier saved by an owner makes AI requests fail until it is corrected or reset; the screen asks for evaluation before changing it in production.\nAutomatic grants are an authorization policy: an owner can narrow (never widen beyond the catalog) who receives read capabilities, and issued access tokens keep their permissions for up to 10 minutes.\nEach new parameter needs a catalog entry, a migration extending the table checks, web labels and tests.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
+    "group": "Decisions",
+    "kind": "repository",
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
     "text": "Operational or Migration Impact\nAdditive migration `202610080001_operational_parameters` and runtime grant `SELECT, INSERT, UPDATE` on the new table; no backfill. Without rows every parameter keeps its environment or product default.\n`OPENAI_MODEL`, `IA_MNS_AI_TRACE` and `IA_MNS_PROVIDER_GRANTS` remain valid environment variables with the meaning \"installation default\"; a value later saved by an owner takes precedence, which the screen shows together with the default.\nBefore production, an owner reviews **Administração → Parâmetros**; content tracing is refused there in any case.\n"
@@ -16,6 +34,267 @@
     "heading": "References",
     "anchor": "references",
     "text": "References\n[Configuration policy](../architecture/configuration.md#operational-parameters)\n[Identity domain](../domains/identity.md#operational-parameters)\n[Generated configuration reference](../generated/configuration/api.md)\n[ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md), [ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md), [ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "anchor": "adr-0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "text": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies\n**Status:** accepted\n**Date:** 2026-10-07\n**Extends:** [ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) (one frontend, three surfaces, per-path framing) and [ADR-0004](0004-select-fastify-as-the-backend-http-framework.md) (Fastify). It decides the production runtime shape of the application, not the deployment platform, secret store, backup or release procedure, which remain deployment decisions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nIA-MNS will run in production behind a corporate TLS reverse proxy at one public HTTPS origin. The identity requires the web application and the API under that origin: cookies are `__Host-` cookies, cookie-authenticated endpoints compare `Origin` with `IA_MNS_PUBLIC_ORIGIN`, and the PDT redirect URI is the browser path `/api/identity/pdt/callback`. ADR-0023 requires `frame-ancestors 'none'` on every route except `/embed/pdt` and `/embed/sankhya`, which only their host may frame.\nBefore this decision only the Vite development server provided that shape: it served the web, stripped `/api` before proxying to an API mounted at the root, and set the framing policy from `ORION_WEB_EMBED_ANCESTORS`. The emitted API served no web build. Behind a proxy, Fastify saw every client as the proxy address, so the process-local rate limits of the identity endpoints (5 to 60 requests per minute) would have been shared by all users and exhausted by one attacker. The owner bootstrap and database grant tooling ran TypeScript through `tsx`, a development dependency, so a production artifact could not run them. Whether the proxy-to-application hop stays plain HTTP on a private network or needs TLS is not yet confirmed with the infrastructure administrator.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\n**One process, one origin.** When `ORION_WEB_ROOT` names a built `apps/web`, the API process serves it. The build is indexed once at startup and only exact file paths are served; page navigations that match no file receive `index.html`, so the router keeps direct URLs, reloads and the embedded basepaths. Missing assets, unknown API paths and non-GET requests receive the JSON error envelope. The API then answers under `/api`, exactly the browser path the development proxy strips, and the health probes answer both at the root (for orchestration) and under `/api` (the contract the SDK and explorer use). Without `ORION_WEB_ROOT` the API stays at the root, unchanged.\n**Framing and referrer from the API configuration.** Each response carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and a `frame-ancestors` policy: `/embed/pdt` and `/embed/sankhya` allow only `PDT_EMBED_ORIGIN` and `SANKHYA_EMBED_ORIGIN` respectively, everything else `'none'`. The served origin needs no separate framing setting that could drift from the identity configuration. The development and preview servers send the same `Referrer-Policy`.\n**Documentation portal opt-in in production.** `VITE_ORION_DOCS=disabled` builds the web without the `/docs` portal and its generated content, and the build records that in its manifest. The API refuses a build that contains the portal unless `ORION_WEB_DOCS=enabled`; the default is `disabled` in production and `enabled` elsewhere.\n**Restricted trusted proxies.** `ORION_TRUSTED_PROXIES` lists the exact proxy addresses (or narrow ranges: IPv4 /24 or narrower, IPv6 /64 or narrower) whose `X-Forwarded-For` and `X-Forwarded-Proto` Fastify honors. Unset trusts none. Wildcards, named ranges and broad networks are refused, and trusted proxies cannot be combined with the loopback-only local or temporary access modes. The client address is the right-most `X-Forwarded-For` entry that is not a trusted proxy, so values a client prepends are ignored. Identity derives issuer, redirects and cookie security only from `IA_MNS_PUBLIC_ORIGIN`; no code relies on the forwarded host or protocol. The list names the address the application actually sees as its peer: the proxy's own address when it connects from another machine, or, when it runs on the same host and reaches a published container port, the container network gateway, which every local process can also use and therefore needs host firewall rules that admit only the proxy.\n**Optional internal TLS.** `ORION_TLS_CERT_FILE` and `ORION_TLS_KEY_FILE` make the same process listen with HTTPS for a proxy-to-application hop that must be encrypted. Plain HTTP on that hop is not assumed approved; the deployment selects it only for a confirmed private hop.\n**Compiled operational commands.** The emitted API ships `dist/cli/identity-bootstrap.js` (first owner), `identity-keys.js` (new signing and encryption keys into a new owner-only file, never printed), `config-check.js` (the startup validation and module production requirements, without listening or connecting) and `database-deploy.js` (committed migrations, the declared runtime grants, and a check that the runtime role holds exactly those privileges, no administrative attribute and no ownership). Only `database-deploy` reads `ORION_MIGRATION_DATABASE_URL`; the server process and the other commands delete it. It never creates roles or sets passwords: the database administrator creates the runtime role once. Local `pnpm db:local` and the migrated-database test fixture run the same deployment step.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Route compatibility",
+    "anchor": "route-compatibility",
+    "text": "Route compatibility\nConcern\nDevelopment (Vite)\nAPI without `ORION_WEB_ROOT` (unchanged)\nAPI serving the web build\nBrowser API base\n`/api`, stripped by the Vite proxy\nnot applicable\n`/api`, routed by Fastify\nModule operations\nAPI at `/identity/*`, `/agent/*`, `/sales/*`\nthe same root paths\nonly under `/api/*`; the same paths without `/api` are page routes\nHealth\n`/health/*` on the API\n`/health/*`\n`/health/*` and `/api/health/*`\nPDT and Sankhya callbacks\n`<web origin>/api/identity/{pdt,sankhya}/callback`\n—\nthe same browser URLs\nUnknown path\nVite serves the shell; API 404 envelope\n404 envelope\npage navigations receive the shell; `/api/*`, `/health/*`, missing `/assets/*`, non-page requests and non-GET methods receive the 404 envelope\nFraming and headers\nVite middleware: framing from `ORION_WEB_EMBED_ANCESTORS`, now also `no-referrer`\n`frame-ancestors 'none'`, `no-referrer`, `nosniff`\nper surface from the embed origins, `no-referrer`, `nosniff`\nThe OpenAPI paths, operation IDs and SDK are unchanged: the SDK already resolves them against `/api`. Cookies keep `Path=/` and the `__Host-` prefix on HTTPS origins, so they reach `/api/identity/*` on the served origin as they did through the development proxy.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nServing from the API keeps one network hop between the corporate proxy and the code that interprets the client address, so a single exact trust entry suffices. Deriving the framing policy from `PDT_EMBED_ORIGIN` and `SANKHYA_EMBED_ORIGIN` removes a second list of host origins. Indexing exact files at startup avoids path resolution on request input and fails fast on a missing or foreign build, without a new dependency. Mounting the API under `/api` only when serving the web reproduces the browser contract of development and keeps API-only runs, tests and references unchanged.\n`Referrer-Policy: no-referrer` is the most restrictive policy and was verified compatible with the identity flows. The [Fetch standard](https://fetch.spec.whatwg.org/#append-a-request-origin-header) serializes `Origin` as `null` under `no-referrer` only for requests whose response tainting is not CORS, such as native form submissions and navigations; `fetch()` requests keep the real `Origin`. A Chromium 154 probe on 2026-10-07 confirmed it: same-origin `fetch()` POSTs carried the real `Origin` and no `Referer` both at top level and inside a cross-origin iframe, while a native same-origin form POST carried `Origin: null`. Every IA-MNS write is a `fetch()` through the SDK, and neither the PDT authorization flow nor the Sankhya add-on reads `Referer`; the identity journeys assert the real `Origin` on the cookie refresh and on the embedded PDT proof exchange under this policy. A future native form POST to a cookie endpoint would be refused by its origin check rather than silently accepted.\nTrusting only enumerated proxies keeps per-client limits meaningful without letting any peer choose its address. Requiring narrow ranges is deliberately conservative; a broader proxy pool would need a new decision. Internal TLS in the same process avoids a sidecar when the hop must be encrypted, at the cost of certificate files the deployment must manage. Running the database step, grants and their verification from one command removes divergence between local setup, tests and production, and turns grant drift into a deployment failure instead of a silent privilege escalation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A separate static web server or reverse proxy container in front of the API",
+    "anchor": "a-separate-static-web-server-or-reverse-proxy-container-in-front-of-the-api",
+    "text": "A separate static web server or reverse proxy container in front of the API\nnginx or Caddy could serve the build and proxy `/api`. It adds a second forwarded-header hop to trust, a second copy of the embed origins and another container to operate, without a capability the API lacks for this traffic.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "@fastify/static",
+    "anchor": "fastifystatic",
+    "text": "`@fastify/static`\nThe official plugin serves directories generically, with its own path resolution. An exact startup index of a known build is simpler and closes path handling entirely; the plugin remains an option if the build outgrows memory.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Always mounting the API under /api",
+    "anchor": "always-mounting-the-api-under-api",
+    "text": "Always mounting the API under `/api`\nThis would change every API-only test, reference and development proxy at once, with no benefit while Vite strips the prefix.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Trusting every proxy (trustProxy: true) or a hop count",
+    "anchor": "trusting-every-proxy-trustproxy-true-or-a-hop-count",
+    "text": "Trusting every proxy (`trustProxy: true`) or a hop count\nEither would let a client that reaches the application directly, or through an unexpected path, forge its address and bypass per-client limits.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "TLS only through a sidecar",
+    "anchor": "tls-only-through-a-sidecar",
+    "text": "TLS only through a sidecar\nA TLS-terminating sidecar remains possible, but it moves the trusted-proxy boundary to the sidecar and adds an operational component for a choice the infrastructure has not yet made.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOne artifact serves direct, PDT and Sankhya surfaces with framing derived from the identity configuration.\nRate limits and future audit can use the real client address behind the corporate proxy.\nA production artifact can bootstrap the owner, generate keys, validate configuration and deploy the database without development tooling.\nThe `/docs` portal stays out of production unless deliberately enabled.\nNo IA-MNS URL, including conversation identifiers and invitation pages, reaches another site through `Referer`.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe process holds the web build in memory (under 1 MB without the portal, about 8 MB with it) and serves static files itself.\nEach new proxy address requires a configuration change; a broad pool requires revisiting this decision.\nInternal TLS adds certificate files and their renewal to the deployment.\n`database-deploy` requires the Prisma CLI, so the migration artifact carries it while the server artifact does not need to.\nNew same-origin writes must use `fetch()`: a native form POST would carry `Origin: null` and fail the cookie endpoints' origin check.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nDeployments set `ORION_WEB_ROOT`, `ORION_TRUSTED_PROXIES` for the confirmed proxy, `PDT_IDENTITY_REDIRECT_URI` under `/api`, and optionally the TLS files. Production builds use `VITE_ORION_DOCS=disabled`.\nThe database administrator creates the `orion_runtime` login role once; every deployment then runs `database-deploy` with the migration credential before starting the server with the runtime credential.\n"
+  },
+  {
+    "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+    "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md), [ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md), [ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\n[API runtime guide](../../apps/api/README.md), [web guide](../../apps/web/README.md), [identity deployment requirements](../domains/identity.md#deployment-requirements)\n[Configuration policy](../architecture/configuration.md), [secrets policy](../security/secrets-management.md), [migration policy](../database/migrations.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "anchor": "adr-0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "text": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion\n**Status:** accepted\n**Date:** 2026-10-07\n**Extends:** [ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), which names Orion foundation revisions only and explicitly does not version a derived product, deployment or migration history.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nIA-MNS is preparing its first production deployment, which will also become its first durable migration boundary ([release workflow](../database/release-evolution.md)). The owner wants production to run a known release rather than the latest `main`. IA-MNS keeps Orion's Git history ([ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)), and Orion names its own stable revisions `vMAJOR.MINOR.PATCH`; clones that received those tags hold `v1.0.0` to `v2.0.0` on Orion commits that are ancestors of IA-MNS's `main`. A product tag in the same namespace would collide with them or be mistaken for a foundation version. Three identifiers must agree for a release: the Git commit, the artifact's `ORION_RELEASE_ID`, and the `release-history.json` entry that freezes the migrations a durable database applied.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nIA-MNS releases are immutable annotated Git tags named `ia-mns-vMAJOR.MINOR.PATCH` on a commit of `main` that passed the required CI gate. Historical Orion tags are never deleted, moved or reused, and IA-MNS never creates a bare `vX.Y.Z` tag.\nThe tag is the release's single human-readable identifier: the artifact built from it uses the tag as `ORION_RELEASE_ID`, and the `release-history.json` entry of a durable deployment uses it as its release ID with the full SHA the tag resolves to. No `VERSION` file or package version duplicates it.\nA release is recorded only after it ran, in this order:\nTag a `main` commit whose required CI gate passed, and build the artifact from exactly that commit with the tag as `ORION_RELEASE_ID`.\nApply the artifact's migrations to the durable database with `database-deploy`.\nVerify the database with read-only access: the set of `_prisma_migrations` rows that finished and were not rolled back equals the migration directories of the tagged commit, with no failed or extra row; and each row's Prisma checksum equals the SHA-256 of that `migration.sql` inside the deployed artifact.\nRun `pnpm release:checksums <tagged full SHA>` and append its output to `release-history.json` under the tag's name, with a non-secret environment identifier, in a reviewed change after the tag. `pnpm release:check` then freezes that history.\nThe two checksums are different evidence and never substitute for each other: Prisma's records the bytes the database applied, the registry's the line-ending-normalized Git source ([release workflow](../database/release-evolution.md)). Because the artifact is built from the tagged commit, step 3 ties the database to the artifact and step 4 ties the registry to the commit. A mismatch stops the recording and is investigated; it is never resolved by editing history or marking migrations applied. The recording change never alters the tagged commit.\nMAJOR, MINOR and PATCH describe the product and its supported upgrade path: MAJOR when an upgrade needs operator action beyond deploying the next release (for example a migration that cannot coexist with the previous release), MINOR for compatible capability, PATCH for compatible corrections.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nA distinct prefix makes collision with foundation tags impossible in any clone and tells readers which project a tag names, while keeping semantic versions familiar. Using one identifier for tag, artifact and registry entry lets an operator correlate logs, the deployed image and the frozen migrations without a lookup table. Recording after the real application follows the existing release workflow: the registry describes what a durable database actually applied, not what was planned.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Bare vX.Y.Z tags",
+    "anchor": "bare-vxyz-tags",
+    "text": "Bare `vX.Y.Z` tags\nThey match ADR-0015's form but collide with Orion's tags present in clones and invite confusion between product and foundation versions. Deleting Orion's tags to make room would rewrite shared history.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A version field in package.json",
+    "anchor": "a-version-field-in-packagejson",
+    "text": "A version field in `package.json`\nIt duplicates the tag and can drift from it; the repository already avoids a second version store.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Deploying the latest main",
+    "anchor": "deploying-the-latest-main",
+    "text": "Deploying the latest `main`\nIt gives no stable name to what runs in production and makes the release-history commit ambiguous.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nEvery production artifact, log line and frozen migration set names the same release.\nProduct and foundation versions can be told apart at a glance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nTooling that sorts or describes tags must filter by the `ia-mns-v` prefix.\nRecording needs read access to the deployed database's `_prisma_migrations` and to the deployed artifact's migration files, not only to the repository.\nThe release-history entry lands in a change after the tag, so the tagged commit itself never contains its own record.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nThe first durable release freezes all migrations committed at its tag. Later schema changes are new forward migrations with an upgrade test from that baseline, and each production release that applies migrations is recorded.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), [foundation versioning](../versioning.md), [release workflow](../database/release-evolution.md), [migration policy](../database/migrations.md)\n[Configuration policy](../architecture/configuration.md) (`ORION_RELEASE_ID`)\n"
   },
   {
     "id": "repository/docs/adr/AGENTS",
@@ -105,7 +384,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n[ADR-0021](0021-license-ia-mns-under-apache-2-0.md)\nLicense IA-MNS under Apache-2.0\n[ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md)\nOwn the IA-MNS Identity with Verified External Links\n[ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\nServe One Frontend to Three Surfaces with Host Identity Proofs\n[ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\nInterpret Analytics through Structured State and Evaluate AI Behavior\n[ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)\nAdminister the Authentication Policy within Fixed Safeguards\n[ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nHost IA-MNS in Sankhya Om through an In-Repository Add-on\n[ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)\nSelect the Sales Source in the Interface and Read Each Source Separately\n[ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)\nAdminister Operational Parameters Separately from Secrets and Bootstrap Configuration\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n[ADR-0021](0021-license-ia-mns-under-apache-2-0.md)\nLicense IA-MNS under Apache-2.0\n[ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md)\nOwn the IA-MNS Identity with Verified External Links\n[ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\nServe One Frontend to Three Surfaces with Host Identity Proofs\n[ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\nInterpret Analytics through Structured State and Evaluate AI Behavior\n[ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)\nAdminister the Authentication Policy within Fixed Safeguards\n[ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nHost IA-MNS in Sankhya Om through an In-Repository Add-on\n[ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)\nSelect the Sales Source in the Interface and Read Each Source Separately\n[ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)\nAdminister Operational Parameters Separately from Secrets and Bootstrap Configuration\n[ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)\nServe the Web and API from One Origin behind Restricted Trusted Proxies\n[ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)\nName IA-MNS Releases with Product Tags Distinct from Orion\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -799,167 +1078,5 @@
     "heading": "Application Boundaries",
     "anchor": "application-boundaries",
     "text": "Application Boundaries\n[Documentation index](../README.md) · [Repository placement](repository-structure.md) · [Dependency rules](dependency-rules.md)\nApplications are executable boundaries with explicit ownership; sharing a monorepo does not merge their runtime, trust, or persistence responsibilities. This page owns runtime separation and composition. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) governs the API adapter and [ADR-0008](../adr/0008-select-react-vite-and-tanstack-for-web-applications.md) the web stack.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Types of Boundaries",
-    "anchor": "types-of-boundaries",
-    "text": "Types of Boundaries\nBoundary\nRequired reasoning\nRuntime/process\nSeparate processes are distributed participants even when deployed together. Use explicit protocols and account for network failure, timeouts, partial results, retries, and duplicate requests. Remote operations are not local function calls.\nDeployment/distribution\nVersions may coexist. Define supported old/new combinations and migration requirements under [compatibility policy](versioning-and-compatibility.md).\nTrust\nValidate data crossing security contexts, including external-provider responses. Client applications remain untrusted regardless of repository proximity.\nPersistence\nAccess follows explicit application/domain ownership. A shared database client does not authorize every module to access every table.\nApplications must not import another application's internal implementation. Share genuinely common capabilities through public package APIs and communicate through deliberate runtime contracts. A package must not become an indirect way to bypass another application's boundary.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend API Application",
-    "anchor": "backend-api-application",
-    "text": "Backend API Application\nThe implemented `apps/api` uses Fastify and Pino. It owns HTTP parsing/validation, authentication integration, authorization enforcement, correlation, transport error mapping, application orchestration, dependency composition, telemetry, and health endpoints. Plugins organize runtime integration; they do not define business domains.\nKeep HTTP requests/responses, status codes, headers, cookies, and framework concepts at the transport boundary unless the operation is inherently transport-specific. Map validated application input to business operations and map their outcomes back to public responses. Exposing a rule through HTTP does not make it transport logic.\nThe API is also IA-MNS's identity of record: it verifies host proofs, provisions and links Persons, issues sessions and computes permissions for every surface ([identity](../domains/identity.md)). The API is an executable application, not a shared backend library. If another runtime needs the same business capability, establish shared ownership explicitly instead of importing API internals. Each [API module](../../apps/api/README.md#modules) owns its capability inside the API.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Web Application",
-    "anchor": "web-application",
-    "text": "Web Application\nThe implemented `apps/web` is a React/Vite client-first SPA. TanStack Router owns URLs/navigation, TanStack Query owns server state through the generated SDK, and React state/context owns local UI state. The accepted direction includes React Compiler when compatible. No general global-state library or full-stack web framework is selected by default; server rendering requires product justification. Fastify retains authoritative backend responsibilities.\nIt is IA-MNS's only frontend: the same build serves the direct URL and the PDT Connect and Sankhya Om embedded surfaces ([ADR-0023](../adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)). The web application owns pages/layouts, interactions, accessibility, browser rendering/storage, local state, web authentication integration, client composition, localization, and any frontend telemetry. Keep DOM/navigation and other browser-specific behavior local unless a genuinely compatible shared responsibility exists. UI components can share visual concepts without sharing implementation across platforms.\nThe browser can be inspected, modified, bypassed, replayed, or automated. Client validation and hidden/disabled controls improve experience; trusted backend boundaries still enforce validation, identity, permissions, and business invariants. Clients receive neither database credentials nor privileged server secrets. See [authentication](../security/authentication.md) and [authorization](../security/authorization.md).\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Sankhya Om Add-on",
-    "anchor": "sankhya-om-add-on",
-    "text": "Sankhya Om Add-on\n`apps/sankhya-addon` is an Add-on Studio project built with Gradle for the Sankhya Om runtime (Java 8 on WildFly), not a pnpm workspace member ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)). It adapts and hosts IA-MNS inside the Om and nothing more: a menu screen that frames `/embed/sankhya`, the bridge answer, the identity assertion minted from the server-side Om session, and the authorize page of the direct-URL Sankhya sign-in. Its runtime contracts with IA-MNS are bridge protocol v1 and the [assertion contract](../domains/identity.md#sankhya-om-add-on-assertion-contract).\nThe add-on must not become a second IA-MNS frontend or hold IA-MNS business rules, conversations, permissions, Persons, links or data; those belong to `apps/web` and `apps/api`. It runs with the Om's privileges and the API trusts only its signed assertion, never browser-supplied identity. Its [local guide](../../apps/sankhya-addon/README.md) describes its build, development environment and repository cautions.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Shared Contracts",
-    "anchor": "shared-contracts",
-    "text": "Shared Contracts\nCross-application requests, responses, events, errors, identifiers, and serialization/validation rules need explicit ownership. Current API wire contracts generate OpenAPI and the SDK; the web application does not consume API implementation types. See [API principles](../api/principles.md) and [artifact ownership](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage).\nDatabase records, domain entities, application results, wire responses, and view models have different responsibilities even when their shapes match. Share representations only when their meaning matches; otherwise map deliberately. Do not expose ORM models as public responses accidentally or manually duplicate a canonical public contract.\nCompile-time sharing and runtime communication are different: a shared type does not execute another application's behavior. Choose HTTP, messages, events, IPC, or another explicit mechanism from actual needs. Prefer synchronous calls when callers require immediate results; introduce asynchronous work for real latency, retry isolation, temporal decoupling, or independent-consumer needs. A queue is not a remedy for an unwanted import dependency.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Composition and Ownership",
-    "anchor": "composition-and-ownership",
-    "text": "Composition and Ownership\nExecutable applications select and wire concrete adapters at bootstrap. Dependencies should be visible through explicit composition; a dependency-injection framework is not required. Minimize mutable globals and service locators. Process-scoped connection pools and telemetry providers are reasonable when lifecycle and access are intentional.\nBusiness capabilities have one identifiable home regardless of how many applications expose them. Delivery-specific feature directories do not authorize cross-application imports or independent reimplementation of core rules. Workers and administrative CLIs must preserve the same invariants as equivalent API operations.\nThe default data path is client → trusted backend → owned persistence → database. Multiple trusted runtimes may share controlled persistence when they belong to an explicitly shared logical ownership model. Modifying another service's owned tables is architectural coupling, not a shortcut. See [database ownership](../database/principles.md).\nExternal providers should be isolated enough to contain meaningful provider-specific risk and ownership. Do not spread a provider SDK throughout business behavior, but do not wrap every third-party library without benefit. A Backend for Frontend requires a concrete client orchestration, latency, identity, aggregation, or independent-evolution need; multiple clients alone do not justify it.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Additional Runtime Boundaries",
-    "anchor": "additional-runtime-boundaries",
-    "text": "Additional Runtime Boundaries\nThese are conditional rules, not implemented applications:\nRuntime\nLocal responsibility and additional obligations\nMobile\nDevice capabilities, native UI/navigation, secure local storage, offline behavior, notifications, permissions, and lifecycle. It remains an untrusted client; installed old versions may require a documented longer API support window.\nDesktop\nOS/filesystem integration, local caching, credential storage, updates, UI, and lifecycle. Possession of a binary does not confer backend trust.\nWorker\nQueue/schedule/event processing or long-running work. Define retries, idempotency, duplicate delivery, ordering, dead letters, poison messages, concurrency, timeouts, telemetry, and graceful shutdown; never assume exactly-once execution without evidence.\nCLI\nCommand parsing, terminal interaction/output, command lifecycle, and identity integration. Administrative convenience cannot bypass domain or access controls.\nEvents must describe meaningful facts or integration signals with owned schemas, delivery guarantees, ordering, and compatibility. Follow [delivery and side effects](delivery-and-side-effects.md) for reliable processing. Remote calls need deliberate bounded timeout/retry behavior; evaluate whether an error is transient, effects can repeat safely, and retry load will worsen the failure.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Creating a New Application Boundary",
-    "anchor": "creating-a-new-application-boundary",
-    "text": "Creating a New Application Boundary\nBefore creating or splitting an application, identify:\nThe runtime/product responsibility and why an existing application cannot own it.\nNeeded scaling, deployment/distribution independence, security, failure isolation, or operational ownership.\nExposed/consumed contracts, shared packages, persistent-data ownership, and trust boundaries.\nConfiguration, lifecycle, telemetry, compatibility, and new failure modes.\nWhether the value justifies its operational complexity and requires an ADR.\nEstablish a logical modular boundary before extracting another process. Size alone does not justify splitting; merging is appropriate when separate applications add no meaningful independence. Microservices are not a default goal, and serverless deployment units do not determine domain boundaries. Prefer modular ownership within one backend until separation has a concrete benefit.\nLocal [README and agent instructions](repository-structure.md#local-agent-instructions) make each application independently understandable without repeating repository policy. When placement is unclear, distinguish runtime-specific behavior, genuinely shared domain meaning, shared wire contracts, development tooling, and operational infrastructure before creating a new owner.\n"
-  },
-  {
-    "id": "repository/docs/architecture/application-boundaries",
-    "title": "Application Boundaries",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Boundary Enforcement",
-    "anchor": "boundary-enforcement",
-    "text": "Boundary Enforcement\nThe existing [dependency checks](dependency-rules.md#mechanical-enforcement) reject cross-application imports and other forbidden edges. They do not prove runtime trust, data ownership, or contract compatibility. When a boundary obstructs a legitimate requirement, identify the correct owner, try its existing public contract, then deliberately extend or revise the boundary and its tests/enforcement. Document significant changes through the ADR process; do not bypass constraints silently.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Backend Execution and Generated Artifacts",
-    "anchor": "backend-execution-and-generated-artifacts",
-    "text": "Backend Execution and Generated Artifacts\n[Documentation index](../README.md) · [Validation availability](../validation.md) · [Local setup](../setup.md)\nThis page owns API execution and generated-artifact storage conventions. The implemented pipeline follows [TypeScript/Node.js](../adr/0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md), [pnpm](../adr/0002-select-pnpm-for-package-and-workspace-management.md), [API generation](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md), [Prisma/PostgreSQL](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [validation](../adr/0003-establish-repository-validation-and-architecture-enforcement.md) decisions. [Setup](../setup.md#validate-regenerate-and-build) owns the regeneration sequence; [validation](../validation.md) lists current commands and prerequisites.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "API development and build",
-    "anchor": "api-development-and-build",
-    "text": "API development and build\nKeep the API as an ESM TypeScript workspace application under `apps/api`. Use pnpm package scripts as the stable interface and native workspace filtering for orchestration; no dedicated monorepo task runner or backend bundler is needed initially.\nThe `apps/api` scripts expose `dev` (Node's optional root `.env.local` loading and watch mode with pinned `tsx`), `typecheck` (`tsc --noEmit`), `build` (`tsc` emitting Node-compatible ESM JavaScript to an ignored `dist/` directory), and `start` (`node dist/main.js`). The [setup guide](../setup.md) owns local environment-file instructions. Source imports and compiler settings resolve in the emitted Node.js ESM output. `tsx` is an execution convenience, never a substitute for TypeScript checking or a production runtime dependency.\nInstall dependencies from the shared frozen lockfile. Generate tool-managed Prisma client code before typecheck/build when required; keep its cache/output out of hand-edited source and commit history. Build and start must work without a development transpiler at runtime. The existing process and feature smokes exercise the emitted application.\nRoot `pnpm validate` and CI include application typechecks, tests, builds, smokes, and generated-output freshness. Integrate new capabilities into that same gate. Keep validation non-mutating with respect to tracked source; generation is a separate explicit write command. Update [validation availability](../validation.md) when scripts change.\n"
-  },
-  {
-    "id": "repository/docs/architecture/backend-execution-and-generated-artifacts",
-    "title": "Backend Execution and Generated Artifacts",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Artifact ownership and storage",
-    "anchor": "artifact-ownership-and-storage",
-    "text": "Artifact ownership and storage\nDerived artifact\nCanonical input\nOutput and handling\nOpenAPI 3.1 description\nExecutable TypeBox wire schemas and stable route `operationId` metadata owned by the API\nCommitted `docs/generated/api/openapi.json` is regenerated and checked; clients and documentation consume that file, with no independently authored copy.\nTypeScript API client types\nCommitted generated OpenAPI\nCommitted `packages/sdk/src/generated/api-types.ts` comes from `openapi-typescript`; a thin `openapi-fetch` client lives outside the generated file. `pnpm -C packages/sdk generate` writes it and `references:check` verifies it without editing tracked files. The web app does not import API implementation types.\nAPI configuration reference\nAPI-owned TypeBox bootstrap configuration schema and metadata\nCommitted `docs/generated/configuration/api.md` is regenerated and checked from the API source. It contains safe types/defaults, never secrets or a real `.env`.\nAPI error registry reference\nAPI-owned registry and envelope schema\nCommitted `docs/generated/api/errors.md` is regenerated and checked from the API source. Feature errors join the same registry when their routes exist.\nDatabase reference\nMigrated PostgreSQL plus canonical schema-adjacent semantic metadata; Prisma schema and reviewed migrations are inputs\nCommitted `docs/generated/database/schema.md` is generated and checked from a fresh Testcontainers PostgreSQL, including custom SQL constraints and indexes; it is not authored independently. With no application tables it states that explicitly.\nPortal catalog, pages, search, and component reference\nRepository Markdown, current generated API/database/error references, and web-owned component source/examples/metadata\nCommitted `apps/web/src/generated/manifest.json`, page/search assets, and `docs/generated/components/web.md` are written/checked by `pnpm docs:references:write` / `pnpm docs:references:check`. [Living documentation](living-documentation.md) owns portal behavior and limitations.\nPrisma Client and emitted JavaScript\nPrisma schema and TypeScript source\nGenerate into ignored, tool-managed outputs for each build; do not commit platform/tool-generated client code or `dist/`. Reviewed SQL migrations are authored release history, not disposable generated output.\nMark generated files clearly and never edit them to repair a source defect. A generation command may update tracked derived artifacts intentionally; a separate check must regenerate in a temporary location or compare deterministically without changing tracked files. The current gate fails on generated drift. Rebuildability does not waive public API or SDK compatibility responsibilities under [versioning](versioning-and-compatibility.md), nor the independent [migration-history rules](../database/migrations.md).\nDo not create planned files or directories as placeholders. Each artifact belongs with its canonical source, generator, validation check, and actual consumer. Each module's implementation conventions describe its data and contract metadata.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration",
-    "anchor": "configuration",
-    "text": "Configuration\n[Documentation index](../README.md) · [Local setup](../setup.md) · [Secrets management](../security/secrets-management.md)\nConfiguration is an explicit application dependency: validate it before use, expose only safe projections, and keep its meaning discoverable without access to secret values. [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects TypeBox for bootstrap schemas. This page owns configuration policy; application sources own their settings and the setup guide owns loading commands.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Canonical Configuration Schema",
-    "anchor": "canonical-configuration-schema",
-    "text": "Canonical Configuration Schema\nEach application owns a canonical schema with derived types where practical. Define each setting's name, type, purpose, required/optional state, default, validation constraints, classification, secret status, client visibility, and operational consequences. Document the owner, permitted changes, environment scope, and whether a restart is required. Descriptions explain semantics rather than repeat the name.\nCurrent sources are:\nApplication\nCanonical input and representation\nAPI\n[`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty.\nWeb\n[`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md).\nThe API metadata records role, type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.\nAvoid independent definitions in code, READMEs, examples, and deployment files when they can derive from the schema. Generated references must never contain actual secrets. Changes to the API source require regeneration through [artifact tooling](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage); new applications need their own schema and explicit example/check.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Secrets, Bootstrap Configuration and Operational Parameters",
-    "anchor": "secrets-bootstrap-configuration-and-operational-parameters",
-    "text": "Secrets, Bootstrap Configuration and Operational Parameters\nEach API environment variable has a `role` in the metadata that says why it is configuration ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)); `.env.example` groups variables by it and the [generated reference](../generated/configuration/api.md) lists it:\nRole\nMeaning\nWhere it changes\n`secret`\nCredentials and keys: database URL, OpenAI key, Oracle and VRMaster accounts, identity signing and encryption keys, PDT client secret.\nSecret delivery under [secret policy](../security/secrets-management.md); never visible or editable in an API or interface.\n`bootstrap`\nInfrastructure, deployment and trust configuration the process needs before or independently of its own storage: environment, listener, telemetry, token issuers, public origin, provider endpoints and pinned keys, connection hosts and TLS, Oracle client, the Sankhya directory view and the PH-11 session gate.\nDeployment and restart.\n`parameter`\nInstallation default of an operational parameter.\nOwners override it at run time in administration; see below.\n`development`\nLocal development and temporary device testing aids, refused in production.\nLocal configuration only.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Operational parameters",
-    "anchor": "operational-parameters",
-    "text": "Operational parameters\nOperational parameters are product behavior an owner may change after deployment. They are declared once in the typed catalog [`apps/api/src/parameters.ts`](../../apps/api/src/parameters.ts) (type, domain, production limits and when a change applies), stored in `operational_parameters` with database checks per key, and administered in **Administração → Parâmetros** under the owner authorization and audit of the [identity domain](../domains/identity.md#operational-parameters).\nParameter\nScreen label\nInstallation default\nTakes effect\n`ai.model`\nModelo de IA\n`OPENAI_MODEL`, else `gpt-6.1-sol`\nNext AI request (routing and interpretation)\n`ai.traceLevel`\nRegistro de diagnóstico da IA\n`IA_MNS_AI_TRACE`, else `metadata`; `content` is never used in production\nNext agent turn\n`access.providerGrants`\nLiberação automática por vínculo\n`IA_MNS_PROVIDER_GRANTS`, else every catalog-eligible read grant\nNext access token (at most 10 minutes for open sessions)\nPrecedence is **valid owner value > installation default** (the environment variable, or the product default when it is unset); production limits apply to every source, and resetting a parameter returns to the installation default. No parameter requires a restart: consumers receive narrow resolvers from composition and read the current value at each use, without a cache, so every API instance applies a change at the next use. Code reads parameters only through `OperationalParameters`; no module queries the table directly. A new parameter needs a catalog entry, a migration extending the table checks, its installation default with role `parameter` when one exists, web labels, and tests. Secrets and bootstrap settings never become parameters.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration Validation",
-    "anchor": "configuration-validation",
-    "text": "Configuration Validation\nParse raw strings into meaningful booleans, numbers, durations, URLs, enums, lists, or objects at the boundary. A nonempty `\"false\"` must not become true. Names/types must make units explicit, use clear positive boolean semantics, and group related settings coherently. Prefer one validated mode over conflicting enable/disable booleans.\nValidate required values, cross-field invariants, conditional requirements, ranges, protocols, and mutually exclusive modes before use. Missing or invalid required configuration normally prevents startup. Diagnostics should name the key and expected requirement where practical without echoing restricted values. After successful parsing, components can rely on the declared schema.\nDefaults must be safe, predictable, documented, and unambiguous. Require explicit configuration when no safe default exists; never silently disable expected authentication or select an unintended production database. Isolate development-only conveniences. The current API explicitly permits health-only operation in development/test, requires the database and token settings together to enable the feature, and requires that feature configuration in production.\nUnknown keys can indicate typos or obsolete deployment settings; detect them where practical, with warnings/errors appropriate to the source. The current API selects known environment keys into a validated object; it does not reject every unrelated variable in the process environment.\n"
-  },
-  {
-    "id": "repository/docs/architecture/configuration",
-    "title": "Configuration",
-    "group": "Architecture",
-    "kind": "repository",
-    "heading": "Configuration Precedence",
-    "anchor": "configuration-precedence",
-    "text": "Configuration Precedence\nSources and precedence must be deterministic and documented. Use the smallest set of mechanisms that satisfies real needs; do not add overlapping files, CLI overrides, or remote systems speculatively.\nThe API development command optionally loads the root ignored `.env.local`; existing shell environment values win. The production start command receives process environment and does not implicitly load that file. Vite owns the web application's environment loading and embeds its public build-time values. Disposable end-to-end and module stacks supply their own temporary configuration. [Setup](../setup.md#load-local-configuration) is the canonical procedure; no global remote configuration hierarchy or deployment platform is selected.\n"
   }
 ]

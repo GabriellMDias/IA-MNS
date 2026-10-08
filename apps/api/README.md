@@ -12,6 +12,8 @@ The Fastify API runtime provides configuration, structured logging and tracing, 
 | HTTP boundary, lifecycle, and failures | [`src/app.ts`](src/app.ts), [`src/lifecycle.ts`](src/lifecycle.ts), [`src/errors.ts`](src/errors.ts) |
 | Module contract and composition | [`src/module.ts`](src/module.ts), [`src/modules.ts`](src/modules.ts), [`src/error-registry.ts`](src/error-registry.ts) |
 | Database client and token verification | [`src/database.ts`](src/database.ts), [`src/authentication.ts`](src/authentication.ts) |
+| Same-origin web hosting, trusted proxies and internal TLS | [`src/web-hosting.ts`](src/web-hosting.ts), [`src/runtime-assets.ts`](src/runtime-assets.ts), [`src/app.ts`](src/app.ts) |
+| Operational commands and database deployment | [`src/cli/`](src/cli/config-check.ts), [`src/database-deploy.ts`](src/database-deploy.ts), [`src/identity-keys.ts`](src/identity-keys.ts) |
 | Prisma schema, schema meaning, and runtime grants | [`prisma/schema/`](prisma/schema/schema.prisma), `prisma/metadata/`, `prisma/runtime-grants/`, reviewed `prisma/migrations/` |
 | Generated references | [`generate-references.ts`](scripts/generate-references.ts), [`openapi.ts`](scripts/openapi.ts), [`database-reference.ts`](scripts/database-reference.ts) |
 | Process smokes | [`scripts/smoke.mjs`](scripts/smoke.mjs) and module smokes in `scripts/smoke/` |
@@ -37,12 +39,17 @@ From the repository root:
 | Purpose | Command |
 | --- | --- |
 | Provision local durable Docker PostgreSQL and apply migrations/grants | `pnpm db:local` |
+| Apply migrations and runtime grants with `ORION_MIGRATION_DATABASE_URL`, then verify the runtime role's privileges | `pnpm -C apps/api db:deploy` |
+| Validate the configuration, the files it names and the production module requirements without listening | `pnpm -C apps/api config:check` |
+| Write new identity signing/encryption keys to a new owner-only file | `pnpm identity:keys --output <file>` |
 | Generate ignored Prisma client | `pnpm -C apps/api db:generate` |
 | Apply committed migrations to the configured database | `pnpm -C apps/api db:migrate:deploy` |
 | Check API behavior/types | `pnpm -C apps/api test` and `pnpm -C apps/api typecheck` |
 | Evaluate AI behavior (scripted by default; `--subject model` uses the live provider) | `pnpm eval run` |
 | Emit/start API | `pnpm -C apps/api build`, then `pnpm -C apps/api start` |
 | Intentionally regenerate tracked API/database/configuration/error references | `pnpm -C apps/api references:write` |
+
+The emitted build carries the same operational commands as `dist/cli/*.js` (`identity-bootstrap`, `identity-keys`, `config-check`, `database-deploy`), which need neither `tsx` nor the source tree; a deployment runs them with `node` beside the server ([ADR-0029](../../docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)). Only `database-deploy` (and the Prisma CLI it runs) reads `ORION_MIGRATION_DATABASE_URL`; it needs the Prisma CLI installed beside the build.
 | Check current API/database/SDK references without editing them | `pnpm references:check` |
 
 Tests and reference generation use fresh migrated Testcontainers PostgreSQL, so a compatible container runtime must be reachable. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md) for downstream SDK/portal generation after source changes. The root `pnpm validate` also checks emitted builds, real-process recovery, and browser behavior; a focused package check alone does not replace it.
@@ -51,9 +58,9 @@ Tests and reference generation use fresh migrated Testcontainers PostgreSQL, so 
 
 [`config.ts`](src/config.ts) is the sole runtime environment parser; the [generated configuration reference](../../docs/generated/configuration/api.md) owns the setting catalog. `ORION_ENV` is always required. `ORION_DATABASE_URL` enables the database for modules that require it and adds a bounded database check to readiness. `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE`, and `ORION_TOKEN_JWKS_URL` enable bearer authentication and must be configured together.
 
-`ORION_DATABASE_URL` is the restricted runtime credential. Only the Prisma CLI reads `ORION_MIGRATION_DATABASE_URL`, supplied separately for migration commands; the CLI does not automatically load the API's root `.env.local`. Keep both out of tracked files and do not leave the migration credential in the runtime environment.
+`ORION_DATABASE_URL` is the restricted runtime credential. Only migration tooling (the Prisma CLI and the [database deployment step](src/database-deploy.ts)) reads `ORION_MIGRATION_DATABASE_URL`, supplied separately for migration commands; neither loads the API's root `.env.local`. The server, the bootstrap and the configuration check delete it from their environment. Keep both out of tracked files and do not leave the migration credential in the runtime environment.
 
-The runtime role needs `USAGE` on the application schema plus only the table and column privileges that each module declares in `prisma/runtime-grants/`. It needs no DDL grant. The [database fixture](scripts/migrated-database.ts) provisions separate migration/runtime roles and applies those grants, so integration tests run with the same least-privilege runtime role.
+The runtime role `orion_runtime` needs `CONNECT`, `USAGE` on the application schema plus only the table privileges that each module declares in `prisma/runtime-grants/`. It needs no DDL grant. The database deployment step applies the migrations, grants exactly those privileges, and fails when the role is missing, has an administrative attribute, may create or owns objects, or holds a table privilege no grant declares; it never creates roles or sets passwords. `pnpm db:local` and the [database fixture](scripts/migrated-database.ts) create the role, then run that same step, so local and integration databases match production privileges.
 
 The [release workflow](../../docs/database/release-evolution.md) owns durable migration recording. An empty registry is not permission to rewrite unverified history.
 
@@ -67,11 +74,21 @@ Executable module contracts own operations, stable operation IDs, typed inputs/o
 
 A module that exposes authenticated routes should apply request limiting before token verification and database access, as the reference module does with a process-local source-IP limit; health probes stay outside it. Exhaustion returns `429 RATE_LIMITED` in the public envelope with a bounded `Retry-After`. This is resource protection, not a product quota.
 
-Process-local limiting uses the direct peer address; trusted proxies are not configured. A multi-replica or reverse-proxy deployment must define shared/edge limiting and trusted client-IP handling before promising fleet-wide or per-user limits.
+Process-local limiting uses the client address Fastify derives. By default that is the direct peer. Behind a reverse proxy, `ORION_TRUSTED_PROXIES` lists the exact proxy addresses (or IPv4 /24, IPv6 /64 and narrower ranges) whose `X-Forwarded-For` and `X-Forwarded-Proto` are honored, so each client keeps its own limit and no other peer can choose its address; wildcards and broad networks are refused ([ADR-0029](../../docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)). Identity never derives origins, redirects or cookie security from forwarded headers. A multi-replica deployment must still define shared or edge limiting before promising fleet-wide limits.
+
+## Same-origin web hosting
+
+With `ORION_WEB_ROOT` set to a built `apps/web`, the process serves it at the same origin ([ADR-0029](../../docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md), [`web-hosting.ts`](src/web-hosting.ts)):
+
+- The build is indexed at startup; only exact files are served, hashed `/assets/*` as immutable, everything else `no-cache`. A page navigation that matches no file receives `index.html`; missing assets, unknown API paths and non-GET requests receive the JSON error envelope.
+- Module operations move under `/api`, the browser path the development proxy strips. Health probes answer at `/health/*` and `/api/health/*`. Without `ORION_WEB_ROOT` nothing moves.
+- Responses carry `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` (same-origin `fetch()` writes keep their real `Origin`) and `frame-ancestors 'none'`, except `/embed/pdt` and `/embed/sankhya`, which allow only `PDT_EMBED_ORIGIN` and `SANKHYA_EMBED_ORIGIN`.
+- The build manifest says whether it contains the `/docs` portal; the process refuses such a build unless `ORION_WEB_DOCS=enabled`, which is the default outside production only.
+- `ORION_TLS_CERT_FILE` and `ORION_TLS_KEY_FILE` make the listener HTTPS for an encrypted proxy-to-application hop.
 
 ## Lifecycle and diagnostics
 
-`main.ts` validates configuration, initializes Pino/OpenTelemetry, then dynamically imports Fastify, Prisma, and composed modules before listening. Preserve that order for instrumented infrastructure. Incoming W3C trace context propagates; each request receives a fresh server-generated `x-request-id`. Errors follow the [public envelope](../../docs/api/error-contract.md). Logs and traces identify the service by the API package name.
+`main.ts` validates configuration, initializes Pino/OpenTelemetry, loads the files the configuration names (TLS material, web build), then dynamically imports Fastify, Prisma, and composed modules before listening; [`composition.ts`](src/composition.ts) builds token verification and activates modules for both the server and `config-check`. Preserve that order for instrumented infrastructure. Incoming W3C trace context propagates; each request receives a fresh server-generated `x-request-id`. Errors follow the [public envelope](../../docs/api/error-contract.md). Logs and traces identify the service by the API package name.
 
 Startup reports initialization, liveness reports process-local health, and readiness becomes unavailable while draining or when a configured database is unavailable. A configured database is probed before readiness and through a bounded readiness check. SIGINT/SIGTERM trigger bounded HTTP, database, and telemetry shutdown.
 

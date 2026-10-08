@@ -10,8 +10,10 @@ import { createModelInterpreter } from "./features/sales/interpreter.js";
 import { createOpenAiModel } from "./ai/openai.js";
 import {
   createIdentityModule,
+  identityServiceFor,
   type IdentityPorts,
 } from "./features/identity/module.js";
+import type { Database } from "./database.js";
 import { transferConversations } from "./features/agent/prisma-repository.js";
 import {
   parseProviderGrants,
@@ -110,6 +112,19 @@ export const identityPorts: IdentityPorts = {
   transferOwnership: transferConversations,
   parameters: operationalParameters,
 };
+
+/**
+ * The identity service of this composition for operational commands, such as
+ * the owner bootstrap, that run beside the server with its configuration.
+ */
+export function identityService(config: ServerConfig, database: Database) {
+  return identityServiceFor(
+    config,
+    { config, database },
+    permissionCatalog,
+    identityPorts,
+  );
+}
 
 // Composition owned by this repository. Add each API module here; the shared
 // runtime activates the ones whose requirements are configured.

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clientConfigFrom,
   configReference,
+  isTrustedProxyEntry,
   parseServerConfig,
   serverConfigSchema,
 } from "../src/config.js";
@@ -156,6 +157,91 @@ describe("API configuration boundary", () => {
       { ORION_TOKEN_ISSUER: "https://issuer.example/" },
     ])
       expect(() => parseServerConfig({ ...temporary, ...unsafe })).toThrow();
+  });
+
+  it("trusts only exact proxy addresses or narrow ranges", () => {
+    expect(
+      parseServerConfig({
+        ORION_ENV: "test",
+        ORION_TRUSTED_PROXIES: "10.0.0.5, 10.0.1.0/24 fd00::1 fd00:1::/64",
+      }).trustedProxies,
+    ).toEqual(["10.0.0.5", "10.0.1.0/24", "fd00::1", "fd00:1::/64"]);
+    expect(parseServerConfig({ ORION_ENV: "test" }).trustedProxies).toBe(
+      undefined,
+    );
+    for (const entry of ["10.0.0.5", "10.0.0.0/24", "::1", "fd00::/64"])
+      expect(isTrustedProxyEntry(entry), entry).toBe(true);
+    for (const entry of [
+      "0.0.0.0/0",
+      "::/0",
+      "10.0.0.0/16",
+      "10.0.0.0/8",
+      "fd00::/48",
+      "10.0.0.0/33",
+      "10.0.0.0/024",
+      "10.0.0.5/24/1",
+      "loopback",
+      "uniquelocal",
+      "proxy.example.test",
+      "*",
+      "true",
+      "10.0.0.256",
+    ])
+      expect(isTrustedProxyEntry(entry), entry).toBe(false);
+    for (const value of ["", " , ", "0.0.0.0/0", "10.0.0.5, *", "true"])
+      expect(() =>
+        parseServerConfig({ ORION_ENV: "test", ORION_TRUSTED_PROXIES: value }),
+      ).toThrow("Invalid API configuration");
+    // A forwarded address must never satisfy loopback-only access.
+    expect(() =>
+      parseServerConfig({
+        ORION_ENV: "development",
+        IA_MNS_LOCAL_ACCESS: "true",
+        ORION_TRUSTED_PROXIES: "127.0.0.1",
+      }),
+    ).toThrow("trusted proxies cannot be combined");
+  });
+
+  it("pairs internal TLS files and keeps web settings explicit", () => {
+    expect(
+      parseServerConfig({
+        ORION_ENV: "test",
+        ORION_TLS_CERT_FILE: "/run/tls/cert.pem",
+        ORION_TLS_KEY_FILE: "/run/tls/key.pem",
+      }),
+    ).toMatchObject({
+      tlsCertFile: "/run/tls/cert.pem",
+      tlsKeyFile: "/run/tls/key.pem",
+    });
+    for (const env of [
+      { ORION_TLS_CERT_FILE: "/run/tls/cert.pem" },
+      { ORION_TLS_KEY_FILE: "/run/tls/key.pem" },
+      { ORION_WEB_DOCS: "enabled" },
+      { ORION_WEB_ROOT: "/srv/web", ORION_WEB_DOCS: "public" },
+    ])
+      expect(() => parseServerConfig({ ORION_ENV: "test", ...env })).toThrow(
+        "Invalid API configuration",
+      );
+    // The portal is opt-in in production and available elsewhere by default.
+    expect(
+      parseServerConfig({ ORION_ENV: "production", ORION_WEB_ROOT: "/srv/web" })
+        .webDocumentation,
+    ).toBe("disabled");
+    expect(
+      parseServerConfig({ ORION_ENV: "test", ORION_WEB_ROOT: "/srv/web" })
+        .webDocumentation,
+    ).toBe("enabled");
+    expect(
+      parseServerConfig({ ORION_ENV: "test", ORION_WEB_ROOT: "/srv/web" })
+        .webRoot,
+    ).toBe("/srv/web");
+    expect(
+      parseServerConfig({
+        ORION_ENV: "test",
+        ORION_WEB_ROOT: "/srv/web",
+        ORION_WEB_DOCS: "disabled",
+      }).webDocumentation,
+    ).toBe("disabled");
   });
 
   it("accepts as the installation AI model only an identifier owners could save", () => {

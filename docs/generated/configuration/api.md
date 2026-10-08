@@ -16,6 +16,11 @@ Role says why a setting is an environment variable: `bootstrap` (infrastructure,
 | `ORION_API_PORT` | bootstrap | integer 0..65535 | no | `3000` | server | INTERNAL | no | Listen port; zero selects an ephemeral port. |
 | `ORION_LOG_LEVEL` | bootstrap | Pino level | no | `info` | server | INTERNAL | no | Structured log threshold. |
 | `ORION_SHUTDOWN_TIMEOUT_MS` | bootstrap | integer 100..30000 | no | `5000` | server | INTERNAL | no | Total graceful shutdown deadline. |
+| `ORION_TRUSTED_PROXIES` | bootstrap | comma list of IP addresses or narrow CIDRs (IPv4 /24+, IPv6 /64+) | no | — | server | INTERNAL | no | Reverse proxies whose X-Forwarded-For and X-Forwarded-Proto are honored; unset trusts none, so the client address is the direct peer. |
+| `ORION_TLS_CERT_FILE` | bootstrap | file path (PEM) | no | — | server | INTERNAL | no | Certificate chain for an HTTPS listener on the proxy-to-application hop; configure with ORION_TLS_KEY_FILE. |
+| `ORION_TLS_KEY_FILE` | bootstrap | file path (PEM) | no | — | server | INTERNAL | no | Private key of ORION_TLS_CERT_FILE; the path is configuration, the file is a secret readable only by the process. |
+| `ORION_WEB_ROOT` | bootstrap | directory path of a built apps/web | no | — | server | INTERNAL | no | Serves the web build from this process at the same origin; the API then answers under /api, as the development proxy does. |
+| `ORION_WEB_DOCS` | bootstrap | enabled \| disabled | no | — | server | INTERNAL | no | Whether the served web build may contain the /docs portal; disabled by default in production, enabled otherwise. Requires ORION_WEB_ROOT. |
 | `ORION_OTLP_ENDPOINT` | bootstrap | http(s) URL | no | — | server | INTERNAL | no | Optional OTLP HTTP collector base URL. |
 | `ORION_TRACE_SAMPLE_RATIO` | bootstrap | number 0..1 | no | `1` | server | INTERNAL | no | Trace sampling probability. |
 | `ORION_DATABASE_URL` | secret | PostgreSQL URL | no | — | server | RESTRICTED | yes | Runtime PostgreSQL credential; enables the database for modules that require it and adds it to readiness. |
@@ -48,7 +53,7 @@ Role says why a setting is an environment variable: `bootstrap` (infrastructure,
 | `PDT_IDENTITY_ISSUER` | bootstrap | HTTPS URL | no | — | server | INTERNAL | no | Exact PDT_IDENTITY_ISSUER of the PDT installation; link issuer for PDT identities. |
 | `PDT_IDENTITY_CLIENT_ID` | bootstrap | 1..64 letters, digits, _ or - | no | — | server | INTERNAL | no | IA-MNS client id registered in PDT_IDENTITY_CLIENTS. |
 | `PDT_IDENTITY_CLIENT_SECRET` | secret | 32+ characters | no | — | server | RESTRICTED | yes | IA-MNS client secret for the PDT contract; PDT stores only its SHA-256. |
-| `PDT_IDENTITY_REDIRECT_URI` | bootstrap | HTTPS URL | no | — | server | INTERNAL | no | Exact callback registered in PDT; the browser-visible URL of GET /identity/pdt/callback. |
+| `PDT_IDENTITY_REDIRECT_URI` | bootstrap | HTTPS URL | no | — | server | INTERNAL | no | Exact callback registered in PDT; the browser-visible URL of GET /identity/pdt/callback, which the web origin serves under /api. |
 | `PDT_EMBED_ORIGIN` | bootstrap | exact origin | no | — | server | INTERNAL | no | Only PDT origin allowed to host the embedded IA-MNS and exchange bridge messages. |
 | `SANKHYA_IDENTITY_ISSUER` | bootstrap | stable identifier | no | — | server | INTERNAL | no | Fixed identifier of the Sankhya installation: issuer of CODUSU links (owner directory association) and expected in Om host assertions. |
 | `SANKHYA_IDENTITY_KEYS` | bootstrap | JWKS JSON of public keys | no | — | server | INTERNAL | no | Pinned public keys of the Om identity add-on (RS256/ES256). Private key material is rejected. |

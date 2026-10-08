@@ -17,18 +17,14 @@ try {
   logger = createLogger(config);
   const telemetry = initializeTelemetry(config, logger);
   cleanup = () => withDeadline(telemetry.shutdown(), config.shutdownTimeoutMs);
+  startupPhase = "assets";
+  const { loadRuntimeAssets } = await import("./runtime-assets.js");
+  const assets = await loadRuntimeAssets(config);
   startupPhase = "composition";
   // Load Fastify, Prisma, and modules only after instrumentation is registered.
   const { createApp } = await import("./app.js");
   const { createDatabase, checkDatabase } = await import("./database.js");
-  const {
-    combineVerifiers,
-    createAccessTokenVerifier,
-    createLocalAccessTokenVerifier,
-    issuerPublicJwk,
-  } = await import("./authentication.js");
-  const { activateModules } = await import("./module.js");
-  const { apiModules } = await import("./modules.js");
+  const { composeModules } = await import("./composition.js");
   const database = config.databaseUrl
     ? createDatabase(config.databaseUrl)
     : undefined;
@@ -44,41 +40,12 @@ try {
     },
   };
   cleanup = () => withDeadline(resources.shutdown(), config.shutdownTimeoutMs);
-  // Trusted issuers: the in-process IA-MNS identity issuer and/or an external one.
-  const verifiers = [
-    ...(config.publicOrigin && config.identitySigningKey
-      ? [
-          createLocalAccessTokenVerifier({
-            issuer: config.publicOrigin,
-            audience: config.identityAudience,
-            keys: { keys: [issuerPublicJwk(config.identitySigningKey)] },
-          }),
-        ]
-      : []),
-    ...(config.tokenIssuer && config.tokenAudience && config.tokenJwksUrl
-      ? [
-          createAccessTokenVerifier({
-            issuer: config.tokenIssuer,
-            audience: config.tokenAudience,
-            jwksUrl: config.tokenJwksUrl,
-          }),
-        ]
-      : []),
-  ];
-  const verifier =
-    verifiers.length === 0
-      ? undefined
-      : verifiers.length === 1
-        ? verifiers[0]
-        : combineVerifiers(verifiers);
-  const modules = activateModules(
-    apiModules,
-    { database, verifier, config },
-    config.environment,
-  );
+  const { modules } = await composeModules(config, database);
   const { app, lifecycle } = createApp(logger, undefined, {
     modules,
     ...(database ? { checkReady: () => checkDatabase(database) } : {}),
+    ...(config.trustedProxies ? { trustedProxies: config.trustedProxies } : {}),
+    ...assets,
   });
   const runtimeLogger = logger;
   cleanup = () =>
