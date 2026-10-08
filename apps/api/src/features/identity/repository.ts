@@ -1221,8 +1221,12 @@ export class IdentityRepository {
     actorPersonId: string | null,
     targetPersonId: string | null,
     details: Record<string, string | number | boolean | null> = {},
+    /** A transaction of this database that the event must commit with. */
+    transaction?: unknown,
   ) {
-    await this.database.identityAuditEvent.create({
+    const client =
+      (transaction as Prisma.TransactionClient | undefined) ?? this.database;
+    await client.identityAuditEvent.create({
       data: {
         id: randomUUID(),
         action,

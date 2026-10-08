@@ -243,4 +243,15 @@ describe("API configuration boundary", () => {
       }).webDocumentation,
     ).toBe("disabled");
   });
+
+  it("accepts as the installation AI model only an identifier owners could save", () => {
+    expect(
+      parseServerConfig({ ORION_ENV: "test", OPENAI_MODEL: "gpt-6.1-sol" })
+        .openaiModel,
+    ).toBe("gpt-6.1-sol");
+    for (const model of ["bad model", "-gpt", "", "gpt/next"])
+      expect(() =>
+        parseServerConfig({ ORION_ENV: "test", OPENAI_MODEL: model }),
+      ).toThrow("Invalid API configuration");
+  });
 });
