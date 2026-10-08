@@ -1,5 +1,482 @@
 [
   {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "anchor": "adr-0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "text": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline\n**Status:** accepted\n**Date:** 2026-09-30\n**Supersedes:** [ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md), only for inheriting Orion's plan, human actions, and acceptance history, retaining the Approval Request reference implementation with a recorded disposition, and keeping the foundation workspace package scope; its Git ancestry, provenance, remote protection, and upgrade decisions remain accepted\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nADR-0014 derived projects through Git ancestry and kept everything Orion contained. A project therefore started with Orion's own implementation plan, human actions, and acceptance report as \"inherited history\", with the Approval Request slice as a retained reference implementation awaiting a product decision, and with `@orion/*` workspace packages. The first real derivation showed the cost: a new product repository read as Orion itself, carried documentation describing how Orion was built, and shipped an unrelated feature through its API, database, SDK, web application, and portal.\nThe owner directed that a new project start as a clean base for developing a product: it keeps Orion's architecture, principles, tooling, validation, CI, Living Documentation Portal, provenance, and future upgrades, but contains neither the reference implementation nor documentation of the foundation's development, and it carries the project's own name on its important surfaces.\nTwo structural facts made removal brittle under ADR-0014: shared runtime code imported the reference feature directly, and shared documentation linked to foundation-only files. A deletion step would have had to rewrite shared files and would conflict on every upgrade.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion separates its content into three categories, recorded in the machine-readable derivation contract `.orion/derivation.json`:\n**Shared foundation**: architecture, policies, ADRs, tooling, CI, the API runtime and module contract, the web shell and portal, and generated-reference machinery. Shared code and documentation must work without foundation-only content: they do not import, link to, name, or describe it. Validation in Orion enforces this isolation.\n**Foundation-only**: Orion's Approval Request reference implementation (feature code, schema, migration, metadata, grants, smoke, tests, browser journeys, and domain documentation) and Orion's own implementation plan, human actions, and acceptance history.\n**Project-owned**: files every repository owns from its first commit, rendered from templates at initialization: the README, the API and web composition files (`apps/api/src/modules.ts`, `apps/web/src/modules.tsx`), the brand assets, and `docs/project/implementation-plan.md` and `docs/project/human-actions.md`. Orion's own copies compose the reference implementation and describe Orion.\n`pnpm orion:init-project` removes the foundation-only paths, renders the project-owned files from the project identity, renames the workspace package scope (package manifests, the lockfile, and source; not authored prose) to the project's scope, names the root package after it, regenerates every derived artifact from the changed sources, and records manifest schema version 2 with the project name and package scope. It then commits on top of Orion's history and protects the upstream remote exactly as ADR-0014 decided. Living Documentation titles, the HTML title, the OpenAPI title, and the telemetry service name derive from the manifest name and package names.\nUpgrades remain reviewed merges with ancestry. Because the project deleted foundation-only paths, an upgrade that changes them conflicts or reintroduces them; `pnpm orion:prune` reapplies the contract by removing those paths and renaming foundation scope references, and project validation fails while either remains. Project-owned files keep the project's version during upgrades.\nThe `ORION_*` configuration names, `orion_*` token claims and database role names, and the `Orion required gate` check name remain the foundation's technical namespace. Renaming them would touch shared files throughout the repository and conflict on every upgrade, and the check name is bound to branch protection.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nIsolating shared content from foundation-only content turns removal into deleting a known list of paths rather than editing shared files, so a derived project shares every shared file byte for byte with Orion and upgrades merge cleanly there. Composition files give each repository a single owned seam for its modules; keeping Orion's reference behind that seam keeps it executable and validated in Orion, where it remains the example a project can study upstream.\nA project that starts with Orion's history documents and a foreign feature must first remove or disclaim them, and its agents read another repository's plan as context. Starting clean makes the project's own plan and human actions the only current work and its README describe its actual state.\nRenaming the package scope affects only package manifests, the lockfile, and a few imports, so it costs little at upgrade time and removes the most visible remaining Orion identity; `pnpm orion:prune` reapplies it mechanically. The configuration and claim namespaces appear in far more shared files and external configuration and are documented as foundation names instead.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Keep the reference implementation with a recorded disposition",
+    "anchor": "keep-the-reference-implementation-with-a-recorded-disposition",
+    "text": "Keep the reference implementation with a recorded disposition\nADR-0014's model. It keeps initialization simple but makes every new product carry and validate an unrelated feature until someone performs a multi-artifact removal, which is exactly the brittle step this decision eliminates.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Delete the reference implementation by editing shared files during initialization",
+    "anchor": "delete-the-reference-implementation-by-editing-shared-files-during-initialization",
+    "text": "Delete the reference implementation by editing shared files during initialization\nA script could rewrite shared code and documentation, but every edited shared file would then differ from Orion and conflict on later upgrades. Isolation moves those differences into project-owned composition files instead.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Move the reference implementation to a separate repository or a non-default branch",
+    "anchor": "move-the-reference-implementation-to-a-separate-repository-or-a-non-default-branch",
+    "text": "Move the reference implementation to a separate repository or a non-default branch\nThis would keep Orion's main branch clean but lose the executable example in the foundation's own validation gate, and projects could no longer see in Orion how a complete module fits the architecture.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rename every Orion namespace",
+    "anchor": "rename-every-orion-namespace",
+    "text": "Rename every Orion namespace\nRenaming configuration variables, token claims, database roles, and the CI check would maximize branding but touch most of the repository and external settings, making every upgrade conflict.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nA new project contains only shared foundation content and its own files; its README, plan, human actions, package names, portal, and API contract describe it.\nOrion keeps a complete, validated reference implementation and its development history.\nIsolation, project cleanliness, and remaining foundation scope references are checked mechanically.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nUpgrades that change foundation-only paths conflict in projects, and every upgrade must run `pnpm orion:prune` before validation.\nInitialization regenerates references, so it requires dependencies installed and a Testcontainers-compatible container runtime.\nShared documentation cannot refer to the reference implementation except through the derivation guide.\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nThis changes the derivation contract and the manifest schema incompatibly, which [foundation versioning](../versioning.md#compatibility-meaning) classifies as a MAJOR foundation change.\nProjects derived under ADR-0014 have a schema version 1 manifest; `pnpm orion:check` refuses it with directions to the migration steps in the [derivation guide](../project-derivation.md#migrate-a-project-from-schema-version-1).\n"
+  },
+  {
+    "id": "repository/docs/adr/0017-start-derived-projects-from-a-clean-foundation-baseline",
+    "title": "ADR-0017: Start Derived Projects from a Clean Foundation Baseline",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Project derivation and Orion upgrades](../project-derivation.md)\n[ADR-0014: derive projects through Git ancestry](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\n[Foundation versioning](../versioning.md)\n[API modules](../../apps/api/README.md#modules) and [web modules](../../apps/web/README.md#modules)\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "anchor": "adr-0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "text": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability\n**Status:** accepted\n**Date:** 2026-10-01\n**Partially superseded by:** [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md) replaces the sales-specific product identity and temporary conversation decision. Controlled sales execution and deterministic answers remain accepted.\n**Extended by:** [ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md): the model now reports a structured interpretation that the application merges, resolves and compiles into the same bounded query.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nIA-MNS's first product capability is Portuguese sales chat over an existing Oracle 12.1 Sankhya database. The owner delegated technical choices and supplied the sales reference SQL. Orion already selects Fastify, TypeBox, React/TanStack, and JWT verification. PostgreSQL remains the primary application persistence direction; this MVP requires no application tables and must never write to the external ERP.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAccepted under the owner's explicit delegation of technical choices on 2026-10-01 after reviewing Orion boundaries and the sales-reference semantics.\nUse one sales module and the OpenAI Node SDK Responses API to interpret questions into a strict allowlisted query capability. Execute fixed, parameterized Oracle SQL using node-oracledb, SELECT-only credentials, a read-only transaction, and bounded work. Preserve the supplied reference projection and joins until reconciliation justifies changes. Compute and render answers deterministically from database results; model output never supplies sales numbers or SQL.\nKeep actor-owned conversation questions and last successful filters in bounded, expiring process memory. Require the existing bearer verifier and sales:read scope outside an explicitly enabled loopback-only development mode. Keep confidential prompts/results out of telemetry and ERP rows out of OpenAI requests. Do not select a concrete identity provider, deployment environment, vector database, or workflow engine.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nA small sales query vocabulary covers the requested monetary, quantity, weight, period, and product questions without granting the model database execution authority. Retaining reference join cardinality avoids inventing business semantics. Deterministic decimal calculations prevent model arithmetic from becoming financial truth. Responses function calling provides an explicit external schema and refusals can be handled without querying the ERP. Current node-oracledb 7 documentation supports Oracle 12.1 in Thin mode; a configured Thick option addresses installation-specific requirements without mandating local client libraries for ordinary development.\nTemporary context fulfills follow-up questions with no additional persistent sensitive-data lifecycle. This trades restart durability and multi-instance continuity for a narrower MVP. Local access makes a developer workflow executable before an issuer is selected, while rejecting that mode in production.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Model-generated SQL",
+    "anchor": "model-generated-sql",
+    "text": "Model-generated SQL\nRejected because an open SQL surface makes business semantics and query cost difficult to constrain and enlarges data access beyond sales.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Agent framework and persistent conversation store",
+    "anchor": "agent-framework-and-persistent-conversation-store",
+    "text": "Agent framework and persistent conversation store\nDeferred because a single forced capability does not need autonomous loops, handoffs, vector retrieval, or durable history. Add persistence only when product retention and operational requirements exist.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Replacing the ERP integration with PostgreSQL replication",
+    "anchor": "replacing-the-erp-integration-with-postgresql-replication",
+    "text": "Replacing the ERP integration with PostgreSQL replication\nDeferred because it introduces synchronization, lag, operational work, and reconciliation beyond the requested direct read-only MVP. Oracle is an external-system adapter, not a replacement for ADR-0005.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nExecution authority and calculations remain in reviewed application code.\nOrion's contract generation, client boundary, diagnostics, and validation remain applicable.\nNo production credential is needed for ordinary synthetic verification.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nQueries retain potentially expensive reference joins and require ERP performance/reconciliation checks.\nContext disappears on restart and does not support horizontal deployment without later changes.\nInterpretation quality, real schema compatibility, and grants remain unverified until external configuration is supplied.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo Sankhya or application database migration is introduced. A DBA must supply a SELECT-only account and verify resolution of reference tables/custom fields. A dedicated OpenAI project/key is configured outside version control. Shared environments need a trusted issuer, sales scope mapping, and provider/data handling review before exposure.\n"
+  },
+  {
+    "id": "repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability",
+    "title": "ADR-0018: Bound Natural Language Sales to a Read-Only Query Capability",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Sales domain and acceptance](../domains/sales-chat.md)\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\n[OpenAI function calling](https://developers.openai.com/api/docs/guides/function-calling)\n[Responses API](https://developers.openai.com/api/docs/guides/migrate-to-responses)\n[Oracle driver modes](https://node-oracledb.readthedocs.io/en/stable/user_guide/appendix_a.html)\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "anchor": "adr-0019-compose-a-corporate-agent-with-durable-conversations",
+    "text": "ADR-0019: Compose a Corporate Agent with Durable Conversations\n**Status:** accepted\n**Date:** 2026-10-01\n**Extended by:** [ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md) for explicit authenticated temporary phone testing; ordinary loopback development and production controls remain valid. [ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md) for structured capability conversation state, pending-request routing and AI tracing.\n**Supersedes:** [ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md), only the sales-specific product identity and temporary conversation decision. Controlled sales execution and deterministic financial answers remain valid.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner defines IA-MNS as MNS's corporate AI agent and delegates implementation choices. Sales is the first implemented business capability, not the identity of the product. Users need grounded social interaction, observable task progress, and conversations that survive application/API restarts. Orion already selects PostgreSQL, Prisma, composable modules, TypeBox and TanStack.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAccepted after reviewing Orion's module/persistence policies under the owner's explicit delegation of design choices on 2026-10-01.\nCompose an agent application module and a registry of implemented capability descriptors/executors. The agent routes a bounded conversational intent or one registered capability; permission and execution checks remain server-side. General instructions describe routing, while each capability owns interpretation, tools, business invariants and versioned context. Application-authored social/capability responses and deterministic sales answers prevent model prose from introducing unsupported functionality or financial facts.\nPersist owner-scoped conversations and turns in PostgreSQL using reviewed additive migrations and a restricted runtime role. Store bounded result snapshots, typed progress events and versioned capability context. Accept one turn at a time under a database row lock and a bounded lease. A client request UUID supports acceptance replay, never provider retries. Work is process-local and bounded; expired execution is interrupted rather than resumed. Poll persisted progress through the generated SDK instead of introducing streaming transport or a workflow engine.\nKeep the existing sales endpoints for compatibility with the first MVP; the product exclusively uses the durable agent endpoints. No persistent legacy history can be migrated because the prior transcript was browser/process memory. Support explicit hard deletion; local history otherwise remains until the owner deletes it. Shared deployment requires a defined retention/provider/backup policy. Do not implement new business domains, external writes, production identity, autonomous loops, vectors or generic workflow machinery.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nExplicit capability registration grows without rewriting general routing policy, while preserving each domain's authority. Durable context contains filters, not financial prose. PostgreSQL constraints, locks and acceptance identifiers address races and unknown delivery. Short polling uses the existing SDK and works after reload; it trades small read traffic and roughly one-second progress latency for a simpler contract.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Free-form assistant with arbitrary tools or SQL",
+    "anchor": "free-form-assistant-with-arbitrary-tools-or-sql",
+    "text": "Free-form assistant with arbitrary tools or SQL\nRejected because grounded numbers and bounded execution are existing guarantees. The current registry selects only implemented execution code.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Streaming responses and durable workflow engine",
+    "anchor": "streaming-responses-and-durable-workflow-engine",
+    "text": "Streaming responses and durable workflow engine\nDeferred: one bounded read capability does not require autonomous loops or resumable external actions. Progress in PostgreSQL provides recovery without another transport.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "In-memory history or browser persistence",
+    "anchor": "in-memory-history-or-browser-persistence",
+    "text": "In-memory history or browser persistence\nRejected because restart durability and future capability context require a canonical server-owned store. Credentials and confidential transcripts remain out of browser storage.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nProduct identity and conversation are separate from sales semantics.\nHistory, outcomes and per-capability filters survive restart.\nProgress describes real operations and no speculative functionality is advertised.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nLocal PostgreSQL becomes required for the product conversation flow.\nSales interpretation uses a routing request followed by capability planning.\nStored result snapshots need lifecycle controls and are historical, not refreshed ERP data.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNew tables are additive and application-owned. Docker binds only loopback, persists a named volume, and uses separate migration/runtime credentials. No ERP changes occur. The local provisioning helper applies migrations/grants without dumping credentials or deleting volumes. An interrupted execution is visible after its 120-second lease expires and is never automatically repeated.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Corporate agent](../domains/corporate-agent.md)\n[Database principles](../database/principles.md)\n[Transactions](../database/transactions-and-concurrency.md)\n[Sales capability](../domains/sales-chat.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "anchor": "adr-0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "text": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy\n**Status:** accepted\n**Date:** 2026-10-01\n**Extends:** [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md), only temporary owner-controlled device testing. Persistent history, normal loopback development and production verifier requirements remain unchanged.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner requests testing IA-MNS from a phone on the same network. The current web/API bind to loopback, and the credential-free developer access is deliberately unavailable to other devices. Simply exposing that proxy would disclose local confidential history. Production identity remains outside scope.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAccepted under the owner's request for phone testing, after reviewing the existing isolation rules and validating the non-production, expiry, credential and origin boundaries. Production identity remains deliberately deferred.\nProvide an explicit temporary network-test launcher with a separate loopback API and a web listener bound to one assigned RFC1918 IPv4 address. All protected operations in that API require a random 256-bit bearer, an absolute expiry within two hours, the application-client header and the configured browser origin when present. Cross-site and non-loopback upstream requests are rejected. Normal credential-free local access and the temporary mode are mutually exclusive; production and normal issuer configuration reject this mode.\nThe bearer maps to the existing local developer's conversations. Agent permissions are explicitly provided by composition; currently only sales:read. Future capability registration does not automatically expand this token's permission. The existing access field holds the token in memory, never URL/browser storage. Save its initial value only in an ignored local environment file for the owner to transfer to their device. Stop/expiry terminates the separate services and removes that file; it does not rotate OpenAI/Oracle credentials or alter normal .env.local.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThis reuses the current bearer UI and owner-scoped API without selecting a production identity provider, adding cookies, weakening the desktop bypass or exposing database listeners. A two-hour absolute lifetime and process-local service separation bound this development convenience. HTTP on a private test network does not provide transport encryption; use only an owner-controlled trusted LAN. This is not shared employee access or a deployment method.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Expose the existing credential-free proxy",
+    "anchor": "expose-the-existing-credential-free-proxy",
+    "text": "Expose the existing credential-free proxy\nRejected because unrelated network devices could retrieve the local owner's history. Relaxing only Origin/listener checks is not authorization.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Select a production identity provider or public tunnel",
+    "anchor": "select-a-production-identity-provider-or-public-tunnel",
+    "text": "Select a production identity provider or public tunnel\nDeferred because the request is temporary testing on an existing LAN. Production identity, TLS hosting and shared lifecycle controls remain separate decisions.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nPhone testing uses actual providers and existing durable context under explicit temporary authorization.\nAPI and PostgreSQL remain unavailable directly over the LAN.\nDefaults and production authentication guarantees remain unchanged.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nThe owner must transfer a temporary credential and restart the test after expiry.\nHTTP transport is limited to trusted development networks; it is not suitable for shared deployment.\nFirewall/router policies can still require owner action; the launcher does not disable or broadly change them.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNo schema, business SQL, existing history owner or external credential changes. The separate web/API use ports 5174/3002. A private HTTP origin can lack crypto.randomUUID; request UUID v4 uses Web Crypto random bytes when necessary, preserving secure acceptance identifiers and replay behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Network testing procedure](../setup.md#phone-testing-on-the-local-network)\n[Authentication policy](../security/authentication.md)\n[Project plan](../project/implementation-plan.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
+    "title": "ADR-0021: License IA-MNS under Apache-2.0",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0021: License IA-MNS under Apache-2.0",
+    "anchor": "adr-0021-license-ia-mns-under-apache-20",
+    "text": "ADR-0021: License IA-MNS under Apache-2.0\n**Status:** accepted\n**Date:** 2026-10-03\n"
+  },
+  {
     "id": "repository/docs/adr/0021-license-ia-mns-under-apache-2-0",
     "title": "ADR-0021: License IA-MNS under Apache-2.0",
     "group": "Decisions",
@@ -846,134 +1323,44 @@
     "text": "References\n[Sales chat domain](../domains/sales-chat.md)\n[Corporate agent](../domains/corporate-agent.md)\n[AI interpretation](../architecture/ai-interpretation.md)\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md), [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md), [ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\n[Implementation plan](../project/implementation-plan.md#current-work) (PJ-28) and [human actions](../project/human-actions.md#ph-18) (PH-18, PH-19, PH-20)\n"
   },
   {
-    "id": "repository/docs/adr/AGENTS",
-    "title": "ADR Instructions",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "ADR Instructions",
-    "anchor": "adr-instructions",
-    "text": "ADR Instructions\nConsult the [decision index](README.md) and [authoring policy](authoring.md) before creating or changing an ADR.\nStart new proposals with the [template](template.md) and `proposed` status. Acceptance is distinct from implementation completion.\nPreserve accepted rationale, decisions, dates, and stable identifiers. Architectural changes require a new decision and explicit supersession, not rewritten history.\nRetain meaningful alternatives, negative consequences, constraints, and evidence. Do not invent evaluations to fill the template.\nUpdate current policy and reciprocal supersession references when an accepted architectural change requires them.\n"
+    "heading": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
+    "anchor": "adr-0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "text": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration\n**Status:** accepted\n**Date:** 2026-10-08\n**Extends:** [ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) (TypeBox bootstrap configuration) and [ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md) (owner administration of a typed setting). The environment remains the only source of secrets and bootstrap configuration; the authentication policy keeps its own storage and rules.\n"
   },
   {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Authoring Architecture Decision Records",
-    "anchor": "authoring-architecture-decision-records",
-    "text": "Authoring Architecture Decision Records\nUse the [decision index](README.md) to search existing decisions and the [template](template.md) to draft a record. ADRs preserve decision history and rationale; current policy describes current architecture. Git, migrations, changelogs, design documents, and runbooks retain their separate responsibilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "When a decision needs an ADR",
-    "anchor": "when-a-decision-needs-an-adr",
-    "text": "When a decision needs an ADR\nCreate an ADR for a significant choice whose rationale a future contributor cannot reliably infer from implementation. Relevant effects include system boundaries, dependency direction, ownership, runtime/deployment topology, security, persistence, public contracts, cross-cutting technology, operational behavior, and long-term maintainability.\nConsider the breadth, reversibility, long-term dependency, plausible alternatives, integrity/security implications, and risk of losing the reasoning. Ordinary local refactors, fixes, tests, small helpers, individual indexes, and routine dependency additions do not each need an ADR. Major technology choices generally do. Existing foundation policies do not each need retroactive ADRs.\nAn ADR records a sufficiently concrete architectural conclusion, not every discussion or rejected idea. It must not become a task tracker, changelog, runbook, detailed implementation design, or snapshot of volatile vendor data. A separate RFC system is not required. Bundle decisions only when their rationale and lifecycle belong together; avoid giant records deciding unrelated parts of the stack.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Lifecycle and historical integrity",
-    "anchor": "lifecycle-and-historical-integrity",
-    "text": "Lifecycle and historical integrity\nStatus\nMeaning\n`proposed`\nUnder active consideration; implementation must not assume finality unless explicitly exploratory\n`accepted`\nApproved architectural direction; implementation and current documentation should align, allowing an explicit migration period\n`rejected`\nConsidered and deliberately not adopted\n`superseded`\nPreviously accepted, then replaced by another decision; link the replacement\n`deprecated`\nHistorically relevant but no longer appropriate for new architecture; use sparingly when replacement is transitional or incomplete\nDo not add statuses without a clear need. Normal transitions are proposed to accepted/rejected and accepted to superseded/deprecated. Do not normally revert historical decisions to proposed; create a new record when reconsidering them.\nAccepted does not mean implemented or released. Track pending/partial/completed implementation through normal issues, tasks, or pull requests, not extra ADR statuses. Exploratory work and proofs of concept provide evidence but do not themselves establish acceptance. Long-lived production implementation should generally not rely on an unresolved major proposal.\nAccepted substantive history should remain immutable. Non-semantic spelling, formatting, broken-link, and obvious-typo corrections may be acceptable, but must not change historical meaning. When architecture changes, create a new ADR. Retain the old record, mark it superseded, and add reciprocal `Supersedes` / `Superseded by` references. Keep the original date. For partial supersession, identify precisely what remains valid, what changed, and which decision replaces it.\nRejected records can preserve useful evaluation and constraints; a changed context can justify reconsideration in a new ADR. Do not treat rejection as a permanent prohibition. Purely local abandoned proposals may be removed before meaningful shared history; preserve broadly reviewed or referenced proposals as rejected where useful. Do not record every immediately dismissed idea.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Identity and metadata",
-    "anchor": "identity-and-metadata",
-    "text": "Identity and metadata\nUse monotonic numeric identifiers and descriptive English filenames of the form `NNNN-short-decision-title.md`. Numbers identify records, not importance, domain, priority, or version. Gaps are acceptable. Never reuse or renumber identifiers already in shared history. Resolve parallel numbering conflicts before merge; an unshared identifier may be changed.\nRecord title, status, date, context, decision, and consequences. For accepted records, the date should generally be the acceptance date. Titles should describe the decision rather than merely name a topic. Preserve identifiers once merged and referenced.\nSimple Markdown metadata is the current format. `pnpm docs:check` validates filenames, matching titles/IDs, status, ISO dates, required sections, and index membership. Preserve these field names as tooling contracts. Supersession semantics still require review; no automatic numbering or supersession checker is implemented. ADR files remain canonical; avoid duplicate status stores or custom ADR software without a concrete need.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Content and evidence",
-    "anchor": "content-and-evidence",
-    "text": "Content and evidence\n**Context:** explain the actual problem, relevant constraints, scope, timing, and assumptions. Avoid unnecessary implementation detail.\n**Decision:** state the chosen direction clearly enough to understand independently of the alternatives.\n**Rationale:** explain the material tradeoffs, evidence, and constraints. Distinguish confirmed evidence, reasoned tradeoffs, and assumptions.\n**Alternatives:** describe serious alternatives considered; do not fabricate alternatives or evaluation evidence to fill a template.\n**Consequences:** include benefits, costs, limitations, new responsibilities, security/operational effects, and reversibility or migration costs where relevant. Formal scoring is not required.\n**References:** link relevant repository policy, earlier decisions, designs, benchmarks, proofs of concept, and durable evidence. Avoid unnecessary dependency graphs and large volatile datasets. Preserve enough explanation that disappearing external links do not destroy the rationale.\nUse current evidence at decision time when product capability, support lifecycle, pricing, security status, or provider limits matter. Vendor documentation can support constraints but must not be the sole location of the explanation. Detailed implementation and operational migration steps normally belong outside the ADR.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Creation, review, and acceptance",
-    "anchor": "creation-review-and-acceptance",
-    "text": "Creation, review, and acceptance\nSearch the index and related policies for the same question, accepted direction, superseded decision, or rejected alternative. Determine whether this is an architectural decision rather than an implementation detail.\nAllocate the next available identifier, copy the template, and use `proposed` status.\nDocument context, explicit direction, meaningful alternatives, rationale, constraints, and positive and negative consequences while the context is still known.\nReview in proportion to impact: is the problem real, the complexity justified, and the choice consistent with existing architecture? Identify conflicts and intentional deviations explicitly.\nAccept or reject through repository review. For a small team, review, merge, and accepted status are sufficient; do not add governance ceremony without a concrete need.\nOn acceptance, update affected current documentation and implement the selected direction with relevant verification. Do not retain rejected experimental paths unnecessarily.\nFor supersession, additionally identify changed constraints, reciprocal references, affected current policy, and compatibility/migration work. For rejection, record decisive reasons, preferred alternatives where applicable, and conditions that could justify reconsideration.\nRetrospective ADRs should say the decision was already in effect. Record only known reasoning and state uncertainty rather than inventing a historical evaluation. Significant principle deviations belong in the decision and corresponding current-policy update. When later accepted decisions supersede older records, follow the replacement and current policy rather than treating the superseded record as current architecture.\n"
-  },
-  {
-    "id": "repository/docs/adr/authoring",
-    "title": "Authoring Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Maintenance and deferred mechanisms",
-    "anchor": "maintenance-and-deferred-mechanisms",
-    "text": "Maintenance and deferred mechanisms\nRoutine maintenance should be limited to permitted corrections and supersession metadata. Current architecture must remain discoverable without reading the entire chronological ADR history. Keep descriptive titles, explicit technologies/concepts, and useful related references.\nFrontmatter, automatic numbering, generated indexing, status/supersession validation, approval workflows, and required reviewers remain tooling or organizational decisions. Introduce them only when justified. ADRs should preserve meaningful reasoning without becoming bureaucratic records for every change.\n"
-  },
-  {
-    "id": "repository/docs/adr/README",
-    "title": "Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Architecture Decision Records",
-    "anchor": "architecture-decision-records",
-    "text": "Architecture Decision Records\nUse this index to locate governing decisions without reading the full history. Each linked record owns its status, decision, rationale, and consequences. Acceptance does not imply implementation; see [validation availability](../validation.md) and the [technology map](../architecture/technology-decisions.md).\nFor a new decision, read [authoring policy](authoring.md), inspect related records, and use the [proposed template](template.md). Current behavior belongs in the [policy index](../README.md), not in rewritten historical ADRs.\n"
-  },
-  {
-    "id": "repository/docs/adr/README",
-    "title": "Architecture Decision Records",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision index",
-    "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n[ADR-0021](0021-license-ia-mns-under-apache-2-0.md)\nLicense IA-MNS under Apache-2.0\n[ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md)\nOwn the IA-MNS Identity with Verified External Links\n[ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\nServe One Frontend to Three Surfaces with Host Identity Proofs\n[ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\nInterpret Analytics through Structured State and Evaluate AI Behavior\n[ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)\nAdminister the Authentication Policy within Fixed Safeguards\n[ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nHost IA-MNS in Sankhya Om through an In-Repository Add-on\n[ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)\nSelect the Sales Source in the Interface and Read Each Source Separately\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-NNNN: Decision Title",
-    "anchor": "adr-nnnn-decision-title",
-    "text": "ADR-NNNN: Decision Title\n**Status:** proposed\n**Date:** YYYY-MM-DD\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Context",
     "anchor": "context",
-    "text": "Context\nDescribe the architectural problem or constraint that requires a decision.\nInclude only the context necessary to understand:\nwhy a decision is needed;\nwhich systems or boundaries are affected;\nwhich constraints materially influence the choice;\nwhich assumptions matter.\nAvoid turning this section into a complete implementation design.\n"
+    "text": "Context\nEvery API setting was an environment variable parsed by `apps/api/src/config.ts`. Some of them are product behavior that the owner may need to change after deployment (which AI model answers, how much of each AI turn is traced, which provider links grant read capabilities automatically), and changing them required server access, editing configuration and a restart. Most other variables are credentials, keys or infrastructure that the process needs before it can reach its own database, and must not become editable or visible through an API. The [configuration policy](../architecture/configuration.md) asks for static startup configuration unless dynamic configuration is justified, with explicit change behavior, audit and tests.\n"
   },
   {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Decision",
     "anchor": "decision",
-    "text": "Decision\nState the architectural decision clearly.\nThis section should make it possible to understand the chosen direction without inferring it from the alternatives or rationale.\nExample form:\nThis repository will ...\n\n"
+    "text": "Decision\nThe API distinguishes three kinds of configuration, recorded per variable as `role` in `configReference` (rendered in the [generated reference](../generated/configuration/api.md) and grouped in `.env.example`):\n**secret** and **bootstrap** settings stay in the validated environment, are never exposed through administration, and change only by deployment and restart; **development** settings remain local aids refused in production;\n**operational parameters** are declared once in a typed catalog (`apps/api/src/parameters.ts`) with their domain, production limits and when a change takes effect. The first ones are the AI model (`ai.model`), the AI trace level (`ai.traceLevel`) and the automatic read grants by provider link (`access.providerGrants`).\nResolution is **owner value > installation default**. The installation default is the parameter's former environment variable (`OPENAI_MODEL`, `IA_MNS_AI_TRACE`, `IA_MNS_PROVIDER_GRANTS`), or the product default `config.ts` applies when it is unset. There is no environment override above the owner value; production limits (no content tracing) apply to every source. Saving `null` restores the installation default.\nOwner values live in `operational_parameters`, one row per key with a JSON value constrained by database checks to the catalog type and domain of that key, a concurrency version and the last editor. Consumers never query the table: composition (`apps/api/src/modules.ts`) builds one `OperationalParameters` reader and passes narrow resolvers to the agent (trace level per turn, model per AI request), the sales interpreter (model per request) and identity (provider grants at every token issue). The reader has no cache, so a saved value applies to the next use on every API instance; no parameter requires a restart.\nAdministration stays in the identity module, which owns the principal administrator: `GET /identity/admin/parameters` and `PUT /identity/admin/parameters/{key}` use the same owner check as the rest of `/admin` (owner role, second-factor session per policy, recent administrative confirmation for changes), accept changes only for the version that was read, and record `parameter.updated` in `identity_audit_events` with previous and new values and the acting owner. The web shows them in **Administração → Parâmetros** with product names and descriptions, never environment variable names.\n"
   },
   {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Rationale",
     "anchor": "rationale",
-    "text": "Rationale\nExplain why this option was selected.\nFocus on the tradeoffs, constraints, and evidence that materially influenced the decision.\nDo not list only advantages.\n"
+    "text": "Rationale\nKeeping secrets and bootstrap values in the environment preserves secure defaults, startup validation and the separation between who deploys and who administers; exposing them through an API would enlarge the attack surface without a real need. The three chosen settings change product behavior, are understandable to an owner, have small validated domains, and are read at the moment of use, so they can change safely at run time.\nUsing the former variables as installation defaults keeps every existing installation identical until an owner saves a value and gives one clear precedence instead of two competing sources. An environment override above the owner value was not needed: the only safety limit (content tracing in production) is enforced in code for every source.\nDeclaring type and domain in code, with database checks per key, avoids an untyped key/value store; storing descriptions or types in the database would create a second definition that could drift from the code that interprets it. Reading without a cache costs one indexed query per AI request or token issue, negligible next to the model call, and avoids a screen that reports a saved value while instances still use the previous one. Hosting administration in identity reuses the existing owner authorization, step-up, error codes and audit instead of a second permission mechanism; the catalog and table remain runtime-owned because their meaning spans agent, sales and identity.\n"
   },
   {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",
@@ -981,26 +1368,53 @@
     "text": "Alternatives Considered\n"
   },
   {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "Alternative A",
-    "anchor": "alternative-a",
-    "text": "Alternative A\nBriefly describe the alternative and why it was not selected.\n"
+    "heading": "Make every environment variable editable",
+    "anchor": "make-every-environment-variable-editable",
+    "text": "Make every environment variable editable\nRejected: credentials and keys would become readable or writable through an API, and bootstrap settings (database, listener, issuers, telemetry) are needed before the application can read its own storage.\n"
   },
   {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
-    "heading": "Alternative B",
-    "anchor": "alternative-b",
-    "text": "Alternative B\nBriefly describe the alternative and why it was not selected.\nRemove unused alternative sections rather than inventing alternatives.\n"
+    "heading": "Environment override above the owner value",
+    "anchor": "environment-override-above-the-owner-value",
+    "text": "Environment override above the owner value\nNot adopted: it would let a stale deployment value silently defeat a choice the screen shows as saved. The environment keeps the role of installation default instead.\n"
   },
   {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Generic key/value settings with types and descriptions in the database",
+    "anchor": "generic-keyvalue-settings-with-types-and-descriptions-in-the-database",
+    "text": "Generic key/value settings with types and descriptions in the database\nRejected: weaker typing, a second source of meaning and arbitrary keys. New parameters are added deliberately to the catalog and to the table's checks.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "A separate settings module with its own administration routes",
+    "anchor": "a-separate-settings-module-with-its-own-administration-routes",
+    "text": "A separate settings module with its own administration routes\nNot adopted: it would need a second owner check or new error codes for step-up authentication, and its own audit. Identity already administers owners and records administrative changes.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Cached reads like the authentication policy",
+    "anchor": "cached-reads-like-the-authentication-policy",
+    "text": "Cached reads like the authentication policy\nNot adopted for these parameters: they are read at most once per AI request or token issue, so a cache would only add a period in which instances disagree.\n"
+  },
+  {
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Consequences",
@@ -1008,255 +1422,21 @@
     "text": "Consequences\n"
   },
   {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Positive",
     "anchor": "positive",
-    "text": "Positive\nDescribe meaningful benefits.\n"
+    "text": "Positive\nThe owner changes the AI model, trace level and automatic grants from administration, with validation, concurrency protection and audit, and without a restart.\nThe classification of every environment variable is explicit and checked where it is defined.\nExisting installations keep their behavior until an owner saves a value.\n"
   },
   {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
+    "id": "repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration",
+    "title": "ADR-0028: Administer Operational Parameters Separately from Secrets and Bootstrap Configuration",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Negative",
     "anchor": "negative",
-    "text": "Negative\nDescribe accepted costs, limitations, or additional responsibilities.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nDescribe important deployment, compatibility, data, security, or migration consequences when applicable.\nRemove this subsection when there is no meaningful operational or migration impact.\n"
-  },
-  {
-    "id": "repository/docs/adr/template",
-    "title": "ADR-NNNN: Decision Title",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nInclude only useful references.\nLink relevant [current policies](../README.md), [related ADRs](README.md), design documents, and evidence. Use actual relative Markdown links to existing records; remove unused references.\nIf this ADR supersedes another accepted ADR, update that ADR to reference this one as its replacement.\n"
-  },
-  {
-    "id": "repository/docs/AGENTS",
-    "title": "Documentation Instructions",
-    "group": "Agent instructions",
-    "kind": "repository",
-    "heading": "Documentation Instructions",
-    "anchor": "documentation-instructions",
-    "text": "Documentation Instructions\nUse [the task index](README.md) to locate the owner of the information being changed. Read [contributing guidance](contributing.md) when creating, moving, or maintaining documentation.\nPreserve normative meaning, exceptions, and the distinction between requirements, examples, accepted decisions, and implementation availability. Check governing ADRs before treating a choice as unresolved.\nKeep one authoritative policy for each concern. Use links and scoped reading routes rather than copying policy into indexes or agent instructions.\nWhen moving content, retain every unique requirement at an explicit destination and update references. Check local links and section anchors after restructuring.\nKeep numbered accepted ADRs substantively intact. Follow the additional instructions in `adr/AGENTS.md` for ADR work and `runbooks/AGENTS.md` for runbook work.\nUse only available [validation](validation.md); do not describe planned generators, commands, applications, or procedures as implemented.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Error Contract",
-    "anchor": "api-error-contract",
-    "text": "API Error Contract\n[Task index](../README.md) · [API principles](principles.md) · [Error handling](../architecture/error-handling.md) · [Compatibility](versioning.md)\nThis policy owns public failure semantics. The API's [shared error registry, envelope schema, and responder](../../apps/api/src/errors.ts) and each composed module's registered codes are canonical; the [public registry composition](../../apps/api/src/error-registry.ts) gives each code exactly one owner and rejects any duplicate, even an identical definition, and the [generated error reference](../generated/api/errors.md) lists implemented codes, messages, categories, HTTP statuses, and retry classifications. Module route contracts declare expected operation errors. Follow [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) when generating OpenAPI and SDK representations.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Error Envelope",
-    "anchor": "error-envelope",
-    "text": "Error Envelope\nThe implemented API envelope has a top-level `error` object with required `code`, `message`, and `requestId`, plus optional `traceId` and `errorId`. The schema prohibits additional fields. A synthetic example is:\n{\n  \"error\": {\n    \"code\": \"RESOURCE_VERSION_CONFLICT\",\n    \"message\": \"The request changed; reload it before trying again.\",\n    \"requestId\": \"req_00000000-0000-4000-8000-000000000001\"\n  }\n}\n\nThe runtime generates fresh request IDs, adds trace correlation when available, and assigns unexpected failures an error occurrence ID. These are opaque support references, not credentials; knowing one must not grant telemetry access. See [request handling](../../apps/api/src/app.ts) for construction and reporting.\nThe current envelope has **no field-level `details` or retry object**. Registry `retryable` metadata is documentation/classification, not a serialized promise that any write is safe to repeat. Rate limiting uses the HTTP `Retry-After` header. The extension rules below apply when consumers need additional structured information; do not implement hypothetical fields merely because examples in a policy mention them.\n[Health probes](../../apps/api/src/health-contracts.ts) use their own documented status response, including when unavailable; do not confuse a probe status with an application error envelope.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Error Code Format",
-    "anchor": "error-code-format",
-    "text": "Error Code Format\nPublic codes use stable semantic `UPPER_SNAKE_CASE` names. Clients branch on codes and deliberately defined structured fields, never on message text or internal exception classes. Messages are safe human explanations and may change for clarity or product localization without changing the code's meaning. Canonical repository descriptions remain English.\nInfrastructure identifiers such as SQLSTATE, ORM codes, provider exceptions, filesystem paths, or runtime class names are not public semantics. Map failures to the condition consumers need to understand. Reuse an existing code for the same meaning; do not create a code for every code path, collapse materially different consumer actions into one generic code, or reuse a retired code for a new meaning.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Error Code Ownership",
-    "anchor": "error-code-ownership",
-    "text": "Error Code Ownership\nThe feature/application owner defines business failures; the API boundary owns cross-cutting public mappings. The registry provides one canonical definition, and operation metadata refers to it. The registry enumerates stable public conditions, not every possible database/network/library exception. Do not maintain an independent manual registry in prose or generated clients.\nFor a new code, determine its semantic owner, expected/unexpected category, public disclosure safety, consumer action, status mapping, retry implications, optional details, and compatibility impact. Update canonical code, operation declarations, tests, and generated references together. Each module's implementation conventions explain its authorization-sensitive classification order.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Validation Errors",
-    "anchor": "validation-errors",
-    "text": "Validation Errors\nThe implemented validation response is `400 VALIDATION_FAILED` with the common envelope. Do not expose validator exceptions or echo submitted values. Structural validation is distinct from a valid request that conflicts with current domain state.\nIf field-level details become useful, add an explicit bounded schema to the canonical contract. Identify fields using a stable public request-path convention, never internal database/ORM paths; use stable reason codes where clients need to act and safe human text for explanation. Define multiple-failure bounds and unknown-field behavior. Returning every issue in an attacker-controlled payload must not create an unbounded response.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Mapping and disclosure",
-    "anchor": "mapping-and-disclosure",
-    "text": "Mapping and disclosure\nHTTP status conveys broad protocol meaning; public codes convey application semantics. The [generated registry](../generated/api/errors.md) is the current status mapping. Validation uses `400`, authentication `401`, permission denial `403`, absent/hidden resources `404`, state/version conflicts `409`, rate limiting `429`, unexpected failures `500`, and service unavailability `503` where declared.\nAuthentication and authorization failures follow their [security policies](../security/authentication.md). Avoid account enumeration and disclosure of hidden resource existence, cross-tenant data, claims, or policy internals. An absent and inaccessible resource may deliberately share `404`; test that behavior.\nExpected domain conflicts, stale versions, and incompatible idempotency-key reuse are explicit outcomes. Distinguish safe replay from a conflicting new intent. They should not become internal incidents simply because code represents them as exceptions.\nTranslate known database constraints at the persistence/application boundary according to business meaning. Unexpected database failures stay unexpected; do not disguise every exception as invalid user input.\nTranslate provider business rejection separately from dependency unavailability, configuration failure, or unknown outcome. Expose vendor-specific distinctions only when consumers need them, never raw provider content.\nUse a safe generic error for unexpected failures. Never serialize arbitrary exceptions, stack traces, SQL, secret values, internal paths/hostnames, or diagnostic dumps. Do not return ordinary API failures as hidden error objects inside `200` responses.\nPublic status is not internal severity: expected denials may matter to security monitoring, and a transient dependency failure may be operationally serious. [Error reporting](../reliability/error-reporting.md) owns that distinction.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Unknown Outcome",
-    "anchor": "unknown-outcome",
-    "text": "Unknown Outcome\nA timeout, disconnect, or commit error may leave the caller uncertain whether a write or external effect occurred. Retryability cannot be inferred from HTTP status or transient infrastructure failure alone. Define whether the operation is known not to have occurred, safely replayable, or requires state reconciliation. Introduce a distinct public unknown-outcome code only when consumers need different handling.\nA public retry hint, if introduced, must be machine-readable, bounded, and accurate for the operation. Rate-limit guidance must not disclose anti-abuse internals. Never imply a non-idempotent write is safe to repeat merely because the registry classifies a failure as transient. Each module's recovery conventions own its create replay and mutation reconciliation behavior.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Details and additional delivery modes",
-    "anchor": "details-and-additional-delivery-modes",
-    "text": "Details and additional delivery modes\nEvery public details object needs a typed schema and a consumer purpose. Include only information safe for that caller; omit record dumps, protected resource/tenant identifiers, authorization evaluation, credentials, and provider payloads. Cross-cutting correlation/retry metadata should remain distinguishable from domain details. Once consumed, field meaning and shape are compatibility-sensitive.\nWhen additional modes are introduced:\nMode\nError requirement\nWebhook or upload\nFollow the operation/provider contract while minimizing signature-validation or scanning details. Bound and classify upload failures explicitly.\nAsynchronous work\nA successful acceptance response does not guarantee eventual success. Externally visible job status maps worker failures to stable public semantics, never worker exceptions.\nBatch/partial success\nDefine atomic versus partial processing and item identity in an operation-specific result. Do not ambiguously overload the ordinary single-error envelope.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Diagnostics and consumer behavior",
-    "anchor": "diagnostics-and-consumer-behavior",
-    "text": "Diagnostics and consumer behavior\nReport an unexpected occurrence once at its authoritative boundary. Preserve useful internal causal evidence only within [redaction rules](../security/telemetry-redaction.md); preservation never authorizes raw exception-message or stack export. The current runtime records allowlisted diagnostic fields rather than arbitrary error content. Expected validation, business, and access failures may contribute to safe metrics/security/audit signals without becoming unexpected incidents.\nClients and SDKs must preserve structured error semantics and correlation, and provide a safe fallback for unknown codes. Application consumers should not depend on framework-specific transport exceptions for business meaning. Product code decides whether to display safe server copy or localized client text; it must not parse that copy. The current thin SDK exposes generated response/error typing without adding a separate error-class hierarchy.\nCode meaning, status mappings, details, categories where consumed, and retry behavior require [compatibility review](versioning.md). Adding a code can break exhaustive consumers; renaming/removing a code or changing meaning is potentially breaking. Optional details are only additive if actual clients tolerate them.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Change and verification checklist",
-    "anchor": "change-and-verification-checklist",
-    "text": "Change and verification checklist\nInspect the registry, similar conditions, owning operation, actual consumers, authorization/disclosure policy, and compatibility commitments.\nDefine the safe semantic mapping and outcome/retry behavior. Add details only when needed, with explicit schema and size limits.\nVerify the real transport envelope, status, code, safe message, correlation, hidden-resource handling, and relevant failure paths. Test absent/invalid/expired credentials and other lifecycle states only where that mechanism exists.\nInject unexpected failures and assert that secrets, SQL, provider data, input values, stacks, and internal paths do not escape. Verify one appropriate diagnostic event and safe retry metadata if present.\nRegenerate and check the registry/OpenAPI/SDK references through [validation](../validation.md). Preserve current checks for registered unique codes, operation declarations, and freshness; extend checks for any new detail schemas or released compatibility obligations.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Principles",
-    "anchor": "api-principles",
-    "text": "API Principles\n[Task index](../README.md) · [Error contract](error-contract.md) · [Compatibility](versioning.md) · [Validation](../validation.md)\nThis policy owns API boundary design. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) selects Fastify; [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable TypeBox wire contracts, generated OpenAPI, and the thin TypeScript SDK. These are implemented. Module-specific behavior belongs to each module's business specification and implementation conventions; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows a complete example.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Locate the authoritative source",
-    "anchor": "locate-the-authoritative-source",
-    "text": "Locate the authoritative source\nTask\nStart here\nChange an operation, request, response, or expected error\nThe owning [module](../../apps/api/README.md#modules)'s TypeBox contracts, then its application operation and tests\nInspect health contracts\n[Health schemas](../../apps/api/src/health-contracts.ts) and [health policy](../reliability/health-checks.md)\nInspect the interoperable API\n[Generated OpenAPI](../generated/api/openapi.json); author changes in executable contracts\nChange a public error\n[Error registry and envelope](../../apps/api/src/errors.ts) and [error policy](error-contract.md)\nChange a consumer\n[SDK public surface](../../packages/sdk/README.md) and [web guide](../../apps/web/README.md)\nRegenerate derived artifacts\n[Artifact workflow](../architecture/backend-execution-and-generated-artifacts.md)\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Ownership and transport boundaries",
-    "anchor": "ownership-and-transport-boundaries",
-    "text": "Ownership and transport boundaries\nAn API exposes an owned application capability, not an arbitrary database table. Each operation needs a clear domain owner, consumer, and canonical contract. Resources and explicit commands are both appropriate when they express real behavior; do not generate CRUD or generic updates for every persisted entity.\nTransport adapters own routing, request validation, authentication integration, safe request context, protocol/error mapping, and response serialization. Application operations and domain rules should not depend on HTTP objects, headers, status codes, or framework APIs unless the behavior itself is transport-specific. Pass only the trusted context an operation needs.\nPersistence records, domain entities, API payloads, events, and UI models have distinct responsibilities. Reuse a representation only when its semantics genuinely match. Explicitly map allowed inputs and outputs: never pass an untrusted body directly to persistence or serialize internal objects merely because they are available. This prevents mass assignment and accidental disclosure while allowing internal refactoring without consumer breakage.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Canonical API Contract",
-    "anchor": "canonical-api-contract",
-    "text": "Canonical API Contract\nMaintain wire-oriented TypeBox schemas and route metadata as the authored source. Fastify uses them for validation and serialization; generated OpenAPI 3.1 describes the interoperable boundary; `openapi-typescript` and `openapi-fetch` provide the default typed client. Every exposed operation must have a stable, unique `operationId`.\nDefine request/response shapes, constraints, authentication, expected errors, and non-structural semantics deliberately before exposing behavior. Do not separately maintain equivalent runtime validators, TypeScript interfaces, OpenAPI schemas, SDK types, or reference tables. Generated artifacts are reproducible representations and must not be hand-edited. Ordinary internal types need not become TypeBox schemas.\nThe API owns its contracts. Extract a shared contract package only for genuine shared ownership. Such a package must not depend on persistence, backend framework implementation, server secrets, or UI code. First-party consumers use the generated SDK and must not import server implementations or database types. The SDK may provide transport, types, credential hooks, and error decoding; it must not own backend business authorization or persistence. Successful-response runtime revalidation is not automatic; introduce it only for a demonstrated trust or reliability requirement.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Validation",
-    "anchor": "validation",
-    "text": "Validation\nTreat bodies, query/path parameters, headers, cookies, uploads, webhooks, and client identifiers as untrusted. Validate structural input at the trusted boundary before application logic relies on it. Structural validation, domain validity, authentication, and authorization remain separate checks.\nFor each field, define meaning, required/optional status, omission versus explicit `null`, type, format, bounds, allowed values, classification, and exposure. Normalize only when domain semantics require it; do not silently modify user content for convenience. Unknown-field behavior must be deliberate and compatible with the consumer contract. Separate create, replacement, partial-update, summary, detail, and privileged schemas where their semantics differ instead of building one universally optional model.\nUse meaningful text and numeric limits based on product needs and resource cost. Bounded states should use explicit enums; consider extensibility under [versioning](versioning.md). Distinguish instants, calendar dates, local times, time zones, and durations. Money requires currency, units, and precision; exact financial amounts must not rely on ambiguous floating-point representations. Use clear English names and canonical descriptions, positive boolean semantics where practical, and established domain terminology. Product localization does not change machine identifiers.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Identifiers",
-    "anchor": "identifiers",
-    "text": "Identifiers\nPublic identifiers represent stable resource identity. They may coincide with storage keys when that is an intentional contract, but must not expose sensitive structure or grant authority. Treat opaque identifiers as opaque. Client-generated IDs are allowed only when explicitly designed for an actual offline, distributed, or idempotency need. Changing storage must not accidentally change public identity.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Authentication",
-    "anchor": "authentication",
-    "text": "Authentication\nProtected operations derive identity and capabilities from the [trusted authentication boundary](../security/authentication.md) and enforce [authorization](../security/authorization.md) on the server. Caller-supplied roles, owner IDs, permissions, tenant IDs, feature flags, or UI visibility cannot grant access. A tenant path alone does not establish membership. Public operations must be explicitly public; administrative/debug capabilities require deliberate privilege, output, and environment controls.\nMake operation security requirements discoverable. Apply stronger controls where credentials, personal data, finances, or administration require them. Hidden resources may deliberately share not-found semantics with absent resources; preserve and test the disclosure policy. Keep bearer credentials out of URLs except for an explicitly designed protocol requiring a short-lived capability. Gateway authentication never replaces application authorization.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Pagination",
-    "anchor": "pagination",
-    "text": "Pagination\nPotentially growing collections must be bounded. Define default/maximum page sizes, deterministic ordering with a tie-breaker, empty results, supported filters, sorting, and search semantics. Apply authorization before pagination; counts, filters, and related-resource expansion must not reveal inaccessible data.\nChoose offset or cursor pagination according to dataset size, change frequency, query cost, and consumer needs. Cursors are opaque inputs, not authorization evidence; validate their scope and contents and protect sensitive state or integrity where needed. Document membership changes between pages instead of implying a snapshot guarantee.\nAllowlist filter operators and sort fields. Never pass arbitrary client fields or sort expressions to SQL/ORM queries. Bound flexible queries, related-resource depth, response size, and export work; add sparse fields or expansions only when consumers benefit. Inspect query behavior for material N+1 costs. Each module's implementation conventions own its concrete cursor and page-size choices.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Idempotency",
-    "anchor": "idempotency",
-    "text": "Idempotency\nFor state-changing operations, consider duplicate submission, concurrent execution, timeout ambiguity, and response loss. HTTP method names alone do not prove idempotency. Where supported, specify key location, scope, intent matching, reuse/different-payload behavior, retention, and replay result. Distinguish a replay from a conflicting new action.\nUpdates that must protect a previously observed state need a deliberate concurrency protocol, such as a version precondition. Stale writes should produce a stable conflict rather than silently overwrite newer state. For example, a module may require `Idempotency-Key` for creation and `expectedVersion` for edits/transitions, recording that protocol in its implementation conventions. Durable implementation requirements belong to [transactions](../database/transactions-and-concurrency.md) and [delivery](../architecture/delivery-and-side-effects.md).\nErrors use the [public error contract](error-contract.md). Consumers branch on stable codes, never message text, and must not blindly retry timeouts or all `5xx` responses. Retry safety depends on operation semantics and whether the outcome is known.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Resource protection and operational behavior",
-    "anchor": "resource-protection-and-operational-behavior",
-    "text": "Resource protection and operational behavior\nBound request payloads, handler/dependency execution, and costly queries according to exposure. Technical rate limits protect resources; product quotas express entitlements and require separate semantics. Where clients need retry guidance, expose safe bounded metadata while keeping anti-abuse internals private. The [API runtime guide](../../apps/api/README.md#request-protection) describes the implemented process-local limiter and its deployment limits.\nCache policy must consider authentication, authorization, tenant scope, freshness, and privacy; protected results must not become public cache entries. Conditional requests and ETags are optional mechanisms, not foundation requirements. Health and metrics endpoints are operational contracts with appropriate exposure and safe output; they must not reveal secrets, raw configuration, or stack traces.\n[Observability](../reliability/observability.md) and [redaction](../security/telemetry-redaction.md) own telemetry rules. Use stable operation identities, route templates, method/status/duration, safe correlation, and bounded error categories. Do not log full requests/responses, raw URLs, credentials, or arbitrary exceptions. Propagate tracing through supported outbound and asynchronous boundaries without introducing high-cardinality labels.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Additional delivery modes",
-    "anchor": "additional-delivery-modes",
-    "text": "Additional delivery modes\nThese requirements apply **if the capability is introduced**; they do not imply implementations exist.\nCapability\nRequired design\nLong-running or asynchronous operation\nDistinguish accepted from completed; define status/result/failure retrieval and cancellation. Do not hold a request open indefinitely. Transport cancellation does not prove durable rollback.\nUpload/download\nDefine size/media limits, ownership, processing state, required scanning, and authorization. Delegated or pre-signed URLs need bounded scope/lifetime and must not be logged as harmless text. File content is excluded from telemetry.\nWebhook\nDefine schema, authentication, acknowledgement, retry/delivery behavior, and compatibility. Validate inbound signatures/input and handle replay, duplicates, and out-of-order delivery. Decouple long work where provider acknowledgement requires it.\nEvents\nAn event states that something happened; it is not interchangeable with an API command. Do not reuse response schemas automatically across independently evolving event contracts.\nWebSocket/streaming\nDefine authentication/reauthorization, message contracts, lifecycle, ordering, reconnection, backpressure, cancellation, and partial failure.\nGateway/BFF/GraphQL/RPC\nIntroduce only for demonstrated requirements. Preserve owned contracts and security; account for GraphQL complexity/N+1 and resolver authorization. A BFF must serve a distinct composition need. REST terminology is not a reason for unnecessary design constraints.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Compatibility and documentation",
-    "anchor": "compatibility-and-documentation",
-    "text": "Compatibility and documentation\nIdentify actual consumers and how independently they deploy. Follow [API versioning](versioning.md) for structural, semantic, authorization, error, ordering, retry, and side-effect changes. Prefer compatible evolution over new versions, and keep deprecated behavior functional until its removal conditions are satisfied. Internal consumers can have real compatibility commitments; mobile/desktop consumers can lag.\nGenerate reference facts from canonical contracts and maintain authored explanations for intent the schema cannot express. Use synthetic examples that conform to current contracts. The [Living Documentation Portal](../architecture/living-documentation.md) presents generated facts without becoming another source. A contributor should navigate operation → contract → application owner → authorization → implementation → tests without reverse engineering framework code.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "New API Operation Checklist",
-    "anchor": "new-api-operation-checklist",
-    "text": "New API Operation Checklist\nBefore adding or changing an operation:\nIdentify the capability, owner, actual consumers, and compatibility commitments; reuse existing patterns and semantic errors.\nDefine input/output field meaning, bounds, classification, omission/null behavior, stable operation identity, authentication, authorization, and expected failures.\nSpecify duplicate/concurrent/retry behavior, synchronous versus asynchronous completion, external effects, and pagination/query cost where applicable.\nImplement explicit mapping at the boundary and test validation, serialization, statuses/headers, authentication, denials, hidden resources, and relevant domain behavior through the real HTTP boundary. A policy unit test alone does not prove endpoint enforcement.\nTest security risks proportionally, including mass assignment, oversized inputs, restricted fields, and cross-tenant access where applicable. Preserve actual consumer compatibility commitments.\nRegenerate OpenAPI, SDK, and affected references; run [validation](../validation.md). Current drift checks prove alignment with current sources, not historical consumer compatibility. Review the semantic change as well as the generated diff.\n"
+    "text": "Negative\nA wrong model identifier saved by an owner makes AI requests fail until it is corrected or reset; the screen asks for evaluation before changing it in production.\nAutomatic grants are an authorization policy: an owner can narrow (never widen beyond the catalog) who receives read capabilities, and issued access tokens keep their permissions for up to 10 minutes.\nEach new parameter needs a catalog entry, a migration extending the table checks, web labels and tests.\n"
   }
 ]

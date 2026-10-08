@@ -65,11 +65,11 @@ function model(id?: string, timeoutMs?: number) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey)
     throw new Error("OPENAI_API_KEY is required for model-backed commands");
+  // Offline evaluation names its model explicitly; it never reads the
+  // operational parameter of a running installation.
   return createOpenAiModel(
-    {
-      openaiApiKey: apiKey,
-      openaiModel: id ?? process.env.OPENAI_MODEL ?? "gpt-6.1-sol",
-    },
+    { openaiApiKey: apiKey },
+    id ?? process.env.OPENAI_MODEL ?? "gpt-6.1-sol",
     { timeoutMs },
   );
 }

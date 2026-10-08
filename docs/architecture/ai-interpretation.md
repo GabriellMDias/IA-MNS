@@ -111,7 +111,7 @@ Any failure in layers 1–2 is `SALES_PROVIDER_UNAVAILABLE` or `AGENT_PROVIDER_U
 
 ## AI tracing and observability
 
-`IA_MNS_AI_TRACE` ([configuration reference](../generated/configuration/api.md)) is explicit:
+The trace level is the [operational parameter](configuration.md#operational-parameters) `ai.traceLevel`: owners change it in **Administração → Parâmetros** and each agent turn uses the level in force when it starts; `IA_MNS_AI_TRACE` ([configuration reference](../generated/configuration/api.md)) is its installation default. The AI model is likewise the parameter `ai.model` (installation default `OPENAI_MODEL`), resolved for every model request. The levels are explicit:
 
 | Level | Captured | Destination |
 | --- | --- | --- |
@@ -119,7 +119,7 @@ Any failure in layers 1–2 is `SALES_PROVIDER_UNAVAILABLE` or `AGENT_PROVIDER_U
 | `metadata` (default) | Route intent and capability, override, interpretation decision and relation, applied relation, issue codes, missing slots, period form, outcome, clarification category, unsupported reason, prompt versions, model, latency, token counts, result row count | One `ai_turn_traced` structured log event per agent turn |
 | `content` | Metadata plus the interpretation, sales state before and after, the agent context before, the business date and the executed query filters | `agent_turn_traces`, written with the turn outcome |
 
-Metadata never includes user text, filter values, dates, figures or provider payloads; tests assert this with synthetic confidential markers. Content traces are CONFIDENTIAL, never contain result rows or answer prose, are bounded to 256 KB (content omitted, not truncated, beyond that) and are deleted with their turn or conversation. The runtime role can only insert and read them. Production refuses `content` until [PH-09](../project/human-actions.md#ph-09) approves retention and access; the API checks the table at startup only at that level. The [telemetry redaction](../security/telemetry-redaction.md) policy continues to govern logs and spans.
+Metadata never includes user text, filter values, dates, figures or provider payloads; tests assert this with synthetic confidential markers. Content traces are CONFIDENTIAL, never contain result rows or answer prose, are bounded to 256 KB (content omitted, not truncated, beyond that) and are deleted with their turn or conversation. The runtime role can only insert and read them. Production refuses `content` until [PH-09](../project/human-actions.md#ph-09) approves retention and access, whether it comes from the environment or from administration (a stored `content` is used as `metadata` there); because an owner may select `content` at any time elsewhere, the API checks the table at every startup. The [telemetry redaction](../security/telemetry-redaction.md) policy continues to govern logs and spans.
 
 Reproduction path: enable `content` locally, reproduce the conversation, then run `pnpm eval capture --turn <turn-id>` ([evaluation](ai-evaluation.md#from-trace-to-regression-case)).
 

@@ -79,7 +79,7 @@ VRMASTER_DB_SSL_MODE=disable
 
 Host, user, password and database are configured together; the port defaults to 5432. `VRMASTER_DB_SSL_MODE` defaults to `verify-full`, which requires TLS with a verifiable certificate. The current VRMaster server offers no TLS, so it needs `disable`, which sends the credentials and sales data unencrypted on that network; return to `verify-full` once the server offers TLS. Without these settings the selector's VRMaster option answers that the source is not configured. Reconcile the source with [PH-20](project/human-actions.md#ph-20) before relying on its figures.
 
-After pulling a new IA-MNS migration (for example `202610070001_agent_turn_source`), rerun `pnpm db:local`: it applies committed migrations and keeps existing data. The API refuses to become ready against an older schema.
+After pulling a new IA-MNS migration (for example `202610080001_operational_parameters`), rerun `pnpm db:local`: it applies committed migrations and keeps existing data. The API refuses to become ready against an older schema.
 
 Start `pnpm -C apps/api dev` and, in another terminal, `pnpm -C apps/web dev`. Open `http://127.0.0.1:5173/`, choose the source in the `Fonte` selector above the message box, ask “Quanto vendi de maçã por mês nos últimos 3 meses?”, then try the offered year comparison. Missing configuration disables the composer and displays an explicit message; no demo sales are substituted. The public `/sales/status` reports configuration presence, not live connectivity. Provider/network/schema failures appear on the attempted question with a safe request reference.
 
@@ -172,7 +172,7 @@ pnpm eval run --subject model
 pnpm eval compare <base-report.json> <head-report.json>
 ```
 
-Live runs send only synthetic dataset text, consume provider quota and write reports to the ignored `apps/api/evals/.local/`. `IA_MNS_AI_TRACE` defaults to `metadata` (one content-free log event per turn). Set `IA_MNS_AI_TRACE=content` in `.env.local` and restart the API to store confidential interpretation traces with each local turn; then `pnpm eval capture --turn <turn-id>` writes a candidate case to the same ignored folder. Captured candidates contain real conversation text: rewrite them synthetically before promotion. [AI evaluation](architecture/ai-evaluation.md) documents every command and the review workflow.
+Live runs send only synthetic dataset text, consume provider quota and write reports to the ignored `apps/api/evals/.local/`. `IA_MNS_AI_TRACE` defaults to `metadata` (one content-free log event per turn). To store confidential interpretation traces with each local turn, select **Metadados e conteúdo** in **Administração → Parâmetros** (it applies to the next turn), or set the installation default `IA_MNS_AI_TRACE=content` in `.env.local` and restart the API when no owner value is saved; then `pnpm eval capture --turn <turn-id>` writes a candidate case to the same ignored folder. Captured candidates contain real conversation text: rewrite them synthetically before promotion. [AI evaluation](architecture/ai-evaluation.md) documents every command and the review workflow.
 
 ## Phone testing on the local network
 

@@ -37,6 +37,10 @@ export const identityCodes = new Set([
   "IDENTITY_POLICY_INVALID",
   "IDENTITY_POLICY_NOT_ALLOWED",
   "IDENTITY_POLICY_CONFIRMATION_REQUIRED",
+  "IDENTITY_PARAMETER_NOT_FOUND",
+  "IDENTITY_PARAMETER_INVALID",
+  "IDENTITY_PARAMETER_NOT_ALLOWED",
+  "IDENTITY_PARAMETER_CONFLICT",
 ]);
 const web = { "x-ia-mns-client": "web" };
 const timeout = () => AbortSignal.timeout(15_000);
@@ -58,6 +62,9 @@ export type Provision = Json<"/identity/provision/inspect", "post">;
 export type SecurityPolicyView = Json<"/identity/admin/security-policy", "get">;
 export type SecurityPolicy = SecurityPolicyView["configured"];
 export type SankhyaUsers = Json<"/identity/admin/sankhya-users", "get">;
+export type ParametersView = Json<"/identity/admin/parameters", "get">;
+export type OperationalParameter = ParametersView["parameters"][number];
+export type ParameterValue = OperationalParameter["value"];
 export type Provider = "pdt" | "sankhya";
 export type Intent = "login" | "link" | "reauth" | "invite";
 
@@ -362,6 +369,28 @@ export async function updateSecurityPolicy(
         ...policy,
         ...(acknowledgeReducedSecurity ? { acknowledgeReducedSecurity } : {}),
       },
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+export async function getParameters(token: string, signal?: AbortSignal) {
+  return unwrap(
+    await apiClient(token).GET("/identity/admin/parameters", { signal }),
+    identityCodes,
+  );
+}
+/** Saves one parameter (null restores its default) for the version that was read. */
+export async function updateParameter(
+  token: string,
+  key: OperationalParameter["key"],
+  value: ParameterValue | null,
+  version: number,
+) {
+  return unwrap(
+    await apiClient(token).PUT("/identity/admin/parameters/{key}", {
+      params: { path: { key } },
+      body: { value, version },
       signal: timeout(),
     }),
     identityCodes,

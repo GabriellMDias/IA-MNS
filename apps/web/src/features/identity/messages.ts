@@ -54,6 +54,12 @@ const messages: Record<string, string> = {
     "Em produção, a verificação em duas etapas dos administradores não pode ser desativada.",
   IDENTITY_POLICY_CONFIRMATION_REQUIRED:
     "Esta política reduz a segurança. Confirme que entende os riscos para salvar.",
+  IDENTITY_PARAMETER_NOT_FOUND: "Este parâmetro não existe.",
+  IDENTITY_PARAMETER_INVALID:
+    "Este valor não é permitido para o parâmetro. Revise e salve novamente.",
+  IDENTITY_PARAMETER_NOT_ALLOWED: "Este valor não é permitido neste ambiente.",
+  IDENTITY_PARAMETER_CONFLICT:
+    "Outro administrador alterou este parâmetro. Os valores foram atualizados; revise e salve novamente.",
   IDENTITY_MERGE_BUSY:
     "Há uma conversa em andamento. Aguarde a resposta e tente novamente.",
   RATE_LIMITED: "Muitas tentativas. Aguarde um minuto.",

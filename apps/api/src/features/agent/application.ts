@@ -203,12 +203,15 @@ export class CorporateAgent {
   readonly repository: AgentRepository;
   private readonly planner: AgentPlanner | undefined;
   readonly capabilities: readonly AgentCapability[];
-  private readonly traceLevel: AiTraceLevel;
+  private readonly traceLevel: AiTraceLevel | (() => Promise<AiTraceLevel>);
   constructor(
     repository: AgentRepository,
     planner: AgentPlanner | undefined,
     capabilities: readonly AgentCapability[],
-    options: { traceLevel?: AiTraceLevel } = {},
+    options: {
+      /** Fixed level, or read for every turn from the operational parameters. */
+      traceLevel?: AiTraceLevel | (() => Promise<AiTraceLevel>);
+    } = {},
   ) {
     this.repository = repository;
     this.planner = planner;
@@ -271,17 +274,23 @@ export class CorporateAgent {
     reportFailure: ReportFailure,
     observe: ObserveTrace | undefined,
   ) {
-    const trace = new TurnTrace(this.traceLevel);
+    let trace = new TurnTrace("off");
     let observed = false;
     // One observation per turn; a later persistence failure is reported
     // through the failure diagnostic instead.
     const conclude = (outcome: TurnOutcome) => {
-      if (this.traceLevel !== "off" && !observed)
+      if (trace.level !== "off" && !observed)
         observe?.(trace.metadata(outcome), claimed.turn.id);
       observed = true;
       return trace.record(outcome);
     };
     try {
+      // Each turn uses the level in force when it starts.
+      trace = new TurnTrace(
+        typeof this.traceLevel === "function"
+          ? await this.traceLevel()
+          : this.traceLevel,
+      );
       const progress = async (
         stage: Parameters<AgentRepository["progress"]>[1],
       ) => {

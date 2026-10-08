@@ -28,11 +28,13 @@ const generated = [
       "",
       "No values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. API modules that require the database or bearer authentication stay unmounted until those settings exist, and production startup fails instead.",
       "",
-      "| Environment variable | Type | Required | Default | Visibility | Classification | Secret | Purpose |",
-      "| --- | --- | --- | --- | --- | --- | --- | --- |",
+      "Role says why a setting is an environment variable: `bootstrap` (infrastructure, deployment or trust configuration; changed by deployment and restart), `secret` (credential or key; never exposed through an API or interface), `parameter` (installation default of an [operational parameter](../../architecture/configuration.md#operational-parameters) that owners override at run time) or `development` (local development and testing only).",
+      "",
+      "| Environment variable | Role | Type | Required | Default | Visibility | Classification | Secret | Purpose |",
+      "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
       ...configReference.map(
         (item) =>
-          `| \`${item.name}\` | ${item.type.replaceAll("|", "\\|")} | ${item.required ? "yes" : "no"} | ${item.default ? `\`${item.default}\`` : "—"} | ${item.visibility} | ${item.classification} | ${item.secret ? "yes" : "no"} | ${item.purpose} |`,
+          `| \`${item.name}\` | ${item.role} | ${item.type.replaceAll("|", "\\|")} | ${item.required ? "yes" : "no"} | ${item.default ? `\`${item.default}\`` : "—"} | ${item.visibility} | ${item.classification} | ${item.secret ? "yes" : "no"} | ${item.purpose} |`,
       ),
       "",
     ].join("\n"),

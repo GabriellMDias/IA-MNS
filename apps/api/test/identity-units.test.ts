@@ -46,6 +46,7 @@ import {
 } from "../src/features/identity/domain.js";
 import { signingKey } from "./identity-helpers.js";
 import { identityServiceFor } from "../src/features/identity/module.js";
+import { operationalParameters } from "../src/modules.js";
 import type { Database } from "../src/database.js";
 
 const catalog: PermissionDescriptor[] = [
@@ -703,11 +704,15 @@ describe("identity cookies", () => {
     };
     const module = createIdentityModule(
       catalog,
-      { transferOwnership: () => Promise.resolve("transferred") },
+      {
+        transferOwnership: () => Promise.resolve("transferred"),
+        parameters: operationalParameters,
+      },
       () => fake as never,
     ).activate({
       config,
-      database: {} as never,
+      // Answers the startup schema check only.
+      database: { $queryRaw: () => Promise.resolve([]) } as never,
     });
     const { app } = createApp(pino({ level: "silent" }), undefined, {
       modules: [module],
@@ -780,7 +785,10 @@ describe("direct sign-in availability", () => {
         parseServerConfig(env),
         { database: {} as Database },
         [],
-        { transferOwnership: () => Promise.resolve() } as never,
+        {
+          transferOwnership: () => Promise.resolve(),
+          parameters: operationalParameters,
+        } as never,
       )!;
     const embeddedOnly = service(base);
     expect(embeddedOnly.signInAvailable("sankhya")).toBe(true);
@@ -810,7 +818,10 @@ describe("direct sign-in availability", () => {
         }),
         { database: {} as Database },
         [],
-        { transferOwnership: () => Promise.resolve() } as never,
+        {
+          transferOwnership: () => Promise.resolve(),
+          parameters: operationalParameters,
+        } as never,
       )!;
     const sameOrigin = pdt("https://ia.example.test/api/identity/pdt/callback");
     expect(sameOrigin.directSignInAvailable("pdt")).toBe(true);

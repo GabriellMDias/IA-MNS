@@ -62,7 +62,9 @@ export function createSalesModule(
         supplied ??
         (configured
           ? new SalesChat(
-              createModelInterpreter(createOpenAiModel(config)),
+              createModelInterpreter(
+                createOpenAiModel(config, config.openaiModel),
+              ),
               createSalesReaders(config),
             )
           : undefined);

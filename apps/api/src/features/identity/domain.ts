@@ -80,6 +80,11 @@ export function providerGrantPolicy(
   return override;
 }
 
+/** `provider:permission`, the notation of IA_MNS_PROVIDER_GRANTS and of the parameter. */
+export function providerGrantKey(grant: ProviderGrant): string {
+  return `${grant.provider}:${grant.permission}`;
+}
+
 export function parseProviderGrants(value: string): ProviderGrant[] {
   if (value.trim() === "none") return [];
   return value.split(",").map((entry) => {

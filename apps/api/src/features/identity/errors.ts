@@ -169,6 +169,30 @@ export const identityErrors = {
     retryable: false,
     message: "Confirm that this policy significantly reduces security.",
   },
+  IDENTITY_PARAMETER_NOT_FOUND: {
+    status: 404,
+    category: "not_found",
+    retryable: false,
+    message: "The parameter does not exist.",
+  },
+  IDENTITY_PARAMETER_INVALID: {
+    status: 400,
+    category: "validation",
+    retryable: false,
+    message: "The value is outside the parameter's allowed values.",
+  },
+  IDENTITY_PARAMETER_NOT_ALLOWED: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message: "This value is not allowed in this environment.",
+  },
+  IDENTITY_PARAMETER_CONFLICT: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message: "The parameter changed since it was read. Reload and try again.",
+  },
   IDENTITY_TOTP_REQUIRED: {
     status: 409,
     category: "conflict",

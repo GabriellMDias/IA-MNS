@@ -21,6 +21,7 @@ import {
 } from "./api.js";
 import { useIdentityStart } from "./session.js";
 import { SecurityPolicyPanel } from "./security-policy.js";
+import { ParametersPanel } from "./parameters.js";
 import { identityMessage, isFailure } from "./messages.js";
 
 const providerName: Record<Provider, string> = {
@@ -266,7 +267,7 @@ function CreatePerson({
 
 function Admin({ token }: { token: string }) {
   const search = useSearch({ strict: false });
-  const security = search.secao === "seguranca";
+  const section = search.secao ?? "pessoas";
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -297,26 +298,30 @@ function Admin({ token }: { token: string }) {
       </p>
       <h1>Administração</h1>
       <nav className="identity-tabs" aria-label="Seções da administração">
-        {/* Both tabs share the route, so the active one follows the search. */}
-        <Link
-          to="/admin"
-          search={{}}
-          activeOptions={{ exact: true, includeSearch: true }}
-          className={security ? undefined : "is-active"}
-        >
-          Pessoas
-        </Link>
-        <Link
-          to="/admin"
-          search={{ secao: "seguranca" }}
-          activeOptions={{ exact: true, includeSearch: true }}
-          className={security ? "is-active" : undefined}
-        >
-          Autenticação e segurança
-        </Link>
+        {/* The tabs share the route, so the active one follows the search. */}
+        {(
+          [
+            ["pessoas", {}, "Pessoas"],
+            ["seguranca", { secao: "seguranca" }, "Autenticação e segurança"],
+            ["parametros", { secao: "parametros" }, "Parâmetros"],
+          ] as const
+        ).map(([id, target, label]) => (
+          <Link
+            key={id}
+            to="/admin"
+            search={target}
+            activeOptions={{ exact: true, includeSearch: true }}
+            className={section === id ? "is-active" : undefined}
+            aria-current={section === id ? "page" : undefined}
+          >
+            {label}
+          </Link>
+        ))}
       </nav>
-      {security ? (
+      {section === "seguranca" ? (
         <SecurityPolicyPanel token={token} />
+      ) : section === "parametros" ? (
+        <ParametersPanel token={token} />
       ) : (
         <div className="identity-admin">
           <section aria-label="Pessoas">

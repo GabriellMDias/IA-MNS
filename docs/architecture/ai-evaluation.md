@@ -80,7 +80,7 @@ From the repository root (or `pnpm -C apps/api eval`):
 | --- | --- |
 | `pnpm -C apps/api test` | Includes [`evals.test.ts`](../../apps/api/evals/evals.test.ts): every active curated case must pass with the scripted subject, plus framework tests. Part of `pnpm validate` and CI. |
 | `pnpm eval run` | Scripted run of curated cases with a summary and JSON report. |
-| `pnpm eval run --subject model [--model <id>]` | Live router and interpreter (reads `OPENAI_API_KEY`, `OPENAI_MODEL` from the ignored `.env.local`). Options: `--tag`, `--case`, `--dataset`, `--include-candidates`, `--concurrency`, `--retries`, `--strict`, `--out`. |
+| `pnpm eval run --subject model [--model <id>]` | Live router and interpreter (reads `OPENAI_API_KEY`, `OPENAI_MODEL` from the ignored `.env.local`; it never reads the model an owner saved in administration, so evaluate a candidate with `--model <id>` before saving it as `ai.model`). Options: `--tag`, `--case`, `--dataset`, `--include-candidates`, `--concurrency`, `--retries`, `--strict`, `--out`. |
 | `pnpm eval compare <base.json> <head.json>` | Before/after comparison. |
 | `pnpm eval validate` | Validates curated and local candidate files. |
 | `pnpm eval capture --turn <uuid>` | Builds a candidate from a content trace (reads `ORION_DATABASE_URL`). |
@@ -101,7 +101,7 @@ Committed datasets live in [`apps/api/evals/datasets/curated/`](../../apps/api/e
 
 ## From trace to regression case
 
-1. Reproduce the failure locally with `IA_MNS_AI_TRACE=content`, or, once approved under PH-09, export an authorized trace.
+1. Reproduce the failure locally with the trace level at content (**Administração → Parâmetros**, or `IA_MNS_AI_TRACE=content` without a saved owner value), or, once approved under PH-09, export an authorized trace.
 2. `pnpm eval capture --turn <turn-id>` writes a candidate whose turns, initial state and expectations reproduce the observed behavior.
 3. Correct the failing turn's expectation to the intended behavior, add fixtures, and rewrite every message synthetically: captured candidates contain confidential text and must never be committed as captured.
 4. Move the reviewed case into a curated file with `status: active`, `source: curated` and a note naming the failure.

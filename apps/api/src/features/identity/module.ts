@@ -24,9 +24,8 @@ import {
   type IdentityProviders,
   type Intent,
 } from "./service.js";
+import type { OperationalParameters } from "../../parameters.js";
 import {
-  parseProviderGrants,
-  providerGrantPolicy,
   providers,
   validateCatalog,
   defaultSecurityPolicy,
@@ -44,11 +43,14 @@ type CookieKind =
 
 /**
  * What identity needs from the composition: moving another module's
- * Person-owned data when two profiles are consolidated, and optionally a
- * Sankhya user directory factory (replaceable in tests).
+ * Person-owned data when two profiles are consolidated, the operational
+ * parameters that owners administer here (and that set the provider grant
+ * policy), and optionally a Sankhya user directory factory (replaceable in
+ * tests).
  */
 export type IdentityPorts = {
   transferOwnership: OwnershipTransfer;
+  parameters: (resources: ModuleResources) => OperationalParameters;
   sankhyaDirectory?: (config: ServerConfig) => SankhyaDirectory;
 };
 
@@ -88,6 +90,19 @@ function cookieJar(origin: string) {
   };
 }
 
+/** The permission catalog with the provider grants currently enabled. */
+async function catalogView(service: IdentityService) {
+  const policy = await service.providerPolicy();
+  return service.catalog.map((item) => ({
+    permission: item.permission,
+    title: item.title,
+    access: item.access,
+    autoGrantProviders: policy
+      .filter((rule) => rule.permission === item.permission)
+      .map((rule) => rule.provider),
+  }));
+}
+
 function parseCookies(header: string | undefined): Record<string, string> {
   const result: Record<string, string> = {};
   for (const part of (header ?? "").split(";")) {
@@ -114,12 +129,6 @@ export function identityServiceFor(
   )
     return undefined;
   validateCatalog(catalog);
-  const policy = providerGrantPolicy(
-    catalog,
-    config.providerGrants === undefined
-      ? undefined
-      : parseProviderGrants(config.providerGrants),
-  );
   const configured: IdentityProviders = {};
   if (
     config.pdtBaseUrl &&
@@ -173,7 +182,7 @@ export function identityServiceFor(
       audience: config.identityAudience,
     }),
     catalog,
-    policy,
+    ports.parameters({ ...resources, config }),
     Buffer.from(config.identityEncryptionKey, "base64url"),
     configured,
     ports.transferOwnership,
@@ -219,6 +228,13 @@ export function createIdentityModule(
         name: "identity",
         register(app) {
           let pruning: NodeJS.Timeout | undefined;
+          if (service && resources.database)
+            // Every token issue reads the provider grants; refuse to start
+            // against a schema without the operational parameters.
+            app.addHook("onReady", async () => {
+              await resources.database!
+                .$queryRaw`SELECT key, value, version, updated_by, updated_at FROM operational_parameters LIMIT 0`;
+            });
           if (service) {
             app.addHook("onReady", (done) => {
               pruning = setInterval(
@@ -1070,6 +1086,46 @@ export function createIdentityModule(
                 );
               }),
             );
+            scope.get(
+              contracts.adminParametersOperation.url,
+              { schema: contracts.adminParametersOperation.schema },
+              authed(async (svc, sessionId) => {
+                const view = await svc.parametersView(sessionId);
+                return {
+                  production: view.production,
+                  parameters: view.parameters.map(
+                    ({ definition, updatedAt, ...state }) => ({
+                      key: definition.key,
+                      group: definition.group,
+                      effect: definition.effect,
+                      control: definition.control,
+                      ...state,
+                      updatedAt: updatedAt ? iso(updatedAt) : null,
+                    }),
+                  ),
+                  history: view.history.map((item) => ({
+                    ...item,
+                    occurredAt: iso(item.occurredAt),
+                  })),
+                };
+              }),
+            );
+            type ParameterRequest = {
+              Params: { key: string };
+              Body: { value: string | string[] | null; version: number };
+            };
+            scope.put<ParameterRequest>(
+              contracts.adminUpdateParameterOperation.url,
+              { schema: contracts.adminUpdateParameterOperation.schema },
+              authed<ParameterRequest>(async (svc, sessionId, request) =>
+                svc.updateParameter(
+                  sessionId,
+                  request.params.key,
+                  request.body.value,
+                  request.body.version,
+                ),
+              ),
+            );
             type PersonParams = { Params: { personId: string } };
             const capabilities = (svc: IdentityService) => ({
               sankhyaDirectory: svc.directoryAvailable(),
@@ -1102,14 +1158,7 @@ export function createIdentityModule(
                 return {
                   person: personView(detail, null),
                   capabilities: capabilities(svc),
-                  catalog: svc.catalog.map((item) => ({
-                    permission: item.permission,
-                    title: item.title,
-                    access: item.access,
-                    autoGrantProviders: svc.policy
-                      .filter((rule) => rule.permission === item.permission)
-                      .map((rule) => rule.provider),
-                  })),
+                  catalog: await catalogView(svc),
                   audit: detail.audit.map((event) => ({
                     action: event.action,
                     occurredAt: iso(event.occurredAt),

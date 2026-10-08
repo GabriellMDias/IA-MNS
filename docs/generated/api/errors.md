@@ -40,6 +40,10 @@
 | `IDENTITY_POLICY_INVALID` | 400 | validation | no | The authentication policy is outside the allowed limits. |
 | `IDENTITY_POLICY_NOT_ALLOWED` | 409 | conflict | no | Production always requires a second factor for administrators. |
 | `IDENTITY_POLICY_CONFIRMATION_REQUIRED` | 409 | conflict | no | Confirm that this policy significantly reduces security. |
+| `IDENTITY_PARAMETER_NOT_FOUND` | 404 | not_found | no | The parameter does not exist. |
+| `IDENTITY_PARAMETER_INVALID` | 400 | validation | no | The value is outside the parameter's allowed values. |
+| `IDENTITY_PARAMETER_NOT_ALLOWED` | 409 | conflict | no | This value is not allowed in this environment. |
+| `IDENTITY_PARAMETER_CONFLICT` | 409 | conflict | no | The parameter changed since it was read. Reload and try again. |
 | `IDENTITY_TOTP_REQUIRED` | 409 | conflict | no | Set up a second factor first. |
 | `IDENTITY_DIRECTORY_UNAVAILABLE` | 503 | availability | no | The Sankhya user directory is not configured. |
 | `IDENTITY_EXTERNAL_ACCOUNT_NOT_FOUND` | 404 | not_found | no | The external account was not found. |

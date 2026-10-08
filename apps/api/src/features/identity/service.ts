@@ -13,6 +13,10 @@ import type { SankhyaIdentityConnector } from "./sankhya.js";
 import { SankhyaFailure } from "./sankhya.js";
 import type { SankhyaDirectory, SankhyaUser } from "./sankhya-directory.js";
 import { IdentityFailure } from "./errors.js";
+import type {
+  OperationalParameters,
+  ParameterValues,
+} from "../../parameters.js";
 import {
   ADMIN_PERMISSION,
   defaultSecurityPolicy,
@@ -27,6 +31,7 @@ import {
   normalizeDisplayName,
   normalizeLogin,
   passwordProblem,
+  providerGrantKey,
   type Assurance,
   type PermissionDescriptor,
   type Provider,
@@ -132,7 +137,7 @@ export class IdentityService {
   private readonly repository: IdentityRepository;
   private readonly issuer: AccessTokenIssuer;
   readonly catalog: readonly PermissionDescriptor[];
-  readonly policy: readonly ProviderGrant[];
+  readonly parameters: OperationalParameters;
   private readonly encryptionKey: Buffer;
   readonly providers: IdentityProviders;
   private readonly transfer: OwnershipTransfer;
@@ -143,7 +148,7 @@ export class IdentityService {
     repository: IdentityRepository,
     issuer: AccessTokenIssuer,
     catalog: readonly PermissionDescriptor[],
-    policy: readonly ProviderGrant[],
+    parameters: OperationalParameters,
     encryptionKey: Buffer,
     providers: IdentityProviders,
     transfer: OwnershipTransfer,
@@ -153,7 +158,7 @@ export class IdentityService {
     this.repository = repository;
     this.issuer = issuer;
     this.catalog = catalog;
-    this.policy = policy;
+    this.parameters = parameters;
     this.encryptionKey = encryptionKey;
     this.providers = providers;
     this.transfer = transfer;
@@ -213,10 +218,24 @@ export class IdentityService {
   }
 
   // ---------------- sessions and tokens ----------------
-  permissionsOf(snapshot: PersonSnapshot): string[] {
+  /**
+   * Automatic read grants by provider link, as the owner set them in the
+   * operational parameters (default: the composed catalog, optionally
+   * narrowed by IA_MNS_PROVIDER_GRANTS). Read at every token issue.
+   */
+  async providerPolicy(): Promise<ProviderGrant[]> {
+    const enabled = await this.parameters.get("access.providerGrants");
+    return this.catalog.flatMap((item) =>
+      item.autoGrantProviders
+        .map((provider) => ({ provider, permission: item.permission }))
+        .filter((grant) => enabled.includes(providerGrantKey(grant))),
+    );
+  }
+
+  async permissionsOf(snapshot: PersonSnapshot): Promise<string[]> {
     return effectivePermissions({
       catalog: this.catalog,
-      policy: this.policy,
+      policy: await this.providerPolicy(),
       grants: snapshot.grants.map((item) => item.permission),
       linkedProviders: snapshot.links.map((item) => item.provider),
       roles: snapshot.roles,
@@ -272,7 +291,7 @@ export class IdentityService {
     const token = await this.issuer.issue({
       personId: session.personId,
       sessionId: session.id,
-      permissions: this.permissionsOf(snapshot),
+      permissions: await this.permissionsOf(snapshot),
       assurance: session.assurance,
       authTime: session.authTime,
     });
@@ -1492,7 +1511,7 @@ export class IdentityService {
       ),
       session,
       snapshot,
-      permissions: this.permissionsOf(snapshot),
+      permissions: await this.permissionsOf(snapshot),
       sessions: await this.repository.listSessions(
         session.personId,
         this.now(),
@@ -1793,7 +1812,7 @@ export class IdentityService {
       throw new IdentityFailure("IDENTITY_PERSON_NOT_FOUND");
     return {
       snapshot,
-      permissions: this.permissionsOf(snapshot),
+      permissions: await this.permissionsOf(snapshot),
       sessions: await this.repository.listSessions(personId, this.now()),
       audit: await this.repository.auditFor(personId, 30),
     };
@@ -2273,6 +2292,74 @@ export class IdentityService {
     };
   }
 
+  // ---------------- operational parameters ----------------
+  /** Owner view of the operational parameters and their recent changes. */
+  async parametersView(sessionId: string) {
+    await this.requireOwner(sessionId, false);
+    const states = await this.parameters.states();
+    const names = new Map<string, string | null>();
+    for (const id of new Set(states.map((state) => state.updatedBy)))
+      if (id)
+        names.set(
+          id,
+          (await this.repository.snapshot(id))?.displayName ?? null,
+        );
+    return {
+      production: this.production,
+      parameters: states.map((state) => ({
+        ...state,
+        updatedBy: state.updatedBy
+          ? (names.get(state.updatedBy) ?? null)
+          : null,
+      })),
+      history: await this.repository.auditByAction("parameter.updated", 20),
+    };
+  }
+
+  /**
+   * Owner change of one operational parameter (null restores its default),
+   * conditional on the version the owner saw. Values outside the catalog
+   * domain or refused in this environment are rejected; every change is
+   * audited with its previous and new effective values. The new value is
+   * read by the next request that needs it, on every instance.
+   */
+  async updateParameter(
+    sessionId: string,
+    key: string,
+    value: unknown,
+    version: number,
+  ) {
+    const session = await this.requireOwner(sessionId, true);
+    const definition = this.parameters.definition(key);
+    if (!definition) throw new IdentityFailure("IDENTITY_PARAMETER_NOT_FOUND");
+    const outcome = await this.parameters.save(
+      definition.key,
+      value,
+      version,
+      session.personId,
+      this.now(),
+    );
+    if (outcome.result !== "saved") {
+      if (outcome.result === "unavailable")
+        throw new Error("Operational parameters require the database");
+      throw new IdentityFailure(
+        outcome.result === "invalid"
+          ? "IDENTITY_PARAMETER_INVALID"
+          : outcome.result === "not_allowed"
+            ? "IDENTITY_PARAMETER_NOT_ALLOWED"
+            : "IDENTITY_PARAMETER_CONFLICT",
+      );
+    }
+    await this.repository.audit("parameter.updated", session.personId, null, {
+      parameter: definition.key,
+      from: auditValue(outcome.before),
+      to: auditValue(outcome.after),
+      reset: value === null,
+      version: outcome.version,
+    });
+    return { version: outcome.version };
+  }
+
   async prune() {
     await this.repository.prune(this.now());
   }
@@ -2280,6 +2367,11 @@ export class IdentityService {
   async close() {
     await this.providers.sankhya?.directory?.close();
   }
+}
+
+/** Parameters hold no secrets; lists are recorded as comma-separated values. */
+function auditValue(value: ParameterValues[keyof ParameterValues]): string {
+  return typeof value === "string" ? value : value.join(",");
 }
 
 function surfaceOf(value: unknown): Surface {

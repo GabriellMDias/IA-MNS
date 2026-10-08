@@ -1,7 +1,13 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { expect, it } from "vitest";
 import pino from "pino";
-import { exportJWK, generateKeyPair, SignJWT, type CryptoKey } from "jose";
+import {
+  decodeJwt,
+  exportJWK,
+  generateKeyPair,
+  SignJWT,
+  type CryptoKey,
+} from "jose";
 import { withMigratedDatabase } from "../scripts/migrated-database.js";
 import { createDatabase, type Database } from "../src/database.js";
 import { createApp } from "../src/app.js";
@@ -14,7 +20,7 @@ import {
   createIdentityModule,
   identityServiceFor,
 } from "../src/features/identity/module.js";
-import { permissionCatalog } from "../src/modules.js";
+import { operationalParameters, permissionCatalog } from "../src/modules.js";
 import { totpCode } from "../src/features/identity/secrets.js";
 import { createAgentModule } from "../src/features/agent/module.js";
 import { CorporateAgent } from "../src/features/agent/application.js";
@@ -208,6 +214,7 @@ async function setup(runtimeUrl: string) {
   const resources = { config, database, verifier };
   const ports = {
     transferOwnership: transferConversations,
+    parameters: operationalParameters,
     sankhyaDirectory: fakeDirectory,
   };
   const service = identityServiceFor(
@@ -2046,3 +2053,265 @@ it("lets owners administer the authentication policy and applies it to sessions,
 }, 180_000);
 
 export type { Database };
+
+it("lets only owners read and change operational parameters, audits changes and applies them without a restart", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const { app, database, clock, service, sankhyaAssertion, config } =
+      await setup(runtimeUrl);
+    try {
+      const step = () => Math.floor(clock.now / 30_000);
+      const boot = await post(app, "/identity/bootstrap", {
+        token: await service.createBootstrapTicket(false),
+        displayName: "Dona",
+        login: "dona",
+        password: "uma frase de acesso segura",
+      });
+      const bootToken = boot.json<{ accessToken: string }>().accessToken;
+      const totp = (
+        await post(app, "/identity/me/totp", {}, bearer(bootToken))
+      ).json<{ setup: string; secret: string }>();
+      const owner = (
+        await post(
+          app,
+          "/identity/me/totp/confirm",
+          {
+            setup: totp.setup,
+            code: totpCode(base32Decode(totp.secret), step()),
+          },
+          bearer(bootToken),
+        )
+      ).json<{ accessToken: string }>().accessToken;
+      const read = (headers: Record<string, string> = {}) =>
+        app.inject({
+          method: "GET",
+          url: "/identity/admin/parameters",
+          headers,
+        });
+      const write = (
+        key: string,
+        payload: object,
+        headers: Record<string, string>,
+      ) =>
+        app.inject({
+          method: "PUT",
+          url: `/identity/admin/parameters/${key}`,
+          headers,
+          payload,
+        });
+      type View = {
+        production: boolean;
+        parameters: {
+          key: string;
+          value: unknown;
+          defaultValue: unknown;
+          source: string;
+          version: number;
+          updatedBy: string | null;
+          effect: string;
+        }[];
+        history: { actorName: string; details: Record<string, unknown> }[];
+      };
+      const scopes = (token: string) =>
+        String(decodeJwt(token).scope).split(" ");
+
+      // ---- a Sankhya-linked person receives sales by the default policy ----
+      const sankhyaToken = async () =>
+        (
+          await embeddedSankhya(app, (nonce) => sankhyaAssertion(nonce, "321"))
+        ).json<{ accessToken: string }>().accessToken;
+      const person = await sankhyaToken();
+      expect(scopes(person)).toContain("sales:read");
+
+      // ---- people without the owner role cannot list, read or change ----
+      expect((await read()).statusCode).toBe(401);
+      for (const response of [
+        await read(bearer(person)),
+        await write(
+          "access.providerGrants",
+          { value: [], version: 0 },
+          bearer(person),
+        ),
+        await write(
+          "OPENAI_API_KEY",
+          { value: "x", version: 0 },
+          bearer(person),
+        ),
+      ])
+        expect(response.json<ErrorBody>().error.code).toBe(
+          "IDENTITY_ACCESS_DENIED",
+        );
+
+      // ---- the owner reads defaults, never secrets or bootstrap settings ----
+      const initial = await read(bearer(owner));
+      expect(initial.statusCode).toBe(200);
+      const view = initial.json<View>();
+      expect(view.production).toBe(false);
+      expect(view.parameters).toEqual([
+        expect.objectContaining({
+          key: "ai.model",
+          value: "gpt-6.1-sol",
+          source: "default",
+          version: 0,
+          effect: "next_turn",
+        }),
+        expect.objectContaining({ key: "ai.traceLevel", value: "metadata" }),
+        expect.objectContaining({
+          key: "access.providerGrants",
+          value: ["sankhya:sales:read"],
+          defaultValue: ["sankhya:sales:read"],
+          effect: "next_access_token",
+        }),
+      ]);
+      for (const secret of [
+        config.pdtClientSecret!,
+        config.identitySigningKey!,
+        config.identityEncryptionKey!,
+        config.sankhyaPassword!,
+        config.databaseUrl!,
+      ])
+        expect(initial.body).not.toContain(secret);
+      expect(initial.body).not.toMatch(/PASSWORD|SECRET|API_KEY|DATABASE_URL/);
+
+      // ---- secrets and unknown keys cannot be written; invalid values are refused ----
+      for (const key of ["OPENAI_API_KEY", "databaseUrl", "pdtClientSecret"])
+        expect(
+          (
+            await write(key, { value: "x", version: 0 }, bearer(owner))
+          ).json<ErrorBody>().error.code,
+        ).toBe("IDENTITY_PARAMETER_NOT_FOUND");
+      for (const [key, value] of [
+        ["ai.model", "modelo com espaço"],
+        ["ai.traceLevel", "verbose"],
+        ["access.providerGrants", ["pdt:sales:read"]],
+        ["access.providerGrants", "sankhya:sales:read"],
+      ] as const)
+        expect(
+          (
+            await write(key, { value, version: 0 }, bearer(owner))
+          ).json<ErrorBody>().error.code,
+        ).toBe("IDENTITY_PARAMETER_INVALID");
+      expect(
+        (
+          await write("ai.model", { value: "gpt-x", version: 3 }, bearer(owner))
+        ).json<ErrorBody>().error.code,
+      ).toBe("IDENTITY_PARAMETER_CONFLICT");
+      expect(await database.operationalParameter.count()).toBe(0);
+      expect(
+        await database.identityAuditEvent.count({
+          where: { action: "parameter.updated" },
+        }),
+      ).toBe(0);
+
+      // ---- a valid change persists, is audited and reaches the consumer ----
+      const saved = await write(
+        "access.providerGrants",
+        { value: [], version: 0 },
+        bearer(owner),
+      );
+      expect(saved.json()).toEqual({ version: 1 });
+      const after = (await read(bearer(owner))).json<View>();
+      expect(
+        after.parameters.find((item) => item.key === "access.providerGrants"),
+      ).toMatchObject({
+        value: [],
+        defaultValue: ["sankhya:sales:read"],
+        source: "administration",
+        version: 1,
+        updatedBy: "Dona",
+      });
+      expect(after.history[0]).toMatchObject({
+        actorName: "Dona",
+        details: {
+          parameter: "access.providerGrants",
+          from: "sankhya:sales:read",
+          to: "",
+          reset: false,
+          version: 1,
+        },
+      });
+      // The next access token of the Sankhya-linked person no longer carries
+      // the automatic grant; no restart is involved.
+      expect(scopes(await sankhyaToken())).not.toContain("sales:read");
+
+      // ---- the model applies to the next read; a reset restores the default ----
+      expect(
+        (
+          await write(
+            "ai.model",
+            { value: " gpt-6.2-mini ", version: 0 },
+            bearer(owner),
+          )
+        ).json(),
+      ).toEqual({ version: 1 });
+      await expect(service.parameters.get("ai.model")).resolves.toBe(
+        "gpt-6.2-mini",
+      );
+      expect(
+        (
+          await write(
+            "access.providerGrants",
+            { value: null, version: 1 },
+            bearer(owner),
+          )
+        ).json(),
+      ).toEqual({ version: 2 });
+      expect(scopes(await sankhyaToken())).toContain("sales:read");
+      const audit = await database.identityAuditEvent.findMany({
+        where: { action: "parameter.updated" },
+        orderBy: { occurredAt: "asc" },
+      });
+      expect(audit.map((item) => item.details)).toEqual([
+        expect.objectContaining({ parameter: "access.providerGrants", to: "" }),
+        expect.objectContaining({
+          parameter: "ai.model",
+          from: "gpt-6.1-sol",
+          to: "gpt-6.2-mini",
+        }),
+        expect.objectContaining({
+          parameter: "access.providerGrants",
+          from: "",
+          to: "sankhya:sales:read",
+          reset: true,
+        }),
+      ]);
+      expect(audit.every((item) => item.actorPersonId !== null)).toBe(true);
+
+      // ---- changes need a recent strong confirmation; reading does not ----
+      clock.now += 31 * 60_000;
+      expect(
+        (
+          await write(
+            "ai.model",
+            { value: "gpt-later", version: 1 },
+            bearer(owner),
+          )
+        ).json<ErrorBody>().error.code,
+      ).toBe("IDENTITY_RECENT_AUTHENTICATION_REQUIRED");
+      expect((await read(bearer(owner))).statusCode).toBe(200);
+
+      // ---- the database refuses untyped values and unknown keys from any writer ----
+      await expect(
+        database.$executeRaw`INSERT INTO operational_parameters (key, value, version, updated_by, updated_at) VALUES ('ai.traceLevel', '"verbose"'::jsonb, 1, gen_random_uuid(), now())`,
+      ).rejects.toThrow();
+      await expect(
+        database.$executeRaw`INSERT INTO operational_parameters (key, value, version, updated_by, updated_at) VALUES ('openai.apiKey', '"sk-x"'::jsonb, 1, gen_random_uuid(), now())`,
+      ).rejects.toThrow();
+      await expect(
+        database.$executeRaw`UPDATE operational_parameters SET value = '[1]'::jsonb WHERE key = 'access.providerGrants'`,
+      ).rejects.toThrow();
+    } finally {
+      await app.close();
+      await database.$disconnect();
+    }
+  });
+}, 180000);
+
+it("refuses to become ready against a schema without the operational parameters", async () => {
+  await withMigratedDatabase(async (runtimeUrl, migrationUrl) => {
+    // An installation that skipped the latest migration.
+    const migration = createDatabase(migrationUrl);
+    await migration.$executeRaw`DROP TABLE operational_parameters`;
+    await migration.$disconnect();
+    await expect(setup(runtimeUrl)).rejects.toThrow();
+  });
+}, 120000);

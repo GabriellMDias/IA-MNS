@@ -537,6 +537,76 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   await expect(
     admin.getByText(/Duração máxima de uma sessão: 12 h → 30 dias/),
   ).toBeVisible();
+  // Operational parameters on a phone: grouped product settings with friendly
+  // names, validated before saving, applied at once and reversible.
+  await admin.setViewportSize({ width: 390, height: 844 });
+  await admin
+    .getByRole("navigation", { name: "Seções da administração" })
+    .getByRole("link", { name: "Parâmetros" })
+    .click();
+  await expect(admin).toHaveURL(`${web}/admin?secao=parametros`);
+  await expect(
+    admin.getByRole("heading", { name: "Parâmetros", level: 2 }),
+  ).toBeVisible();
+  await expect(
+    admin.getByRole("heading", { name: "Inteligência artificial" }),
+  ).toBeVisible();
+  await expect(admin.getByRole("heading", { name: "Acesso" })).toBeVisible();
+  // Product meaning only: no environment variable names or secrets.
+  await expect(admin.getByText(/OPENAI_|IA_MNS_|SECRET|PASSWORD/)).toHaveCount(
+    0,
+  );
+  await expect(admin.getByLabel("Registro de diagnóstico da IA")).toHaveValue(
+    "metadata",
+  );
+  await expect(
+    admin.getByRole("checkbox", {
+      name: "Sankhya: Consultas de vendas (Sankhya e VR Master)",
+    }),
+  ).toBeChecked();
+  const model = admin.getByLabel("Modelo de IA");
+  const modelCard = admin.locator("form", { has: model });
+  await expect(model).toHaveValue("gpt-6.1-sol");
+  const saveModel = modelCard.getByRole("button", { name: "Salvar" });
+  await expect(saveModel).toBeDisabled();
+  await model.fill("modelo com espaço");
+  await expect(modelCard.getByText(/sem espaços/)).toBeVisible();
+  await expect(model).toHaveAttribute("aria-invalid", "true");
+  await expect(saveModel).toBeDisabled();
+  await model.fill("gpt-6.2-mini");
+  await saveModel.click();
+  await expect(modelCard.getByRole("status")).toHaveText(
+    "Parâmetro salvo. Já está em vigor.",
+  );
+  await expect(
+    modelCard.getByText(/^Definido pela administração \(Administradora MNS, /),
+  ).toBeVisible();
+  // The page fits the phone: no horizontal scrolling.
+  expect(
+    await admin.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await admin.screenshot({
+    path: "../../test-results/identity-parameters-mobile.png",
+    fullPage: true,
+  });
+  // A new request still shows the saved value.
+  await admin.reload();
+  await expect(admin.getByLabel("Modelo de IA")).toHaveValue("gpt-6.2-mini");
+  await modelCard.getByRole("button", { name: "Restaurar padrão" }).click();
+  await expect(modelCard.getByRole("status")).toHaveText(
+    "Padrão restaurado. Já está em vigor.",
+  );
+  await expect(admin.getByLabel("Modelo de IA")).toHaveValue("gpt-6.1-sol");
+  await expect(
+    admin.getByText(/Modelo de IA: gpt-6\.1-sol → gpt-6\.2-mini/),
+  ).toBeVisible();
+  await expect(
+    admin.getByText(
+      /Modelo de IA: gpt-6\.2-mini → gpt-6\.1-sol \(padrão restaurado\)/,
+    ),
+  ).toBeVisible();
   await other.close();
   const invited = await browser.newContext();
   const invitedPage = await invited.newPage();

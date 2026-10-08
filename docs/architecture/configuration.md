@@ -15,9 +15,32 @@ Current sources are:
 | API | [`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty. |
 | Web | [`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md). |
 
-The API metadata records type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.
+The API metadata records role, type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.
 
 Avoid independent definitions in code, READMEs, examples, and deployment files when they can derive from the schema. Generated references must never contain actual secrets. Changes to the API source require regeneration through [artifact tooling](backend-execution-and-generated-artifacts.md#artifact-ownership-and-storage); new applications need their own schema and explicit example/check.
+
+## Secrets, Bootstrap Configuration and Operational Parameters
+
+Each API environment variable has a `role` in the metadata that says why it is configuration ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)); `.env.example` groups variables by it and the [generated reference](../generated/configuration/api.md) lists it:
+
+| Role | Meaning | Where it changes |
+| --- | --- | --- |
+| `secret` | Credentials and keys: database URL, OpenAI key, Oracle and VRMaster accounts, identity signing and encryption keys, PDT client secret. | Secret delivery under [secret policy](../security/secrets-management.md); never visible or editable in an API or interface. |
+| `bootstrap` | Infrastructure, deployment and trust configuration the process needs before or independently of its own storage: environment, listener, telemetry, token issuers, public origin, provider endpoints and pinned keys, connection hosts and TLS, Oracle client, the Sankhya directory view and the PH-11 session gate. | Deployment and restart. |
+| `parameter` | Installation default of an operational parameter. | Owners override it at run time in administration; see below. |
+| `development` | Local development and temporary device testing aids, refused in production. | Local configuration only. |
+
+### Operational parameters
+
+Operational parameters are product behavior an owner may change after deployment. They are declared once in the typed catalog [`apps/api/src/parameters.ts`](../../apps/api/src/parameters.ts) (type, domain, production limits and when a change applies), stored in `operational_parameters` with database checks per key, and administered in **Administração → Parâmetros** under the owner authorization and audit of the [identity domain](../domains/identity.md#operational-parameters).
+
+| Parameter | Screen label | Installation default | Takes effect |
+| --- | --- | --- | --- |
+| `ai.model` | Modelo de IA | `OPENAI_MODEL`, else `gpt-6.1-sol` | Next AI request (routing and interpretation) |
+| `ai.traceLevel` | Registro de diagnóstico da IA | `IA_MNS_AI_TRACE`, else `metadata`; `content` is never used in production | Next agent turn |
+| `access.providerGrants` | Liberação automática por vínculo | `IA_MNS_PROVIDER_GRANTS`, else every catalog-eligible read grant | Next access token (at most 10 minutes for open sessions) |
+
+Precedence is **valid owner value > installation default** (the environment variable, or the product default when it is unset); production limits apply to every source, and resetting a parameter returns to the installation default. No parameter requires a restart: consumers receive narrow resolvers from composition and read the current value at each use, without a cache, so every API instance applies a change at the next use. Code reads parameters only through `OperationalParameters`; no module queries the table directly. A new parameter needs a catalog entry, a migration extending the table checks, its installation default with role `parameter` when one exists, web labels, and tests. Secrets and bootstrap settings never become parameters.
 
 ## Configuration Validation
 
@@ -57,7 +80,7 @@ Configuration changes can break deployment or rollback even without code changes
 
 A separate configuration schema version is justified only if independently managed configuration needs it; application releases and Git may suffice. Deployment definitions, when introduced, should expose requirements and reject invalid mandatory configuration before activation. Validate secret presence/references without exposing values.
 
-Prefer static startup configuration initially. Dynamic/remote configuration creates availability, authentication, caching, fallback, consistency, concurrency, rollback, auditability, and test obligations. If introduced, distinguish startup-only, reloadable, and process-immutable values. High-impact changes need risk-appropriate safe audit context (key, actor/system, time), not secret old/new values. Feature flags need explicit rollout/removal criteria unless they are permanent product settings; they are not automatically ordinary environment variables.
+Prefer static startup configuration initially; [operational parameters](#operational-parameters) are the deliberate, bounded exception. Dynamic/remote configuration creates availability, authentication, caching, fallback, consistency, concurrency, rollback, auditability, and test obligations. If introduced, distinguish startup-only, reloadable, and process-immutable values. High-impact changes need risk-appropriate safe audit context (key, actor/system, time), not secret old/new values. Feature flags need explicit rollout/removal criteria unless they are permanent product settings; they are not automatically ordinary environment variables.
 
 ## Verification and Enforcement
 
