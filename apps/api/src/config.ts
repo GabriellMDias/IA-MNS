@@ -3,6 +3,13 @@ import { isIP } from "node:net";
 import { Type, type Static } from "typebox";
 import { Value } from "typebox/value";
 
+/**
+ * AI model identifiers: the domain of OPENAI_MODEL and of the ai.model
+ * operational parameter, so the installation default is always a value
+ * owners could also save.
+ */
+export const aiModelPattern = "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$";
+
 // This is the only application module that interprets environment values.
 export const serverConfigSchema = Type.Object(
   {
@@ -43,7 +50,7 @@ export const serverConfigSchema = Type.Object(
     tokenAudience: Type.Optional(Type.String({ minLength: 1 })),
     tokenJwksUrl: Type.Optional(Type.String({ minLength: 1 })),
     openaiApiKey: Type.Optional(Type.String({ minLength: 1 })),
-    openaiModel: Type.String({ minLength: 1, maxLength: 100 }),
+    openaiModel: Type.String({ pattern: aiModelPattern }),
     aiTrace: Type.Union([
       Type.Literal("off"),
       Type.Literal("metadata"),

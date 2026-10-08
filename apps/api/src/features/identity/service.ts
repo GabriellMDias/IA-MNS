@@ -2332,12 +2332,27 @@ export class IdentityService {
     const session = await this.requireOwner(sessionId, true);
     const definition = this.parameters.definition(key);
     if (!definition) throw new IdentityFailure("IDENTITY_PARAMETER_NOT_FOUND");
+    // The audit event commits in the same transaction as the change.
     const outcome = await this.parameters.save(
       definition.key,
       value,
       version,
       session.personId,
       this.now(),
+      (change, transaction) =>
+        this.repository.audit(
+          "parameter.updated",
+          session.personId,
+          null,
+          {
+            parameter: definition.key,
+            from: auditValue(change.before),
+            to: auditValue(change.after),
+            reset: value === null,
+            version: change.version,
+          },
+          transaction,
+        ),
     );
     if (outcome.result !== "saved") {
       if (outcome.result === "unavailable")
@@ -2350,13 +2365,6 @@ export class IdentityService {
             : "IDENTITY_PARAMETER_CONFLICT",
       );
     }
-    await this.repository.audit("parameter.updated", session.personId, null, {
-      parameter: definition.key,
-      from: auditValue(outcome.before),
-      to: auditValue(outcome.after),
-      reset: value === null,
-      version: outcome.version,
-    });
     return { version: outcome.version };
   }
 

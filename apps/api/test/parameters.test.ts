@@ -10,6 +10,9 @@ import {
   type StoredParameter,
 } from "../src/parameters.js";
 import { parameterSetup } from "../src/modules.js";
+import { createDatabase } from "../src/database.js";
+import { prismaParameterStore } from "../src/parameter-store.js";
+import { withMigratedDatabase } from "../scripts/migrated-database.js";
 import { createOpenAiModel } from "../src/ai/openai.js";
 
 const owner = "6f1c2c43-6a8a-4d55-9d0e-1a9f9e0b8c11";
@@ -21,9 +24,10 @@ function memoryStore(initial: StoredParameter[] = []) {
   const store: ParameterStore = {
     read: (key) => Promise.resolve(rows.get(key) ?? null),
     list: () => Promise.resolve([...rows.values()]),
-    write(key, value, expectedVersion, actor, at) {
+    async write(key, value, expectedVersion, actor, at, record) {
       const current = rows.get(key)?.version ?? 0;
-      if (current !== expectedVersion) return Promise.resolve(null);
+      if (current !== expectedVersion) return null;
+      const previous = rows.get(key);
       rows.set(key, {
         key,
         value,
@@ -31,7 +35,15 @@ function memoryStore(initial: StoredParameter[] = []) {
         updatedBy: actor,
         updatedAt: at,
       });
-      return Promise.resolve(current + 1);
+      // Like the PostgreSQL transaction: a failed record undoes the write.
+      try {
+        await record?.(undefined);
+      } catch (error) {
+        if (previous) rows.set(key, previous);
+        else rows.delete(key);
+        throw error;
+      }
+      return current + 1;
     },
   };
   return { store, rows };
@@ -314,4 +326,58 @@ describe("parameter consumers", () => {
     expect(second.invocation.model).toBe("gpt-owner");
     expect(model.model).toBe("gpt-owner");
   });
+});
+
+describe("atomic parameter changes", () => {
+  it("passes the change to the record and undoes it when the record fails", async () => {
+    const { store, rows } = memoryStore();
+    const parameters = new OperationalParameters(
+      store,
+      parameterSetup(parseServerConfig({ ORION_ENV: "test" })),
+    );
+    const records: unknown[] = [];
+    await expect(
+      parameters.save("ai.model", "gpt-new", 0, owner, now, (change) => {
+        records.push(change);
+        return Promise.resolve();
+      }),
+    ).resolves.toMatchObject({ result: "saved", version: 1 });
+    expect(records).toEqual([
+      { before: "gpt-6.1-sol", after: "gpt-new", version: 1 },
+    ]);
+    await expect(
+      parameters.save("ai.model", "gpt-other", 1, owner, now, () =>
+        Promise.reject(new Error("audit unavailable")),
+      ),
+    ).rejects.toThrow("audit unavailable");
+    expect(rows.get("ai.model")).toMatchObject({
+      value: "gpt-new",
+      version: 1,
+    });
+  });
+
+  it("rolls back the PostgreSQL write when its record fails", async () => {
+    await withMigratedDatabase(async (runtimeUrl) => {
+      const database = createDatabase(runtimeUrl);
+      try {
+        const store = prismaParameterStore(database);
+        await expect(
+          store.write("ai.model", "gpt-kept", 0, owner, now, () =>
+            Promise.resolve(),
+          ),
+        ).resolves.toBe(1);
+        await expect(
+          store.write("ai.model", "gpt-lost", 1, owner, now, () =>
+            Promise.reject(new Error("audit unavailable")),
+          ),
+        ).rejects.toThrow("audit unavailable");
+        expect(await store.read("ai.model")).toMatchObject({
+          value: "gpt-kept",
+          version: 1,
+        });
+      } finally {
+        await database.$disconnect();
+      }
+    });
+  }, 120000);
 });
