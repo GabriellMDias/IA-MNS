@@ -15,12 +15,16 @@ import {
   startDatabase,
   startWeb,
   stopAll,
+  webBuild,
   type Stoppable,
 } from "./stack.ts";
 
 // Identity journeys on the real stack: migrated PostgreSQL, the emitted API, the
 // web application, and a synthetic PDT Connect installation implementing the
 // identity contract v1 (codes, PKCE, client authentication, identity, revoke).
+// The "served" project repeats them with the production shape (ADR-0029): the
+// API serves the emitted web build at the same origin under /api, and frames
+// each embedded surface from its own configuration instead of Vite's.
 const run = promisify(execFile);
 const apiRoot = resolve(import.meta.dirname, "../../../api");
 const pdtSubject = "37c261ad-a457-49c5-b578-456a1cc127d3";
@@ -201,6 +205,7 @@ addEventListener("message", async (event) => {
 
 test.beforeAll(async () => {
   test.setTimeout(240_000);
+  const served = test.info().project.name === "served";
   const webPort = await freePort();
   const pdtPort = await freePort();
   const hostilePort = await freePort();
@@ -239,6 +244,17 @@ test.beforeAll(async () => {
     PDT_IDENTITY_REDIRECT_URI: redirectUri,
     PDT_EMBED_ORIGIN: pdt,
   };
+  if (served) {
+    stacks.push(
+      await startApi({
+        environment: "test",
+        env: { ...identityEnv, ORION_WEB_ROOT: webBuild },
+        secrets: [clientSecret, database.runtimeUrl],
+        port: webPort,
+      }),
+    );
+    return;
+  }
   const api = await startApi({
     environment: "test",
     env: identityEnv,
@@ -275,9 +291,10 @@ let totpSecret = "";
 test("bootstrap creates the principal administrator with a mandatory second factor", async ({
   page,
 }) => {
+  // The compiled operational command a production deployment runs.
   const { stdout } = await run(
     process.execPath,
-    ["--import", "tsx", "scripts/identity-bootstrap.ts"],
+    ["dist/cli/identity-bootstrap.js"],
     {
       cwd: apiRoot,
       env: { ...process.env, ...identityEnv, ORION_ENV: "test" },
@@ -319,7 +336,23 @@ test("embedded PDT Connect opens IA-MNS without a new login and keeps the sessio
   page,
   context,
 }) => {
+  // The frame's proof exchange is a same-origin fetch: under the document's
+  // no-referrer policy it still carries the real Origin, and no Referer.
+  const completion = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" &&
+      /\/api\/identity\/providers\/pdt\/complete$/.test(request.url()),
+  );
+  const embedDocument = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/embed/pdt",
+  );
   await page.goto(`${pdt}/host?theme=dark`);
+  expect((await embedDocument).headers()["referrer-policy"]).toBe(
+    "no-referrer",
+  );
+  const exchange = await completion;
+  expect(await exchange.headerValue("origin")).toBe(web);
+  expect(await exchange.headerValue("referer")).toBeNull();
   const frame = page.frameLocator("iframe#ia");
   // First access creates the profile automatically: no registration step.
   await expect(frame.getByLabel("Sua mensagem")).toBeVisible();
@@ -459,8 +492,15 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   await expect(page.getByText(/Dentro do PDT Connect/)).toHaveCount(2);
   await expect(page.getByText("Endereço do IA-MNS")).toBeVisible();
   await expect(page.getByText("PDT Connect · Pessoa do PDT")).toBeVisible();
-  // The session survives a reload through the rotating HttpOnly cookie only.
+  // The session survives a reload through the rotating HttpOnly cookie only;
+  // the cookie endpoint's Origin check passes under the no-referrer policy.
+  const refresh = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" &&
+      request.url().endsWith("/api/identity/session/refresh"),
+  );
   await page.reload();
+  expect(await (await refresh).headerValue("origin")).toBe(web);
   await expect(
     page.getByRole("heading", { name: "Minha conta" }),
   ).toBeVisible();

@@ -4,7 +4,7 @@ import { readFile, writeFile, lstat, realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseEnv, promisify } from "node:util";
 import pg from "pg";
-import { runtimeGrantStatements } from "./migrated-database.js";
+import { deployDatabase } from "../src/database-deploy.js";
 const run = promisify(execFile);
 const root = resolve(import.meta.dirname, "../../..");
 const localFile = resolve(root, "infra/local/.env");
@@ -55,19 +55,6 @@ try {
   );
   const migrationUrl = `postgresql://postgres:${adminPassword}@127.0.0.1:55432/ia_mns`;
   const runtimeUrl = `postgresql://orion_runtime:${runtimePassword}@127.0.0.1:55432/ia_mns`;
-  await run(
-    process.execPath,
-    [
-      resolve(root, "apps/api/node_modules/prisma/build/index.js"),
-      "migrate",
-      "deploy",
-    ],
-    {
-      cwd: resolve(root, "apps/api"),
-      env: { ...process.env, ORION_MIGRATION_DATABASE_URL: migrationUrl },
-      timeout: 90000,
-    },
-  );
   const admin = new pg.Client({ connectionString: migrationUrl });
   await admin.connect();
   try {
@@ -78,13 +65,11 @@ try {
       await admin.query(
         `CREATE ROLE orion_runtime LOGIN PASSWORD '${runtimePassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE`,
       );
-    await admin.query("GRANT CONNECT ON DATABASE ia_mns TO orion_runtime");
-    await admin.query("GRANT USAGE ON SCHEMA public TO orion_runtime");
-    for (const statement of await runtimeGrantStatements())
-      await admin.query(statement);
   } finally {
     await admin.end();
   }
+  // The same deployment step production runs with its migration credential.
+  await deployDatabase(migrationUrl);
   const check = new pg.Client({ connectionString: runtimeUrl });
   await check.connect();
   try {
@@ -106,7 +91,10 @@ try {
   process.stdout.write(
     "Local PostgreSQL ready on 127.0.0.1:55432; migrations and restricted grants applied. Ignored .env.local updated; no credentials displayed.\n",
   );
-} catch {
+} catch (error) {
+  // Grant verification failures are fixed, credential-free statements.
+  if (error instanceof Error && error.message.startsWith("The runtime role"))
+    process.stderr.write(`${error.message}.\n`);
   process.stderr.write(
     "Local database setup failed. Verify Docker is running, port 55432 is free and existing local database files match the volume. No volume or data was deleted.\n",
   );

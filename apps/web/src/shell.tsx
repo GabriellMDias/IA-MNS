@@ -33,7 +33,7 @@ function Shell() {
               {navigation.map((Item, index) => (
                 <Item key={index} />
               ))}
-              <Link to="/docs">Documentation</Link>
+              {__ORION_DOCUMENTATION__ && <Link to="/docs">Documentation</Link>}
               <ThemeToggle />
             </nav>
           </div>
@@ -69,10 +69,21 @@ const documentationSearch = (
     ? { page: Math.min(Number(search.page), 100000) }
     : {}),
 });
-const documentationComponent = lazyRouteComponent(
-  () => import("./documentation.js"),
-  "DocumentationPage",
-);
+// Without the portal the routes stay typed but only say the page does not
+// exist, and the bundler drops the lazy import with the generated documentation.
+function DocumentationUnavailable() {
+  return (
+    <section className="panel" aria-labelledby="missing-title">
+      <h1 id="missing-title">Página não encontrada</h1>
+      <p>
+        <Link to="/">Voltar ao início</Link>
+      </p>
+    </section>
+  );
+}
+const documentationComponent = __ORION_DOCUMENTATION__
+  ? lazyRouteComponent(() => import("./documentation.js"), "DocumentationPage")
+  : DocumentationUnavailable;
 const documentationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/docs",

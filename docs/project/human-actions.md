@@ -6,7 +6,7 @@
 
 This checklist records IA-MNS's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.
 
-IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), and the terms for publishing the Sankhya add-on template (PH-17). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.
+IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), the terms for publishing the Sankhya add-on template (PH-17), and the production deployment decisions approved on 2026-10-07: proxy topology and hop protection, a production OpenAI key, the remaining operations, and Oracle transit protection (PH-22 to PH-25). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.
 
 ## Maintaining this checklist
 
@@ -141,7 +141,7 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 **Request and reason:** Commit the reviewed migration/application baseline and record its immutable commit/checksums in release-history.json when establishing a supported persistent environment. The local conversation migration has been applied; treat its SQL as immutable now. Do not edit applied history because the registry currently has no recorded release. Committing the migrations in the first pull request does not record a release.
 **Configuration:** none.
 **Verification:** Release-history validation and supported upgrade evidence reference the actual committed baseline.
-**Evidence / blocker:** Two additive local agent migrations have been applied, including conversation organization on 2026-10-02. On 2026-10-03 they were first committed for review in the initial project pull request; no release-history entry, release tag, or remote release was created. On 2026-10-05 PJ-20 added the additive `202610050001_agent_turn_traces` migration; it was verified on disposable PostgreSQL only and has not been applied to the owner's local volume.
+**Evidence / blocker:** On 2026-10-07 [ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) fixed the sequence for the first durable release ([PJ-34](implementation-plan.md#current-work)): an `ia-mns-vX.Y.Z` tag on a `main` commit that passed CI, the artifact built from that commit with the tag as `ORION_RELEASE_ID`, its migrations applied to the production database, that database's finished and not rolled-back `_prisma_migrations` compared by name with the tagged commit's migrations and by Prisma checksum with the deployed artifact's files, and only then a reviewed release-history entry with `pnpm release:checksums <tagged SHA>` under the tag's name. Two additive local agent migrations have been applied, including conversation organization on 2026-10-02. On 2026-10-03 they were first committed for review in the initial project pull request; no release-history entry, release tag, or remote release was created. On 2026-10-05 PJ-20 added the additive `202610050001_agent_turn_traces` migration; it was verified on disposable PostgreSQL only and has not been applied to the owner's local volume.
 
 ## PH-11
 
@@ -234,7 +234,7 @@ Record the HTTPS evidence.
 - An owner reviewing **Administração → Parâmetros** before opening production: the AI model in use (evaluated with `pnpm eval` before any change), the trace level (content tracing is refused in production), and the automatic grants by provider link ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)). Values saved in a development database do not travel to production; production starts from its environment defaults.
   **Configuration:** `IA_MNS_PUBLIC_ORIGIN`, `IA_MNS_IDENTITY_SIGNING_KEY`, `IA_MNS_IDENTITY_ENCRYPTION_KEY` (both secret), optional `IA_MNS_IDENTITY_AUDIENCE`.
   **Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP, the reviewed authentication policy and operational parameters are verified in the deployed environment.
-  **Evidence / blocker:** No deployment environment yet.
+  **Evidence / blocker:** No deployment environment yet. On 2026-10-07 [PJ-32](implementation-plan.md#current-work) implemented the application side: the API serves the web build at one origin with per-surface framing from `PDT_EMBED_ORIGIN`/`SANKHYA_EMBED_ORIGIN`, `pnpm identity:keys` (or `dist/cli/identity-keys.js`) writes fresh keys to a new owner-only file, and `dist/cli/identity-bootstrap.js` issues the owner invitation from a build ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)). Nothing was configured in an environment.
 
 ## PH-16
 
@@ -307,6 +307,63 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Verification:** The server accepts TLS and IA-MNS connects with `verify-full`, or the owner's dated acceptance with its scope is recorded here.
 **Evidence / blocker:** Not started. The probe sent only the PostgreSQL TLS request, without credentials.
 
+## PH-22
+
+- [ ] **Confirm the reverse proxy topology and how the proxy-to-application hop is protected.**
+
+**Status:** pending (blocks [PJ-33](implementation-plan.md#current-work) configuration and [PJ-34](implementation-plan.md#current-work)). **Owner:** infrastructure administrator with the project owner.
+**Dependency / trigger:** The owner approved on 2026-10-07 a corporate TLS reverse proxy in front of IA-MNS at its public HTTPS origin; plain HTTP on the hop to the application is not assumed approved.
+**Request and reason:** Confirm, keeping the concrete values with the owner and the deployment configuration, never in this public repository:
+
+1. Where the proxy runs (the IA-MNS host or another machine) and every source address it uses towards IA-MNS, for `ORION_TRUSTED_PROXIES` and the host firewall.
+2. Whether the hop stays on a private server network or must be encrypted; if encrypted, which certificate (and issuing CA) the proxy will trust for `ORION_TLS_CERT_FILE` / `ORION_TLS_KEY_FILE`.
+3. That the proxy forwards every path unchanged (no prefix stripping, no cookie rewriting), appends `X-Forwarded-For`, sets `X-Forwarded-Proto: https`, sends no `X-Frame-Options` or `Content-Security-Policy` of its own (they would break `/embed/*`), does not cache `/api`, and allows a 60-second read timeout.
+4. TLS, the HTTP-to-HTTPS redirect, HSTS (initial max-age and whether subdomains are included) and internal DNS for people inside the network.
+
+**Configuration:** `ORION_TRUSTED_PROXIES`, optionally `ORION_TLS_CERT_FILE` and `ORION_TLS_KEY_FILE` ([generated configuration reference](../generated/configuration/api.md)); `IA_MNS_PUBLIC_ORIGIN`.
+**Verification:** The application sees the real client address only through the listed proxy, the hop protection matches the decision, and anonymous HTTPS checks show the redirect, HSTS and per-path framing.
+**Evidence / blocker:** Not started. The application side is implemented by [PJ-32](implementation-plan.md#current-work) ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)).
+
+## PH-23
+
+- [ ] **Create a dedicated OpenAI project and key for production.**
+
+**Status:** pending (blocks [PJ-34](implementation-plan.md#current-work)). **Owner:** project owner / OpenAI Platform administrator.
+**Dependency / trigger:** Owner decision of 2026-10-07: production uses its own OpenAI project and key, never the development key of [PH-07](#ph-07).
+**Request and reason:** Create the production project, its key with only the Responses capability the application uses, spending limits and the data-retention settings chosen under [PH-09](#ph-09). Place the key only in the production secret store.
+**Configuration:** `OPENAI_API_KEY` (secret); optional installation default `OPENAI_MODEL`, which owners override in **Administração → Parâmetros** after evaluating a model with `pnpm eval`.
+**Verification:** Presence is verified without displaying the key; a production agent turn succeeds; the development key is not present in production configuration.
+**Evidence / blocker:** Not started.
+
+## PH-24
+
+- [ ] **Decide the remaining production operations: host port, network rules, external backup, public access, operators and alerts.**
+
+**Status:** pending (blocks [PJ-34](implementation-plan.md#current-work); informs [PJ-33](implementation-plan.md#current-work)). **Owner:** project owner with the infrastructure administrator.
+**Dependency / trigger:** Approved production plan of 2026-10-07; retention and provider data policy remain [PH-09](#ph-09).
+**Request and reason:** Decide and record, without addresses or credentials in this repository:
+
+1. Confirm on the server that the planned host port (4490, published only on the host's internal address and mapped to 3000 in the container) is free, or choose another.
+2. Inbound rules (only the proxy reaches the application port; SSH only from administration) and outbound rules from the IA-MNS host to the Sankhya Oracle listener, the VRMaster PostgreSQL, OpenAI and PDT Connect, plus the matching allowances on those systems for the IA-MNS host.
+3. The external backup destination, who holds the backup decryption key, and who runs and verifies restores.
+4. Whether the public origin is reachable from the internet or only from authorized networks at the proxy.
+5. The named operators with server and production database access.
+6. The alert channel for an unready application, failed backups, overdue restore checks and disk usage.
+
+**Configuration:** none in IA-MNS beyond the PJ-33 deployment settings.
+**Verification:** Each decision is recorded here with its date and reflected in the PJ-33 configuration; nothing is assumed.
+**Evidence / blocker:** Not started.
+
+## PH-25
+
+- [ ] **Decide how the Sankhya Oracle connection is protected in transit.**
+
+**Status:** pending (required before production use of the Sankhya source). **Owner:** project owner and ERP DBA.
+**Dependency / trigger:** [PJ-34](implementation-plan.md#current-work); the equivalent decision for VRMaster is [PH-21](#ph-21).
+**Request and reason:** The production IA-MNS host will read sales and, with the directory view, user names from the Sankhya Oracle database. Choose Oracle Net native encryption or TCPS that the IA-MNS Thick-mode client can use, or record an explicit owner acceptance of unencrypted traffic on a named network segment for production.
+**Configuration:** `SANKHYA_DB_CONNECT_STRING` (secret); any Oracle Net client setting the decision requires belongs to the deployment, not this repository.
+**Verification:** The connection is encrypted as decided, or the dated acceptance with its scope is recorded here.
+**Evidence / blocker:** Not started.
 
 ## New action template
 

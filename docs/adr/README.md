@@ -36,3 +36,5 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)                                 | Host IA-MNS in Sankhya Om through an In-Repository Add-on                                   |
 | [ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)                  | Select the Sales Source in the Interface and Read Each Source Separately                    |
 | [ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md) | Administer Operational Parameters Separately from Secrets and Bootstrap Configuration       |
+| [ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) | Serve the Web and API from One Origin behind Restricted Trusted Proxies |
+| [ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) | Name IA-MNS Releases with Product Tags Distinct from Orion |

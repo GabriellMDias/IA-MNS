@@ -1,36 +1,15 @@
 import { execFile } from "node:child_process";
-import { readdir, readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { resolve } from "node:path";
 import { GenericContainer, Wait } from "testcontainers";
 import pg from "pg";
+import { deployDatabase } from "../src/database-deploy.js";
 
 const run = promisify(execFile);
 const appRoot = resolve(import.meta.dirname, "..");
-const runtimeGrants = resolve(appRoot, "prisma/runtime-grants");
 
 /** Least-privilege runtime grants that each module declares beside its schema. */
-export async function runtimeGrantStatements(
-  directory = runtimeGrants,
-): Promise<string[]> {
-  let files: string[];
-  try {
-    files = (await readdir(directory)).filter((name) => name.endsWith(".sql"));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
-    throw error;
-  }
-  const statements: string[] = [];
-  for (const file of files.sort())
-    statements.push(
-      ...(await readFile(resolve(directory, file), "utf8"))
-        .replace(/--[^\n]*/g, "")
-        .split(";")
-        .map((statement) => statement.trim())
-        .filter(Boolean),
-    );
-  return statements;
-}
+export { runtimeGrantStatements } from "../src/database-deploy.js";
 
 /** Compare only Prisma-representable structure; SQL-only objects use catalog checks. */
 export async function assertPrismaSchemaMatchesDatabase(
@@ -86,31 +65,18 @@ export async function withMigratedDatabase<T>(
     .start();
   try {
     const url = `postgresql://postgres:test@${container.getHost()}:${container.getMappedPort(5432)}/orion`;
-    await run(
-      process.execPath,
-      [
-        resolve(appRoot, "node_modules/prisma/build/index.js"),
-        "migrate",
-        "deploy",
-      ],
-      {
-        cwd: appRoot,
-        env: { ...process.env, ORION_MIGRATION_DATABASE_URL: url },
-        timeout: 90_000,
-      },
-    );
     const admin = new pg.Client({ connectionString: url });
     await admin.connect();
     try {
+      // The administrator creates the runtime role once; deployment grants it.
       await admin.query(
         "CREATE ROLE orion_runtime LOGIN PASSWORD 'runtime_test'",
       );
-      await admin.query("GRANT USAGE ON SCHEMA public TO orion_runtime");
-      for (const statement of await runtimeGrantStatements())
-        await admin.query(statement);
     } finally {
       await admin.end();
     }
+    // The production deployment path: migrations, grants and their check.
+    await deployDatabase(url);
     const runtimeUrl = `postgresql://orion_runtime:runtime_test@${container.getHost()}:${container.getMappedPort(5432)}/orion`;
     return await work(runtimeUrl, url);
   } finally {

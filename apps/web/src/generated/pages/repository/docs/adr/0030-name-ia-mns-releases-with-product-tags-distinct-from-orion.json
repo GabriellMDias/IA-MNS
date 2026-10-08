@@ -1,0 +1,41 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md",
+  "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-07\n<strong>Extends:</strong> <a href=\"/docs/repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags\">ADR-0015</a>, which names Orion foundation revisions only and explicitly does not version a derived product, deployment or migration history.</p>\n<h2 id=\"context\">Context</h2>\n<p>IA-MNS is preparing its first production deployment, which will also become its first durable migration boundary (<a href=\"/docs/repository/docs/database/release-evolution\">release workflow</a>). The owner wants production to run a known release rather than the latest <code>main</code>. IA-MNS keeps Orion's Git history (<a href=\"/docs/repository/docs/adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance\">ADR-0014</a>), and Orion names its own stable revisions <code>vMAJOR.MINOR.PATCH</code>; clones that received those tags hold <code>v1.0.0</code> to <code>v2.0.0</code> on Orion commits that are ancestors of IA-MNS's <code>main</code>. A product tag in the same namespace would collide with them or be mistaken for a foundation version. Three identifiers must agree for a release: the Git commit, the artifact's <code>ORION_RELEASE_ID</code>, and the <code>release-history.json</code> entry that freezes the migrations a durable database applied.</p>\n<h2 id=\"decision\">Decision</h2>\n<ul>\n<li>\n<p>IA-MNS releases are immutable annotated Git tags named <code>ia-mns-vMAJOR.MINOR.PATCH</code> on a commit of <code>main</code> that passed the required CI gate. Historical Orion tags are never deleted, moved or reused, and IA-MNS never creates a bare <code>vX.Y.Z</code> tag.</p>\n</li>\n<li>\n<p>The tag is the release's single human-readable identifier: the artifact built from it uses the tag as <code>ORION_RELEASE_ID</code>, and the <code>release-history.json</code> entry of a durable deployment uses it as its release ID with the full SHA the tag resolves to. No <code>VERSION</code> file or package version duplicates it.</p>\n</li>\n<li>\n<p>A release is recorded only after it ran, in this order:</p>\n<ol>\n<li>Tag a <code>main</code> commit whose required CI gate passed, and build the artifact from exactly that commit with the tag as <code>ORION_RELEASE_ID</code>.</li>\n<li>Apply the artifact's migrations to the durable database with <code>database-deploy</code>.</li>\n<li>Verify the database with read-only access: the set of <code>_prisma_migrations</code> rows that finished and were not rolled back equals the migration directories of the tagged commit, with no failed or extra row; and each row's Prisma checksum equals the SHA-256 of that <code>migration.sql</code> inside the deployed artifact.</li>\n<li>Run <code>pnpm release:checksums &lt;tagged full SHA&gt;</code> and append its output to <code>release-history.json</code> under the tag's name, with a non-secret environment identifier, in a reviewed change after the tag. <code>pnpm release:check</code> then freezes that history.</li>\n</ol>\n<p>The two checksums are different evidence and never substitute for each other: Prisma's records the bytes the database applied, the registry's the line-ending-normalized Git source (<a href=\"/docs/repository/docs/database/release-evolution\">release workflow</a>). Because the artifact is built from the tagged commit, step 3 ties the database to the artifact and step 4 ties the registry to the commit. A mismatch stops the recording and is investigated; it is never resolved by editing history or marking migrations applied. The recording change never alters the tagged commit.</p>\n</li>\n<li>\n<p>MAJOR, MINOR and PATCH describe the product and its supported upgrade path: MAJOR when an upgrade needs operator action beyond deploying the next release (for example a migration that cannot coexist with the previous release), MINOR for compatible capability, PATCH for compatible corrections.</p>\n</li>\n</ul>\n<h2 id=\"rationale\">Rationale</h2>\n<p>A distinct prefix makes collision with foundation tags impossible in any clone and tells readers which project a tag names, while keeping semantic versions familiar. Using one identifier for tag, artifact and registry entry lets an operator correlate logs, the deployed image and the frozen migrations without a lookup table. Recording after the real application follows the existing release workflow: the registry describes what a durable database actually applied, not what was planned.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"bare-vxyz-tags\">Bare <code>vX.Y.Z</code> tags</h3>\n<p>They match ADR-0015's form but collide with Orion's tags present in clones and invite confusion between product and foundation versions. Deleting Orion's tags to make room would rewrite shared history.</p>\n<h3 id=\"a-version-field-in-packagejson\">A version field in <code>package.json</code></h3>\n<p>It duplicates the tag and can drift from it; the repository already avoids a second version store.</p>\n<h3 id=\"deploying-the-latest-main\">Deploying the latest <code>main</code></h3>\n<p>It gives no stable name to what runs in production and makes the release-history commit ambiguous.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Every production artifact, log line and frozen migration set names the same release.</li>\n<li>Product and foundation versions can be told apart at a glance.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Tooling that sorts or describes tags must filter by the <code>ia-mns-v</code> prefix.</li>\n<li>Recording needs read access to the deployed database's <code>_prisma_migrations</code> and to the deployed artifact's migration files, not only to the repository.</li>\n<li>The release-history entry lands in a change after the tag, so the tagged commit itself never contains its own record.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>The first durable release freezes all migrations committed at its tag. Later schema changes are new forward migrations with an upgrade test from that baseline, and each production release that applies migrations is recorded.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags\">ADR-0015</a>, <a href=\"/docs/repository/docs/versioning\">foundation versioning</a>, <a href=\"/docs/repository/docs/database/release-evolution\">release workflow</a>, <a href=\"/docs/repository/docs/database/migrations\">migration policy</a></li>\n<li><a href=\"/docs/repository/docs/architecture/configuration\">Configuration policy</a> (<code>ORION_RELEASE_ID</code>)</li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+      "text": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    { "id": "bare-vxyz-tags", "text": "Bare vX.Y.Z tags", "level": 3 },
+    {
+      "id": "a-version-field-in-packagejson",
+      "text": "A version field in package.json",
+      "level": 3
+    },
+    {
+      "id": "deploying-the-latest-main",
+      "text": "Deploying the latest main",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

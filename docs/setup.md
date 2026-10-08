@@ -133,6 +133,8 @@ After intentional repository Markdown, API, database, or component-metadata chan
 
 `pnpm build` emits the API ESM and web static assets into ignored `dist/` directories and checks the browser bundle for known server-only markers. The [release evolution workflow](database/release-evolution.md) governs migrations; no durable release is recorded merely by running these commands.
 
+To run the production shape locally after `pnpm build`, start the emitted API with `ORION_WEB_ROOT` naming `apps/web/dist` (absolute, or relative to the working directory, such as `../web/dist` for `pnpm -C apps/api start`) and open the API's own address instead of the Vite server: the API serves the web build and answers under `/api`, as [ADR-0029](adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) describes. Set `IA_MNS_PUBLIC_ORIGIN` to that address when identity is configured. `pnpm -C apps/api config:check` validates a configuration without listening, and `VITE_ORION_DOCS=disabled pnpm -C apps/web build` produces a build without the `/docs` portal, which a production configuration requires unless `ORION_WEB_DOCS=enabled`.
+
 ## Corporate agent and local PostgreSQL
 
 With Docker Desktop/the Docker engine running, Node.js 24.13.0, and dependencies installed, run from the repository root:

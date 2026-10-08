@@ -256,19 +256,24 @@ export async function startIssuer({
   };
 }
 
+/** The production web build `pnpm build` emits, as the API serves it. */
+export const webBuild = resolve(webRoot, "dist");
+
 /** Starts the emitted API (`pnpm build` first) with the given environment. */
 export async function startApi({
   environment = "test",
   env = {},
   secrets = [],
+  port: requestedPort,
 }: {
   environment?: "development" | "test";
   env?: Readonly<Record<string, string>>;
   secrets?: readonly string[];
+  port?: number;
 } = {}): Promise<
   Stoppable & { url: string; child: ChildProcess; service: WatchedService }
 > {
-  const port = await freePort();
+  const port = requestedPort ?? (await freePort());
   const child = spawn(process.execPath, [resolve(apiRoot, "dist/main.js")], {
     cwd: apiRoot,
     env: {

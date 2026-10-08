@@ -139,9 +139,11 @@ Owners administer the [operational parameters](../architecture/configuration.md#
 
 ## Deployment requirements
 
-- HTTPS `IA_MNS_PUBLIC_ORIGIN`; the signing and encryption keys in the secret store (generate them like `apps/api/scripts/local-identity.ts`; never reuse local keys).
-- Serve the web and the API under the same origin, with the API at the browser path used in `PDT_IDENTITY_REDIRECT_URI` (for example `https://<ia-mns>/api/identity/pdt/callback`).
-- Web hosting must send `Content-Security-Policy: frame-ancestors 'none'` on every route except `/embed/pdt` and `/embed/sankhya`, which allow only their host origins. The development and preview servers apply this with `ORION_WEB_EMBED_ANCESTORS`.
+- HTTPS `IA_MNS_PUBLIC_ORIGIN`; the signing and encryption keys in the secret store, generated for each environment with `pnpm identity:keys --output <new file>` (or `node dist/cli/identity-keys.js` beside a build), which writes an owner-only file and prints no key material. Never reuse local keys.
+- Serve the web and the API under the same origin: the API process serves the web build (`ORION_WEB_ROOT`) and answers under `/api`, the browser path of `PDT_IDENTITY_REDIRECT_URI` (`https://<ia-mns>/api/identity/pdt/callback`) and of the Sankhya callback (`https://<ia-mns>/api/identity/sankhya/callback`) ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)).
+- Every response sends `Referrer-Policy: no-referrer`, which keeps the real `Origin` on the web's `fetch()` writes (a native form POST would carry `Origin: null` and fail the cookie endpoints' check), and `Content-Security-Policy: frame-ancestors 'none'` except `/embed/pdt` and `/embed/sankhya`, which allow only `PDT_EMBED_ORIGIN` and `SANKHYA_EMBED_ORIGIN` respectively; the serving API derives this from the identity configuration, and the development and preview servers apply it with `ORION_WEB_EMBED_ANCESTORS`.
+- Behind the TLS reverse proxy, `ORION_TRUSTED_PROXIES` lists only that proxy, so login and verification limits apply per client; issuer, redirects and cookie security still come from `IA_MNS_PUBLIC_ORIGIN`, never from forwarded headers.
+- The first owner comes from `pnpm identity:bootstrap`, or `node dist/cli/identity-bootstrap.js` beside a build, run once with the runtime configuration.
 - Configuration names are listed in the [generated configuration reference](../generated/configuration/api.md).
 
 ## Limits and next steps

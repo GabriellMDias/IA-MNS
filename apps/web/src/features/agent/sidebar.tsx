@@ -226,10 +226,12 @@ export function ConversationSidebar(props: Props) {
       {navigation.map((Item, index) => (
         <Item key={index} />
       ))}
-      <Link to="/docs" aria-label="Documentação" title="Documentação">
-        <Icon kind="docs" />
-        <span className="agent-sidebar-text">Documentação</span>
-      </Link>
+      {__ORION_DOCUMENTATION__ && (
+        <Link to="/docs" aria-label="Documentação" title="Documentação">
+          <Icon kind="docs" />
+          <span className="agent-sidebar-text">Documentação</span>
+        </Link>
+      )}
       {!hostThemed && <ThemeToggle />}
     </>
   );
@@ -364,15 +366,17 @@ export function ConversationSidebar(props: Props) {
             collapsed={!expanded}
             items={
               <>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="account-menu-item"
-                  onClick={() => void navigate({ to: "/docs" })}
-                >
-                  <Icon kind="docs" />
-                  <span>Documentação</span>
-                </button>
+                {__ORION_DOCUMENTATION__ && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="account-menu-item"
+                    onClick={() => void navigate({ to: "/docs" })}
+                  >
+                    <Icon kind="docs" />
+                    <span>Documentação</span>
+                  </button>
+                )}
                 {!hostThemed && <ThemeMenuItem />}
               </>
             }

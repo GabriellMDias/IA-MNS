@@ -1651,6 +1651,26 @@
       "file": "pages/repository/docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.json"
     },
     {
+      "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
+      "kind": "repository",
+      "title": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
+      "group": "Decisions",
+      "source": "docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md",
+      "summary": "IA-MNS will run in production behind a corporate TLS reverse proxy at one public HTTPS origin. The identity requires the web application and the API under that origin: cookies…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.json"
+    },
+    {
+      "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+      "kind": "repository",
+      "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+      "group": "Decisions",
+      "source": "docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md",
+      "summary": "IA-MNS is preparing its first production deployment, which will also become its first durable migration boundary (release workflow). The owner wants production to run a known…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -2375,19 +2395,19 @@
         "count": 53,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0008.json", "count": 107, "kinds": ["repository"] },
+      { "file": "search/0008.json", "count": 105, "kinds": ["repository"] },
       { "file": "search/0009.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 147, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 160, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 107, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 134, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 79, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 77, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 58, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 101, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 93, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 25, "kinds": ["repository"] }
+      { "file": "search/0010.json", "count": 146, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 162, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 120, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 133, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 84, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 64, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 70, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 106, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 61, "kinds": ["repository"] }
     ],
-    "count": 1344
+    "count": 1379
   }
 }

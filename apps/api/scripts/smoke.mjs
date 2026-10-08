@@ -1,5 +1,8 @@
-import { spawn } from "node:child_process";
-import { readdir } from "node:fs/promises";
+import { execFile, spawn } from "node:child_process";
+import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import { request as httpsRequest } from "node:https";
+import { tmpdir } from "node:os";
+import { promisify } from "node:util";
 import { createServer as createHttpServer } from "node:http";
 import { createServer } from "node:net";
 import { resolve, dirname } from "node:path";
@@ -171,6 +174,220 @@ try {
   child.kill();
   await waitForExit(child, 5000).catch(() => undefined);
   await new Promise((resolveClosed) => collector.close(resolveClosed));
+}
+
+// Production runtime shape (ADR-0029) against the emitted API and web builds:
+// compiled operational commands, then the web build served at the same origin
+// over the internal HTTPS listener behind a trusted proxy.
+const run = promisify(execFile);
+const webRoot = resolve(appDirectory, "../web/dist");
+const work = await mkdtemp(resolve(tmpdir(), "ia-mns-smoke-"));
+async function command(name, args = [], env = {}) {
+  try {
+    const { stdout, stderr } = await run(
+      process.execPath,
+      [resolve(appDirectory, `dist/cli/${name}.js`), ...args],
+      {
+        cwd: appDirectory,
+        env: {
+          PATH: process.env.PATH,
+          SystemRoot: process.env.SystemRoot,
+          ...env,
+        },
+        timeout: 30_000,
+      },
+    );
+    return { code: 0, output: `${stdout}${stderr}` };
+  } catch (error) {
+    return { code: error.code, output: `${error.stdout}${error.stderr}` };
+  }
+}
+function fetchTls(port, path, ca, headers = {}) {
+  return new Promise((resolveResponse, reject) => {
+    const outgoing = httpsRequest(
+      { host: "127.0.0.1", port, path, ca, servername: "localhost", headers },
+      (response) => {
+        let body = "";
+        response.on("data", (chunk) => (body += chunk));
+        response.on("end", () =>
+          resolveResponse({
+            status: response.statusCode,
+            headers: response.headers,
+            body,
+          }),
+        );
+      },
+    );
+    outgoing.once("error", reject);
+    outgoing.end();
+  });
+}
+let served;
+try {
+  const keysFile = resolve(work, "identity.env");
+  const keys = await command("identity-keys", ["--output", keysFile]);
+  if (keys.code !== 0 || !/no key material displayed/.test(keys.output))
+    throw new Error(`identity-keys failed: ${keys.output}`);
+  const keyText = await readFile(keysFile, "utf8");
+  if (keys.output.includes(keyText.split("=")[1].slice(0, 12)))
+    throw new Error("identity-keys displayed key material");
+  if (
+    process.platform !== "win32" &&
+    ((await stat(keysFile)).mode & 0o077) !== 0
+  )
+    throw new Error("identity-keys file is readable by other users");
+  if ((await command("identity-keys", ["--output", keysFile])).code === 0)
+    throw new Error("identity-keys overwrote an existing file");
+  const identity = Object.fromEntries(
+    keyText
+      .trim()
+      .split("\n")
+      .map((line) => line.split(/=(.*)/s).slice(0, 2)),
+  );
+
+  const valid = await command("config-check", [], {
+    ORION_ENV: "test",
+    ORION_WEB_ROOT: webRoot,
+    // Composition never connects, so an unreachable database is enough.
+    ORION_DATABASE_URL: "postgresql://smoke:unused@127.0.0.1:9/smoke",
+    IA_MNS_PUBLIC_ORIGIN: "http://127.0.0.1:5173",
+    ...identity,
+  });
+  if (valid.code !== 0 || !/Configuration valid for test/.test(valid.output))
+    throw new Error(
+      `config-check rejected a valid configuration: ${valid.output}`,
+    );
+  for (const [env, expected] of [
+    [{ ORION_ENV: "invalid" }, "Invalid API configuration."],
+    [
+      { ORION_ENV: "production" },
+      "requires authentication and providers in production",
+    ],
+    [
+      {
+        ORION_ENV: "test",
+        ORION_WEB_ROOT: webRoot,
+        ORION_WEB_DOCS: "disabled",
+      },
+      "contains the /docs portal",
+    ],
+    [
+      {
+        ORION_ENV: "test",
+        ORION_TLS_CERT_FILE: resolve(work, "missing.pem"),
+        ORION_TLS_KEY_FILE: resolve(work, "missing.pem"),
+      },
+      "ORION_TLS_CERT_FILE or ORION_TLS_KEY_FILE is unreadable",
+    ],
+  ]) {
+    const result = await command("config-check", [], env);
+    if (result.code !== 1 || !result.output.includes(expected))
+      throw new Error(
+        `config-check did not refuse ${JSON.stringify(env)}: ${result.output}`,
+      );
+  }
+  const deploy = await command("database-deploy");
+  if (
+    deploy.code !== 2 ||
+    !/ORION_MIGRATION_DATABASE_URL is required/.test(deploy.output)
+  )
+    throw new Error(
+      `database-deploy ran without a migration credential: ${deploy.output}`,
+    );
+  const bootstrap = await command("identity-bootstrap", [], {
+    ORION_ENV: "test",
+  });
+  if (
+    bootstrap.code !== 1 ||
+    !/Identity is not configured/.test(bootstrap.output)
+  )
+    throw new Error(
+      `identity-bootstrap ran without identity: ${bootstrap.output}`,
+    );
+
+  const cert = resolve(work, "cert.pem");
+  const key = resolve(work, "key.pem");
+  await run("openssl", [
+    "req",
+    "-x509",
+    "-newkey",
+    "ec",
+    "-pkeyopt",
+    "ec_paramgen_curve:P-256",
+    "-nodes",
+    "-keyout",
+    key,
+    "-out",
+    cert,
+    "-days",
+    "1",
+    "-subj",
+    "/CN=localhost",
+    "-addext",
+    "subjectAltName=DNS:localhost",
+  ]).catch(() => {
+    throw new Error(
+      "The TLS smoke needs the openssl command to create a disposable certificate",
+    );
+  });
+  const ca = await readFile(cert);
+  const tlsPort = await freePort();
+  let tlsOutput = "";
+  served = spawn(process.execPath, [executable], {
+    cwd: appDirectory,
+    env: {
+      ...process.env,
+      ORION_ENV: "test",
+      ORION_API_PORT: String(tlsPort),
+      ORION_WEB_ROOT: webRoot,
+      ORION_TLS_CERT_FILE: cert,
+      ORION_TLS_KEY_FILE: key,
+      ORION_TRUSTED_PROXIES: "127.0.0.1",
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  served.stdout.on("data", (chunk) => (tlsOutput += String(chunk)));
+  served.stderr.on("data", (chunk) => (tlsOutput += String(chunk)));
+  let ready;
+  for (let attempt = 0; attempt < 80 && !ready; attempt += 1) {
+    ready = await fetchTls(tlsPort, "/health/ready", ca).catch(() => undefined);
+    if (served.exitCode !== null)
+      throw new Error(`Served API exited during startup: ${tlsOutput}`);
+    if (!ready) await delay(100);
+  }
+  if (ready?.status !== 200)
+    throw new Error(`HTTPS API did not become ready: ${tlsOutput}`);
+  const page = await fetchTls(tlsPort, "/entrar", ca, { accept: "text/html" });
+  if (
+    page.status !== 200 ||
+    !page.body.includes('id="root"') ||
+    page.headers["content-security-policy"] !== "frame-ancestors 'none'"
+  )
+    throw new Error("The web shell was not served at the same origin");
+  const script = /src="(\/assets\/[^"]+\.js)"/.exec(page.body)?.[1];
+  const asset = script ? await fetchTls(tlsPort, script, ca) : undefined;
+  if (
+    asset?.status !== 200 ||
+    !String(asset.headers["cache-control"]).includes("immutable")
+  )
+    throw new Error("Hashed web assets were not served immutably");
+  const api = await fetchTls(tlsPort, "/api/health/ready", ca);
+  const unknown = await fetchTls(tlsPort, "/api/unknown", ca, {
+    accept: "text/html",
+  });
+  if (
+    api.status !== 200 ||
+    unknown.status !== 404 ||
+    !unknown.body.includes("RESOURCE_NOT_FOUND")
+  )
+    throw new Error("The API was not routed under /api");
+  process.stdout.write(
+    "Built operational commands and same-origin web over internal HTTPS smoke passed\n",
+  );
+} finally {
+  served?.kill();
+  if (served) await waitForExit(served, 5000).catch(() => undefined);
+  await rm(work, { recursive: true, force: true });
 }
 
 // Modules add process smokes as apps/api/scripts/smoke/*.ts; they run after

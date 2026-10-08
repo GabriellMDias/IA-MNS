@@ -1,10 +1,10 @@
 // Generates local-only identity keys into the ignored root .env.local when absent.
 // Never prints key material. Production keys are provisioned through the secret
 // store (see docs/domains/identity.md); never copy local keys to shared environments.
-import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { lstat, readFile, realpath, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseEnv } from "node:util";
+import { generateIdentityKeys } from "../src/identity-keys.js";
 
 const root = resolve(import.meta.dirname, "../../..");
 const envFile = resolve(root, ".env.local");
@@ -25,17 +25,16 @@ async function readSafe(path: string) {
 
 let content = await readSafe(envFile);
 const existing = parseEnv(content);
+const generated = generateIdentityKeys();
 const values: Record<string, string> = {
   IA_MNS_PUBLIC_ORIGIN:
     existing.IA_MNS_PUBLIC_ORIGIN ?? "http://127.0.0.1:5173",
   IA_MNS_IDENTITY_SIGNING_KEY:
     existing.IA_MNS_IDENTITY_SIGNING_KEY ??
-    generateKeyPairSync("ec", { namedCurve: "P-256" })
-      .privateKey.export({ type: "pkcs8", format: "der" })
-      .toString("base64url"),
+    generated.IA_MNS_IDENTITY_SIGNING_KEY,
   IA_MNS_IDENTITY_ENCRYPTION_KEY:
     existing.IA_MNS_IDENTITY_ENCRYPTION_KEY ??
-    randomBytes(32).toString("base64url"),
+    generated.IA_MNS_IDENTITY_ENCRYPTION_KEY,
 };
 const added: string[] = [];
 for (const [name, value] of Object.entries(values)) {
