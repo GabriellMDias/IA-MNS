@@ -203,7 +203,11 @@ config_problems() {
       echo "compose.env: IA_MNS_BIND_ADDRESS must be one host address, not every interface"
     fi
     value="$(env_value "$compose_env" IA_MNS_HTTP_PORT)"
-    [[ -z "$value" || "$value" =~ ^[1-9][0-9]{0,4}$ ]] || echo "compose.env: IA_MNS_HTTP_PORT must be a port number"
+    if [[ -z "$value" ]]; then
+      echo "compose.env: IA_MNS_HTTP_PORT is required"
+    elif ! [[ "$value" =~ ^[1-9][0-9]{0,4}$ ]] || ((value > 65535)); then
+      echo "compose.env: IA_MNS_HTTP_PORT must be a port number"
+    fi
   fi
   if [[ -f "$postgres_env" ]]; then
     [[ -n "$(env_value "$postgres_env" POSTGRES_PASSWORD)" ]] || echo "postgres.env: POSTGRES_PASSWORD is required"
@@ -580,7 +584,6 @@ smoke_url() {
     scheme="http"
     tls_enabled && scheme="https"
     url="$scheme://$(setting IA_MNS_BIND_ADDRESS):$(setting IA_MNS_HTTP_PORT)"
-    [[ "$url" == *: ]] && url="${url}4490"
   fi
   printf '%s' "$url"
 }

@@ -70,7 +70,7 @@ services:
     # Published only on the configured host address; protect it with the
     # host firewall (DOCKER-USER), which Docker-published ports bypass in ufw.
     ports:
-      - "${IA_MNS_BIND_ADDRESS:?set IA_MNS_BIND_ADDRESS in compose.env}:${IA_MNS_HTTP_PORT:-4490}:3000"
+      - "${IA_MNS_BIND_ADDRESS:?set IA_MNS_BIND_ADDRESS in compose.env}:${IA_MNS_HTTP_PORT:?set IA_MNS_HTTP_PORT in compose.env}:3000"
     networks: [backend, egress]
     depends_on:
       postgres:

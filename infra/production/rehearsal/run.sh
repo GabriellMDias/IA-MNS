@@ -209,6 +209,9 @@ expect_failure "world-readable runtime.env" "$TOOL" check-config
 rm -rf "$IA_MNS_CONFIG_DIR" && cp -a "$WORK/etc.saved" "$IA_MNS_CONFIG_DIR"
 set_value compose.env IA_MNS_BIND_ADDRESS "0.0.0.0"
 expect_failure "publishing on every interface" "$TOOL" check-config
+rm -rf "$IA_MNS_CONFIG_DIR" && cp -a "$WORK/etc.saved" "$IA_MNS_CONFIG_DIR"
+set_value compose.env IA_MNS_HTTP_PORT ""
+expect_failure "no host port" "$TOOL" check-config
 rm -rf "$IA_MNS_CONFIG_DIR" && cp -a "$WORK/etc.saved" "$IA_MNS_CONFIG_DIR" && rm -rf "$WORK/etc.saved"
 tool check-config
 

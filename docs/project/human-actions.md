@@ -343,7 +343,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Dependency / trigger:** Approved production plan of 2026-10-07; retention and provider data policy remain [PH-09](#ph-09).
 **Request and reason:** Decide and record, without addresses or credentials in this repository:
 
-1. Confirm on the server that the planned host port (4490, published only on the host's internal address and mapped to 3000 in the container) is free, or choose another.
+1. Choose the host port the application is published on (only on the host's internal address, mapped to 3000 in the container) and confirm on the server that it is free.
 2. Inbound rules (only the proxy reaches the application port; SSH only from administration) and outbound rules from the IA-MNS host to the Sankhya Oracle listener, the VRMaster PostgreSQL, OpenAI and PDT Connect, plus the matching allowances on those systems for the IA-MNS host.
 3. The external backup destination, who holds the backup decryption key, and who runs and verifies restores.
 4. Whether the public origin is reachable from the internet or only from authorized networks at the proxy.
@@ -352,7 +352,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 
 **Configuration:** none in IA-MNS beyond the PJ-33 deployment settings.
 **Verification:** Each decision is recorded here with its date and reflected in the PJ-33 configuration; nothing is assumed.
-**Evidence / blocker:** Not started. [PJ-33](implementation-plan.md#current-work) prepared each decision as configuration: `IA_MNS_BIND_ADDRESS` and `IA_MNS_HTTP_PORT` (default 4490), `IA_MNS_BACKUP_EXTERNAL_TARGET` with `IA_MNS_BACKUP_AGE_RECIPIENT`, and `IA_MNS_ALERT_COMMAND`; `status` reports a missing external backup destination as an unmet production requirement.
+**Evidence / blocker:** Not started. [PJ-33](implementation-plan.md#current-work) prepared each decision as configuration: `IA_MNS_BIND_ADDRESS` and `IA_MNS_HTTP_PORT` (required, no default), `IA_MNS_BACKUP_EXTERNAL_TARGET` with `IA_MNS_BACKUP_AGE_RECIPIENT`, and `IA_MNS_ALERT_COMMAND`; `status` reports a missing external backup destination as an unmet production requirement.
 
 ## PH-25
 

@@ -34,7 +34,8 @@ Check the host before changing it:
 ```bash
 lsb_release -ds; uname -m; nproc; free -h; df -h /var /opt
 timedatectl | grep -i synchronized
-sudo ss -ltnp | grep -E ':(4490|5432)\b' || echo "4490 and 5432 are free"
+PORT="<chosen host port>"
+sudo ss -ltnp | grep -E ":($PORT|5432)\b" || echo "$PORT and 5432 are free"
 docker --version 2>/dev/null; docker compose version 2>/dev/null
 ```
 
@@ -66,7 +67,7 @@ If the chosen port is in use, pick another and set it in `compose.env`; the cont
    It creates the directories, `/usr/local/sbin/ia-mns-deploy`, the systemd units (not yet enabled), the release repository in `/opt/ia-mns/repo.git`, and `/etc/ia-mns/*.env` from the [examples](../../infra/production/examples/runtime.env.example) without overwriting existing files.
 
 3. **Configure.** Edit with `sudo nano /etc/ia-mns/<file>.env` and replace every `CHANGE_ME`:
-   - `compose.env`: `IA_MNS_BIND_ADDRESS` (the host address the proxy reaches, never `0.0.0.0`) and, if needed, `IA_MNS_HTTP_PORT`.
+   - `compose.env`: `IA_MNS_BIND_ADDRESS` (the host address the proxy reaches, never `0.0.0.0`) and `IA_MNS_HTTP_PORT` (the chosen host port; there is no default).
    - `runtime.env`: `IA_MNS_PUBLIC_ORIGIN`, `ORION_TRUSTED_PROXIES`, `OPENAI_API_KEY`, `SANKHYA_DB_*`; leave PDT, Sankhya sign-in and VRMaster commented until their human actions are resolved.
    - `backup.env`: `IA_MNS_BACKUP_AGE_RECIPIENT` and `IA_MNS_BACKUP_EXTERNAL_TARGET`.
    - Internal TLS on the proxy hop, if [PH-22](../project/human-actions.md#ph-22) requires it: place `tls.crt` and `tls.key` in `/etc/ia-mns/tls/` (`sudo chown root:1000 /etc/ia-mns/tls/tls.key && sudo chmod 640 /etc/ia-mns/tls/tls.key`) and uncomment the two `ORION_TLS_*` lines.
