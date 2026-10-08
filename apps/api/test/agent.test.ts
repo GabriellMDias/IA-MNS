@@ -895,7 +895,9 @@ it("stores content traces with their turns, logs only metadata and deletes trace
       expect(second.content.sales.stateBefore).toMatchObject({
         pending: { awaiting: ["period"] },
       });
-      expect(JSON.stringify(traces)).not.toContain("987");
+      // The result figure (987.65, or 987,65 as displayed) never appears; a bare
+      // "987" could occur by chance in a timestamp or identifier.
+      expect(JSON.stringify(traces)).not.toMatch(/987[.,]65/);
       // A traced failure becomes an unreviewed candidate reproducing it.
       const candidate = await captureCandidate(database, detail.turns[1].id);
       expect(candidate).toMatchObject({
@@ -931,7 +933,7 @@ it("stores content traces with their turns, logs only metadata and deletes trace
       expect(logs).toContain("ai_turn_traced");
       expect(logs).toContain("new_completes_pending");
       expect(logs).not.toContain("sigilosa");
-      expect(logs).not.toContain("987");
+      expect(logs).not.toMatch(/987[.,]65/);
       await expect(
         database.$executeRaw`UPDATE agent_turn_traces SET trace = '{}'::jsonb`,
       ).rejects.toThrow();
