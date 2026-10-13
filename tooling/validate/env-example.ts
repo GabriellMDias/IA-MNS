@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   configReference,
+  erpAdministrativeKeys,
   parseServerConfig,
 } from "../../apps/api/src/config.ts";
 
@@ -115,4 +116,30 @@ if (problems.length)
   );
 console.log(
   "The production runtime example names only API settings, with placeholders for secrets.",
+);
+
+// Development administrative credentials deliberately have no runtime fields.
+const discoveryExample = await readFile(
+  path.join(root, ".env.discovery.example"),
+  "utf8",
+);
+const discoveryNames = [
+  ...discoveryExample.matchAll(/^# ([A-Z][A-Z0-9_]+)=(.*)$/gm),
+];
+if (
+  discoveryNames
+    .map((match) => match[1])
+    .sort()
+    .join(",") !== [...erpAdministrativeKeys].sort().join(",") ||
+  discoveryNames.some((match) => match[2] !== "") ||
+  discoveryExample
+    .split(/\r?\n/)
+    .some((line) => line.trim() && !line.startsWith("#")) ||
+  erpAdministrativeKeys.some((key) => known.has(key))
+)
+  throw new Error(
+    ".env.discovery.example must document exactly the four administrative keys with no values or runtime fields",
+  );
+console.log(
+  "The Discovery example names only the four administrative ERP keys, with no values.",
 );

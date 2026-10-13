@@ -6,6 +6,12 @@ This page owns how IA-MNS measures AI behavior: datasets, deterministic checks, 
 
 ## Components
 
+The default conversational path has a separate corpus because it evaluates general answers and tool trajectories rather than forced legacy interpretations. [`conversation.ts`](../../apps/api/evals/conversation.ts) runs the real conversation loop, authorization, semantic sales compiler and attachment projection with synthetic owned data; [`conversation-autonomy.json`](../../apps/api/evals/datasets/conversation-autonomy.json) owns its reviewed cases. `pnpm eval:conversation` replays scripted outputs and `--subject model` invokes the configured OpenAI model. API tests include every scripted case. Provider runs are opt-in and never read an ERP.
+
+The corpus checks evidence-preserving summaries and rewrites, no redundant reads, permission/source isolation, injection attempts, repaired references, bounded calls, multiple measures/dimensions and text/image provenance. Reports include only case/check identifiers, read/call/token counts and sanitized failure categories. Adversarial fixtures that deliberately force invalid model output are explicitly excluded from live-model runs. These checks do not establish universal narrative faithfulness or the proposal's unmeasured held-out quality target; private conversations must not be promoted into the synthetic corpus. Add a reviewed case for each reproducible behavior change, keeping real data out of prompts and reports used for evaluation.
+
+The remaining components and case format below describe the retained strict interpreter/routing corpus.
+
 | Component | Responsibility |
 | --- | --- |
 | [`dataset.ts`](../../apps/api/evals/dataset.ts) | TypeBox schema and loader for dataset files; rejects malformed files, duplicate ids, curated candidates and active unreviewed cases. |
@@ -115,7 +121,7 @@ Both produce only `candidate` cases with `provenance.reviewed: false`, which nev
 
 ## Model-based judging
 
-No model judges correctness today. Every evaluated output is structured, so deterministic checks are stronger, cheaper and reproducible. A future judge could triage synthetic candidates or assess free text if the product ever authors it; it would run as a separate advisory report section, record its model and prompt version, and never decide pass or fail alone.
+No model judges correctness today. The retained interpreter corpus uses structured outputs and deterministic checks. Conversational responses now contain natural prose: the separate corpus checks exact facts, authorization, source boundaries and tool trajectories, but does not establish complete semantic faithfulness. A future judge could triage synthetic candidates or assess prose in a separate advisory report section, record its model and prompt version, and never decide pass or fail alone.
 
 ## Comparing prompts, models and implementations
 
@@ -125,7 +131,7 @@ A subject is any router and interpreter pair. `--model` selects another model of
 
 | Step | Status |
 | --- | --- |
-| Interactions produce traces | Implemented: metadata logs by default; content traces locally on request. Production content capture awaits PH-09. |
+| Interactions produce traces | Implemented: metadata logs by default. Conversational turns cap content tracing at metadata, including nested tools. Legacy content traces remain an explicit local workflow; production capture awaits PH-09. |
 | Traces become evaluation candidates | Implemented: `capture`. |
 | Failures are detected | Implemented for curated, captured and synthetic cases; no automatic production failure detection or sampling exists. |
 | Candidates become regression cases | Manual review, anonymization and promotion. |
@@ -140,7 +146,7 @@ On 2026-10-05 the scripted replay passed all 39 curated cases. Live runs with `g
 
 ## Limitations
 
-- Curated coverage reflects today's capability: one dimension, three measures, two groupings plus total, two comparisons. Expectations encode human judgment and can be wrong.
+- Curated coverage reflects reviewed sales semantics: three measures, month/product groupings including their combination, total and two comparisons. The conversational corpus also checks multi-measure composition; neither corpus covers arbitrary dimensions or relationships. Expectations encode human judgment and can be wrong.
 - Live results vary between runs and models; compare several runs before concluding from small deltas.
 - Synthetic rows make answers meaningless as figures; ERP reconciliation remains a separate verification.
 - Reports are local files; no dashboard, scheduled run or central history exists.

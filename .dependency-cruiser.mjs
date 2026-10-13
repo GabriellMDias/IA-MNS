@@ -67,9 +67,9 @@ export default {
     ),
     error(
       "no-runtime-to-verification",
-      "API runtime code must not depend on its tests or evaluation tooling; they depend on the runtime.",
+      "API runtime code must not depend on tests, evaluations or development scripts, including ERP Discovery credential loading; tooling may depend on runtime code.",
       { path: "^apps/api/src/" },
-      { path: "^apps/api/(test|evals)/" },
+      { path: "^apps/api/(test|evals|scripts)/" },
     ),
     error(
       "no-domain-to-infrastructure",

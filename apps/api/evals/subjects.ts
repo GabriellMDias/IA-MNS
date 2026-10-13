@@ -18,12 +18,14 @@ import type { EvalSubject } from "./harness.js";
 export const scriptedSubject: EvalSubject = {
   id: "scripted",
   metadata: { router: "fixture", interpreter: "fixture" },
+  // Only turns routed to sales need a scripted sales interpretation.
   applicable: (evalCase) =>
     evalCase.turns.every(
       (turn) =>
         turn.fixture?.interpretation !== undefined ||
         (turn.fixture?.route !== undefined &&
-          turn.fixture.route.intent !== "capability"),
+          (turn.fixture.route.intent !== "capability" ||
+            turn.fixture.route.capabilityId !== "sales")),
     )
       ? null
       : "missing fixtures",

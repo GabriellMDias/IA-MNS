@@ -10,6 +10,14 @@ import { Value } from "typebox/value";
  */
 export const aiModelPattern = "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$";
 
+// These names belong to development tooling, never the runtime schema.
+export const erpAdministrativeKeys = Object.freeze([
+  "VRMASTER_DB_USER_FULLACESS",
+  "VRMASTER_DB_PASSWORD_FULLACESS",
+  "SANKHYA_DB_USER_FULLACESS",
+  "SANKHYA_DB_PASSWORD_FULLACESS",
+] as const);
+
 // This is the only application module that interprets environment values.
 export const serverConfigSchema = Type.Object(
   {
@@ -51,6 +59,10 @@ export const serverConfigSchema = Type.Object(
     tokenJwksUrl: Type.Optional(Type.String({ minLength: 1 })),
     openaiApiKey: Type.Optional(Type.String({ minLength: 1 })),
     openaiModel: Type.String({ pattern: aiModelPattern }),
+    agentMode: Type.Union([
+      Type.Literal("conversational"),
+      Type.Literal("legacy"),
+    ]),
     aiTrace: Type.Union([
       Type.Literal("off"),
       Type.Literal("metadata"),
@@ -386,6 +398,19 @@ export const configReference = Object.freeze([
     classification: "INTERNAL",
   },
   {
+    key: "agentMode",
+    name: "IA_MNS_AGENT_MODE",
+    role: "bootstrap",
+    type: "conversational | legacy",
+    default: "conversational",
+    secret: false,
+    purpose:
+      "Conversational tool orchestration or reversible legacy routing; both preserve authorization of stored evidence.",
+    required: false,
+    visibility: "server",
+    classification: "INTERNAL",
+  },
+  {
     key: "aiTrace",
     name: "IA_MNS_AI_TRACE",
     role: "parameter",
@@ -393,7 +418,7 @@ export const configReference = Object.freeze([
     default: "metadata",
     secret: false,
     purpose:
-      "Installation default of AI turn tracing; an owner value in administration (Parâmetros) takes precedence. metadata logs allowlisted decisions, timings and token counts without user content; content also stores confidential interpretation traces with each turn and is refused in production until PH-09.",
+      "Installation default of AI turn tracing; an owner value in administration (Parâmetros) takes precedence. metadata logs allowlisted decisions, timings and token counts without user content. Conversational turns cap content at metadata, including nested tools. Legacy content traces remain confidential and are refused in production until PH-09.",
     required: false,
     visibility: "server",
     classification: "INTERNAL",
@@ -406,7 +431,7 @@ export const configReference = Object.freeze([
     default: "",
     secret: true,
     purpose:
-      "Oracle account with CREATE SESSION and only SELECT grants on the sales reference tables.",
+      "IA_MNS_RO runtime reader (PH-08): non-owner Oracle account with CREATE SESSION and only SELECT on required sales/product/dictionary objects. Existing administration/Discovery credentials belong only in .env.discovery.local or .env.discovery.",
     required: false,
     visibility: "server",
     classification: "RESTRICTED",
@@ -419,7 +444,7 @@ export const configReference = Object.freeze([
     default: "",
     secret: true,
     purpose:
-      "Restricted Oracle account password; configure with user and connect string.",
+      "IA_MNS_RO runtime password; configure with user and connect string, never the administrative Discovery password.",
     required: false,
     visibility: "server",
     classification: "RESTRICTED",
@@ -458,7 +483,7 @@ export const configReference = Object.freeze([
     default: "",
     secret: false,
     purpose:
-      "VRMaster PostgreSQL server of the Pilar da Terra sales source; configure with name, user and password.",
+      "VRMaster PostgreSQL server of the Pilar da Terra sales source and product lookup; configure with name, user and password.",
     required: false,
     visibility: "server",
     classification: "RESTRICTED",
@@ -482,7 +507,8 @@ export const configReference = Object.freeze([
     type: "PostgreSQL database name",
     default: "",
     secret: false,
-    purpose: "VRMaster database that holds the sales reference tables.",
+    purpose:
+      "VRMaster database that holds the sales reference and product registration tables.",
     required: false,
     visibility: "server",
     classification: "INTERNAL",
@@ -495,7 +521,7 @@ export const configReference = Object.freeze([
     default: "",
     secret: true,
     purpose:
-      "Dedicated read-only VRMaster role (PH-19) with SELECT only on the sales reference tables; never the PDT Connect account.",
+      "Dedicated read-only VRMaster role (PH-19) with SELECT only on the tables IA-MNS reads (sales reference, which product lookup also uses); never the PDT Connect account.",
     required: false,
     visibility: "server",
     classification: "RESTRICTED",
@@ -520,7 +546,7 @@ export const configReference = Object.freeze([
     default: "verify-full",
     secret: false,
     purpose:
-      "TLS with certificate and host verification, or explicitly disabled for a server without TLS, which sends the credentials and sales data unencrypted on that network.",
+      "TLS with certificate and host verification, or explicitly disabled for a server without TLS, which sends the credentials, sales and product data unencrypted on that network.",
     required: false,
     visibility: "server",
     classification: "INTERNAL",
@@ -1048,6 +1074,10 @@ function validateIdentity(candidate: Static<typeof serverConfigSchema>): void {
 export function parseServerConfig(
   env: Readonly<Record<string, string | undefined>>,
 ): ServerConfig {
+  if (erpAdministrativeKeys.some((key) => env[key] !== undefined))
+    throw new Error(
+      "Invalid API configuration: administrative ERP credentials belong in .env.discovery.local or .env.discovery, not runtime environment",
+    );
   const candidate = {
     environment: env.ORION_ENV,
     ...(env.IA_MNS_DEV_ACCESS_TOKEN === undefined
@@ -1060,6 +1090,7 @@ export function parseServerConfig(
       ? {}
       : { devAccessExpiresAt: Number(env.IA_MNS_DEV_ACCESS_EXPIRES_AT) }),
     openaiModel: env.OPENAI_MODEL ?? "gpt-6.1-sol",
+    agentMode: env.IA_MNS_AGENT_MODE ?? "conversational",
     aiTrace: env.IA_MNS_AI_TRACE ?? "metadata",
     identityAudience: env.IA_MNS_IDENTITY_AUDIENCE ?? "ia-mns-api",
     sankhyaSessionTrust: env.SANKHYA_SESSION_TRUST ?? "pending",

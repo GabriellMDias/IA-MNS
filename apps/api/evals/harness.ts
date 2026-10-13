@@ -22,6 +22,11 @@ import type { SalesInterpreter } from "../src/features/sales/interpreter.js";
 import type { SalesReader } from "../src/features/sales/reader.js";
 import type { SalesSource } from "../src/features/sales/sources.js";
 import { ModelFailure } from "../src/ai/model.js";
+import {
+  productCapabilityDescriptor,
+  productCapabilityId,
+  productPermission,
+} from "../src/features/products/capability.js";
 import type { EvalCase, EvalTurn } from "./dataset.js";
 
 /** Gives a scripted subject the turn being executed. */
@@ -61,7 +66,35 @@ export type TurnObservation = {
 };
 
 const config = parseServerConfig({ ORION_ENV: "test" });
-const actor = { id: "evaluation", permissions: new Set(["sales:read"]) };
+const actor = {
+  id: "evaluation",
+  permissions: new Set(["sales:read", productPermission]),
+};
+
+/**
+ * Product lookup as the router sees it: the real descriptor with a synthetic
+ * executor. Routing between sales and products is evaluated here; product
+ * interpretation and resolution have their own tests and live regression.
+ */
+function syntheticProducts(): AgentCapability {
+  return {
+    ...productCapabilityDescriptor,
+    examples: [...productCapabilityDescriptor.examples],
+    execute: () =>
+      Promise.resolve({
+        reply: {
+          kind: "answer",
+          capabilityId: productCapabilityId,
+          message: "[consulta de produtos sintética]",
+          result: null,
+          suggestions: [],
+        },
+        context: null,
+        awaiting: null,
+      }),
+    close: () => Promise.resolve(),
+  };
+}
 
 /** Shape-valid synthetic rows: evaluation measures interpretation, not ERP figures. */
 function syntheticData(query: SalesQuery): SalesData {
@@ -176,7 +209,8 @@ export function openSession(
       () => new Date(`${setting.today}T15:00:00Z`),
     ),
   );
-  const router = subject.router([sales], script);
+  const capabilities = [sales, syntheticProducts()];
+  const router = subject.router(capabilities, script);
   let contexts: Record<string, unknown> = structuredClone(
     setting.context ?? {},
   );
@@ -193,7 +227,7 @@ export function openSession(
         "route" | "notes" | "invocations" | "latencyMs" | "sourceNotice"
       >;
       try {
-        const result = await runAgentTurn(router, [sales], {
+        const result = await runAgentTurn(router, capabilities, {
           actor,
           message: turn.user,
           history: [...history],

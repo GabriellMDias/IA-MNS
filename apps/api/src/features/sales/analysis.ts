@@ -20,7 +20,7 @@ export const salesCatalog = {
   /** Filterable business dimensions; product matches a description phrase. */
   dimensions: ["product"],
   /** "total", a time grain, or a groupable dimension. */
-  groupings: ["total", "month", "product"],
+  groupings: ["total", "month", "product", "month_product"],
   defaultGrouping: "total",
   comparisons: ["none", "previous_year", "previous_period"],
   defaultComparison: "none",
@@ -49,6 +49,7 @@ export const groupingSchema = Type.Union([
   Type.Literal("total"),
   Type.Literal("month"),
   Type.Literal("product"),
+  Type.Literal("month_product"),
 ]);
 export const comparisonSchema = Type.Union([
   Type.Literal("none"),
@@ -336,3 +337,6 @@ export function groundedIn(
     return false;
   });
 }
+
+/** Shared with product lookup: the same words and plural forms as grounding. */
+export { words as normalizedWords, forms as wordForms };

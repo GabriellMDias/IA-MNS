@@ -6,6 +6,8 @@ This policy owns privileged operational access. [Authentication](authentication.
 
 Production is a separate trust boundary from local development, CI, tests, staging, and previews. Routine development and maintenance should work through local/synthetic environments and sanitized observability without broad production access. Human access requires an operational purpose and the minimum capability for the necessary time.
 
+The owner's explicit [ERP Discovery decision](erp-database-access.md) authorizes read-only inspection through the existing Sankhya/VRMaster administrators, without a third account. A development application configuration does not prove the target ERP is non-production. This scoped exception preserves confidentiality and requires separate explicit owner authorization for ERP mutations; it does not grant broader operational or deployment authority.
+
 Provider IAM, concrete operational roles, just-in-time access, approval/break-glass workflows, bastions/private networking, device trust, and session recording remain deployment-specific decisions. [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) governs accepted CI/supply-chain direction; it does not mean production access tooling is deployed. Do not invent provider commands or begin deployment work to complete this policy.
 
 ## Identities, privilege, and access request
@@ -38,7 +40,7 @@ Shell/container/filesystem access can expose mounted credentials, private data, 
 
 ## Manual data changes
 
-Direct production writes bypass validation, domain rules, authorization, audit, and delivery behavior. Prefer application-aware admin operations, reviewed repair scripts, controlled migrations, or reconciliation. Separate runtime, migration, human-read, and administrative database identities; elevated migration credentials must not become normal runtime credentials.
+Direct production writes bypass validation, domain rules, authorization, audit, and delivery behavior. Prefer application-aware admin operations, reviewed repair scripts, controlled migrations, or reconciliation. Separate runtime and elevated database identities; elevated migration credentials must not become normal runtime credentials. For external Sankhya and VRMaster access, the owner selected exactly one runtime reader and the existing administrator also used for read-only Discovery, with no third human-read account; [ERP database access](erp-database-access.md) governs that explicit exception. IA-MNS application-owned PostgreSQL runtime/migration separation remains unchanged.
 
 A repair must identify the violated invariant, affected records, desired canonical state, why ordinary workflow is insufficient, required side effects, concurrency handling, idempotency, verification, failure handling, and real rollback or forward recovery. Significant/reusable scripts should live in the repository for review/testing; retain the exact significant one-off procedure in an appropriate script, incident record, migration, or runbook. Repair tooling must not become a permanent unrestricted admin interface.
 

@@ -30,6 +30,8 @@ Scope CI secrets to required jobs and workflow trust. Contributed or forked code
 
 ## Delivery, initialization, and failure
 
+External ERP administrative credentials follow [ERP database access](erp-database-access.md): retain the existing administrator for Administration/Discovery, isolate its four `*_FULLACESS` keys in ignored `.env.discovery.local` or the owner-selected `.env.discovery`, and deliver them explicitly only to development inspection tools. Never deliver them to runtime, client builds or deployment. Finishing an investigation is not a reason to remove the account or rotate a preserved credential.
+
 Acquire credentials near trusted application composition and inject only what each infrastructure adapter needs. Domain code should not fetch arbitrary environment/secret values. Avoid global unrestricted helpers and passing full secret-bearing configuration objects. Use established cryptographically secure generation with adequate entropy; distinct signing/encryption/authentication purposes should normally use separate keys. Password storage follows [authentication](authentication.md#password-storage).
 
 Validate required secret availability and safe structural format during initialization; diagnostics may name a missing configuration key but never show its value. Fail startup, remain unready, or explicitly degrade only the affected optional capability according to the runtime design. A required secret must not silently become optional. Reject insecure fallback/default/placeholder credentials in production; isolated synthetic development defaults must not become production behavior.

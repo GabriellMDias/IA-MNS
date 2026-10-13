@@ -67,11 +67,32 @@ export const interpretationSchema = Type.Object(
   },
   object,
 );
-export type Interpretation = Static<typeof interpretationSchema>;
+export const semanticSalesInterpretationSchema = Type.Object(
+  {
+    ...interpretationSchema.properties,
+    productMode: nullable(
+      Type.Union([
+        Type.Literal("resolve"),
+        Type.Literal("reuse"),
+        Type.Literal("literal"),
+        Type.Literal("all"),
+      ]),
+    ),
+  },
+  object,
+);
+export type Interpretation = Static<typeof interpretationSchema> & {
+  productMode?: "resolve" | "reuse" | "literal" | "all" | null;
+};
 
 /** Semantic consistency beyond the schema; inconsistent output is not trusted. */
 export function interpretationIssues(value: Interpretation): string[] {
   const issues: string[] = [];
+  if (
+    (value.productMode === "resolve" || value.productMode === "reuse") &&
+    value.filters.length
+  )
+    issues.push("semantic_and_literal_filters");
   if ((value.decision === "clarify") !== (value.clarification !== null))
     issues.push("clarification_mismatch");
   if ((value.decision === "unsupported") !== (value.unsupportedReason !== null))

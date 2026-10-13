@@ -12,17 +12,14 @@ Each query starts from the same `params` block. Replace the dates (inclusive) an
 SHOW default_transaction_read_only;  -- on
 SHOW statement_timeout;              -- 30s
 SELECT has_schema_privilege('public', 'CREATE') AS can_create,
-       has_table_privilege('public.venda', 'INSERT, UPDATE, DELETE, TRUNCATE') AS can_write;  -- false, false
+       has_table_privilege('public.venda', 'INSERT, UPDATE, DELETE, TRUNCATE') AS can_write;  -- current environment: true from PUBLIC, false for writes
 SELECT table_schema, table_name, privilege_type
 FROM information_schema.role_table_grants
 WHERE grantee = 'ia_mns'
-ORDER BY 1, 2, 3;  -- SELECT only, on the nine reference tables
-BEGIN;
-CREATE TABLE public.ia_mns_probe (id integer);  -- must fail
-ROLLBACK;
+ORDER BY 1, 2, 3;  -- table SELECT on nine references; see column grants separately
 ```
 
-`default_transaction_read_only` is a session default the account can change; the grants are the actual protection.
+`default_transaction_read_only` is a session default the account can change; inspect effective grants rather than probing DDL/DML. Current metadata shows inherited PUBLIC CREATE/TEMP permissions; [PH-30](human-actions.md#ph-30) records the owner instruction to preserve PUBLIC pending coordinated review. No real CREATE/write probe is authorized by this reconciliation guide. The three additional registration grants are column-level and do not appear as whole-table SELECT.
 
 ## 2. Same sales as the official query
 

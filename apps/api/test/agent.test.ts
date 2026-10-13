@@ -459,9 +459,13 @@ it("restores validated sales filters independently of social turns, emits real s
       );
       await completed(repository, actor.id, conversation.id);
       const restored = vi.mocked(planner.interpret).mock.calls[2][0].state;
+      const answered = first.turns[0].reply?.result;
       expect(restored.active?.query).toEqual(
-        first.turns[0].reply?.result?.sections[0].result?.query,
+        answered && !("kind" in answered)
+          ? answered.sections[0].result?.query
+          : undefined,
       );
+      expect(answered && !("kind" in answered)).toBe(true);
       expect(restored.transcript.map((item) => item.user)).toEqual([
         "Vendas de maçã",
       ]);

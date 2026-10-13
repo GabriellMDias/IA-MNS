@@ -1,41 +1,21 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import MarkdownIt from "markdown-it";
 import GithubSlugger from "github-slugger";
+import { markdownFiles } from "./docs-files.ts";
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../..",
 );
 const markdown = new MarkdownIt({ html: false, linkify: false });
-const ignoredDirectories = new Set([
-  ".git",
-  "node_modules",
-  "coverage",
-  "dist",
-  "playwright-report",
-  "test-results",
-]);
 const adrName = /^(\d{4})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 // The Sankhya add-on is a Gradle project with Sankhya-supplied template text
 // (ADR-0026); only its IA-MNS guide and instructions are repository documents.
 const sankhyaAddon = "apps/sankhya-addon/";
 const sankhyaAddonDocuments = new Set(["README.md", "AGENTS.md"]);
 const errors: string[] = [];
-
-async function markdownFiles(directory: string): Promise<string[]> {
-  const found: string[] = [];
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory() && !ignoredDirectories.has(entry.name)) {
-      found.push(...(await markdownFiles(absolute)));
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
-      found.push(absolute);
-    }
-  }
-  return found;
-}
 
 function repositoryPath(absolute: string): string {
   return path.relative(root, absolute).replaceAll(path.sep, "/");

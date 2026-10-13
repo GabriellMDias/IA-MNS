@@ -1,5 +1,12 @@
 import type { ErrorDefinition } from "../../errors.js";
 export const agentErrors = {
+  AGENT_ATTACHMENT_INVALID: {
+    status: 400,
+    category: "validation",
+    retryable: false,
+    message:
+      "The attachment is unsupported, restricted, malformed or exceeds the allowed limits.",
+  },
   AGENT_CONVERSATION_ARCHIVED: {
     status: 409,
     category: "conflict",

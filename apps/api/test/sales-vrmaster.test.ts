@@ -14,6 +14,7 @@ import {
   type VrmasterConnection,
 } from "../src/features/sales/vrmaster.js";
 import { vrmasterAggregateSql } from "../src/features/sales/vrmaster-query.js";
+import type { SalesProductScope } from "../src/features/sales/product-scope.js";
 
 // A synthetic VRMaster with only the reference SQL's tables and columns. The
 // data exercises every join of the reference: sales outside its fiscal or
@@ -136,6 +137,71 @@ afterAll(async () => {
 });
 
 describe("VRMaster sales reader", () => {
+  it("reads multiple metrics grouped by month and product through one bounded plan", async () => {
+    const results = await reader.readMany!(
+      [
+        query({
+          startDate: "2026-07-01",
+          groupBy: "month_product",
+          productSearch: "maçã",
+        }),
+        query({
+          startDate: "2026-07-01",
+          groupBy: "month_product",
+          productSearch: "maçã",
+          metric: "quantity",
+        }),
+      ],
+      signal(),
+    );
+    expect(
+      results[0].current.rows.map((row) => [
+        row.period,
+        row.product,
+        row.value,
+      ]),
+    ).toEqual([
+      ["2026-07", "1 - MAÇÃ GALA", "5.00"],
+      ["2026-08", "1 - MAÇÃ GALA", "10.00"],
+      ["2026-09", "1 - MAÇÃ GALA", "0.30"],
+      ["2026-09", "3 - maca fuji  kg", "15.55"],
+    ]);
+    expect(
+      results[1].current.rows.map((row) => [row.period, row.unit, row.value]),
+    ).toEqual([
+      ["2026-07", "EMBALAGEM:1", "1.000"],
+      ["2026-08", "EMBALAGEM:1", "1.000"],
+      ["2026-09", "EMBALAGEM:1", "5.000"],
+      ["2026-09", "EMBALAGEM:4", "1.500"],
+    ]);
+    expect(results[1].current.products).toEqual(results[0].current.products);
+  });
+  it("does not truncate semantic totals when more than 100 sold products match", async () => {
+    await admin.query(`INSERT INTO produto SELECT n,'SYNTHETIC BULK '||n,1,10 FROM generate_series(1000,1204) n;
+      INSERT INTO produtoaliquota SELECT n,35,1 FROM generate_series(1000,1204) n;
+      INSERT INTO venda (id,id_produto,data,quantidade,id_loja,valortotal) SELECT n,n,'2026-06-15',1,1,1 FROM generate_series(1000,1204) n;`);
+    const scope: SalesProductScope = {
+      source: "vrmaster",
+      catalogVersion: "synthetic",
+      description: "Synthetic complete scope",
+      keysSql: "SELECT p.id FROM public.produto p WHERE p.id >= $5::integer",
+      values: [1000],
+    };
+    try {
+      const { current } = await reader.read(
+        query({ startDate: "2026-06-01", endDate: "2026-06-30" }),
+        signal(),
+        scope,
+      );
+      expect(current.rows[0].value).toBe("205.00");
+      expect(current.products).toHaveLength(100);
+      expect(current.productsTruncated).toBe(true);
+    } finally {
+      await admin.query(
+        "DELETE FROM venda WHERE id BETWEEN 1000 AND 1204; DELETE FROM produtoaliquota WHERE id_produto BETWEEN 1000 AND 1204; DELETE FROM produto WHERE id BETWEEN 1000 AND 1204;",
+      );
+    }
+  });
   it("totals the period with the reference joins and inclusive dates", async () => {
     const { current, previous } = await reader.read(query({}), signal());
     // 0.10 + 0.20 + 15.55 + 20.00 + 9.00 + 7.00: excludes the 31 Aug and

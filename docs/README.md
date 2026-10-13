@@ -16,7 +16,9 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | Task | Authoritative policy |
 | --- | --- |
 | Understand IA-MNS as a corporate agent and extend its capability registry | [Corporate agent](domains/corporate-agent.md), [sales capability](domains/sales-chat.md) |
+| Change conversational autonomy, evidence reuse, semantic tools, attachments or presentation preferences | [Conversational autonomy](architecture/conversational-autonomy.md), [original proposal](project/agent-autonomy-proposal.md) |
 | Change how messages are interpreted, conversation state, the analytical plan, model calls or AI tracing | [AI interpretation](architecture/ai-interpretation.md), [ADR-0024](adr/0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md) |
+| Identify products through verified ERP-specific filters; change a semantic catalog, relationship or adapter | [Product lookup](domains/product-lookup.md), [Sankhya dictionary and filters](domains/sankhya-product-lookup.md), [semantic product resolution](architecture/semantic-product-resolution.md), [ADR-0032](adr/0032-resolve-product-selections-through-a-verified-semantic-catalog.md) |
 | Evaluate AI behavior, add regression cases, compare prompts or models, generate or simulate scenarios | [AI evaluation](architecture/ai-evaluation.md) |
 | Sign-in, Persons, external links (PDT Connect, Sankhya), embedded surfaces, permissions and administration | [Identity](domains/identity.md), [ADR-0022](adr/0022-own-the-ia-mns-identity-with-verified-external-links.md), [ADR-0023](adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) |
 | Change the Sankhya Om add-on that hosts IA-MNS inside the Om                                               | [Sankhya add-on guide](../apps/sankhya-addon/README.md), [add-on instructions](../apps/sankhya-addon/AGENTS.md), [application boundaries](architecture/application-boundaries.md#sankhya-om-add-on), [ADR-0026](adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md) |
@@ -76,9 +78,12 @@ Choose the route relevant to the change, then use the policy's headings and sour
 
 ## Security and operations
 
+ERP runtime and administrative Discovery access: [ERP database access](security/erp-database-access.md).
+
 | Task | Authoritative policy |
 | --- | --- |
 | Classify, expose, copy, or export data | [Data classification](security/data-classification.md) |
+| Review OpenAI business-data transmission, provider controls and personal-data gates | [AI data processing](security/ai-data-processing.md) |
 | Capture telemetry fields or payloads | [Telemetry redaction](security/telemetry-redaction.md) |
 | Introduce, deliver, rotate, or revoke credentials | [Secrets management](security/secrets-management.md) |
 | Verify identity or manage authentication state | [Authentication](security/authentication.md) |

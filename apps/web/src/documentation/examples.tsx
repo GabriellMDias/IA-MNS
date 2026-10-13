@@ -1,12 +1,30 @@
 import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConversationMaterials } from "../features/agent/materials.js";
+import "../features/agent/agent.css";
 import { ErrorNotice } from "../components.js";
 import { ApiFailure } from "../api-client.js";
 import { SalesAnswer, SalesResults } from "../features/sales/results.js";
 import "../features/sales/sales.css";
+import { ProductAnswer, ProductOptions } from "../features/products/results.js";
+import "../features/products/products.css";
 
 export function Example({ id }: { id: string }) {
   const [message, setMessage] = useState("");
+  const [materialClient] = useState(() => new QueryClient());
   switch (id) {
+    case "agent-materials-disabled":
+      return (
+        <QueryClientProvider client={materialClient}>
+          <ConversationMaterials
+            token={null}
+            source="sankhya"
+            attachments={[]}
+            disabled={true}
+            onCreated={async () => {}}
+          />
+        </QueryClientProvider>
+      );
     case "sales-monthly-results":
       return (
         <SalesResults
@@ -110,6 +128,70 @@ export function Example({ id }: { id: string }) {
             ],
           }}
         />
+      );
+    case "product-answer-category":
+      return (
+        <ProductAnswer
+          answer={{
+            kind: "products",
+            source: "vrmaster",
+            catalogVersion: "example/2026-10-11.1",
+            total: 2,
+            products: [
+              {
+                code: "101",
+                description: "FRUTA EXEMPLO A KG",
+                classification: "HORTIFRUTI › FRUTAS › FRUTA EXEMPLO › A",
+              },
+              {
+                code: "102",
+                description: "FRUTA EXEMPLO B KG",
+                classification: "HORTIFRUTI › FRUTAS › FRUTA EXEMPLO › B",
+              },
+            ],
+            criteria: [
+              {
+                dimension: "category",
+                title: "classificação mercadológica",
+                mode: "include",
+                text: "fruta exemplo",
+                values: ["HORTIFRUTI › FRUTAS › FRUTA EXEMPLO"],
+                excluded: ["HORTIFRUTI › FRUTAS › FRUTA EXEMPLO › DESIDRATADA"],
+                interpretation:
+                  "Produtos classificados nos níveis do mercadológico escolhidos, incluindo os níveis abaixo deles.",
+              },
+            ],
+            sections: [{ label: "HORTIFRUTI", count: 2 }],
+            notes: ["Synthetic component preview; no ERP data or request."],
+          }}
+        />
+      );
+    case "product-options-choice":
+      return (
+        <div className="docs-preview">
+          <ProductOptions
+            options={{
+              kind: "product_options",
+              source: "vrmaster",
+              title: "classificação mercadológica",
+              text: "fruta exemplo",
+              options: [
+                { number: 1, label: "HORTIFRUTI › FRUTAS › FRUTA EXEMPLO" },
+                {
+                  number: 2,
+                  label:
+                    "todos os produtos com “fruta exemplo” na descrição (7)",
+                },
+              ],
+            }}
+            onChoose={(number) =>
+              setMessage(
+                `Demonstration option ${number} selected; no request was made.`,
+              )
+            }
+          />
+          {message && <p role="status">{message}</p>}
+        </div>
       );
     case "unavailable-reload":
       return (

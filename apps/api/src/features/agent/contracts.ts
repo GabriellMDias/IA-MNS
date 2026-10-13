@@ -2,10 +2,20 @@ import { Type, type Static } from "typebox";
 import type { ApiOperation } from "../../module.js";
 import { errorEnvelopeSchema } from "../../errors.js";
 import {
+  attachmentMetadataSchema,
+  uploadAttachmentSchema,
+} from "./attachments.js";
+import { presentationPreferencesSchema } from "./preferences.js";
+import {
   resultSchema,
   salesAnswerSchema,
+  salesAnalysisSchema,
   sourceSelectionSchema,
 } from "../sales/contracts.js";
+import {
+  productAnswerSchema,
+  productOptionsSchema,
+} from "../products/contracts.js";
 const object = { additionalProperties: false };
 const textOrNull = Type.Union([Type.String(), Type.Null()]);
 const replyKindSchema = Type.Union([
@@ -18,17 +28,59 @@ const replyMessageSchema = Type.String({ maxLength: 10000 });
 const suggestionsSchema = Type.Array(Type.String({ maxLength: 2000 }), {
   maxItems: 3,
 });
+const evidenceResultSchema = Type.Union([
+  salesAnswerSchema,
+  salesAnalysisSchema,
+  productAnswerSchema,
+  productOptionsSchema,
+  Type.Null(),
+]);
+const dependenciesSchema = Type.Array(Type.String({ maxLength: 100 }), {
+  maxItems: 20,
+  uniqueItems: true,
+});
 export const agentReplySchema = Type.Object(
   {
     kind: replyKindSchema,
     message: replyMessageSchema,
     capabilityId: textOrNull,
-    result: Type.Union([salesAnswerSchema, Type.Null()]),
+    result: evidenceResultSchema,
     suggestions: suggestionsSchema,
+    requiredPermissions: Type.Optional(dependenciesSchema),
+    displayResult: Type.Optional(Type.Boolean()),
+    evidenceRefs: Type.Optional(
+      Type.Array(Type.String({ maxLength: 100 }), {
+        maxItems: 20,
+        uniqueItems: true,
+      }),
+    ),
+    attachmentRefs: Type.Optional(
+      Type.Array(Type.String({ format: "uuid" }), {
+        maxItems: 4,
+        uniqueItems: true,
+      }),
+    ),
+    evidenceSnapshots: Type.Optional(
+      Type.Array(
+        Type.Object(
+          {
+            id: Type.String({ maxLength: 100 }),
+            capabilityId: textOrNull,
+            requiredPermissions: dependenciesSchema,
+            result: evidenceResultSchema,
+          },
+          object,
+        ),
+        { maxItems: 6 },
+      ),
+    ),
   },
   object,
 );
-/** Version 2: sales results are per-source answers. */
+/**
+ * Version 2: sales results are per-source answers. Product answers and
+ * options were added to the same version without changing earlier replies.
+ */
 export const storedReplySchema = Type.Object(
   { version: Type.Literal(2), payload: agentReplySchema },
   object,
@@ -59,6 +111,8 @@ export const eventSchema = Type.Object(
       Type.Literal("thinking"),
       Type.Literal("interpreting_sales"),
       Type.Literal("querying_sales"),
+      Type.Literal("interpreting_products"),
+      Type.Literal("querying_products"),
       Type.Literal("organizing"),
     ]),
     message: Type.String(),
@@ -103,6 +157,10 @@ export const detailSchema = Type.Object(
     conversation: conversationSchema,
     turns: Type.Array(turnSchema, { maxItems: 40 }),
     olderThan: Type.Union([Type.Integer({ minimum: 1 }), Type.Null()]),
+    attachments: Type.Optional(
+      Type.Array(attachmentMetadataSchema, { maxItems: 4 }),
+    ),
+    preferences: Type.Optional(presentationPreferencesSchema),
   },
   object,
 );
@@ -304,7 +362,51 @@ export const submitTurnOperation = operation(
     response: { 202: turnSchema, ...errors },
   },
 );
+export const uploadAttachmentOperation = operation(
+  "POST",
+  "/agent/conversations/:conversationId/attachments",
+  "uploadAgentAttachment",
+  "Store at most four owner-classified operational text/CSV or PNG/JPEG attachments in an inactive conversation. No provider transmission occurs until the agent reads one for a stated purpose. Reuse the immutable id for acceptance recovery.",
+  {
+    params,
+    body: uploadAttachmentSchema,
+    response: { 200: attachmentMetadataSchema, ...errors },
+  },
+);
+export const deleteAttachmentOperation = operation(
+  "DELETE",
+  "/agent/conversations/:conversationId/attachments/:attachmentId",
+  "deleteAgentAttachment",
+  "Delete an owned inactive conversation attachment and invalidate replies derived from it. Does not erase provider retention or backup copies.",
+  {
+    params: Type.Object(
+      {
+        conversationId: Type.String({ format: "uuid" }),
+        attachmentId: Type.String({ format: "uuid" }),
+      },
+      object,
+    ),
+    response: {
+      200: Type.Object({ deleted: Type.Literal(true) }, object),
+      ...errors,
+    },
+  },
+);
+export const setPreferencesOperation = operation(
+  "PATCH",
+  "/agent/conversations/:conversationId/preferences",
+  "setAgentPreferences",
+  "Explicitly replace presentation preferences for this owned inactive conversation. Preferences never grant permissions or change business rules. Auto resets a choice.",
+  {
+    params,
+    body: presentationPreferencesSchema,
+    response: { 200: presentationPreferencesSchema, ...errors },
+  },
+);
 export const agentOperations = [
+  uploadAttachmentOperation,
+  deleteAttachmentOperation,
+  setPreferencesOperation,
   agentStatusOperation,
   createConversationOperation,
   listConversationsOperation,

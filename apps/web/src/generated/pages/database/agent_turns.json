@@ -72,7 +72,7 @@
       "Nullable": "yes",
       "Default": "—",
       "Classification": "CONFIDENTIAL",
-      "Meaning": "Version 2 envelope containing the application-authored reply and a bounded result snapshot with one section per queried sales source; version 1 envelopes (one Sankhya result) are upgraded when read. Not current ERP truth and never sent back to OpenAI as financial data.",
+      "Meaning": "Version 2 envelope containing a server-validated reply and a bounded result snapshot with one section per queried sales source; version 1 envelopes (one Sankhya result) are upgraded when read. Not current ERP truth; authorized minimized evidence can be sent to OpenAI under the AI data-processing policy. Additive fields retain permission dependencies, original snapshots, attachment references and result-card visibility.",
       "Null meaning": "Absent in the lifecycle states described in the field meaning.",
       "Unit": "—"
     },

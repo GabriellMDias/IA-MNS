@@ -1,10 +1,11 @@
 import type { SalesQuery } from "./domain.js";
-import { productPhrase, productPhrasePattern } from "./product-match.js";
-
-// Upper- and lowercase accented letters are translated before upper(), so the
-// match does not depend on the database's ctype for non-ASCII letters.
-const accented = "ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç";
-const plain = "AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc";
+import type { SalesProductScope } from "./product-scope.js";
+import {
+  accentedLetters as accented,
+  plainLetters as plain,
+  productPhrase,
+  productPhrasePattern,
+} from "./product-match.js";
 
 /**
  * The owner's VRMaster sales reference (PH-18) reduced to the columns IA-MNS
@@ -56,13 +57,21 @@ export function vrmasterParameters(query: SalesQuery) {
 const productLabel =
   "base.id_produto::text || ' - ' || COALESCE(NULLIF(btrim(base.produto), ''), 'sem descrição')";
 
-export function vrmasterAggregateSql(query: SalesQuery): string {
+export function vrmasterAggregateSql(
+  query: SalesQuery,
+  products?: SalesProductScope,
+): string {
   if (query.metric === "weight")
     throw new Error("VRMaster has no reviewed weight measure");
   // These fragments come only from validated enums, never model/user text.
   const period =
-    query.groupBy === "month" ? "to_char(base.data, 'YYYY-MM')" : "'total'";
-  const product = query.groupBy === "product" ? productLabel : "NULL::text";
+    query.groupBy === "month" || query.groupBy === "month_product"
+      ? "to_char(base.data, 'YYYY-MM')"
+      : "'total'";
+  const product =
+    query.groupBy === "product" || query.groupBy === "month_product"
+      ? productLabel
+      : "NULL::text";
   const unit =
     query.metric === "net_value"
       ? "'BRL'"
@@ -71,7 +80,7 @@ export function vrmasterAggregateSql(query: SalesQuery): string {
     query.metric === "net_value"
       ? "base.valortotal::numeric"
       : "base.quantidade::numeric";
-  return `${vrmasterSalesCte}
+  return `${vrmasterCte(products)}
 SELECT ${period} AS period, ${product} AS product, ${unit} AS unit,
   COALESCE(SUM(${measure}), 0)::text AS value
 FROM base
@@ -87,3 +96,23 @@ SELECT DISTINCT base.id_produto::text AS code,
 FROM base
 ORDER BY 1
 LIMIT 101`;
+
+function vrmasterCte(products?: SalesProductScope): string {
+  if (!products) return vrmasterSalesCte;
+  if (products.source !== "vrmaster")
+    throw new Error("Product source mismatch");
+  if (vrmasterSalesCte.split("WHERE venda.data").length !== 2)
+    throw new Error("Sales reference product boundary changed");
+  return vrmasterSalesCte.replace(
+    "WHERE venda.data",
+    `WHERE produto.id IN (${products.keysSql}) AND venda.data`,
+  );
+}
+
+export function vrmasterMatchingProductsSql(
+  products?: SalesProductScope,
+): string {
+  return products
+    ? vrmasterProductsSql.replace(vrmasterSalesCte, vrmasterCte(products))
+    : vrmasterProductsSql;
+}

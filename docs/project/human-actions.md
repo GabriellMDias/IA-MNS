@@ -6,7 +6,7 @@
 
 This checklist records IA-MNS's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.
 
-IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), the terms for publishing the Sankhya add-on template (PH-17), and the production deployment decisions approved on 2026-10-07: proxy topology and hop protection, a production OpenAI key, the remaining operations, and Oracle transit protection (PH-22 to PH-25). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.
+IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), the terms for publishing the Sankhya add-on template (PH-17), and the production deployment decisions approved on 2026-10-07: proxy topology and hop protection, a production OpenAI key, the remaining operations, and Oracle transit protection (PH-22 to PH-25), the column grants and business confirmations that refine product lookup (PH-27, PH-28), and the completed isolation of existing administrative Discovery credentials (PH-29), and inherited PostgreSQL PUBLIC DDL privileges awaiting coordinated review (PH-30). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.
 
 ## Maintaining this checklist
 
@@ -112,14 +112,14 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 
 ## PH-08
 
-- [ ] **Supply read-only Sankhya configuration and reconcile live sales results.**
+- [ ] **Confirm remaining Sankhya business units and complete reconciliation acceptance.**
 
-**Status:** blocked. **Owner:** project owner and ERP DBA.
-**Dependency / trigger:** [PJ-06](implementation-plan.md#current-work); the owner explicitly reserved credential entry.
-**Request and reason:** Credentials are present and real queries now execute, but the supplied account has seven broad write privileges. Provide a dedicated CREATE SESSION / SELECT-only Oracle reader; do not grant ANY TABLE, DML, DDL, or procedure execution. Preserve table/synonym resolution for TGFCAB, TGFTOP, TGFVEN, TGFITE, TGFPAR, TGFPRO, TGFGRU, TSIEMP, TCSPRJ, TGFVAR, AD_MOTIVODEV, and AD_RESULTADO_LOTE. Confirm BRL currency and the ERP's weight unit. No grants or other ERP state were changed during verification. For owner association of real Sankhya users in IA-MNS administration (PJ-15), also create a read-only view over TSIUSU exposing only `CODUSU`, `NOMEUSU`, `NOMEUSUCPLT`, `EMAIL` and `DTLIMACESSO` (never password or document columns) and grant SELECT on that view to the same reader; if the ERP names these columns differently, alias them to these names in the view.
-**Configuration:** `SANKHYA_DB_USER`, `SANKHYA_DB_PASSWORD`, `SANKHYA_DB_CONNECT_STRING`; optional `SANKHYA_ORACLE_CLIENT_LIB_DIR` only if installed Oracle Client libraries are needed. The user directory additionally needs `SANKHYA_IDENTITY_ISSUER` and `SANKHYA_DIRECTORY_VIEW` (the view name, optionally `SCHEMA.VIEW`); without the view the directory stays disabled and owners associate Sankhya accounts through proof-based link invitations once Sankhya sign-in exists. `IA_MNS_LOCAL_ACCESS=true` is limited to private local development; shared access instead needs the existing issuer/audience/JWKS settings and sales:read scope.
-**Verification:** Run the acceptance examples and [reconciliation cases](../domains/sales-chat.md#local-execution-and-external-verification), compare totals with the supplied SQL using equivalent full-day date bounds, and verify write grants are absent. Never test writes against the ERP.
-**Evidence / blocker:** On 2026-10-01, Oracle 12.1.0.2 connectivity and nine structured-query reconciliations succeeded in READ ONLY snapshots. Isolated Client 19.32 was checksum-verified and the ignored local library setting updated; Client 11.2/DPI-1050 and Thin/NJS-116 were incompatible. SESSION_PRIVS confirmed seven broad write privileges. Complete-record fetching showed an intermittent difference with small native fetch batches; database-side MINUS found no differences, and a complete bounded fetch matched all 46 fields. The adapter uses the bounded-fetch workaround; the precise legacy driver/server cause still needs DBA investigation. The later live-language acceptance and original-SQL reconciliation passed with the manually configured key. The DBA's dedicated reader account and the owner's confirmation of currency/weight units remain outstanding; no change was reported on 2026-10-03.
+**Status:** in progress (Runtime access completed). **Owner:** project owner and ERP business owner.
+**Dependency / trigger:** PJ-06 and PJ-41; preserve the owner-managed credentials.
+**Request and reason:** The existing `IA_MNS_RO` account now authenticates with `CREATE SESSION` and SELECT on the 24 required sales/product/dictionary tables, plus the limited user-directory view and private synonyms. No account/password or business-row changes were needed. The owner still must confirm BRL currency and the PESOLIQ weight unit, review the earlier legacy driver/fetch concern where relevant and finish real business acceptance. Do not label weight kilograms before confirmation.
+**Configuration:** Runtime `SANKHYA_DB_USER=IA_MNS_RO`, existing password/connect/client settings; `SANKHYA_DIRECTORY_VIEW=IA_MNS_USER_DIRECTORY` was added without changing other settings. The existing administrator remains in ignored `.env.discovery`; no third account. Restart an already running API to ingest the directory setting.
+**Verification:** [Runtime access verification](runtime-access-verification.md): all 24 tables readable; SELECT-only guard and metadata checks pass; 14 real product regression checks pass without AI calls; actual sales and directory adapters execute read-only SQL. Compare business reference totals and record owner confirmation separately. Never probe actual writes.
+**Evidence / blocker:** Owner-authorized grants/view/synonyms applied on 2026-10-11; zero pending statements on replanning. Raw TSIUSU, disabled metadata candidates, ANY/DML/DDL/procedure grants and grant option were excluded. Historical 2026-10-01 sales reconciliation, legacy Client 19.32 workaround and later live-language evidence remain in [sales documentation](../domains/sales-chat.md#local-execution-and-external-verification). Account provisioning no longer blocks Runtime; business confirmations remain open.
 
 ## PH-09
 
@@ -131,6 +131,8 @@ The Actions variable `DEPENDENCY_REVIEW_ENABLED` is `true`. Disabled: Dependabot
 **Configuration:** Existing ORION_DATABASE_URL and verifier settings; no new secret or provider is required for local operation. `IA_MNS_AI_TRACE` (non-secret: `off`, `metadata` or `content`).
 **Verification:** Approved lifecycle controls, recovery evidence and deployment-specific identity exist before sharing confidential history.
 **Evidence / blocker:** Local Docker volume, restricted runtime grants and explicit cascade deletion implemented on 2026-10-01; shared-operation policy remains intentionally undecided. On 2026-10-07 [PJ-33](implementation-plan.md#current-work) implemented production backups with conservative defaults that this decision replaces: 14 daily and 10 pre-deployment backups on the host, an age-encrypted external copy when a destination is configured, a weekly restore verification, and no automatic deletion of a database replaced by a restore ([backup runbook](../runbooks/production-backup-and-restore.md)). Retention, provider data policy and permitted operators are still undecided. On 2026-10-04 the IA-MNS identity (Persons, local accounts, PDT/Sankhya links, sessions, permissions, owner administration) was implemented under PJ-15 ([identity](../domains/identity.md)); retention of identity data, sessions and audit is part of this pending policy. Shared deployment has not been triggered.
+
+**Autonomy policy update (2026-10-12):** The owner approved necessary in-scope business data in OpenAI requests, subject to legal/corporate authority. [AI data processing](../security/ai-data-processing.md) implements that decision. PH-09 still covers retention/operators/production tracing; it is not a blanket block on nonpersonal operational analysis. Account controls, contracts and any additional personal-data categories remain PH-31.
 
 ## PH-10
 
@@ -276,14 +278,17 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 
 ## PH-19
 
-- [x] **Provide a dedicated read-only VRMaster PostgreSQL account for IA-MNS.**
+- [ ] **Provide a dedicated read-only VRMaster PostgreSQL account for IA-MNS.**
 
-**Status:** completed. **Owner:** project owner and VRMaster DBA.
+**Status:** changed (read access verified; effective DDL restriction pending PH-30). **Owner:** project owner and VRMaster DBA.
 **Dependency / trigger:** [PJ-28](implementation-plan.md#current-work); the owner chose a dedicated account on 2026-10-06. The account PDT Connect uses also runs DDL and must not be reused.
 **Request and reason:** Create a login role for IA-MNS with `CONNECT` on the VRMaster database, `USAGE` on the schemas of the reference SQL and `SELECT` only on its tables, with no ownership, DDL, DML, function execution beyond what the SQL needs, or membership in broader roles. Prefer `default_transaction_read_only = on` and a statement timeout on the role. Never send the password in chat or commit it; the owner places it in the ignored root `.env.local` (development) or the secret store.
 **Configuration:** `VRMASTER_DB_HOST`, `VRMASTER_DB_PORT`, `VRMASTER_DB_NAME`, `VRMASTER_DB_USER`, `VRMASTER_DB_PASSWORD` and `VRMASTER_DB_SSL_MODE` ([generated configuration reference](../generated/configuration/api.md), [setup](../setup.md#sales-chat)).
 **Verification:** The owner confirms the account and its limits. Connecting with it and confirming that `SELECT` works on the reference tables while writes, DDL and other tables are refused is part of [PH-20](#ph-20), because only the owner holds the password.
 **Evidence / blocker:** On 2026-10-07 the owner reported the account `ia_mns` with `CONNECT` on the VRMaster database, `USAGE` on its schema, `SELECT` only on the tables of the reference SQL (`venda`, `produto`, `loja`, `fornecedor`, `produtoaliquota`, `aliquota`, `mercadologico`, `centrocusto`, `comprador`), `default_transaction_read_only = on`, `statement_timeout = 30s` and no DDL or DML. IA-MNS has not connected with it; no password was requested or recorded. The same grants are reproduced in the adapter tests on synthetic PostgreSQL, where the transcribed SQL needs nothing more. On 2026-10-06 the VRMaster PostgreSQL port was reachable from the development machine; on 2026-10-07 the server answered the TLS request negatively ([PH-21](#ph-21)).
+
+
+**Current verified limitation:** PJ-41 connected with the existing reader on 2026-10-11, verified no privileged role attributes, memberships, owned tables or writes on existing public tables, and applied PH-27. Actual database/schema CREATE and TEMP are inherited from PUBLIC. The owner explicitly requires preserving PUBLIC; PH-30 tracks coordinated restriction. The earlier owner-reported absence of DDL was not an effective-ACL verification and is superseded by this live finding.
 
 ## PH-20
 
@@ -294,7 +299,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Request and reason:** Place the `VRMASTER_DB_*` settings of the [setup](../setup.md#sales-chat) in the ignored root `.env.local` (`VRMASTER_DB_SSL_MODE=disable` while [PH-21](#ph-21) is open) and restart the API. Connected as `ia_mns`, confirm that a write and a `CREATE` are refused. Then, with the queries of [VRMaster reconciliation](vrmaster-reconciliation.md), compare for the periods and products agreed with the owner the official dashboard query run with every store against the IA-MNS reference: total value and quantity per month, per product and per packaging type, an accented product phrase and a period boundary. Finally ask IA-MNS the same questions with `Pilar da Terra (VR Master)` and `Tudo` selected. Agents never receive the password.
 **Configuration:** `VRMASTER_DB_HOST`, `VRMASTER_DB_PORT`, `VRMASTER_DB_NAME`, `VRMASTER_DB_USER`, `VRMASTER_DB_PASSWORD`, `VRMASTER_DB_SSL_MODE` in the root `.env.local`.
 **Verification:** Every comparison returns no difference (or each difference is explained and corrected in the reference transcription), writes and DDL are refused, and the IA-MNS answers equal the reference aggregates. Record only equal/different results and row counts, never figures, hosts or credentials, because the repository is public.
-**Evidence / blocker:** Not started. The read-only queries are in [VRMaster reconciliation](vrmaster-reconciliation.md); on 2026-10-07 they ran without error on the synthetic VRMaster schema of the adapter tests, where the official and IA-MNS sales were identical.
+**Evidence / blocker:** Not started. The read-only queries are in [VRMaster reconciliation](vrmaster-reconciliation.md); on 2026-10-07 they ran without error on the synthetic VRMaster schema of the adapter tests, where the official and IA-MNS sales were identical. On 2026-10-11 ([PJ-35](implementation-plan.md#current-work)) IA-MNS connected to the real VRMaster as `ia_mns` with the owner's `.env.local`: `default_transaction_read_only = on`, SELECT privilege on exactly the nine reference tables. No write or `CREATE` was attempted, because the owner forbade any ERP change in that task; the sales reconciliation itself remains open.
 
 ## PH-21
 
@@ -305,7 +310,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Request and reason:** On 2026-10-07 the VRMaster PostgreSQL server answered the TLS request negatively, so IA-MNS can connect only with `VRMASTER_DB_SSL_MODE=disable`, which sends the `ia_mns` credentials and the sales results unencrypted on that network. Either enable TLS on the server with a certificate IA-MNS can verify (then use `verify-full`, the default), or record an explicit owner decision accepting unencrypted traffic on that network for a named environment.
 **Configuration:** `VRMASTER_DB_SSL_MODE`.
 **Verification:** The server accepts TLS and IA-MNS connects with `verify-full`, or the owner's dated acceptance with its scope is recorded here.
-**Evidence / blocker:** Not started. The probe sent only the PostgreSQL TLS request, without credentials.
+**Evidence / blocker:** Not started. The probe sent only the PostgreSQL TLS request, without credentials. Since 2026-10-11 product lookup ([PJ-35](implementation-plan.md#current-work)) uses the same connection, so product descriptions and classifications also travel unencrypted on that network until this is decided.
 
 ## PH-22
 
@@ -375,6 +380,61 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Configuration:** the five `/etc/ia-mns/*.env` files on the host; never in this repository.
 **Verification:** `ia-mns-deploy status` exits 0 on the host; the public origin serves the application through the proxy with HSTS and per-path framing; an owner signs in with a second factor; `verify-restore` succeeds; the external encrypted copy exists. Record dated, non-sensitive evidence here.
 **Evidence / blocker:** Not started; nothing has been installed on the host.
+
+## PH-27
+
+- [x] **Grant the VRMaster reader the columns product lookup needs for status, packaging and family.**
+
+**Status:** completed. **Owner:** project owner and VRMaster DBA.
+**Dependency / trigger:** PJ-35/PJ-36; owner explicitly authorized the minimum Runtime grants in PJ-41.
+**Request and reason:** Completed three column grants to existing `ia_mns`: `produtocomplemento` (id, id_produto, id_loja, id_situacaocadastro, descontinuado), `tipoembalagem` (id, descricao, descricaocompleta), and `familiaproduto` (id, descricao, id_situacaocadastro). No whole-table reads on these registrations, prices, costs, stock, writes, role changes or PUBLIC changes were granted.
+**Configuration:** no credentials/settings changed for VRMaster.
+**Verification:** Actual column privilege metadata, forbidden-column checks and `products:catalog`; replanning reports zero missing grants. PJ-36 must validate the three paths before exposure, independently of this completed account-access action.
+**Evidence / blocker:** Applied three statements in one PostgreSQL transaction on 2026-10-11 with owner authority. [Canonical template](../../apps/api/scripts/erp-access/vrmaster-runtime.sql) and [live evidence](runtime-access-verification.md). Catalog access metadata now reflects the grants; model instructions and available product behavior are unchanged.
+
+## PH-28
+
+- [ ] **Confirm the business meanings product lookup could not establish from data.**
+
+**Status:** pending (product lookup is usable; these refine it). **Owner:** project owner.
+**Dependency / trigger:** [PJ-35](implementation-plan.md#current-work).
+**Request and reason:** The [product lookup](../domains/product-lookup.md#limits-and-open-questions) records interpretations the data cannot decide: (1) cost centers are taken from the level-1 mercadológico section, so SECOS includes the sections named INATIVO and FEIRA INATIVO — confirm or name the sections to leave out; (2) the "fornecedor fabricante" column holds distributors and a placeholder — define what "fabricante" should mean, or keep it unavailable; (3) the operational meaning of the "pesável" flag, which fresh produce sold by KG does not carry; (4) "banana fruta" means the FLV › FRUTAS › BANANA products without chips and without raw materials — confirm this regression reference; (5) whether people with a PDT Connect or Sankhya link should receive `products:read` automatically (today only owners have it until granted).
+**Configuration:** for (5), the operational parameter of automatic grants after a catalog decision; otherwise none.
+**Verification:** Each answer is recorded here with its date; the catalog, its interpretations, the regression dataset and the permission policy follow in a reviewed change.
+**Evidence / blocker:** Not started.
+
+## PH-29
+
+- [x] **Isolate and maintain the existing ERP Administration/Discovery credentials.**
+
+**Status:** completed. **Owner:** project owner.
+**Dependency / trigger:** ADR-0033 and the owner's follow-up configuration in PJ-41.
+**Request and reason:** The owner supplied both existing administrative pairs in ignored root `.env.discovery` and removed VRMaster full-access entries from `.env.local`. Both Runtime identities are separately configured as `IA_MNS_RO` / `ia_mns`. Preserve the administrative accounts and credentials; no third account or automatic rotation.
+**Configuration:** Preserve all four `SANKHYA_DB_*_FULLACESS` / `VRMASTER_DB_*_FULLACESS` names. Tools prefer `.env.discovery.local` when present and otherwise read `.env.discovery`, without merging. Normal application loading never reads either file and excludes administrative keys before spawning.
+**Verification:** Key presence, distinct configured Runtime identities, Git ignore and successful separately authenticated admin/Runtime connections without printing values. Credential-boundary and file-selection tests retain production refusal, missing-pair failure and no runtime fallback.
+**Evidence / blocker:** Verified on 2026-10-11 with the owner-provided file. No credential value or account/password was altered; only the non-secret directory view setting was added to `.env.local`. Explicit owner authorization covered the separate provisioning tool, not ordinary Discovery. PUBLIC security remains PH-30.
+
+## PH-30
+
+- [ ] **Coordinate removal of inherited PostgreSQL DDL capabilities from the Runtime role.**
+
+**Status:** pending. **Owner:** project owner and VRMaster DBA.
+**Dependency / trigger:** PJ-41 live ACL audit; required before claiming effective strictly read-only Runtime access.
+**Request and reason:** `ia_mns` inherits CREATE on the connected database and public schema plus TEMPORARY from PUBLIC. A direct revoke from ia_mns cannot deny that inheritance. Restricting PUBLIC affects other ERP/PDT clients and requires a coordinated review of their actual needs, explicit replacement grants and scoped owner authorization. The owner explicitly selected preserving PUBLIC and recording this dependency in the current task; do not silently revoke global access.
+**Configuration:** database/schema ACLs; no credential or third-account change.
+**Verification:** Inspect effective database/schema privileges, role attributes/memberships and table/column ACLs. Verify the other clients' required operations separately after an authorized coordinated change. Never probe real writes or DDL as a test.
+**Evidence / blocker:** Before/after ACL inspection on 2026-10-11 confirms PUBLIC unchanged, Runtime table writes absent in public and the three CREATE/TEMP capabilities retained. `default_transaction_read_only=on`, 30-second statement limits and fixed read-only application SQL supplement controls but do not eliminate those capabilities. [Live evidence](runtime-access-verification.md).
+
+## PH-31
+
+- [ ] **Record corporate and legal prerequisites for additional personal-data categories and provider account claims.**
+
+**Status:** pending, category-scoped. **Owner:** project owner and corporate privacy/legal accountable person.
+**Dependency / trigger:** PJ-42 and [AI data processing](../security/ai-data-processing.md). Ordinary authorized operational sales/product analysis is allowed; only additional restricted categories remain blocked.
+**Request and reason:** Confirm controller/operator roles, applicable legal basis and necessity for each additional personal-data use, LGPD transparency/rights/retention, and the applicable ANPD international-transfer mechanism. Verify actual OpenAI project sharing, contractual/DPA/subprocessor terms, retention controls and any claimed residency. The product approval alone cannot establish those legal/account facts.
+**Configuration:** none changed by this task; do not claim ZDR or regional processing without account evidence.
+**Verification:** Dated corporate record of the applicable category, purpose, terms and account settings; a reviewed field contract and deny-path tests before enabling it.
+**Evidence / blocker:** Owner business-data scope approved on 2026-10-12. Official OpenAI data controls, LGPD and ANPD Resolution 19 checked on 2026-10-13; organization-specific contracts/settings were not inspected. Personal catalog values remain withheld from model evidence, and no individual customer/employee or sensitive-personal-data tool is exposed.
 
 ## New action template
 

@@ -48,7 +48,8 @@ export interface StructuredModel {
 }
 
 /** Why a provider exchange produced no trustworthy structured output. */
-export type ModelFailureReason = "provider" | "incomplete" | "invalid_output";
+export type ModelFailureReason =
+  "provider" | "incomplete" | "invalid_output" | "budget";
 
 export class ModelFailure extends Error {
   readonly reason: ModelFailureReason;

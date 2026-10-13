@@ -2,6 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-10-01
+**Superseded by:** [ADR-0035](0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md), only the fixed-response and figure-free conversational restrictions. Sales semantics, read-only execution and deterministic financial calculations remain accepted.
 **Partially superseded by:** [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md) replaces the sales-specific product identity and temporary conversation decision. Controlled sales execution and deterministic answers remain accepted.
 **Extended by:** [ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md): the model now reports a structured interpretation that the application merges, resolves and compiles into the same bounded query.
 

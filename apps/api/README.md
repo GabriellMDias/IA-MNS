@@ -1,5 +1,7 @@
 # API Runtime
 
+ERP runtime and development Discovery use separate credential delivery under [ERP access policy](../../docs/security/erp-database-access.md) and [setup](../../docs/setup.md#erp-discovery). Local commands exclude administrative keys before launching; only explicit Discovery tools read `.env.discovery.local`.
+
 [Setup](../../docs/setup.md) · [API principles](../../docs/api/principles.md) · [OpenAPI](../../docs/generated/api/openapi.json) · [Validation](../../docs/validation.md)
 
 The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma, and optional bearer access-token verification. Product capabilities are [modules](#modules) composed in [`src/modules.ts`](src/modules.ts). The [web application](../web/README.md) consumes the generated API contract through the workspace SDK package (`packages/sdk`). The API verifies access tokens; it does not implement login, passwords, refresh tokens, or provider-specific sessions.
@@ -19,10 +21,11 @@ The Fastify API runtime provides configuration, structured logging and tracing, 
 | Process smokes | [`scripts/smoke.mjs`](scripts/smoke.mjs) and module smokes in `scripts/smoke/` |
 | Structured-model port, OpenAI adapter and AI trace levels | [`src/ai/`](src/ai/model.ts) ([AI interpretation](../../docs/architecture/ai-interpretation.md)) |
 | AI evaluation datasets, harness, reports and CLI | [`evals/`](evals/cli.ts) ([AI evaluation](../../docs/architecture/ai-evaluation.md)) |
+| Shared product resolver and VR Master / Sankhya adapters | [`src/features/products/`](src/features/products/resolver.ts), [`scripts/products-catalog.ts`](scripts/products-catalog.ts), [`scripts/products-sankhya-sync.ts`](scripts/products-sankhya-sync.ts) ([semantic product resolution](../../docs/architecture/semantic-product-resolution.md)) |
 
 ## Modules
 
-IA-MNS composes the [identity module](src/features/identity/module.ts), the [corporate agent](src/features/agent/module.ts) and the [sales capability](src/features/sales/capability.ts). Identity owns Persons, local accounts, PDT Connect and Sankhya links, sessions, the access-token issuer, the grantable permission catalog declared in `src/modules.ts`, and `/identity` operations ([identity domain](../../docs/domains/identity.md)). The agent owns PostgreSQL conversations/turns, a registered-capability router, actual progress and `/agent` operations. Sales retains strict interpretation, the source orchestration, controlled read-only queries (Oracle for Sankhya, PostgreSQL for VRMaster) and deterministic calculations. Legacy `/sales` endpoints remain for first-MVP compatibility. [Agent architecture](../../docs/domains/corporate-agent.md), [sales semantics](../../docs/domains/sales-chat.md) and [local setup](../../docs/setup.md#corporate-agent-and-local-postgresql) are canonical. Production requires PostgreSQL, OpenAI and authentication; local availability remains explicit when dependencies are absent. The agent validates its required table projection before startup; no migration is applied by the runtime.
+IA-MNS composes the [identity module](src/features/identity/module.ts), the [corporate agent](src/features/agent/module.ts), the [sales capability](src/features/sales/capability.ts) and [product lookup](src/features/products/capability.ts), whose [module](src/features/products/module.ts) owns its error codes and has no routes of its own. Identity owns Persons, local accounts, PDT Connect and Sankhya links, sessions, the access-token issuer, the grantable permission catalog declared in `src/modules.ts`, and `/identity` operations ([identity domain](../../docs/domains/identity.md)). The agent owns PostgreSQL conversations/turns, a registered-capability router, actual progress and `/agent` operations. Sales retains strict interpretation, the source orchestration, controlled read-only queries (Oracle for Sankhya, PostgreSQL for VRMaster) and deterministic calculations. Product lookup owns the shared semantic resolver, VR Master PostgreSQL and Sankhya Oracle adapters ([semantic product resolution](../../docs/architecture/semantic-product-resolution.md)); it is offered with OpenAI and either configured ERP. Sankhya product execution additionally refuses privileged credentials ([scope and account requirements](../../docs/domains/sankhya-product-lookup.md)). Legacy `/sales` endpoints remain for first-MVP compatibility. [Agent architecture](../../docs/domains/corporate-agent.md), [sales semantics](../../docs/domains/sales-chat.md) and [local setup](../../docs/setup.md#corporate-agent-and-local-postgresql) are canonical. Production requires PostgreSQL, OpenAI and authentication; local availability remains explicit when dependencies are absent. The agent validates its required table projection before startup; no migration is applied by the runtime.
 
 A module is one cohesive API capability. It implements the `ApiModule` contract in [`src/module.ts`](src/module.ts): a name, an OpenAPI tag, its requirements (`database`, `authentication`), its executable operations, its public error codes, and an `activate` function that mounts routes once its requirements are configured. Shared runtime files never import a module; [`src/modules.ts`](src/modules.ts) is the only composition point, and dependency rules enforce that boundary.
 
@@ -45,7 +48,12 @@ From the repository root:
 | Generate ignored Prisma client | `pnpm -C apps/api db:generate` |
 | Apply committed migrations to the configured database | `pnpm -C apps/api db:migrate:deploy` |
 | Check API behavior/types | `pnpm -C apps/api test` and `pnpm -C apps/api typecheck` |
+| Evaluate conversational tools and evidence (synthetic; live provider opt-in) | `pnpm eval:conversation [--subject model]` |
 | Evaluate AI behavior (scripted by default; `--subject model` uses the live provider) | `pnpm eval run` |
+| Check the product semantic catalog against the live VR Master (read-only) | `pnpm -C apps/api products:catalog` |
+| Run the live product regression against the ignored local dataset | `pnpm -C apps/api products:regression` |
+| Synchronize bounded Sankhya dictionary/native metadata (read-only, local candidate) | `pnpm -C apps/api products:sankhya:sync [--check]` |
+| Compare Sankhya product filters with independent live SQL, optionally with OpenAI | `pnpm -C apps/api products:sankhya:regression [--model]` |
 | Emit/start API | `pnpm -C apps/api build`, then `pnpm -C apps/api start` |
 | Intentionally regenerate tracked API/database/configuration/error references | `pnpm -C apps/api references:write` |
 

@@ -1,6 +1,7 @@
 import { Decimal } from "decimal.js";
 import { SalesFailure } from "./errors.js";
 import { sourceCatalog, type SalesSource } from "./sources.js";
+import type { SalesProductSelection } from "./product-scope.js";
 
 Decimal.set({ precision: 50 });
 export type SalesQuery = Readonly<{
@@ -8,7 +9,7 @@ export type SalesQuery = Readonly<{
   startDate: string;
   endDate: string;
   metric: "net_value" | "quantity" | "weight";
-  groupBy: "month" | "product" | "total";
+  groupBy: "month" | "product" | "month_product" | "total";
   comparison: "none" | "previous_year" | "previous_period";
 }>;
 export type SalesRow = {
@@ -22,6 +23,7 @@ export type SalesData = {
   rows: SalesRow[];
   products: SalesProduct[];
   missingWeight: boolean;
+  productsTruncated?: boolean;
 };
 export type SalesResult = {
   query: SalesQuery;
@@ -35,6 +37,7 @@ export type SalesResult = {
   }[];
   comparison: { startDate: string; endDate: string; rows: SalesRow[] } | null;
   warnings: string[];
+  productSelection?: SalesProductSelection;
 };
 
 export function businessToday(now = new Date()): string {
@@ -70,7 +73,7 @@ export function validateQuery(query: SalesQuery, today: string): SalesQuery {
     query.startDate < "2000-01-01" ||
     query.endDate > today ||
     !["net_value", "quantity", "weight"].includes(query.metric) ||
-    !["total", "month", "product"].includes(query.groupBy) ||
+    !["total", "month", "product", "month_product"].includes(query.groupBy) ||
     !["none", "previous_year", "previous_period"].includes(query.comparison)
   )
     throw new SalesFailure("SALES_QUERY_INVALID");
@@ -193,6 +196,11 @@ export function assembleResult(
         : null,
     warnings: [
       semantics.basis,
+      ...(data.productsTruncated || previous?.productsTruncated
+        ? [
+            "A lista mostra até 100 produtos de cada período. Os totais incluem toda a seleção, sem limitar vendas à lista exibida.",
+          ]
+        : []),
       ...(previous && data.rows.length === 0
         ? [
             "Não houve vendas no período consultado; os dados anteriores pertencem somente ao período comparado.",

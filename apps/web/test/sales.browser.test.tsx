@@ -27,6 +27,28 @@ const comparative: SalesResult = {
     ],
   },
 };
+test("semantic sales show selection provenance instead of claiming all products", async () => {
+  const screen = await render(
+    <SalesResults
+      result={{
+        ...comparative,
+        query: { ...comparative.query, productSearch: null },
+        productSelection: {
+          source: "vrmaster",
+          catalogVersion: "synthetic",
+          description: "Categorias: FLV › FRUTAS › BANANA; sem CHIPS",
+        },
+      }}
+      source="vrmaster"
+    />,
+  );
+  await expect
+    .element(screen.getByText(/Produtos da seleção semântica/))
+    .toBeVisible();
+  await expect
+    .element(screen.getByText("Categorias: FLV › FRUTAS › BANANA; sem CHIPS"))
+    .toBeVisible();
+});
 test("prior-only sales remain inspectable when the current period is empty", async () => {
   const screen = await render(<SalesResults result={comparative} />);
   await screen.getByText("Período comparado: 01/07/2025 a 30/09/2025").click();

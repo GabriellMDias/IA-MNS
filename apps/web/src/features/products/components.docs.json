@@ -1,0 +1,58 @@
+{
+  "components": [
+    {
+      "name": "ProductAnswer",
+      "source": "apps/web/src/features/products/results.tsx",
+      "summary": "Presents the products a lookup found in the Pilar da Terra (VR Master) registration with how each criterion was understood.",
+      "props": [
+        {
+          "name": "answer",
+          "type": "ProductAnswer",
+          "meaning": "Generated SDK agent result: each criterion with the records or classification paths it resolved to, exclusions and the business rule of its relationship; counts per section, notes, the exact total and up to 200 products."
+        }
+      ],
+      "states": [
+        "Classification with exclusions",
+        "Several criteria combined",
+        "List shorter than the total",
+        "No products"
+      ],
+      "accessibility": "A group named by its level-2 source heading; criteria in a description list; a native captioned table with scoped headers that states when only the first products are listed.",
+      "usage": "Render only validated API results. Always show the interpretation beside the list: classification paths, exclusions and relationship rules are how a person checks what was selected.",
+      "examples": [
+        {
+          "id": "product-answer-category",
+          "label": "Category with an exclusion",
+          "description": "Synthetic classification paths and products; the preview makes no API, provider or ERP request."
+        }
+      ]
+    },
+    {
+      "name": "ProductOptions",
+      "source": "apps/web/src/features/products/results.tsx",
+      "summary": "Presents the numbered choices of a product clarification, such as two interpretations of a word or several matching buyers.",
+      "props": [
+        {
+          "name": "options",
+          "type": "ProductOptions",
+          "meaning": "Generated SDK agent result with the dimension, the asked words and numbered option labels."
+        },
+        {
+          "name": "onChoose",
+          "type": "(number: number) => void (optional)",
+          "meaning": "Sends the chosen number as the next message; absent for earlier turns, which show the options as text."
+        }
+      ],
+      "states": ["Choosable", "Historical"],
+      "accessibility": "A group named by its title; each choice is a native button whose text includes its number, so typing the number is equivalent.",
+      "usage": "Option labels can be personal data such as buyer names: they appear only in this result, never in the reply text that later turns send to the model.",
+      "examples": [
+        {
+          "id": "product-options-choice",
+          "label": "Two interpretations",
+          "description": "Synthetic choices; selecting one shows a local message and makes no request."
+        }
+      ]
+    }
+  ]
+}

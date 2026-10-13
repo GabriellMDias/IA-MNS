@@ -526,7 +526,32 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   await expect(
     admin.getByText("Consultas de vendas (Sankhya e VR Master)"),
   ).toBeVisible();
-  await expect(admin.getByText("não efetiva")).toBeVisible();
+  await expect(
+    admin
+      .getByRole("listitem")
+      .filter({ hasText: "Consultas de vendas (Sankhya e VR Master)" })
+      .getByText("não efetiva"),
+  ).toBeVisible();
+  // Product lookup is grantable but no provider grants it automatically.
+  await expect(
+    admin.getByText("Consulta de produtos (VR Master e Sankhya)"),
+  ).toBeVisible();
+  const productPermission = admin
+    .getByRole("listitem")
+    .filter({ hasText: "Consulta de produtos (VR Master e Sankhya)" });
+  await expect(productPermission.getByText("não efetiva")).toBeVisible();
+  // This server-owned controlled checkbox settles after the grant response.
+  await productPermission.getByRole("checkbox").click();
+  await expect(productPermission.getByRole("checkbox")).toBeChecked();
+  await expect(
+    productPermission.getByText("efetiva", { exact: true }),
+  ).toBeVisible();
+  await admin.reload();
+  await admin.getByRole("button", { name: /Pessoa do PDT/ }).click();
+  await expect(productPermission.getByRole("checkbox")).toBeChecked();
+  await productPermission.getByRole("checkbox").click();
+  await expect(productPermission.getByRole("checkbox")).not.toBeChecked();
+  await expect(productPermission.getByText("não efetiva")).toBeVisible();
   // Only the owner creates people, optionally with a local invitation and
   // proof-based link invitations; each invitation is a one-time link.
   await admin.getByLabel("Nome", { exact: true }).fill("Pessoa Convidada");

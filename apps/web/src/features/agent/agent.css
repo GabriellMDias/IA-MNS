@@ -436,6 +436,13 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.agent-materials { margin: 0.5rem 0; font-size: 0.85rem; }
+.agent-materials summary { cursor: pointer; }
+.agent-materials-content { display: grid; gap: 0.65rem; max-height: 40vh; overflow: auto; padding: 0.75rem 0; }
+.agent-materials-content label { display: block; margin: 0.4rem 0; }
+.agent-materials-content fieldset { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.agent-materials-content input, .agent-materials-content select { max-width: 100%; }
 .agent-suggestions {
   display: flex;
   flex-wrap: wrap;

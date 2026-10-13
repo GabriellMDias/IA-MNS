@@ -47,6 +47,52 @@ function answerFor(source: string) {
         : [section(source)],
   };
 }
+// Product lookup replies with fictional classification values.
+const productOptions = {
+  kind: "product_options",
+  source: "vrmaster",
+  title: "classificação mercadológica",
+  text: "fruta exemplo",
+  options: [
+    { number: 1, label: "HORTIFRUTI › FRUTAS › FRUTA EXEMPLO" },
+    {
+      number: 2,
+      label: "todos os produtos com “fruta exemplo” na descrição (5)",
+    },
+  ],
+};
+const productAnswer = {
+  kind: "products",
+  source: "vrmaster",
+  catalogVersion: "example/2026-10-11.1",
+  total: 2,
+  products: [
+    {
+      code: "101",
+      description: "FRUTA EXEMPLO A KG",
+      classification: "HORTIFRUTI › FRUTAS › FRUTA EXEMPLO › A",
+    },
+    {
+      code: "102",
+      description: "FRUTA EXEMPLO B KG",
+      classification: "HORTIFRUTI › FRUTAS › FRUTA EXEMPLO › B",
+    },
+  ],
+  criteria: [
+    {
+      dimension: "category",
+      title: "classificação mercadológica",
+      mode: "include",
+      text: "fruta exemplo",
+      values: ["HORTIFRUTI › FRUTAS › FRUTA EXEMPLO"],
+      excluded: [],
+      interpretation:
+        "Produtos classificados nos níveis do mercadológico escolhidos, incluindo os níveis abaixo deles.",
+    },
+  ],
+  sections: [{ label: "HORTIFRUTI", count: 2 }],
+  notes: ["A lista inclui produtos ativos e inativos."],
+};
 type Turn = {
   id: string;
   requestId: string;
@@ -209,15 +255,85 @@ async function fixture(
           },
         ];
       else if (polls === 2)
-        active.events.push({
-          stage: "querying_sales",
-          message: "Consultando as vendas…",
-          at: "2026-10-01T15:00:01Z",
-        });
+        active.events.push(
+          active.question.startsWith("Resuma")
+            ? {
+                stage: "organizing",
+                message: "Organizando a resposta…",
+                at: "2026-10-01T15:00:01Z",
+              }
+            : /produtos|^1$/.test(active.question)
+              ? {
+                  stage: "querying_products",
+                  message: "Consultando o cadastro de produtos…",
+                  at: "2026-10-01T15:00:01Z",
+                }
+              : {
+                  stage: "querying_sales",
+                  message: "Consultando as vendas…",
+                  at: "2026-10-01T15:00:01Z",
+                },
+        );
       else {
         active.state = options.fail ? "failed" : "completed";
         active.finishedAt = "2026-10-01T15:00:02Z";
         if (options.fail) active.failureCode = "SALES_PROVIDER_UNAVAILABLE";
+        else if (active.question.startsWith("Resuma"))
+          active.reply = {
+            kind: "answer",
+            capabilityId: "sales",
+            message:
+              "No período consultado, as vendas de maçã somaram R$ 300,30, conforme o resultado anterior.",
+            result: answerFor(active.source),
+            displayResult: false,
+            requiredPermissions: ["sales:read"],
+            suggestions: [],
+          };
+        else if (active.question.startsWith("Quais produtos"))
+          active.reply = {
+            kind: "clarification",
+            capabilityId: "products",
+            message:
+              "“fruta exemplo” pode significar produtos diferentes no cadastro. Qual destas opções você quer?",
+            result: productOptions,
+            suggestions: [],
+          };
+        else if (active.question === "1")
+          active.reply = {
+            kind: "answer",
+            capabilityId: "products",
+            message:
+              "Encontrei 2 produtos no cadastro do Pilar da Terra (VR Master) para: classificação mercadológica “fruta exemplo”.",
+            result: productAnswer,
+            suggestions: ["Quais desses são pesáveis?"],
+          };
+        else if (active.question.startsWith("Quanto vendi desses produtos"))
+          active.reply = {
+            kind: "answer",
+            capabilityId: "sales",
+            message: "Valor total vendido dos produtos selecionados: R$ 50,00.",
+            result: {
+              selection: "vrmaster",
+              sections: [
+                {
+                  source: "vrmaster",
+                  status: "answered",
+                  reason: null,
+                  result: {
+                    ...vrmasterResult,
+                    query: { ...vrmasterResult.query, productSearch: null },
+                    productSelection: {
+                      source: "vrmaster",
+                      catalogVersion: "synthetic",
+                      description:
+                        "Classificação mercadológica: HORTIFRUTI › FRUTAS › FRUTA EXEMPLO",
+                    },
+                  },
+                },
+              ],
+            },
+            suggestions: [],
+          };
         else
           active.reply = {
             kind: "answer",
@@ -233,6 +349,26 @@ async function fixture(
   return { turns, requests: () => requests, sources: () => sources };
 }
 const webUrl = () => process.env.ORION_E2E_WEB_URL!;
+test("a prose follow-up preserves evidence without duplicating result cards across reload", async ({
+  page,
+}) => {
+  const state = await fixture(page);
+  await page.goto(webUrl());
+  await page.getByRole("button", { name: /Quanto vendi de maçã/ }).click();
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(page.getByRole("table")).toHaveCount(1);
+  await page.getByLabel("Sua mensagem").fill("Resuma isso em texto contínuo.");
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  const prose =
+    "No período consultado, as vendas de maçã somaram R$ 300,30, conforme o resultado anterior.";
+  await expect(page.getByText(prose, { exact: true })).toBeVisible();
+  await expect(page.getByRole("table")).toHaveCount(1);
+  expect(state.requests()).toBe(2);
+  await page.reload();
+  await expect(page.getByText(prose, { exact: true })).toBeVisible();
+  await expect(page.getByRole("table")).toHaveCount(1);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
 test("mobile conversation menus act on their row and leave the selected conversation intact", async ({
   page,
 }) => {
@@ -707,4 +843,71 @@ test("the source selector routes each question explicitly, keeps sources apart a
   await expect(page.getByRole("combobox", { name: "Fonte" })).toHaveValue(
     "sankhya",
   );
+});
+
+test("product lookup offers numbered interpretations and shows how the chosen one selected products", async ({
+  page,
+}) => {
+  const state = await fixture(page);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(webUrl());
+  await page.getByRole("combobox", { name: "Fonte" }).selectOption("vrmaster");
+  await page
+    .getByLabel("Sua mensagem")
+    .fill("Quais produtos são fruta exemplo?");
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Consultando o cadastro de produtos" }),
+  ).toBeVisible();
+  const options = page.getByRole("group", {
+    name: "Opções de classificação mercadológica para “fruta exemplo”",
+  });
+  await expect(options).toBeVisible();
+  await expect(page.getByRole("table")).toHaveCount(0);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await options
+    .getByRole("button", { name: "1. HORTIFRUTI › FRUTAS › FRUTA EXEMPLO" })
+    .click();
+  const answer = page.getByRole("group", {
+    name: "Fonte: Pilar da Terra (VR Master)",
+  });
+  await expect(answer).toBeVisible();
+  expect(state.sources()).toEqual(["vrmaster", "vrmaster"]);
+  expect(state.turns.map((turn) => turn.question)).toEqual([
+    "Quais produtos são fruta exemplo?",
+    "1",
+  ]);
+  await expect(
+    answer.getByText("HORTIFRUTI › FRUTAS › FRUTA EXEMPLO", { exact: true }),
+  ).toBeVisible();
+  await expect(answer.getByRole("table")).toContainText("FRUTA EXEMPLO B KG");
+  await expect(answer.getByText("2 produtos", { exact: true })).toBeVisible();
+  // The earlier question's options are no longer choosable.
+  await expect(options.getByRole("button")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Quais desses são pesáveis?" }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Sua mensagem")
+    .fill("Quanto vendi desses produtos no mês passado?");
+  await page.getByRole("button", { name: "Enviar mensagem" }).click();
+  const salesTurn = page.getByRole("article").last();
+  await expect(
+    salesTurn.getByText(/Produtos da seleção semântica/),
+  ).toBeVisible();
+  await expect(
+    salesTurn.getByText(
+      "Classificação mercadológica: HORTIFRUTI › FRUTAS › FRUTA EXEMPLO",
+    ),
+  ).toBeVisible();
+  expect(state.sources()).toEqual(["vrmaster", "vrmaster", "vrmaster"]);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await expectNoStoredUserData(page);
 });

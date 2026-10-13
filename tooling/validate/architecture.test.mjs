@@ -52,18 +52,20 @@ test("flat domain modules cannot import their transport or persistence adapters"
   }
 });
 
-test("API runtime cannot import its tests or evaluation tooling, which may import the runtime", async () => {
+test("API runtime cannot import tests, evaluations or Discovery scripts, which may import runtime code", async () => {
   const result = await inspect({
     "apps/api/src/features/example/application.ts":
-      'import "../../../evals/fixtures.js"; import "../../../test/helpers.js";',
+      'import "../../../evals/fixtures.js"; import "../../../test/helpers.js"; import "../../../scripts/discovery-config.js";',
     "apps/api/evals/fixtures.ts": 'import "../src/features/example/domain.js";',
     "apps/api/test/helpers.ts": "export {};",
+    "apps/api/scripts/discovery-config.ts":
+      'import "../src/features/example/domain.js";',
     "apps/api/src/features/example/domain.ts": "export {};",
   });
   const violations = result.summary.violations.filter(
     ({ rule }) => rule.name === "no-runtime-to-verification",
   );
-  assert.equal(violations.length, 2);
+  assert.equal(violations.length, 3);
   assert.ok(violations.every(({ from }) => from.startsWith("apps/api/src/")));
 });
 
