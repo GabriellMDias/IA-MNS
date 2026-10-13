@@ -23,7 +23,7 @@
           "classification": "CONFIDENTIAL"
         },
         "contexts": {
-          "description": "Versioned capability contexts keyed by capability id. Sales version 2 stores structured conversation state: the last executed analysis plan and query filters, an unanswered request with its known slots and awaited information, and a bounded transcript of sales questions with application-authored clarifications or filter-only answer descriptions, never financial figures or result prose. The _agent entry records the last capability and the capability awaiting an answer. No secret credentials.",
+          "description": "Versioned capability contexts preserve validated sales/product selections and pending requests. Reserved _agent tracks routing state; _attachments holds at most four bounded owner-classified operational documents, removed with their conversation or explicitly with dependent replies; _preferences holds explicit language, detail and format settings. No credentials or unrestricted personal-data documents are permitted. Conversation mode never persists provider reasoning or model payload traces.",
           "classification": "CONFIDENTIAL"
         },
         "active_turn_id": {
@@ -102,7 +102,7 @@
           "classification": "CONFIDENTIAL"
         },
         "reply": {
-          "description": "Version 2 envelope containing the application-authored reply and a bounded result snapshot with one section per queried sales source; version 1 envelopes (one Sankhya result) are upgraded when read. Not current ERP truth and never sent back to OpenAI as financial data.",
+          "description": "Version 2 envelope containing a server-validated reply and a bounded result snapshot with one section per queried sales source; version 1 envelopes (one Sankhya result) are upgraded when read. Not current ERP truth; authorized minimized evidence can be sent to OpenAI under the AI data-processing policy. Additive fields retain permission dependencies, original snapshots, attachment references and result-card visibility.",
           "classification": "CONFIDENTIAL",
           "nullMeaning": "Absent in the lifecycle states described in the field meaning."
         },

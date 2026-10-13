@@ -911,6 +911,7 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
       ).json<{ person: { id: string; permissions: string[] } }>();
       expect(adminMe.person.permissions).toEqual([
         "identity:admin",
+        "products:read",
         "sales:read",
       ]);
       expect(
@@ -966,10 +967,53 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
           permission: "sales:read",
           autoGrantProviders: ["sankhya"],
         }),
+        // No provider grants product lookup until the owner decides (PH-28).
+        expect.objectContaining({
+          permission: "products:read",
+          autoGrantProviders: [],
+        }),
       ]);
       expect(detail.audit.map((event) => event.action)).toContain(
         "grant.added",
       );
+      // Product consultation uses the same owner-controlled grant mechanism.
+      const productGrant = `/identity/admin/persons/${strangerId}/grants/products:read`;
+      expect(
+        (
+          await app.inject({
+            method: "PUT",
+            url: productGrant,
+            headers: bearer(strangerFresh),
+          })
+        ).statusCode,
+      ).toBe(403);
+      expect(
+        (
+          await app.inject({
+            method: "PUT",
+            url: productGrant,
+            headers: bearer(admin.accessToken),
+          })
+        ).statusCode,
+      ).toBe(200);
+      expect(
+        (
+          await app.inject({
+            method: "GET",
+            url: `/identity/admin/persons/${strangerId}`,
+            headers: bearer(admin.accessToken),
+          })
+        ).json<{ person: { grants: string[] } }>().person.grants,
+      ).toEqual(["products:read", "sales:read"]);
+      expect(
+        (
+          await app.inject({
+            method: "DELETE",
+            url: productGrant,
+            headers: bearer(admin.accessToken),
+          })
+        ).statusCode,
+      ).toBe(200);
       expect(
         (
           await app.inject({

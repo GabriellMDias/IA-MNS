@@ -17,6 +17,7 @@ export const querySchema = Type.Object(
     groupBy: Type.Union([
       Type.Literal("month"),
       Type.Literal("product"),
+      Type.Literal("month_product"),
       Type.Literal("total"),
     ]),
     comparison: Type.Union([
@@ -66,6 +67,19 @@ export const resultSchema = Type.Object(
       Type.Null(),
     ]),
     warnings: Type.Array(Type.String()),
+    productSelection: Type.Optional(
+      Type.Object(
+        {
+          source: Type.Union([
+            Type.Literal("sankhya"),
+            Type.Literal("vrmaster"),
+          ]),
+          catalogVersion: Type.String({ minLength: 1, maxLength: 120 }),
+          description: Type.String({ minLength: 1, maxLength: 4000 }),
+        },
+        object,
+      ),
+    ),
   },
   object,
 );
@@ -108,6 +122,14 @@ export const salesAnswerSchema = Type.Object(
   {
     selection: sourceSelectionSchema,
     sections: Type.Array(sectionSchema, { minItems: 1, maxItems: 2 }),
+  },
+  object,
+);
+/** Multiple reviewed measures, with each ERP's figures kept in its own section. */
+export const salesAnalysisSchema = Type.Object(
+  {
+    kind: Type.Literal("sales_analysis"),
+    panels: Type.Array(salesAnswerSchema, { minItems: 1, maxItems: 3 }),
   },
   object,
 );

@@ -20,6 +20,8 @@ This page owns allowed dependency directions and their enforcement. A resolving 
 
 Distinguish compile-time imports, runtime communication, development-only dependencies, and generation inputs. An API runtime dependency does not justify importing its implementation. Test/build/generation tools must not leak into production execution. Generated artifacts depend on their canonical input; that input must not depend back on the output except in an explicitly designed pipeline. Rendering generated documentation in the portal does not make it the source of application behavior.
 
+The API runtime cannot import its tests, evaluations or development scripts. The enforced boundary includes the administrative [ERP Discovery loader](../../apps/api/scripts/discovery-config.ts); tooling may consume runtime types and adapters, but application composition must never load administrative credentials through those tools.
+
 ## Application Internal Dependency Direction
 
 Outer delivery adapters normally depend on application behavior and stable domain concepts. Infrastructure implements capabilities needed by the application; bootstrap selects and wires concrete adapters. Stable business behavior must not become dependent on HTTP, ORM records, application bootstrap, or vendor details without architectural justification.

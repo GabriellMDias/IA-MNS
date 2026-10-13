@@ -1,8 +1,12 @@
-import type { AiTraceLevel, TraceRecorder } from "../../ai/trace.js";
+import type { AiTraceLevel } from "../../ai/trace.js";
+import type { ConversationModel } from "../../ai/conversation.js";
+import { runConversationTurn } from "./conversation.js";
+import { canReadReply } from "./evidence.js";
 import type {
   AgentCapability,
   AgentReply,
-  ProgressStage,
+  AgentActor,
+  AgentTurnInput,
 } from "./capabilities.js";
 import {
   agentRouterVersion,
@@ -17,7 +21,7 @@ import {
   type TurnOutcome,
   type TurnTraceMetadata,
 } from "./trace.js";
-export type AgentActor = { id: string; permissions: ReadonlySet<string> };
+export type { AgentActor } from "./capabilities.js";
 type ReportFailure = (error: unknown, turnId: string) => string;
 type ObserveTrace = (trace: TurnTraceMetadata, turnId: string) => void;
 function conversationalReply(
@@ -92,19 +96,7 @@ function agentContext(
   };
 }
 
-export type TurnInput = Readonly<{
-  actor: AgentActor;
-  message: string;
-  history: readonly { question: string; reply: AgentReply }[];
-  contexts: Readonly<Record<string, unknown>>;
-  signal: AbortSignal;
-  progress: (stage: ProgressStage) => Promise<void>;
-  trace: TraceRecorder;
-  /** The sales source selected in the interface for this turn. */
-  source: SourceSelection;
-  /** Observes a failure a capability reports in its reply instead of failing. */
-  report?: (error: unknown) => void;
-}>;
+export type TurnInput = AgentTurnInput;
 
 /**
  * One turn of agent orchestration, independent of persistence: route, check
@@ -118,15 +110,17 @@ export async function runAgentTurn(
   input: TurnInput,
 ): Promise<{ reply: AgentReply; contexts: Record<string, unknown> }> {
   const { actor, history, signal, trace } = input;
-  const permitted = capabilities.filter((item) =>
-    actor.permissions.has(item.permission),
+  const permitted = capabilities.filter(
+    (item) =>
+      actor.permissions.has(item.permission) && item.legacyRouting !== false,
   );
-  const saved = agentContext(input.contexts._agent, capabilities);
+  const saved = agentContext(input.contexts._agent, permitted);
   trace.content("agent", { contextBefore: input.contexts._agent ?? null });
   const lastCapabilityId =
     saved.lastCapabilityId ??
-    history.findLast((item) => item.reply.capabilityId !== null)?.reply
-      .capabilityId ??
+    history.findLast((item) =>
+      permitted.some((capability) => capability.id === item.reply.capabilityId),
+    )?.reply.capabilityId ??
     null;
   const route = await planner.route(
     {
@@ -168,12 +162,16 @@ export async function runAgentTurn(
     return { reply: conversationalReply(route.intent, permitted), contexts };
   const capability = capabilities.find((item) => item.id === capabilityId);
   if (!capability) throw new AgentFailure("AGENT_PROVIDER_UNAVAILABLE");
+  if (capability.legacyRouting === false)
+    throw new AgentFailure("AGENT_PROVIDER_UNAVAILABLE");
   if (!actor.permissions.has(capability.permission))
     throw new AgentFailure("AGENT_ACCESS_DENIED");
   const outcome = await capability.execute({
     message: input.message,
     history,
     context: contexts[capability.id] ?? null,
+    contexts: input.contexts,
+    permissions: actor.permissions,
     signal,
     progress: input.progress,
     trace,
@@ -202,6 +200,7 @@ export class CorporateAgent {
   private accepting = 0;
   readonly repository: AgentRepository;
   private readonly planner: AgentPlanner | undefined;
+  private readonly conversation: ConversationModel | undefined;
   readonly capabilities: readonly AgentCapability[];
   private readonly traceLevel: AiTraceLevel | (() => Promise<AiTraceLevel>);
   constructor(
@@ -211,10 +210,12 @@ export class CorporateAgent {
     options: {
       /** Fixed level, or read for every turn from the operational parameters. */
       traceLevel?: AiTraceLevel | (() => Promise<AiTraceLevel>);
+      conversation?: ConversationModel;
     } = {},
   ) {
     this.repository = repository;
     this.planner = planner;
+    this.conversation = options.conversation;
     this.capabilities = capabilities;
     this.traceLevel = options.traceLevel ?? "off";
     if (capabilities.some((item) => !/^[a-z][a-z0-9_]{0,79}$/.test(item.id)))
@@ -233,7 +234,8 @@ export class CorporateAgent {
     reportFailure: ReportFailure,
     observe?: ObserveTrace,
   ) {
-    if (!this.planner) throw new AgentFailure("AGENT_NOT_CONFIGURED");
+    if (!this.planner && !this.conversation)
+      throw new AgentFailure("AGENT_NOT_CONFIGURED");
     if (this.closing || this.running.size + this.accepting >= 3)
       throw new AgentFailure("AGENT_CONVERSATION_BUSY");
     this.accepting++;
@@ -249,7 +251,12 @@ export class CorporateAgent {
     } finally {
       this.accepting--;
     }
-    if (!claimed.fresh) return claimed.turn;
+    if (!claimed.fresh) {
+      const reply = claimed.turn.reply;
+      if (reply && !canReadReply(reply, actor.permissions, this.capabilities))
+        throw new AgentFailure("AGENT_ACCESS_DENIED");
+      return claimed.turn;
+    }
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90000);
     const task = this.execute(
@@ -286,10 +293,16 @@ export class CorporateAgent {
     };
     try {
       // Each turn uses the level in force when it starts.
-      trace = new TurnTrace(
+      const configuredTraceLevel =
         typeof this.traceLevel === "function"
           ? await this.traceLevel()
-          : this.traceLevel,
+          : this.traceLevel;
+      // Domain interpreters share this trace. Operational evidence must never
+      // re-enable content capture through a nested tool invocation.
+      trace = new TurnTrace(
+        this.conversation && configuredTraceLevel === "content"
+          ? "metadata"
+          : configuredTraceLevel,
       );
       const progress = async (
         stage: Parameters<AgentRepository["progress"]>[1],
@@ -299,29 +312,47 @@ export class CorporateAgent {
       };
       await progress("thinking");
       const history = claimed.history
-        .filter((item) => item.reply !== null)
-        .map((item) => ({ question: item.question, reply: item.reply! }));
+        .filter(
+          (item) =>
+            item.reply !== null &&
+            canReadReply(item.reply, actor.permissions, this.capabilities),
+        )
+        .map((item) => ({ ...item, reply: item.reply! }));
       const contexts =
         claimed.contexts &&
         typeof claimed.contexts === "object" &&
         !Array.isArray(claimed.contexts)
           ? (claimed.contexts as Record<string, unknown>)
           : {};
-      const { reply, contexts: next } = await runAgentTurn(
-        this.planner!,
-        this.capabilities,
-        {
-          actor,
-          message: claimed.turn.question,
-          history,
-          contexts,
-          signal,
-          progress,
-          trace,
-          source: claimed.turn.source,
-          report: (error) => void reportFailure(error, claimed.turn.id),
+      const input: AgentTurnInput = {
+        actor,
+        message: claimed.turn.question,
+        history,
+        contexts,
+        signal,
+        progress,
+        trace,
+        source: claimed.turn.source,
+        report: (error) => void reportFailure(error, claimed.turn.id),
+        recall: async (beforeSequence) => {
+          signal.throwIfAborted();
+          const page = await this.repository.detail(
+            actor.id,
+            conversationId,
+            beforeSequence,
+          );
+          return page.turns
+            .filter(
+              (turn) =>
+                turn.reply !== null &&
+                canReadReply(turn.reply, actor.permissions, this.capabilities),
+            )
+            .map((turn) => ({ ...turn, reply: turn.reply! }));
         },
-      );
+      };
+      const { reply, contexts: next } = this.conversation
+        ? await runConversationTurn(this.conversation, this.capabilities, input)
+        : await runAgentTurn(this.planner!, this.capabilities, input);
       signal.throwIfAborted();
       await this.repository.finish(
         actor.id,

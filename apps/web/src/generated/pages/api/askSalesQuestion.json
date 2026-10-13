@@ -117,6 +117,7 @@
                             "anyOf": [
                               { "type": "string", "const": "month" },
                               { "type": "string", "const": "product" },
+                              { "type": "string", "const": "month_product" },
                               { "type": "string", "const": "total" }
                             ]
                           },
@@ -231,6 +232,29 @@
                       "warnings": {
                         "type": "array",
                         "items": { "type": "string" }
+                      },
+                      "productSelection": {
+                        "type": "object",
+                        "required": ["source", "catalogVersion", "description"],
+                        "properties": {
+                          "source": {
+                            "anyOf": [
+                              { "type": "string", "const": "sankhya" },
+                              { "type": "string", "const": "vrmaster" }
+                            ]
+                          },
+                          "catalogVersion": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 4000
+                          }
+                        },
+                        "additionalProperties": false
                       }
                     },
                     "additionalProperties": false
@@ -307,6 +331,7 @@
                         "anyOf": [
                           { "type": "string", "const": "month" },
                           { "type": "string", "const": "product" },
+                          { "type": "string", "const": "month_product" },
                           { "type": "string", "const": "total" }
                         ]
                       },
@@ -409,7 +434,33 @@
                       { "type": "null" }
                     ]
                   },
-                  "warnings": { "type": "array", "items": { "type": "string" } }
+                  "warnings": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "productSelection": {
+                    "type": "object",
+                    "required": ["source", "catalogVersion", "description"],
+                    "properties": {
+                      "source": {
+                        "anyOf": [
+                          { "type": "string", "const": "sankhya" },
+                          { "type": "string", "const": "vrmaster" }
+                        ]
+                      },
+                      "catalogVersion": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "description": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4000
+                      }
+                    },
+                    "additionalProperties": false
+                  }
                 },
                 "additionalProperties": false
               },

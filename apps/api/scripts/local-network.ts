@@ -7,6 +7,7 @@ import { networkInterfaces } from "node:os";
 import { resolve } from "node:path";
 import { parseEnv } from "node:util";
 import { isPrivateIpv4, parseServerConfig } from "../src/config.js";
+import { runtimeEnvironment } from "./local-environment.js";
 
 const root = resolve(import.meta.dirname, "../../..");
 const apiRoot = resolve(root, "apps/api");
@@ -98,7 +99,7 @@ try {
   )
     throw new Error("An assigned private IPv4 address is required");
   const local = parseEnv(await readFile(resolve(root, ".env.local"), "utf8"));
-  const base = { ...local, ...process.env };
+  const base = runtimeEnvironment(local, process.env);
   if (base.ORION_ENV !== "development")
     throw new Error("Development environment required");
   await mkdir(resolve(root, "test-results"), { recursive: true });
@@ -134,12 +135,12 @@ try {
   await ready("http://127.0.0.1:3002/health/ready");
   // Web receives no database/OpenAI/Oracle/temporary credential configuration.
   const webEnv: NodeJS.ProcessEnv = {
-    ...process.env,
+    ...runtimeEnvironment({}, process.env),
     ORION_WEB_API_TARGET: "http://127.0.0.1:3002",
   };
   for (const key of Object.keys(webEnv))
     if (
-      /^(OPENAI_|SANKHYA_|IA_MNS_DEV_ACCESS_|ORION_(DATABASE|MIGRATION_DATABASE|TOKEN)_)/.test(
+      /^(OPENAI_|SANKHYA_|VRMASTER_|IA_MNS_DEV_ACCESS_|ORION_(DATABASE|MIGRATION_DATABASE|TOKEN)_)/.test(
         key,
       )
     )

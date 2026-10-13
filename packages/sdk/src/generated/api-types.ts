@@ -827,6 +827,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/conversations/{conversationId}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Store at most four owner-classified operational text/CSV or PNG/JPEG attachments in an inactive conversation. No provider transmission occurs until the agent reads one for a stated purpose. Reuse the immutable id for acceptance recovery. */
+        post: operations["uploadAgentAttachment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/conversations/{conversationId}/attachments/{attachmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Delete an owned inactive conversation attachment and invalidate replies derived from it. Does not erase provider retention or backup copies. */
+        delete: operations["deleteAgentAttachment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/conversations/{conversationId}/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Explicitly replace presentation preferences for this owned inactive conversation. Preferences never grant permissions or change business rules. Auto resets a choice. */
+        patch: operations["setAgentPreferences"];
+        trace?: never;
+    };
     "/agent/status": {
         parameters: {
             query?: never;
@@ -9370,7 +9421,7 @@ export interface operations {
                                 startDate: string;
                                 endDate: string;
                                 metric: "net_value" | "quantity" | "weight";
-                                groupBy: "month" | "product" | "total";
+                                groupBy: "month" | "product" | "month_product" | "total";
                                 comparison: "none" | "previous_year" | "previous_period";
                             };
                             rows: {
@@ -9400,6 +9451,11 @@ export interface operations {
                                 }[];
                             } | null;
                             warnings: string[];
+                            productSelection?: {
+                                source: "sankhya" | "vrmaster";
+                                catalogVersion: string;
+                                description: string;
+                            };
                         } | null;
                         suggestions: string[];
                     };
@@ -9638,6 +9694,525 @@ export interface operations {
             };
             /** @description Response */
             410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    uploadAgentAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    id: string;
+                    name: string;
+                    mediaType: "text/plain" | "text/csv" | "image/png" | "image/jpeg";
+                    purpose: string;
+                    source: "sankhya" | "vrmaster" | "all";
+                    contentBase64: string;
+                    /** @constant */
+                    classification: "business_operational";
+                    /** @constant */
+                    containsRestrictedData: false;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                        name: string;
+                        mediaType: "text/plain" | "text/csv" | "image/png" | "image/jpeg";
+                        purpose: string;
+                        source: "sankhya" | "vrmaster" | "all";
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    deleteAgentAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        deleted: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    setAgentPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    language: "auto" | "pt-BR" | "en" | "es";
+                    detail: "auto" | "concise" | "detailed";
+                    format: "auto" | "prose" | "bullets";
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        language: "auto" | "pt-BR" | "en" | "es";
+                        detail: "auto" | "concise" | "detailed";
+                        format: "auto" | "prose" | "bullets";
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10135,7 +10710,7 @@ export interface operations {
                                                 startDate: string;
                                                 endDate: string;
                                                 metric: "net_value" | "quantity" | "weight";
-                                                groupBy: "month" | "product" | "total";
+                                                groupBy: "month" | "product" | "month_product" | "total";
                                                 comparison: "none" | "previous_year" | "previous_period";
                                             };
                                             rows: {
@@ -10165,13 +10740,256 @@ export interface operations {
                                                 }[];
                                             } | null;
                                             warnings: string[];
+                                            productSelection?: {
+                                                source: "sankhya" | "vrmaster";
+                                                catalogVersion: string;
+                                                description: string;
+                                            };
                                         } | null;
+                                    }[];
+                                } | {
+                                    /** @constant */
+                                    kind: "sales_analysis";
+                                    panels: {
+                                        /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                                        selection: "sankhya" | "vrmaster" | "all";
+                                        sections: {
+                                            source: "sankhya" | "vrmaster";
+                                            status: "answered" | "unavailable" | "unsupported";
+                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                            result: {
+                                                query: {
+                                                    productSearch: string | null;
+                                                    startDate: string;
+                                                    endDate: string;
+                                                    metric: "net_value" | "quantity" | "weight";
+                                                    groupBy: "month" | "product" | "month_product" | "total";
+                                                    comparison: "none" | "previous_year" | "previous_period";
+                                                };
+                                                rows: {
+                                                    period: string;
+                                                    product: string | null;
+                                                    unit: string;
+                                                    value: string;
+                                                }[];
+                                                products: {
+                                                    code: string;
+                                                    description: string;
+                                                }[];
+                                                totals: {
+                                                    unit: string;
+                                                    value: string;
+                                                    previousValue: string | null;
+                                                    changePercent: string | null;
+                                                }[];
+                                                comparison: {
+                                                    startDate: string;
+                                                    endDate: string;
+                                                    rows: {
+                                                        period: string;
+                                                        product: string | null;
+                                                        unit: string;
+                                                        value: string;
+                                                    }[];
+                                                } | null;
+                                                warnings: string[];
+                                                productSelection?: {
+                                                    source: "sankhya" | "vrmaster";
+                                                    catalogVersion: string;
+                                                    description: string;
+                                                };
+                                            } | null;
+                                        }[];
+                                    }[];
+                                } | {
+                                    /** @constant */
+                                    kind: "products";
+                                    source: "vrmaster" | "sankhya";
+                                    catalogVersion: string;
+                                    total: number;
+                                    products: {
+                                        code: string;
+                                        description: string;
+                                        classification: string;
+                                    }[];
+                                    criteria: {
+                                        dimension: string;
+                                        title: string;
+                                        mode: "include" | "exclude";
+                                        text: string;
+                                        values: string[];
+                                        excluded: string[];
+                                        interpretation: string;
+                                    }[];
+                                    sections: {
+                                        label: string;
+                                        count: number;
+                                    }[];
+                                    notes: string[];
+                                } | {
+                                    /** @constant */
+                                    kind: "product_options";
+                                    source: "vrmaster" | "sankhya";
+                                    title: string;
+                                    text: string;
+                                    options: {
+                                        number: number;
+                                        label: string;
                                     }[];
                                 } | null;
                                 suggestions: string[];
+                                requiredPermissions?: string[];
+                                displayResult?: boolean;
+                                evidenceRefs?: string[];
+                                attachmentRefs?: string[];
+                                evidenceSnapshots?: {
+                                    id: string;
+                                    capabilityId: string | null;
+                                    requiredPermissions: string[];
+                                    result: {
+                                        /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                                        selection: "sankhya" | "vrmaster" | "all";
+                                        sections: {
+                                            source: "sankhya" | "vrmaster";
+                                            status: "answered" | "unavailable" | "unsupported";
+                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                            result: {
+                                                query: {
+                                                    productSearch: string | null;
+                                                    startDate: string;
+                                                    endDate: string;
+                                                    metric: "net_value" | "quantity" | "weight";
+                                                    groupBy: "month" | "product" | "month_product" | "total";
+                                                    comparison: "none" | "previous_year" | "previous_period";
+                                                };
+                                                rows: {
+                                                    period: string;
+                                                    product: string | null;
+                                                    unit: string;
+                                                    value: string;
+                                                }[];
+                                                products: {
+                                                    code: string;
+                                                    description: string;
+                                                }[];
+                                                totals: {
+                                                    unit: string;
+                                                    value: string;
+                                                    previousValue: string | null;
+                                                    changePercent: string | null;
+                                                }[];
+                                                comparison: {
+                                                    startDate: string;
+                                                    endDate: string;
+                                                    rows: {
+                                                        period: string;
+                                                        product: string | null;
+                                                        unit: string;
+                                                        value: string;
+                                                    }[];
+                                                } | null;
+                                                warnings: string[];
+                                                productSelection?: {
+                                                    source: "sankhya" | "vrmaster";
+                                                    catalogVersion: string;
+                                                    description: string;
+                                                };
+                                            } | null;
+                                        }[];
+                                    } | {
+                                        /** @constant */
+                                        kind: "sales_analysis";
+                                        panels: {
+                                            /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                                            selection: "sankhya" | "vrmaster" | "all";
+                                            sections: {
+                                                source: "sankhya" | "vrmaster";
+                                                status: "answered" | "unavailable" | "unsupported";
+                                                reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                                result: {
+                                                    query: {
+                                                        productSearch: string | null;
+                                                        startDate: string;
+                                                        endDate: string;
+                                                        metric: "net_value" | "quantity" | "weight";
+                                                        groupBy: "month" | "product" | "month_product" | "total";
+                                                        comparison: "none" | "previous_year" | "previous_period";
+                                                    };
+                                                    rows: {
+                                                        period: string;
+                                                        product: string | null;
+                                                        unit: string;
+                                                        value: string;
+                                                    }[];
+                                                    products: {
+                                                        code: string;
+                                                        description: string;
+                                                    }[];
+                                                    totals: {
+                                                        unit: string;
+                                                        value: string;
+                                                        previousValue: string | null;
+                                                        changePercent: string | null;
+                                                    }[];
+                                                    comparison: {
+                                                        startDate: string;
+                                                        endDate: string;
+                                                        rows: {
+                                                            period: string;
+                                                            product: string | null;
+                                                            unit: string;
+                                                            value: string;
+                                                        }[];
+                                                    } | null;
+                                                    warnings: string[];
+                                                    productSelection?: {
+                                                        source: "sankhya" | "vrmaster";
+                                                        catalogVersion: string;
+                                                        description: string;
+                                                    };
+                                                } | null;
+                                            }[];
+                                        }[];
+                                    } | {
+                                        /** @constant */
+                                        kind: "products";
+                                        source: "vrmaster" | "sankhya";
+                                        catalogVersion: string;
+                                        total: number;
+                                        products: {
+                                            code: string;
+                                            description: string;
+                                            classification: string;
+                                        }[];
+                                        criteria: {
+                                            dimension: string;
+                                            title: string;
+                                            mode: "include" | "exclude";
+                                            text: string;
+                                            values: string[];
+                                            excluded: string[];
+                                            interpretation: string;
+                                        }[];
+                                        sections: {
+                                            label: string;
+                                            count: number;
+                                        }[];
+                                        notes: string[];
+                                    } | {
+                                        /** @constant */
+                                        kind: "product_options";
+                                        source: "vrmaster" | "sankhya";
+                                        title: string;
+                                        text: string;
+                                        options: {
+                                            number: number;
+                                            label: string;
+                                        }[];
+                                    } | null;
+                                }[];
                             } | null;
                             events: {
-                                stage: "thinking" | "interpreting_sales" | "querying_sales" | "organizing";
+                                stage: "thinking" | "interpreting_sales" | "querying_sales" | "interpreting_products" | "querying_products" | "organizing";
                                 message: string;
                                 /** Format: date-time */
                                 at: string;
@@ -10182,6 +11000,19 @@ export interface operations {
                             finishedAt: string | null;
                         }[];
                         olderThan: number | null;
+                        attachments?: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            mediaType: "text/plain" | "text/csv" | "image/png" | "image/jpeg";
+                            purpose: string;
+                            source: "sankhya" | "vrmaster" | "all";
+                        }[];
+                        preferences?: {
+                            language: "auto" | "pt-BR" | "en" | "es";
+                            detail: "auto" | "concise" | "detailed";
+                            format: "auto" | "prose" | "bullets";
+                        };
                     };
                 };
             };
@@ -10894,7 +11725,7 @@ export interface operations {
                                             startDate: string;
                                             endDate: string;
                                             metric: "net_value" | "quantity" | "weight";
-                                            groupBy: "month" | "product" | "total";
+                                            groupBy: "month" | "product" | "month_product" | "total";
                                             comparison: "none" | "previous_year" | "previous_period";
                                         };
                                         rows: {
@@ -10924,13 +11755,256 @@ export interface operations {
                                             }[];
                                         } | null;
                                         warnings: string[];
+                                        productSelection?: {
+                                            source: "sankhya" | "vrmaster";
+                                            catalogVersion: string;
+                                            description: string;
+                                        };
                                     } | null;
+                                }[];
+                            } | {
+                                /** @constant */
+                                kind: "sales_analysis";
+                                panels: {
+                                    /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                                    selection: "sankhya" | "vrmaster" | "all";
+                                    sections: {
+                                        source: "sankhya" | "vrmaster";
+                                        status: "answered" | "unavailable" | "unsupported";
+                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                        result: {
+                                            query: {
+                                                productSearch: string | null;
+                                                startDate: string;
+                                                endDate: string;
+                                                metric: "net_value" | "quantity" | "weight";
+                                                groupBy: "month" | "product" | "month_product" | "total";
+                                                comparison: "none" | "previous_year" | "previous_period";
+                                            };
+                                            rows: {
+                                                period: string;
+                                                product: string | null;
+                                                unit: string;
+                                                value: string;
+                                            }[];
+                                            products: {
+                                                code: string;
+                                                description: string;
+                                            }[];
+                                            totals: {
+                                                unit: string;
+                                                value: string;
+                                                previousValue: string | null;
+                                                changePercent: string | null;
+                                            }[];
+                                            comparison: {
+                                                startDate: string;
+                                                endDate: string;
+                                                rows: {
+                                                    period: string;
+                                                    product: string | null;
+                                                    unit: string;
+                                                    value: string;
+                                                }[];
+                                            } | null;
+                                            warnings: string[];
+                                            productSelection?: {
+                                                source: "sankhya" | "vrmaster";
+                                                catalogVersion: string;
+                                                description: string;
+                                            };
+                                        } | null;
+                                    }[];
+                                }[];
+                            } | {
+                                /** @constant */
+                                kind: "products";
+                                source: "vrmaster" | "sankhya";
+                                catalogVersion: string;
+                                total: number;
+                                products: {
+                                    code: string;
+                                    description: string;
+                                    classification: string;
+                                }[];
+                                criteria: {
+                                    dimension: string;
+                                    title: string;
+                                    mode: "include" | "exclude";
+                                    text: string;
+                                    values: string[];
+                                    excluded: string[];
+                                    interpretation: string;
+                                }[];
+                                sections: {
+                                    label: string;
+                                    count: number;
+                                }[];
+                                notes: string[];
+                            } | {
+                                /** @constant */
+                                kind: "product_options";
+                                source: "vrmaster" | "sankhya";
+                                title: string;
+                                text: string;
+                                options: {
+                                    number: number;
+                                    label: string;
                                 }[];
                             } | null;
                             suggestions: string[];
+                            requiredPermissions?: string[];
+                            displayResult?: boolean;
+                            evidenceRefs?: string[];
+                            attachmentRefs?: string[];
+                            evidenceSnapshots?: {
+                                id: string;
+                                capabilityId: string | null;
+                                requiredPermissions: string[];
+                                result: {
+                                    /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                                    selection: "sankhya" | "vrmaster" | "all";
+                                    sections: {
+                                        source: "sankhya" | "vrmaster";
+                                        status: "answered" | "unavailable" | "unsupported";
+                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                        result: {
+                                            query: {
+                                                productSearch: string | null;
+                                                startDate: string;
+                                                endDate: string;
+                                                metric: "net_value" | "quantity" | "weight";
+                                                groupBy: "month" | "product" | "month_product" | "total";
+                                                comparison: "none" | "previous_year" | "previous_period";
+                                            };
+                                            rows: {
+                                                period: string;
+                                                product: string | null;
+                                                unit: string;
+                                                value: string;
+                                            }[];
+                                            products: {
+                                                code: string;
+                                                description: string;
+                                            }[];
+                                            totals: {
+                                                unit: string;
+                                                value: string;
+                                                previousValue: string | null;
+                                                changePercent: string | null;
+                                            }[];
+                                            comparison: {
+                                                startDate: string;
+                                                endDate: string;
+                                                rows: {
+                                                    period: string;
+                                                    product: string | null;
+                                                    unit: string;
+                                                    value: string;
+                                                }[];
+                                            } | null;
+                                            warnings: string[];
+                                            productSelection?: {
+                                                source: "sankhya" | "vrmaster";
+                                                catalogVersion: string;
+                                                description: string;
+                                            };
+                                        } | null;
+                                    }[];
+                                } | {
+                                    /** @constant */
+                                    kind: "sales_analysis";
+                                    panels: {
+                                        /** @description Sales source chosen in the interface: sankhya (MNS), vrmaster (Pilar da Terra) or all. The message text never changes it. */
+                                        selection: "sankhya" | "vrmaster" | "all";
+                                        sections: {
+                                            source: "sankhya" | "vrmaster";
+                                            status: "answered" | "unavailable" | "unsupported";
+                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                            result: {
+                                                query: {
+                                                    productSearch: string | null;
+                                                    startDate: string;
+                                                    endDate: string;
+                                                    metric: "net_value" | "quantity" | "weight";
+                                                    groupBy: "month" | "product" | "month_product" | "total";
+                                                    comparison: "none" | "previous_year" | "previous_period";
+                                                };
+                                                rows: {
+                                                    period: string;
+                                                    product: string | null;
+                                                    unit: string;
+                                                    value: string;
+                                                }[];
+                                                products: {
+                                                    code: string;
+                                                    description: string;
+                                                }[];
+                                                totals: {
+                                                    unit: string;
+                                                    value: string;
+                                                    previousValue: string | null;
+                                                    changePercent: string | null;
+                                                }[];
+                                                comparison: {
+                                                    startDate: string;
+                                                    endDate: string;
+                                                    rows: {
+                                                        period: string;
+                                                        product: string | null;
+                                                        unit: string;
+                                                        value: string;
+                                                    }[];
+                                                } | null;
+                                                warnings: string[];
+                                                productSelection?: {
+                                                    source: "sankhya" | "vrmaster";
+                                                    catalogVersion: string;
+                                                    description: string;
+                                                };
+                                            } | null;
+                                        }[];
+                                    }[];
+                                } | {
+                                    /** @constant */
+                                    kind: "products";
+                                    source: "vrmaster" | "sankhya";
+                                    catalogVersion: string;
+                                    total: number;
+                                    products: {
+                                        code: string;
+                                        description: string;
+                                        classification: string;
+                                    }[];
+                                    criteria: {
+                                        dimension: string;
+                                        title: string;
+                                        mode: "include" | "exclude";
+                                        text: string;
+                                        values: string[];
+                                        excluded: string[];
+                                        interpretation: string;
+                                    }[];
+                                    sections: {
+                                        label: string;
+                                        count: number;
+                                    }[];
+                                    notes: string[];
+                                } | {
+                                    /** @constant */
+                                    kind: "product_options";
+                                    source: "vrmaster" | "sankhya";
+                                    title: string;
+                                    text: string;
+                                    options: {
+                                        number: number;
+                                        label: string;
+                                    }[];
+                                } | null;
+                            }[];
                         } | null;
                         events: {
-                            stage: "thinking" | "interpreting_sales" | "querying_sales" | "organizing";
+                            stage: "thinking" | "interpreting_sales" | "querying_sales" | "interpreting_products" | "querying_products" | "organizing";
                             message: string;
                             /** Format: date-time */
                             at: string;

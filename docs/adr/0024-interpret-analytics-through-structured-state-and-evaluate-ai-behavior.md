@@ -2,6 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-10-05
+**Superseded by:** [ADR-0035](0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md), only figure-free conversational context, mandatory fixed-intent routing and content tracing for conversational turns. The strict domain interpreter, validated state, deterministic execution and reviewed evaluations remain accepted.
 **Extends:** [ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md) (how a question becomes a bounded query) and [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md) (what capability context holds and how routing sees it). Their controlled execution, deterministic answers, durable conversations and grounded replies remain valid.
 
 ## Context

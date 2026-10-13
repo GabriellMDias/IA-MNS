@@ -14,6 +14,16 @@ import {
 import type { AgentReply, ProgressStage } from "./capabilities.js";
 import type { SourceSelection } from "../sales/sources.js";
 import { progressMessages } from "./capabilities.js";
+import {
+  attachmentMetadata,
+  prepareAttachment,
+  loadAttachments,
+} from "./attachments.js";
+import {
+  loadPreferences,
+  presentationPreferencesSchema,
+  type PresentationPreferences,
+} from "./preferences.js";
 type Json = Prisma.InputJsonValue;
 const json = (value: unknown): Json =>
   JSON.parse(JSON.stringify(value)) as Json;
@@ -244,6 +254,10 @@ export class AgentRepository {
         conversation: summary(item),
         turns: page.map(view),
         olderThan: rows.length > 40 ? page[0].sequence : null,
+        attachments: loadAttachments(
+          item.contexts as Record<string, unknown>,
+        ).map(attachmentMetadata),
+        preferences: loadPreferences(item.contexts as Record<string, unknown>),
       };
     });
   }
@@ -251,6 +265,81 @@ export class AgentRepository {
     await this.locked(owner, id, async (tx, item) => {
       if (item.activeTurnId) throw new AgentFailure("AGENT_CONVERSATION_BUSY");
       await tx.agentConversation.delete({ where: { id } });
+    });
+  }
+  async attach(owner: string, id: string, value: unknown) {
+    const attachment = prepareAttachment(value);
+    return this.locked(owner, id, async (tx, item) => {
+      if (item.activeTurnId) throw new AgentFailure("AGENT_CONVERSATION_BUSY");
+      if (item.archived) throw new AgentFailure("AGENT_CONVERSATION_ARCHIVED");
+      const contexts = item.contexts as Record<string, unknown>;
+      const attachments = loadAttachments(contexts);
+      const prior = attachments.find(
+        (candidate) => candidate.id === attachment.id,
+      );
+      if (prior) {
+        if (JSON.stringify(prior) !== JSON.stringify(attachment))
+          throw new AgentFailure("AGENT_REQUEST_CONFLICT");
+        return attachmentMetadata(prior);
+      }
+      if (attachments.length >= 4)
+        throw new AgentFailure("AGENT_ATTACHMENT_INVALID");
+      await tx.agentConversation.update({
+        where: { id },
+        data: {
+          contexts: json({
+            ...contexts,
+            _attachments: [...attachments, attachment],
+          }),
+        },
+      });
+      return attachmentMetadata(attachment);
+    });
+  }
+  async removeAttachment(owner: string, id: string, attachmentId: string) {
+    await this.locked(owner, id, async (tx, item) => {
+      if (item.activeTurnId) throw new AgentFailure("AGENT_CONVERSATION_BUSY");
+      const contexts = item.contexts as Record<string, unknown>;
+      const attachments = loadAttachments(contexts).filter(
+        (attachment) => attachment.id !== attachmentId,
+      );
+      // All derived prose is invalidated, including a summary of a summary.
+      await tx.agentTurn.updateMany({
+        where: {
+          conversationId: id,
+          reply: {
+            path: ["payload", "attachmentRefs"],
+            array_contains: [attachmentId],
+          },
+        },
+        data: {
+          reply: Prisma.DbNull,
+          state: "interrupted",
+          capabilityId: null,
+          failureCode: "AGENT_EVIDENCE_REMOVED",
+        },
+      });
+      await tx.agentConversation.update({
+        where: { id },
+        data: { contexts: json({ ...contexts, _attachments: attachments }) },
+      });
+    });
+  }
+  async preferences(owner: string, id: string, value: PresentationPreferences) {
+    if (!Value.Check(presentationPreferencesSchema, value))
+      throw new AgentFailure("AGENT_REQUEST_CONFLICT");
+    return this.locked(owner, id, async (tx, item) => {
+      if (item.activeTurnId) throw new AgentFailure("AGENT_CONVERSATION_BUSY");
+      await tx.agentConversation.update({
+        where: { id },
+        data: {
+          contexts: json({
+            ...(item.contexts as Record<string, unknown>),
+            _preferences: value,
+          }),
+        },
+      });
+      return value;
     });
   }
   async claim(

@@ -13,6 +13,7 @@ Current sources are:
 | Application | Canonical input and representation |
 | --- | --- |
 | API | [`serverConfigSchema`, parser, and reference metadata](../../apps/api/src/config.ts); [generated safe reference](../generated/configuration/api.md) and schema-checked [`.env.example`](../../.env.example). All API settings are server-only; its client projection is empty. |
+| ERP Discovery tools | [Explicit development loader](../../apps/api/scripts/discovery-config.ts) and [safe credential example](../../.env.discovery.example), separate from the runtime schema; [access policy](../security/erp-database-access.md). |
 | Web | [`loadClientConfig`](../../apps/web/src/config.ts) validates the build-time `VITE_ORION_API_BASE_URL`, defaulting to `/api`. Web-specific setup belongs in the [web guide](../../apps/web/README.md). |
 
 The API metadata records role, type, required/default, visibility, classification, secret status, and purpose. The runtime database URL is classified `RESTRICTED` and secret; no API setting is browser-visible. `ORION_RELEASE_ID` identifies the actual artifact in logs and traces when supplied, defaulting to `local` for unversioned development. The parser, generated reference, and safe example do not imply a generic configuration/secret-management platform exists.
@@ -37,7 +38,7 @@ Operational parameters are product behavior an owner may change after deployment
 | Parameter | Screen label | Installation default | Takes effect |
 | --- | --- | --- | --- |
 | `ai.model` | Modelo de IA | `OPENAI_MODEL`, else `gpt-6.1-sol` | Next AI request (routing and interpretation) |
-| `ai.traceLevel` | Registro de diagnóstico da IA | `IA_MNS_AI_TRACE`, else `metadata`; `content` is never used in production | Next agent turn |
+| `ai.traceLevel` | Registro de diagnóstico da IA | `IA_MNS_AI_TRACE`, else `metadata`; `content` is capped at `metadata` for conversational turns and is never used in production | Next agent turn |
 | `access.providerGrants` | Liberação automática por vínculo | `IA_MNS_PROVIDER_GRANTS`, else every catalog-eligible read grant | Next access token (at most 10 minutes for open sessions) |
 
 Precedence is **valid owner value > installation default** (the environment variable, or the product default when it is unset); production limits apply to every source, and resetting a parameter returns to the installation default. No parameter requires a restart: consumers receive narrow resolvers from composition and read the current value at each use, without a cache, so every API instance applies a change at the next use. Code reads parameters only through `OperationalParameters`; no module queries the table directly. A new parameter needs a catalog entry, a migration extending the table checks, its installation default with role `parameter` when one exists, web labels, and tests. Secrets and bootstrap settings never become parameters.
@@ -56,7 +57,7 @@ Unknown keys can indicate typos or obsolete deployment settings; detect them whe
 
 Sources and precedence must be deterministic and documented. Use the smallest set of mechanisms that satisfies real needs; do not add overlapping files, CLI overrides, or remote systems speculatively.
 
-The API development command optionally loads the root ignored `.env.local`; existing shell environment values win. The production start command receives process environment and does not implicitly load that file. Vite owns the web application's environment loading and embeds its public build-time values. Disposable end-to-end and module stacks supply their own temporary configuration. [Setup](../setup.md#load-local-configuration) is the canonical procedure; no global remote configuration hierarchy or deployment platform is selected.
+The API development launcher optionally reads the root ignored `.env.local`; existing shell environment values win. It excludes all four ERP administrative `*_FULLACESS` keys before spawning the process and never reads `.env.discovery.local`. Direct runtime configuration rejects those administrative keys. Only explicitly selected development tools read one administrative file (`.env.discovery.local` first, otherwise `.env.discovery`, never merged), without adding credentials to `process.env`; see [ERP access](../security/erp-database-access.md). The production start command receives process environment and does not implicitly load that file. Vite owns the web application's environment loading and embeds its public build-time values. Disposable end-to-end and module stacks supply their own temporary configuration. [Setup](../setup.md#load-local-configuration) is the canonical procedure; no global remote configuration hierarchy or deployment platform is selected.
 
 ## Centralized Ingestion
 

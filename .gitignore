@@ -7,6 +7,7 @@ playwright-report/
 test-results/
 .env
 .env.*
+# Includes .env.discovery and .env.discovery.local: existing ERP administration/Discovery secrets.
 !.env.example
 !.env.*.example
 apps/api/evals/.local/

@@ -671,6 +671,8 @@ describe("identity configuration and verifier", () => {
 });
 
 describe("identity cookies", () => {
+  // Cold dynamic imports of the HTTP application exceed the 5-second default
+  // when the suite runs container tests in parallel.
   it("uses __Host- Secure cookies with flow-specific SameSite on HTTPS origins", async () => {
     const { createApp } = await import("../src/app.js");
     const { createIdentityModule } =
@@ -763,7 +765,7 @@ describe("identity cookies", () => {
     } finally {
       await app.close();
     }
-  });
+  }, 30_000);
 });
 
 describe("direct sign-in availability", () => {

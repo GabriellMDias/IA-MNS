@@ -5,7 +5,7 @@ import { createAgentModule } from "./features/agent/module.js";
 import { createSalesCapability } from "./features/sales/capability.js";
 import { providersConfigured } from "./features/sales/module.js";
 import { createSalesReaders } from "./features/sales/readers.js";
-import { SalesChat } from "./features/sales/application.js";
+import { SalesChat, type SourceReaders } from "./features/sales/application.js";
 import { createModelInterpreter } from "./features/sales/interpreter.js";
 import { createOpenAiModel } from "./ai/openai.js";
 import {
@@ -23,6 +23,26 @@ import {
 } from "./features/identity/domain.js";
 import { OperationalParameters, type ParameterSetup } from "./parameters.js";
 import { prismaParameterStore } from "./parameter-store.js";
+import {
+  createProductsModule,
+  productsConfigured,
+} from "./features/products/module.js";
+import {
+  createProductCapability,
+  productPermission,
+} from "./features/products/capability.js";
+import { ProductResolver } from "./features/products/resolver.js";
+import { createSemanticSalesCapability } from "./features/products/sales.js";
+import { createSalesAnalyticsCapability } from "./features/products/analytics.js";
+import {
+  createProductInterpreter,
+  productModelTimeoutMs,
+} from "./features/products/interpreter.js";
+import { createVrmasterProductSource } from "./features/products/vrmaster/source.js";
+import { createSankhyaProductSource } from "./features/products/sankhya/source.js";
+import { sankhyaCatalog } from "./features/products/sankhya/catalog.js";
+import { vrmasterCatalog } from "./features/products/vrmaster/catalog.js";
+import { vrmasterConnection } from "./vrmaster-connection.js";
 
 /**
  * Grantable capability permissions and their default provider policy. Read
@@ -37,6 +57,13 @@ export const permissionCatalog: readonly PermissionDescriptor[] = [
     title: "Consultas de vendas (Sankhya e VR Master)",
     access: "read",
     autoGrantProviders: ["sankhya"],
+  },
+  // No provider grants it automatically until the owner decides (PH-28).
+  {
+    permission: productPermission,
+    title: "Consulta de produtos (VR Master e Sankhya)",
+    access: "read",
+    autoGrantProviders: [],
   },
 ];
 
@@ -90,6 +117,15 @@ export function operationalParameters(
 
 // Both public contracts use the same owned sales executor/pool.
 const salesServices = new WeakMap<ServerConfig, SalesChat>();
+const salesReaders = new WeakMap<ServerConfig, SourceReaders>();
+function sharedSalesReaders(config: ServerConfig): SourceReaders {
+  let readers = salesReaders.get(config);
+  if (!readers) {
+    readers = createSalesReaders(config);
+    salesReaders.set(config, readers);
+  }
+  return readers;
+}
 function salesService(resources: ModuleResources): SalesChat | undefined {
   const config = resources.config;
   if (!config || !providersConfigured(config)) return undefined;
@@ -100,11 +136,49 @@ function salesService(resources: ModuleResources): SalesChat | undefined {
       createModelInterpreter(
         createOpenAiModel(config, () => parameters.get("ai.model")),
       ),
-      createSalesReaders(config),
+      sharedSalesReaders(config),
     );
     salesServices.set(config, service);
   }
   return service;
+}
+
+// One shared resolver per configured ERP and configuration, owned by the agent.
+const productResolvers = new WeakMap<ServerConfig, ProductResolver[]>();
+function productResolver(
+  resources: ModuleResources,
+): ProductResolver[] | undefined {
+  const config = resources.config;
+  if (!config || !productsConfigured(config)) return undefined;
+  let resolver = productResolvers.get(config);
+  if (!resolver) {
+    const parameters = operationalParameters(resources);
+    const model = createOpenAiModel(config, () => parameters.get("ai.model"), {
+      timeoutMs: productModelTimeoutMs,
+    });
+    resolver = [
+      ...(vrmasterConnection(config)
+        ? [
+            new ProductResolver(
+              createVrmasterProductSource(vrmasterConnection(config)!),
+              createProductInterpreter(model, vrmasterCatalog),
+            ),
+          ]
+        : []),
+      ...(config.sankhyaUser &&
+      config.sankhyaPassword &&
+      config.sankhyaConnectString
+        ? [
+            new ProductResolver(
+              createSankhyaProductSource(config),
+              createProductInterpreter(model, sankhyaCatalog),
+            ),
+          ]
+        : []),
+    ];
+    productResolvers.set(config, resolver);
+  }
+  return resolver;
 }
 
 /** Consolidating two profiles of one person moves their conversations too. */
@@ -131,13 +205,43 @@ export function identityService(config: ServerConfig, database: Database) {
 export const apiModules: readonly ApiModule[] = [
   createIdentityModule(permissionCatalog, identityPorts),
   createSalesModule(salesService),
+  createProductsModule(),
   createAgentModule(
-    (resources) =>
-      resources.config && providersConfigured(resources.config)
-        ? [createSalesCapability(resources.config, salesService(resources))]
-        : [],
+    (resources) => {
+      const products = productResolver(resources);
+      return [
+        ...(resources.config && providersConfigured(resources.config)
+          ? [
+              createSalesAnalyticsCapability(
+                sharedSalesReaders(resources.config),
+                products ?? [],
+              ),
+            ]
+          : []),
+        ...(resources.config && providersConfigured(resources.config)
+          ? [
+              products?.length
+                ? createSemanticSalesCapability(
+                    createSalesCapability(
+                      resources.config,
+                      salesService(resources),
+                    ),
+                    salesService(resources)!,
+                    products,
+                  )
+                : createSalesCapability(
+                    resources.config,
+                    salesService(resources),
+                  ),
+            ]
+          : []),
+        ...(products?.[0]
+          ? [createProductCapability(products[0], products[1])]
+          : []),
+      ];
+    },
     undefined,
-    ["sales:read"],
+    ["sales:read", productPermission],
     operationalParameters,
   ),
 ];

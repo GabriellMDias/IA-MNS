@@ -1,0 +1,28 @@
+{
+  "kind": "component",
+  "name": "ProductAnswer",
+  "source": "apps/web/src/features/products/results.tsx",
+  "summary": "Presents the products a lookup found in the Pilar da Terra (VR Master) registration with how each criterion was understood.",
+  "props": [
+    {
+      "name": "answer",
+      "type": "ProductAnswer",
+      "meaning": "Generated SDK agent result: each criterion with the records or classification paths it resolved to, exclusions and the business rule of its relationship; counts per section, notes, the exact total and up to 200 products."
+    }
+  ],
+  "states": [
+    "Classification with exclusions",
+    "Several criteria combined",
+    "List shorter than the total",
+    "No products"
+  ],
+  "accessibility": "A group named by its level-2 source heading; criteria in a description list; a native captioned table with scoped headers that states when only the first products are listed.",
+  "usage": "Render only validated API results. Always show the interpretation beside the list: classification paths, exclusions and relationship rules are how a person checks what was selected.",
+  "examples": [
+    {
+      "id": "product-answer-category",
+      "label": "Category with an exclusion",
+      "description": "Synthetic classification paths and products; the preview makes no API, provider or ERP request."
+    }
+  ]
+}

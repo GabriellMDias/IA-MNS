@@ -10,6 +10,7 @@ const codes = new Set([
   "AGENT_ACCESS_DENIED",
   "AGENT_PROVIDER_UNAVAILABLE",
   "AGENT_CONVERSATION_ARCHIVED",
+  "AGENT_ATTACHMENT_INVALID",
 ]);
 export type ConversationDetail =
   paths["/agent/conversations/{conversationId}"]["get"]["responses"][200]["content"]["application/json"];
@@ -21,6 +22,65 @@ export type ConversationPatch = {
   pinned?: boolean;
   archived?: boolean;
 };
+export type Attachment = NonNullable<ConversationDetail["attachments"]>[number];
+export type PresentationPreferences = NonNullable<
+  ConversationDetail["preferences"]
+>;
+export type AttachmentUpload =
+  paths["/agent/conversations/{conversationId}/attachments"]["post"]["requestBody"]["content"]["application/json"];
+export async function uploadAttachment(
+  token: string | null,
+  conversationId: string,
+  body: AttachmentUpload,
+) {
+  return unwrap(
+    await apiClient(token).POST(
+      "/agent/conversations/{conversationId}/attachments",
+      {
+        headers,
+        params: { path: { conversationId } },
+        body,
+        signal: AbortSignal.timeout(15000),
+      },
+    ),
+    codes,
+  );
+}
+export async function deleteAttachment(
+  token: string | null,
+  conversationId: string,
+  attachmentId: string,
+) {
+  return unwrap(
+    await apiClient(token).DELETE(
+      "/agent/conversations/{conversationId}/attachments/{attachmentId}",
+      {
+        headers,
+        params: { path: { conversationId, attachmentId } },
+        signal: AbortSignal.timeout(10000),
+      },
+    ),
+    codes,
+  );
+}
+export async function setPreferences(
+  token: string | null,
+  conversationId: string,
+  body: PresentationPreferences,
+) {
+  return unwrap(
+    await apiClient(token).PATCH(
+      "/agent/conversations/{conversationId}/preferences",
+      {
+        headers,
+        params: { path: { conversationId } },
+        body,
+        signal: AbortSignal.timeout(10000),
+      },
+    ),
+    codes,
+  );
+}
 export async function getAgentStatus(signal: AbortSignal) {
   return unwrap(await apiClient().GET("/agent/status", { signal }));
 }

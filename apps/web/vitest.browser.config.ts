@@ -24,6 +24,7 @@ const port = await ephemeralPort("localhost");
 
 export default defineConfig({
   plugins: [react({ compiler: true })],
+  optimizeDeps: { include: ["@tanstack/react-query"] },
   test: {
     include: ["test/**/*.browser.test.tsx"],
     // Vitest 5 serves the browser runner from this API server.

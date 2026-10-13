@@ -22,7 +22,10 @@ import { ConversationSidebar, SidebarIcon } from "./sidebar.js";
 import brandMark from "../../assets/brand-mark.svg";
 import brandFavicon from "../../assets/brand-favicon.svg";
 import { ConversationSearch } from "./search.js";
+import { ConversationMaterials } from "./materials.js";
 import { SalesAnswer } from "../sales/results.js";
+import { ProductAnswer, ProductOptions } from "../products/results.js";
+import { isProductResult } from "../products/api.js";
 import {
   sourceLabels,
   sourceOptions,
@@ -46,6 +49,7 @@ import {
 } from "./api.js";
 import "./agent.css";
 import "../sales/sales.css";
+import "../products/products.css";
 const messages: Record<string, string> = {
   AUTHENTICATION_REQUIRED: "Seu acesso precisa ser renovado.",
   AGENT_ACCESS_DENIED: "Seu acesso não permite essa consulta.",
@@ -61,6 +65,8 @@ const messages: Record<string, string> = {
     "Não consegui processar sua mensagem agora. Tente novamente em instantes.",
   SALES_PROVIDER_UNAVAILABLE:
     "Não consegui consultar as vendas agora. Tente novamente em instantes.",
+  PRODUCTS_PROVIDER_UNAVAILABLE:
+    "Não consegui consultar o cadastro de produtos agora. Tente novamente em instantes.",
   SALES_NOT_CONFIGURED:
     "A fonte de vendas selecionada ainda não está configurada no IA-MNS.",
   SALES_QUERY_INVALID:
@@ -69,6 +75,8 @@ const messages: Record<string, string> = {
     "A consulta ficou muito ampla. Reduza o período ou especifique melhor o produto.",
   AGENT_EXECUTION_INTERRUPTED:
     "A resposta foi interrompida. Você pode enviar uma nova mensagem para continuar.",
+  AGENT_EVIDENCE_REMOVED:
+    "Esta resposta foi removida porque um anexo usado nela foi excluído.",
   INTERNAL_ERROR:
     "Não consegui concluir esta resposta. Tente novamente em instantes.",
   RATE_LIMITED: "Aguarde um minuto antes de enviar outra mensagem.",
@@ -388,7 +396,31 @@ export function AgentPage() {
           ) : turn.reply ? (
             <>
               <p className="agent-answer-text">{turn.reply.message}</p>
-              {turn.reply.result && <SalesAnswer answer={turn.reply.result} />}
+              {turn.reply.displayResult !== false &&
+                turn.reply.result &&
+                ("kind" in turn.reply.result &&
+                turn.reply.result.kind === "sales_analysis" ? (
+                  turn.reply.result.panels.map((panel, index) => (
+                    <SalesAnswer key={index} answer={panel} />
+                  ))
+                ) : !isProductResult(turn.reply.result) ? (
+                  <SalesAnswer answer={turn.reply.result} />
+                ) : turn.reply.result.kind === "products" ? (
+                  <ProductAnswer answer={turn.reply.result} />
+                ) : (
+                  <ProductOptions
+                    options={turn.reply.result}
+                    onChoose={
+                      turn.id === turns.at(-1)?.id &&
+                      ready &&
+                      !busy &&
+                      !archived &&
+                      !unresolved
+                        ? (number) => send(String(number))
+                        : undefined
+                    }
+                  />
+                ))}
             </>
           ) : (
             <p className="agent-turn-failure" role="alert">
@@ -667,6 +699,21 @@ export function AgentPage() {
               )}
             </div>
           )}
+          <ConversationMaterials
+            token={token}
+            conversationId={conversationId}
+            source={source}
+            attachments={detail.data?.pages[0].attachments ?? []}
+            preferences={detail.data?.pages[0].preferences}
+            disabled={!ready || busy || unresolved || archived}
+            onCreated={async (id) => {
+              await navigate({
+                to: "/chat/$conversationId",
+                params: { conversationId: id },
+                search: { view: scope },
+              });
+            }}
+          />
           <div className="agent-source">
             <label htmlFor="agent-source">Fonte</label>
             <select

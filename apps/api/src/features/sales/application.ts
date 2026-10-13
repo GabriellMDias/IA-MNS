@@ -17,8 +17,12 @@ import { Conversations } from "./conversations.js";
 import {
   salesInterpreterVersion,
   type SalesInterpreter,
+  type SalesProductGuide,
 } from "./interpreter.js";
 import type { SalesReader } from "./reader.js";
+import { scopeDescription, type SalesProductScope } from "./product-scope.js";
+import type { Interpretation } from "./interpretation.js";
+import type { Advance } from "./conversation-state.js";
 import { SalesFailure } from "./errors.js";
 import {
   defaultSelection,
@@ -82,6 +86,18 @@ export type ExecuteOptions = Readonly<{
   selection?: SourceSelection;
   /** Observes a source failure that the answer reports instead of failing. */
   report?: (error: unknown) => void;
+  /** Composition supplies this port; legacy literal sales never invoke it. */
+  products?: Readonly<{
+    guide: SalesProductGuide;
+    resolve: (
+      interpretation: Interpretation,
+      step: Advance,
+      executeSelection: boolean,
+    ) => Promise<
+      | { kind: "ready"; scope?: SalesProductScope }
+      | { kind: "clarification" | "unsupported"; message: string }
+    >;
+  }>;
 }>;
 export function authorizeSales(actor: SalesActor): void {
   if (!actor.canReadSales || !actor.id)
@@ -159,11 +175,26 @@ export class SalesChat {
     source: SalesSource,
     query: SalesQuery,
     signal: AbortSignal,
+    scope?: SalesProductScope,
   ): Promise<SalesResult> {
     const reader = this.readers[source];
     if (!reader) throw new SalesFailure("SALES_NOT_CONFIGURED");
-    const data = await reader.read(query, signal);
-    return assembleResult(query, data.current, data.previous, source);
+    if (scope && scope.source !== source)
+      throw new SalesFailure("SALES_QUERY_INVALID");
+    const data = scope
+      ? await reader.read(query, signal, scope)
+      : await reader.read(query, signal);
+    const result = assembleResult(query, data.current, data.previous, source);
+    return scope
+      ? {
+          ...result,
+          productSelection: scopeDescription(scope),
+          warnings: [
+            "A seleção usa o cadastro atual, aplicado igualmente aos dois períodos; não reconstrói classificações ou responsáveis históricos.",
+            ...result.warnings,
+          ],
+        }
+      : result;
   }
   /**
    * Interprets one message against the structured conversation state, then
@@ -190,12 +221,30 @@ export class SalesChat {
     trace.note("sales", { interpreter: salesInterpreterVersion, selection });
     trace.content("sales", { today, stateBefore: state });
     const interpretation = await this.interpreter.interpret(
-      { message, state, today },
+      { message, state, today, products: options.products?.guide },
       signal,
       trace,
     );
     signal.throwIfAborted();
-    const step = advance(state, interpretation, message, today);
+    const understood =
+      options.products &&
+      interpretation.productMode === "reuse" &&
+      !state.active &&
+      !state.pending
+        ? { ...interpretation, relation: "new" as const }
+        : interpretation;
+    const step = advance(
+      state,
+      options.products &&
+        ["resolve", "reuse", "all"].includes(interpretation.productMode ?? "")
+        ? {
+            ...understood,
+            filters: [{ dimension: "product", action: "clear", text: null }],
+          }
+        : understood,
+      message,
+      today,
+    );
     trace.content("sales", { interpretation });
     trace.note("sales", {
       decision: interpretation.decision,
@@ -230,6 +279,30 @@ export class SalesChat {
         state: next,
       };
     };
+    const products =
+      step.kind !== "unsupported" && options.products
+        ? await options.products.resolve(
+            interpretation,
+            step,
+            step.kind === "execute" &&
+              sourcesOf(selection).some((source) =>
+                supportsMetric(source, step.query.metric),
+              ),
+          )
+        : { kind: "ready" as const };
+    signal.throwIfAborted();
+    if (products.kind !== "ready")
+      return finish(products.kind, products.message, {
+        ...state,
+        pending:
+          step.kind === "execute"
+            ? {
+                draft: step.spec,
+                awaiting: ["product"],
+                clarification: "product",
+              }
+            : step.state.pending,
+      });
     if (step.kind !== "execute")
       return step.kind === "clarify"
         ? finish(
@@ -239,6 +312,14 @@ export class SalesChat {
           )
         : finish("unsupported", unsupportedMessage, step.state);
     const query = step.query;
+    const scope = products.scope;
+    if (
+      scope &&
+      (selection === "all" ||
+        selection !== scope.source ||
+        query.productSearch !== null)
+    )
+      throw new SalesFailure("SALES_QUERY_INVALID");
     const selected = sourcesOf(selection);
     const queried = selected.filter((source) =>
       supportsMetric(source, query.metric),
@@ -253,7 +334,7 @@ export class SalesChat {
       );
     await progress("querying_sales");
     const settled = await Promise.allSettled(
-      queried.map((source) => this.readSource(source, query, signal)),
+      queried.map((source) => this.readSource(source, query, signal, scope)),
     );
     signal.throwIfAborted();
     const sections: SourceSection[] = selected.map((source) => {

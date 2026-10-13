@@ -1,0 +1,40 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0034-apply-verified-product-selections-to-sales-without-materializing-display-lists.md",
+  "title": "ADR-0034: Apply Verified Product Selections to Sales without Materializing Display Lists",
+  "html": "<p><strong>Status:</strong> proposed\n<strong>Date:</strong> 2026-10-12\n<strong>Extends:</strong> <a href=\"/docs/repository/docs/adr/0032-resolve-product-selections-through-a-verified-semantic-catalog\">ADR-0032</a>, <a href=\"/docs/repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability\">ADR-0018</a>, <a href=\"/docs/repository/docs/adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately\">ADR-0027</a>.</p>\n<h2 id=\"context\">Context</h2>\n<p>The owner requested integration of the existing resolver with sales. Product answers list at most 200 registrations, while a valid classification or indirect filter can identify thousands. Passing that display list to sales would silently undercount. The registration catalogs already own reviewed relationships, semantics, validation and compilers; sales owns its reference grain, monetary/quantity/weight definitions and date bounds.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>The implementation under review composes a product-owned coordinator through a sales-owned resolution port. The resolver interprets only the product conditions of an otherwise validated sales request and retains its existing grounding and ambiguity rules. Its adapter revalidates access/metadata and compiles complete key membership. The sales adapter adds this internal, bound key subquery as a semi-join to its reference SQL. Neither model nor HTTP caller supplies SQL, identifiers or product codes.</p>\n<p>Membership uses the current registration at execution, equally for both comparison periods. A current product buyer filter does not become a historical sale-time buyer filter. Existing monetary measures, reference joins, unit handling and transaction limits remain authoritative. A scoped request chooses one ERP; ordinary literal sales retain the existing independent <code>Tudo</code> behavior. Explicit references can reuse a same-source, catalog-versioned lookup; unrelated new sales do not inherit it. Semantic sales requires both existing permissions on every turn.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>This completes the separation in ADR-0032 without making sales depend on product internals or adding a second resolver. Predicate compilation preserves complete membership without large id arrays, Oracle list limits or display truncation. Persisted context holds selections, not SQL. Using current registration is consistent with the verified product concepts; historical classification/responsibility needs separate evidence and is outside this request.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"pass-the-displayed-product-ids\">Pass the displayed product ids</h3>\n<p>Rejected because the display is intentionally incomplete. Raising its limit would introduce expensive materialization and still require refusal above a new arbitrary cap.</p>\n<h3 id=\"let-the-sales-interpreter-generate-joins\">Let the sales interpreter generate joins</h3>\n<p>Rejected because it would duplicate semantic ownership and expose execution to unchecked model SQL.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Complete scoped totals, no expansion of one-to-many relations, explicit interpretation/provenance, and reusable per-ERP compiler behavior.</li>\n<li>No ERP grants, schema changes or new runtime credentials are required for the already enabled dimensions.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>Semantic requests add resolver work within the existing finite turn deadline; unavailable paths or ambiguity block sales rather than produce partial totals.</li>\n<li>Reference semantics can exclude identified registrations with no eligible sales. Current membership cannot answer historical responsibility questions.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>Agent sales context has a versioned envelope that upgrades existing sales state; legacy sales HTTP remains literal and unchanged.</li>\n<li>Sales results add optional product-selection provenance; generated OpenAPI/SDK and the existing result UI consume it. Product/aggregate display bounds remain separate from total membership.</li>\n<li>This record remains proposed for repository review; it does not change accepted ADR history or authorize deployment.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/architecture/semantic-product-resolution#sales-integration\">Semantic product resolution</a></li>\n<li><a href=\"/docs/repository/docs/domains/sales-chat#semantic-product-selections\">Sales semantics and user scenarios</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0034-apply-verified-product-selections-to-sales-without-materializing-display-lists",
+      "text": "ADR-0034: Apply Verified Product Selections to Sales without Materializing Display Lists",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "pass-the-displayed-product-ids",
+      "text": "Pass the displayed product ids",
+      "level": 3
+    },
+    {
+      "id": "let-the-sales-interpreter-generate-joins",
+      "text": "Let the sales interpreter generate joins",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

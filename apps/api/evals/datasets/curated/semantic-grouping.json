@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "description": "Joint month and product grouping uses the same reviewed sales relation and retains follow-up context.",
+  "cases": [
+    {
+      "id": "semantic-grouping/month-product-follow-up",
+      "title": "A two-dimensional grouping preserves both dimensions when changing the measure",
+      "status": "active",
+      "source": "curated",
+      "tags": ["grouping", "follow-up", "multi-turn"],
+      "today": "2026-10-12",
+      "turns": [
+        {
+          "user": "Detalhe o valor vendido por produto dentro de cada mês de julho a setembro de 2026.",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "period": {
+                "kind": "range",
+                "startDate": "2026-07-01",
+                "endDate": "2026-09-30"
+              },
+              "groupBy": "month_product"
+            }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "productSearch": null,
+              "startDate": "2026-07-01",
+              "endDate": "2026-09-30",
+              "metric": "net_value",
+              "groupBy": "month_product",
+              "comparison": "none"
+            }
+          }
+        },
+        {
+          "user": "Agora mostre a quantidade nesse mesmo detalhamento.",
+          "fixture": {
+            "interpretation": { "relation": "refine", "measure": "quantity" }
+          },
+          "expect": {
+            "kind": "answer",
+            "query": {
+              "metric": "quantity",
+              "groupBy": "month_product",
+              "startDate": "2026-07-01",
+              "endDate": "2026-09-30"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

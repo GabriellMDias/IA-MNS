@@ -4,11 +4,17 @@
 
 This page owns how IA-MNS turns a Portuguese message into a bounded analytical query: the division of work between model and application, the structured conversation state, the analytical plan, validation layers, the model port and AI tracing. [Sales semantics](../domains/sales-chat.md) own what the figures mean; the [agent](../domains/corporate-agent.md) owns conversations, persistence and progress.
 
-## Implemented today and not implemented
+## Conversational entry point
 
-Implemented: structured sales conversation state (context version 2), deterministic relation normalization and merging, filter grounding, named period expressions resolved by the application, a catalog-derived analytical vocabulary with one dimension (product), pending-request routing, the structured-model port with an OpenAI adapter, metadata and content AI tracing, and the [evaluation framework](ai-evaluation.md).
+The default agent uses [conversational autonomy](conversational-autonomy.md): direct responses over authorized numerical evidence, a bounded tool loop, structured semantic sales composition, owned attachments and explicit presentation preferences. [AI data processing](../security/ai-data-processing.md) replaces the historical blanket prohibition on transmitting financial facts. The remaining sections document the retained strict interpreter and legacy-routing path; their figure-free context and application-authored prose constraints do not govern the new conversational composer. The server still controls all authorization, deterministic calculations, query compilation and source scope.
 
-Not implemented: dimensions other than product (customer/partner, company, project, salesperson, product group), several measures in one query, week or quarter period forms (weeks are counted in days; other periods use explicit ranges), other model providers, expiry of unanswered requests, AI traces for the legacy `/sales/chat` endpoint, and any automatic prompt, code or deployment change. Any of these requires its own reviewed change.
+## Retained interpreter behavior
+
+Implemented: structured sales conversation state (context version 2), deterministic relation normalization and merging, filter grounding, named period expressions resolved by the application, a catalog-derived analytical vocabulary with one dimension (product), pending-request routing, the structured-model port with an OpenAI adapter, metadata and content AI tracing, and the [evaluation framework](ai-evaluation.md). Product lookup applies the same principles with its own catalog, tools and state: the model reads the request against semantic-catalog dimensions and chooses among real classification candidates, and the application grounds, resolves, merges and executes ([semantic product resolution](semantic-product-resolution.md)).
+
+The normal agent sales path also supports [semantic product selections](semantic-product-resolution.md#sales-integration). Its version-3 envelope retains the original version-2 analytical state with source-scoped product AST/pending work. The composed sales tool adds nullable `productMode`; the resolver's sales purpose interprets only registration conditions. Products owns those conditions, while sales still owns periods, measures and the reference grain. Legacy `/sales/chat` remains literal.
+
+Not implemented for sales: transaction dimensions other than product (customer/partner, company, project, salesperson), week or quarter period forms (weeks are counted in days; other periods use explicit ranges), other model providers, expiry of unanswered requests, AI traces for the legacy `/sales/chat` endpoint, and any automatic prompt, code or deployment change. Any of these requires its own reviewed change.
 
 ## Division of work
 
@@ -71,7 +77,7 @@ The third rule is general slot filling: a message that only answers what was ask
 
 [`analysis.ts`](../../apps/api/src/features/sales/analysis.ts) defines the plan independently of wording and SQL:
 
-- `salesCatalog`: measures (`net_value`, `quantity`, `weight`), dimensions (`product`), groupings (`total`, `month`, `product`), comparisons (`none`, `previous_year`, `previous_period`) and defaults. Interpretation schemas are generated from these values; a test keeps them identical.
+- `salesCatalog`: measures (`net_value`, `quantity`, `weight`), dimensions (`product`), groupings (`total`, `month`, `product`, `month_product`), comparisons (`none`, `previous_year`, `previous_period`) and defaults. Interpretation schemas are generated from these values; a test keeps them identical.
 - `AnalysisSpec` (complete plan) and `AnalysisDraft` (partial plan): measure, dimension filters, period expression, grouping, comparison.
 - `compileAnalysis` resolves the period and maps the plan to the existing `SalesQuery`, which `validateQuery` and the reconciled [query](../../apps/api/src/features/sales/query.ts) execute unchanged.
 
@@ -107,7 +113,7 @@ Any failure in layers 1–2 is `SALES_PROVIDER_UNAVAILABLE` or `AGENT_PROVIDER_U
 
 ## Model port
 
-[`src/ai/model.ts`](../../apps/api/src/ai/model.ts) defines `StructuredModel.invoke(request)`: instructions, messages, one strict tool, an output budget. It returns schema-valid output plus `ModelInvocation` metadata (provider, model, latency, token counts). [`openai.ts`](../../apps/api/src/ai/openai.ts) implements it with the Responses API, `store:false`, forced tool choice, no parallel calls, no retries and a 20-second request timeout for interactive turns (offline tooling may pass a longer one). The router and interpreter instructions carry version identifiers (`agentRouterVersion`, `salesInterpreterVersion`) recorded in traces and evaluation reports; change the identifier whenever instructions change. Another provider would implement the same interface; none is integrated.
+[`src/ai/model.ts`](../../apps/api/src/ai/model.ts) defines `StructuredModel.invoke(request)`: instructions, messages, one strict tool, an output budget. It returns schema-valid output plus `ModelInvocation` metadata (provider, model, latency, token counts). [`openai.ts`](../../apps/api/src/ai/openai.ts) implements it with the Responses API, `store:false`, forced tool choice, no parallel calls, no retries and a 20-second request timeout for interactive turns (offline tooling may pass a longer one). The router and interpreter instructions carry version identifiers (`agentRouterVersion`, `salesInterpreterVersion`, and for product lookup `productInterpreterVersion` and `productSelectorVersion`) recorded in traces and evaluation reports; change the identifier whenever instructions change. The router's capability catalog is part of its instructions, so adding a capability changes the router version (`agent-router/2026-10-11.1` added product lookup). Another provider would implement the same interface; none is integrated.
 
 ## AI tracing and observability
 

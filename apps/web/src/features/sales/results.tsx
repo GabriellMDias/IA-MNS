@@ -94,8 +94,11 @@ export function SalesResults({
       <p className="sales-query-summary">
         {result.query.startDate.split("-").reverse().join("/")} a{" "}
         {result.query.endDate.split("-").reverse().join("/")} ·{" "}
-        {result.query.productSearch ?? "Todos os produtos"}
+        {result.productSelection
+          ? "Produtos da seleção semântica"
+          : (result.query.productSearch ?? "Todos os produtos")}
       </p>
+      {result.productSelection && <p>{result.productSelection.description}</p>}
       <div className="sales-totals">
         {result.totals.map((total) => (
           <div className="sales-total" key={total.unit}>

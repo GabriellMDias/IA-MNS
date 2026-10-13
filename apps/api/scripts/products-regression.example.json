@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "example/category-with-exclusion",
+      "description": "Fictional values. Copy to apps/api/evals/.local/products/regression.json (ignored) and replace them with real, owner-approved expectations.",
+      "turns": [
+        {
+          "message": "Quais produtos são fruta exemplo?",
+          "source": "vrmaster",
+          "expect": {
+            "kind": "answer",
+            "dimensions": ["category"],
+            "total": 2,
+            "includes": ["101", "102"],
+            "excludes": ["103"],
+            "sql": "SELECT p.id FROM public.produto p WHERE p.id IN (101, 102)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "example/ambiguous-then-choice",
+      "turns": [
+        {
+          "message": "Quais produtos são fruta exemplo?",
+          "source": "vrmaster",
+          "expect": { "kind": "clarification", "options": 2 }
+        },
+        {
+          "message": "1",
+          "source": "vrmaster",
+          "expect": { "kind": "answer", "minTotal": 1 }
+        }
+      ]
+    },
+    {
+      "id": "example/out-of-scope",
+      "turns": [
+        {
+          "message": "Quanto vendi de fruta exemplo no mês passado?",
+          "source": "vrmaster",
+          "expect": { "kind": "unsupported" }
+        }
+      ]
+    }
+  ]
+}

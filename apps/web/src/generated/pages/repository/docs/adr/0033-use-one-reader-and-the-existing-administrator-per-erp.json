@@ -1,0 +1,40 @@
+{
+  "kind": "repository",
+  "source": "docs/adr/0033-use-one-reader-and-the-existing-administrator-per-erp.md",
+  "title": "ADR-0033: Use One Reader and the Existing Administrator per ERP",
+  "html": "<p><strong>Status:</strong> accepted\n<strong>Date:</strong> 2026-10-11</p>\n<h2 id=\"context\">Context</h2>\n<p>IA-MNS reads Sankhya Oracle and VRMaster PostgreSQL. Earlier investigation used broader credentials alongside runtime configuration, and PH-29 requested removal and rotation of the temporary VRMaster Discovery credentials. The owner has now explicitly decided the account topology and authorized ongoing read-only Discovery with the existing administrative users.</p>\n<h2 id=\"decision\">Decision</h2>\n<p>Each ERP has exactly two IA-MNS access identities: a dedicated least-privilege runtime reader and the existing administrator, also used by Codex for Discovery. Sankhya runtime is <code>IA_MNS_RO</code> (provisioning pending); VRMaster runtime is the already provisioned <code>ia_mns</code>. Do not create a third account dedicated to Discovery, replace the existing administrator or rotate its credentials merely because Discovery ended.</p>\n<p>Preserve <code>VRMASTER_DB_USER_FULLACESS</code> and <code>VRMASTER_DB_PASSWORD_FULLACESS</code>; add <code>SANKHYA_DB_USER_FULLACESS</code> and <code>SANKHYA_DB_PASSWORD_FULLACESS</code>. Administrative credentials belong in ignored <code>.env.discovery.local</code>, explicitly read by development tools. Runtime configuration, processes, client builds and deployment must not receive them or fall back to them.</p>\n<p>Discovery permits only reading and inspecting task-relevant schemas, objects, relationships and data, subject to project confidentiality. Read-only transactions are additional protection, not sufficient containment for an administrator. ERP mutations, including DML, DDL, grants, revocations and procedures with side effects, require explicit owner authorization. For implementations needing more runtime access, identify minimum privileges, prepare reviewed scripts and execute within that authorization; the current architecture task explicitly prohibits all real ERP account/privilege changes.</p>\n<p>This refines ERP access only. Application-owned PostgreSQL runtime/migration identities remain separate. <a href=\"/docs/repository/docs/security/erp-database-access\">ERP access policy</a> owns current controls and procedures.</p>\n<h2 id=\"rationale\">Rationale</h2>\n<p>The owner's definitive decision retains the existing operational administrator and permits necessary development investigation without a redundant third account. Separating credential delivery preserves the runtime reader boundary. Fixed inspection queries, explicit projections, bounded reads, local evidence and human authorization for mutations compensate for some exposure, but do not convert an administrator into a restricted database reader.</p>\n<h2 id=\"alternatives-considered\">Alternatives Considered</h2>\n<h3 id=\"a-third-restricted-discovery-account\">A third restricted Discovery account</h3>\n<p>Explicitly rejected by the owner. Do not create it under a different name or treat it as a prerequisite.</p>\n<h3 id=\"share-administrative-credentials-with-runtime\">Share administrative credentials with runtime</h3>\n<p>Rejected because read-only transactions cannot replace minimal database privileges or credential isolation.</p>\n<h2 id=\"consequences\">Consequences</h2>\n<h3 id=\"positive\">Positive</h3>\n<ul>\n<li>Runtime access remains narrowly scoped; Discovery retains access to objects needed for development.</li>\n<li>Credential names remain compatible and the existing ERP administrators are preserved.</li>\n</ul>\n<h3 id=\"negative\">Negative</h3>\n<ul>\n<li>A Discovery process still holds administrative capability; reviewed operations and confidentiality controls remain necessary.</li>\n<li>Local isolation and runtime configuration tests do not certify actual database grants or sandbox arbitrary SQL.</li>\n</ul>\n<h3 id=\"operational-or-migration-impact\">Operational or Migration Impact</h3>\n<ul>\n<li>Separate local administrative credential delivery and provision <code>IA_MNS_RO</code> before combined Sankhya runtime acceptance (PH-08).</li>\n<li>PH-29 becomes credential isolation and maintenance, not removal of the administrative identity.</li>\n<li>This decision does not itself execute ERP provisioning or grant scripts.</li>\n</ul>\n<h2 id=\"references\">References</h2>\n<ul>\n<li><a href=\"/docs/repository/docs/security/erp-database-access\">Runtime and Discovery access</a></li>\n<li><a href=\"/docs/repository/docs/security/secrets-management\">Secrets management</a></li>\n<li><a href=\"/docs/repository/docs/project/human-actions#ph-29\">Human actions</a></li>\n<li><a href=\"/docs/repository/docs/adr/0018-bound-natural-language-sales-to-a-read-only-query-capability\">Read-only sales capability</a></li>\n</ul>\n",
+  "headings": [
+    {
+      "id": "adr-0033-use-one-reader-and-the-existing-administrator-per-erp",
+      "text": "ADR-0033: Use One Reader and the Existing Administrator per ERP",
+      "level": 1
+    },
+    { "id": "context", "text": "Context", "level": 2 },
+    { "id": "decision", "text": "Decision", "level": 2 },
+    { "id": "rationale", "text": "Rationale", "level": 2 },
+    {
+      "id": "alternatives-considered",
+      "text": "Alternatives Considered",
+      "level": 2
+    },
+    {
+      "id": "a-third-restricted-discovery-account",
+      "text": "A third restricted Discovery account",
+      "level": 3
+    },
+    {
+      "id": "share-administrative-credentials-with-runtime",
+      "text": "Share administrative credentials with runtime",
+      "level": 3
+    },
+    { "id": "consequences", "text": "Consequences", "level": 2 },
+    { "id": "positive", "text": "Positive", "level": 3 },
+    { "id": "negative", "text": "Negative", "level": 3 },
+    {
+      "id": "operational-or-migration-impact",
+      "text": "Operational or Migration Impact",
+      "level": 3
+    },
+    { "id": "references", "text": "References", "level": 2 }
+  ]
+}

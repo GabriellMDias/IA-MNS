@@ -11,14 +11,20 @@ import {
 import { errorDiagnostics } from "../../error-diagnostics.js";
 import { currentTraceId } from "../../request-context.js";
 import { SalesFailure } from "../sales/errors.js";
+import { ProductFailure } from "../products/errors.js";
 import type { SourceSelection } from "../sales/sources.js";
 import { AgentFailure, agentErrors } from "./errors.js";
 import { CorporateAgent, type AgentActor } from "./application.js";
 import { AgentRepository } from "./prisma-repository.js";
 import { createAgentPlanner } from "./planner.js";
 import { createOpenAiModel } from "../../ai/openai.js";
+import { createOpenAiConversationModel } from "../../ai/openai-conversation.js";
+import { canReadReply } from "./evidence.js";
 import type { AgentCapability } from "./capabilities.js";
 import type { OperationalParameters } from "../../parameters.js";
+import type { PresentationPreferences } from "./preferences.js";
+import { presentationPreferencesSchema } from "./preferences.js";
+import { uploadAttachmentSchema } from "./attachments.js";
 import {
   updateConversationOperation,
   searchConversationsOperation,
@@ -32,6 +38,9 @@ import {
   getConversationOperation,
   deleteConversationOperation,
   submitTurnOperation,
+  uploadAttachmentOperation,
+  deleteAttachmentOperation,
+  setPreferencesOperation,
 } from "./contracts.js";
 const respond = errorResponder({ ...coreErrors, ...agentErrors });
 export function createAgentModule(
@@ -83,6 +92,15 @@ export function createAgentModule(
                 : undefined,
               capabilities,
               {
+                conversation:
+                  config.openaiApiKey && config.agentMode === "conversational"
+                    ? createOpenAiConversationModel(
+                        config,
+                        parameters
+                          ? () => parameters.get("ai.model")
+                          : config.openaiModel,
+                      )
+                    : undefined,
                 traceLevel: parameters
                   ? () => parameters.get("ai.traceLevel")
                   : config.aiTrace,
@@ -166,11 +184,17 @@ export function createAgentModule(
                 error.code !== "AGENT_PROVIDER_UNAVAILABLE"
               )
                 return error.code;
+              if (
+                error instanceof ProductFailure &&
+                error.code !== "PRODUCTS_PROVIDER_UNAVAILABLE"
+              )
+                return error.code;
               request.log.error(
                 {
                   errorId: `err_${randomUUID()}`,
                   turnId,
-                  ...(error instanceof SalesFailure
+                  ...(error instanceof SalesFailure ||
+                  error instanceof ProductFailure
                     ? error.boundary
                     : {
                         provider:
@@ -183,11 +207,11 @@ export function createAgentModule(
                 },
                 "agent_execution_failed",
               );
-              return error instanceof SalesFailure
+              return error instanceof SalesFailure ||
+                error instanceof AgentFailure ||
+                error instanceof ProductFailure
                 ? error.code
-                : error instanceof AgentFailure
-                  ? error.code
-                  : "INTERNAL_ERROR";
+                : "INTERNAL_ERROR";
             }
             const requireAgent = () => {
               if (!agent) throw new AgentFailure("AGENT_NOT_CONFIGURED");
@@ -224,14 +248,18 @@ export function createAgentModule(
                       : resources.verifier
                         ? "token"
                         : "unavailable",
-                  capabilities: capabilities.map(
-                    ({ id, title, description, examples }) => ({
+                  capabilities: capabilities
+                    .filter(
+                      (item) =>
+                        config.agentMode !== "legacy" ||
+                        item.legacyRouting !== false,
+                    )
+                    .map(({ id, title, description, examples }) => ({
                       id,
                       title,
                       description,
                       examples: [...examples],
-                    }),
-                  ),
+                    })),
                 };
               },
             );
@@ -287,11 +315,11 @@ export function createAgentModule(
                   if (
                     detail.turns.some(
                       (turn) =>
-                        turn.reply?.capabilityId &&
-                        !capabilities.some(
-                          (capability) =>
-                            capability.id === turn.reply!.capabilityId &&
-                            actor.permissions.has(capability.permission),
+                        turn.reply &&
+                        !canReadReply(
+                          turn.reply,
+                          actor.permissions,
+                          capabilities,
                         ),
                     )
                   )
@@ -380,6 +408,82 @@ export function createAgentModule(
                   );
                   return { deleted: true };
                 }),
+            );
+            scope.post<{ Params: { conversationId: string }; Body: unknown }>(
+              uploadAttachmentOperation.url,
+              {
+                schema: uploadAttachmentOperation.schema,
+                onRequest: authenticate,
+                bodyLimit: 140000,
+                preValidation: async (request, reply) => {
+                  if (!Value.Check(uploadAttachmentSchema, request.body))
+                    await handle(request, reply, () =>
+                      Promise.reject(
+                        new AgentFailure("AGENT_ATTACHMENT_INVALID"),
+                      ),
+                    );
+                },
+                config: {
+                  rateLimit: {
+                    max: 8,
+                    timeWindow: "1 minute",
+                    keyGenerator: (request) =>
+                      actors.get(request)?.id ?? request.ip,
+                  },
+                },
+              },
+              (request, reply) =>
+                handle(request, reply, () =>
+                  requireAgent().repository.attach(
+                    actors.get(request)!.id,
+                    request.params.conversationId,
+                    request.body,
+                  ),
+                ),
+            );
+            scope.delete<{
+              Params: { conversationId: string; attachmentId: string };
+            }>(
+              deleteAttachmentOperation.url,
+              {
+                schema: deleteAttachmentOperation.schema,
+                onRequest: authenticate,
+              },
+              (request, reply) =>
+                handle(request, reply, async () => {
+                  await requireAgent().repository.removeAttachment(
+                    actors.get(request)!.id,
+                    request.params.conversationId,
+                    request.params.attachmentId,
+                  );
+                  return { deleted: true as const };
+                }),
+            );
+            scope.patch<{
+              Params: { conversationId: string };
+              Body: PresentationPreferences;
+            }>(
+              setPreferencesOperation.url,
+              {
+                schema: setPreferencesOperation.schema,
+                onRequest: authenticate,
+                preValidation: async (request, reply) => {
+                  if (!Value.Check(presentationPreferencesSchema, request.body))
+                    await handle(request, reply, () =>
+                      Promise.reject(
+                        new AgentFailure("AGENT_REQUEST_CONFLICT"),
+                      ),
+                    );
+                },
+              },
+              (request, reply) =>
+                handle(request, reply, () =>
+                  requireAgent().repository.preferences(
+                    actors.get(request)!.id,
+                    request.params.conversationId,
+                    request.body,
+                  ),
+                ),
             );
             scope.post<{
               Params: { conversationId: string };

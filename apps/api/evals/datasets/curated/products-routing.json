@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "description": "Identifying which products match conditions belongs to product lookup; amounts sold belong to sales even when the products are described in detail. Product interpretation itself is covered by its own tests and the live product regression.",
+  "cases": [
+    {
+      "id": "products/verified-section-synonym-and-flag",
+      "title": "A section synonym combined with a registration flag stays in product lookup",
+      "status": "active",
+      "source": "curated",
+      "tags": ["products", "routing"],
+      "today": "2026-10-11",
+      "turns": [
+        {
+          "user": "Quais produtos de hortifrúti são pesáveis?",
+          "source": "vrmaster",
+          "fixture": {
+            "route": { "intent": "capability", "capabilityId": "products" }
+          },
+          "expect": { "route": "products", "kind": "answer", "sources": [] }
+        }
+      ]
+    },
+    {
+      "id": "products/sankhya-alternate-unit",
+      "title": "Sankhya product filters use the shared products capability",
+      "status": "active",
+      "source": "curated",
+      "tags": ["products", "routing"],
+      "today": "2026-10-11",
+      "turns": [
+        {
+          "user": "Quais produtos possuem unidade alternativa KG?",
+          "source": "sankhya",
+          "fixture": {
+            "route": { "intent": "capability", "capabilityId": "products" }
+          },
+          "expect": { "route": "products", "kind": "answer", "sources": [] }
+        }
+      ]
+    },
+    {
+      "id": "products/category-lookup",
+      "title": "Which products are a category goes to product lookup",
+      "status": "active",
+      "source": "curated",
+      "tags": ["products", "routing"],
+      "today": "2026-10-11",
+      "turns": [
+        {
+          "user": "Quais produtos são banana fruta?",
+          "source": "vrmaster",
+          "fixture": {
+            "route": { "intent": "capability", "capabilityId": "products" }
+          },
+          "expect": { "route": "products", "kind": "answer", "sources": [] }
+        }
+      ]
+    },
+    {
+      "id": "products/cost-center-and-buyer",
+      "title": "Products of a cost center and a buyer go to product lookup",
+      "status": "active",
+      "source": "curated",
+      "tags": ["products", "routing"],
+      "today": "2026-10-11",
+      "turns": [
+        {
+          "user": "Quais produtos do centro de custo SECOS pertencem à compradora Ana?",
+          "source": "vrmaster",
+          "fixture": {
+            "route": { "intent": "capability", "capabilityId": "products" }
+          },
+          "expect": { "route": "products", "kind": "answer", "sources": [] }
+        }
+      ]
+    },
+    {
+      "id": "products/sales-of-described-products",
+      "title": "Amounts sold of described products stay with sales",
+      "status": "active",
+      "source": "curated",
+      "tags": ["products", "routing", "product"],
+      "today": "2026-10-11",
+      "turns": [
+        {
+          "user": "Quanto vendi de banana em setembro?",
+          "source": "vrmaster",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "banana" },
+              "period": { "kind": "month", "month": 9, "year": 2026 }
+            }
+          },
+          "expect": {
+            "route": "sales",
+            "kind": "answer",
+            "sources": ["vrmaster"],
+            "query": {
+              "productSearch": "banana",
+              "startDate": "2026-09-01",
+              "endDate": "2026-09-30",
+              "metric": "net_value"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "products/lookup-after-sales",
+      "title": "A product lookup after a sales answer leaves sales context intact",
+      "status": "active",
+      "source": "curated",
+      "tags": ["products", "routing", "context"],
+      "today": "2026-10-11",
+      "turns": [
+        {
+          "user": "Quanto vendi de maçã em setembro?",
+          "source": "vrmaster",
+          "fixture": {
+            "interpretation": {
+              "measure": "net_value",
+              "filters": { "product": "maçã" },
+              "period": { "kind": "month", "month": 9, "year": 2026 }
+            }
+          },
+          "expect": { "route": "sales", "kind": "answer" }
+        },
+        {
+          "user": "Quais produtos de mercearia não são doces?",
+          "source": "vrmaster",
+          "fixture": {
+            "route": { "intent": "capability", "capabilityId": "products" }
+          },
+          "expect": {
+            "route": "products",
+            "kind": "answer",
+            "sources": [],
+            "state": {
+              "active": { "filters": { "product": "maçã" } }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

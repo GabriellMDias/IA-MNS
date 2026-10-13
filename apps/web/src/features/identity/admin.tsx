@@ -524,16 +524,14 @@ function PersonDetail({
                   type="checkbox"
                   checked={explicit}
                   disabled={action.isPending}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    // React may restore this controlled input before the
+                    // asynchronous mutation runs; retain the person's choice.
+                    const granted = event.currentTarget.checked;
                     action.mutate(() =>
-                      setGrant(
-                        token,
-                        person.id,
-                        item.permission,
-                        event.target.checked,
-                      ),
-                    )
-                  }
+                      setGrant(token, person.id, item.permission, granted),
+                    );
+                  }}
                 />{" "}
                 {item.title} <code>{item.permission}</code> ·{" "}
                 {item.access === "read"

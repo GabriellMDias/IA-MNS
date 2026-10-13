@@ -1,0 +1,28 @@
+{
+  "kind": "component",
+  "name": "ProductOptions",
+  "source": "apps/web/src/features/products/results.tsx",
+  "summary": "Presents the numbered choices of a product clarification, such as two interpretations of a word or several matching buyers.",
+  "props": [
+    {
+      "name": "options",
+      "type": "ProductOptions",
+      "meaning": "Generated SDK agent result with the dimension, the asked words and numbered option labels."
+    },
+    {
+      "name": "onChoose",
+      "type": "(number: number) => void (optional)",
+      "meaning": "Sends the chosen number as the next message; absent for earlier turns, which show the options as text."
+    }
+  ],
+  "states": ["Choosable", "Historical"],
+  "accessibility": "A group named by its title; each choice is a native button whose text includes its number, so typing the number is equivalent.",
+  "usage": "Option labels can be personal data such as buyer names: they appear only in this result, never in the reply text that later turns send to the model.",
+  "examples": [
+    {
+      "id": "product-options-choice",
+      "label": "Two interpretations",
+      "description": "Synthetic choices; selecting one shows a local message and makes no request."
+    }
+  ]
+}

@@ -201,6 +201,23 @@
       "file": "pages/api/createProvisionedPerson.json"
     },
     {
+      "id": "api/deleteAgentAttachment",
+      "kind": "api",
+      "title": "deleteAgentAttachment",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /agent/conversations/{conversationId}/attachments/{attachmentId}",
+      "method": "DELETE",
+      "path": "/agent/conversations/{conversationId}/attachments/{attachmentId}",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteAgentAttachment.json"
+    },
+    {
       "id": "api/deleteAgentConversation",
       "kind": "api",
       "title": "deleteAgentConversation",
@@ -931,6 +948,24 @@
       "file": "pages/api/searchSankhyaUsers.json"
     },
     {
+      "id": "api/setAgentPreferences",
+      "kind": "api",
+      "title": "setAgentPreferences",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /agent/conversations/{conversationId}/preferences",
+      "method": "PATCH",
+      "path": "/agent/conversations/{conversationId}/preferences",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/setAgentPreferences.json"
+    },
+    {
       "id": "api/setIdentityPersonStatus",
       "kind": "api",
       "title": "setIdentityPersonStatus",
@@ -1111,6 +1146,24 @@
       "file": "pages/api/updateSecurityPolicy.json"
     },
     {
+      "id": "api/uploadAgentAttachment",
+      "kind": "api",
+      "title": "uploadAgentAttachment",
+      "group": "Agent",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /agent/conversations/{conversationId}/attachments",
+      "method": "POST",
+      "path": "/agent/conversations/{conversationId}/attachments",
+      "tags": ["Agent"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/uploadAgentAttachment.json"
+    },
+    {
       "id": "database/agent_conversations",
       "kind": "database",
       "title": "agent_conversations",
@@ -1271,6 +1324,16 @@
       "file": "pages/database/operational_parameters.json"
     },
     {
+      "id": "components/ConversationMaterials",
+      "kind": "component",
+      "title": "ConversationMaterials",
+      "group": "Web components",
+      "source": "apps/web/src/features/agent/materials.tsx",
+      "summary": "Manages owned operational attachments and explicit presentation preferences within one conversation.",
+      "headings": [],
+      "file": "pages/components/ConversationMaterials.json"
+    },
+    {
       "id": "components/ErrorNotice",
       "kind": "component",
       "title": "ErrorNotice",
@@ -1279,6 +1342,26 @@
       "summary": "Displays a public API failure message and an optional reload action.",
       "headings": [],
       "file": "pages/components/ErrorNotice.json"
+    },
+    {
+      "id": "components/ProductAnswer",
+      "kind": "component",
+      "title": "ProductAnswer",
+      "group": "Web components",
+      "source": "apps/web/src/features/products/results.tsx",
+      "summary": "Presents the products a lookup found in the Pilar da Terra (VR Master) registration with how each criterion was understood.",
+      "headings": [],
+      "file": "pages/components/ProductAnswer.json"
+    },
+    {
+      "id": "components/ProductOptions",
+      "kind": "component",
+      "title": "ProductOptions",
+      "group": "Web components",
+      "source": "apps/web/src/features/products/results.tsx",
+      "summary": "Presents the numbered choices of a product clarification, such as two interpretations of a word or several matching buyers.",
+      "headings": [],
+      "file": "pages/components/ProductOptions.json"
     },
     {
       "id": "components/SalesAnswer",
@@ -1326,7 +1409,7 @@
       "title": "API Runtime",
       "group": "Workspace guides",
       "source": "apps/api/README.md",
-      "summary": "The Fastify API runtime provides configuration, structured logging and tracing, health/lifecycle behavior, the public error envelope, optional PostgreSQL access through Prisma,…",
+      "summary": "ERP runtime and development Discovery use separate credential delivery under ERP access policy and setup. Local commands exclude administrative keys before launching; only…",
       "headings": [],
       "file": "pages/repository/apps/api/README.json"
     },
@@ -1681,6 +1764,46 @@
       "file": "pages/repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.json"
     },
     {
+      "id": "repository/docs/adr/0032-resolve-product-selections-through-a-verified-semantic-catalog",
+      "kind": "repository",
+      "title": "ADR-0032: Resolve Product Selections through a Verified Semantic Catalog",
+      "group": "Decisions",
+      "source": "docs/adr/0032-resolve-product-selections-through-a-verified-semantic-catalog.md",
+      "summary": "On 2026-10-11 the owner asked for a reusable component that identifies products of the VR Master (Pilar da Terra) registration from Portuguese requests such as \"Quais produtos…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0032-resolve-product-selections-through-a-verified-semantic-catalog.json"
+    },
+    {
+      "id": "repository/docs/adr/0033-use-one-reader-and-the-existing-administrator-per-erp",
+      "kind": "repository",
+      "title": "ADR-0033: Use One Reader and the Existing Administrator per ERP",
+      "group": "Decisions",
+      "source": "docs/adr/0033-use-one-reader-and-the-existing-administrator-per-erp.md",
+      "summary": "IA-MNS reads Sankhya Oracle and VRMaster PostgreSQL. Earlier investigation used broader credentials alongside runtime configuration, and PH-29 requested removal and rotation of…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0033-use-one-reader-and-the-existing-administrator-per-erp.json"
+    },
+    {
+      "id": "repository/docs/adr/0034-apply-verified-product-selections-to-sales-without-materializing-display-lists",
+      "kind": "repository",
+      "title": "ADR-0034: Apply Verified Product Selections to Sales without Materializing Display Lists",
+      "group": "Decisions",
+      "source": "docs/adr/0034-apply-verified-product-selections-to-sales-without-materializing-display-lists.md",
+      "summary": "The owner requested integration of the existing resolver with sales. Product answers list at most 200 registrations, while a valid classification or indirect filter can…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0034-apply-verified-product-selections-to-sales-without-materializing-display-lists.json"
+    },
+    {
+      "id": "repository/docs/adr/0035-compose-conversations-over-authorized-evidence-and-semantic-tools",
+      "kind": "repository",
+      "title": "ADR-0035: Compose Conversations over Authorized Evidence and Semantic Tools",
+      "group": "Decisions",
+      "source": "docs/adr/0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md",
+      "summary": "The capability router deliberately prevented free-form answers and withheld numerical results from the model. As a result, a request to summarize an already completed sales…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0035-compose-conversations-over-authorized-evidence-and-semantic-tools.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -1831,6 +1954,16 @@
       "file": "pages/repository/docs/architecture/continuous-integration.json"
     },
     {
+      "id": "repository/docs/architecture/conversational-autonomy",
+      "kind": "repository",
+      "title": "Conversational Autonomy",
+      "group": "Architecture",
+      "source": "docs/architecture/conversational-autonomy.md",
+      "summary": "This page owns the conversational loop and its implemented limits. Business meaning stays in sales and semantic product resolution. The execution evidence and remaining work…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/conversational-autonomy.json"
+    },
+    {
       "id": "repository/docs/architecture/delivery-and-side-effects",
       "kind": "repository",
       "title": "Delivery and Side Effects",
@@ -1889,6 +2022,16 @@
       "summary": "This page owns repository placement and local discovery. ADR-0002 governs workspace management; ADR-0003 governs enforcement. Organize by responsibility so humans and agents…",
       "headings": [],
       "file": "pages/repository/docs/architecture/repository-structure.json"
+    },
+    {
+      "id": "repository/docs/architecture/semantic-product-resolution",
+      "kind": "repository",
+      "title": "Semantic Product Resolution",
+      "group": "Architecture",
+      "source": "docs/architecture/semantic-product-resolution.md",
+      "summary": "This page owns how IA-MNS turns a Portuguese product-selection request into a validated, executable product selection: the semantic catalog, the ERP adapter port, the division…",
+      "headings": [],
+      "file": "pages/repository/docs/architecture/semantic-product-resolution.json"
     },
     {
       "id": "repository/docs/architecture/technology-decisions",
@@ -1986,7 +2129,7 @@
       "title": "IA-MNS Corporate Agent",
       "group": "Domain guides",
       "source": "docs/domains/corporate-agent.md",
-      "summary": "IA-MNS is MNS's corporate AI agent. Its product identity and conversational experience are independent of its first business capability. It can greet users, respond to…",
+      "summary": "IA-MNS is MNS's corporate AI agent. Its product identity and conversational experience are independent of its first business capability. It can converse naturally, explain,…",
       "headings": [],
       "file": "pages/repository/docs/domains/corporate-agent.json"
     },
@@ -2001,6 +2144,16 @@
       "file": "pages/repository/docs/domains/identity.json"
     },
     {
+      "id": "repository/docs/domains/product-lookup",
+      "kind": "repository",
+      "title": "Product Lookup",
+      "group": "Domain guides",
+      "source": "docs/domains/product-lookup.md",
+      "summary": "Product lookup is one corporate-agent capability that answers, in Portuguese, which products of the selected registration match conditions. This page owns the VR Master…",
+      "headings": [],
+      "file": "pages/repository/docs/domains/product-lookup.json"
+    },
+    {
       "id": "repository/docs/domains/sales-chat",
       "kind": "repository",
       "title": "Sales Capability",
@@ -2009,6 +2162,16 @@
       "summary": "The first business capability of the IA-MNS corporate agent lets an authorized sales reader ask questions in Portuguese about the sales of MNS (Sankhya) and Pilar da Terra…",
       "headings": [],
       "file": "pages/repository/docs/domains/sales-chat.json"
+    },
+    {
+      "id": "repository/docs/domains/sankhya-product-lookup",
+      "kind": "repository",
+      "title": "Sankhya Product Lookup",
+      "group": "Domain guides",
+      "source": "docs/domains/sankhya-product-lookup.md",
+      "summary": "This page owns Sankhya product semantics, discovery evidence, adapter differences and remaining validation. The executable knowledge is the reviewed catalog and the generated…",
+      "headings": [],
+      "file": "pages/repository/docs/domains/sankhya-product-lookup.json"
     },
     {
       "id": "repository/docs/generated/api/errors",
@@ -2061,6 +2224,16 @@
       "file": "pages/repository/docs/project-derivation.json"
     },
     {
+      "id": "repository/docs/project/agent-autonomy-proposal",
+      "kind": "repository",
+      "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+      "group": "Project guides",
+      "source": "docs/project/agent-autonomy-proposal.md",
+      "summary": "The subsequent implementation request authorized all phases and delegated technical decisions without phase-by-phase approval. The owner also explicitly approved necessary real…",
+      "headings": [],
+      "file": "pages/repository/docs/project/agent-autonomy-proposal.json"
+    },
+    {
       "id": "repository/docs/project/corporate-agent-verification",
       "kind": "repository",
       "title": "Corporate Agent Verification",
@@ -2109,6 +2282,16 @@
       "summary": "Historical review on 2026-10-01. The subsequent corporate agent evolution owns current product identity, durable context and progress; the sales guarantees below remain…",
       "headings": [],
       "file": "pages/repository/docs/project/mvp-audit.json"
+    },
+    {
+      "id": "repository/docs/project/runtime-access-verification",
+      "kind": "repository",
+      "title": "ERP Runtime Access Verification",
+      "group": "Project guides",
+      "source": "docs/project/runtime-access-verification.md",
+      "summary": "On 2026-10-11 the owner supplied the existing administrative credentials in ignored .env.discovery, configured the existing Runtime accounts and explicitly authorized the…",
+      "headings": [],
+      "file": "pages/repository/docs/project/runtime-access-verification.json"
     },
     {
       "id": "repository/docs/project/vrmaster-reconciliation",
@@ -2281,6 +2464,16 @@
       "file": "pages/repository/docs/runbooks/template.json"
     },
     {
+      "id": "repository/docs/security/ai-data-processing",
+      "kind": "repository",
+      "title": "AI Data Processing",
+      "group": "Security",
+      "source": "docs/security/ai-data-processing.md",
+      "summary": "This policy owns the provider-transmission boundary for IA-MNS business analysis. It complements classification, authorization, retention, telemetry redaction, and ERP access.…",
+      "headings": [],
+      "file": "pages/repository/docs/security/ai-data-processing.json"
+    },
+    {
       "id": "repository/docs/security/authentication",
       "kind": "repository",
       "title": "Authentication",
@@ -2319,6 +2512,16 @@
       "summary": "This policy owns data lifecycle, retention, deletion, archival, and recovery requirements. Classification determines sensitivity; domain owners define purpose and meaning.…",
       "headings": [],
       "file": "pages/repository/docs/security/data-retention.json"
+    },
+    {
+      "id": "repository/docs/security/erp-database-access",
+      "kind": "repository",
+      "title": "ERP Database Access",
+      "group": "Security",
+      "source": "docs/security/erp-database-access.md",
+      "summary": "ADR-0033 records the owner's definitive decision. This policy covers external ERPs, not IA-MNS's own PostgreSQL migration/runtime separation.",
+      "headings": [],
+      "file": "pages/repository/docs/security/erp-database-access.json"
     },
     {
       "id": "repository/docs/security/incident-response",
@@ -2436,7 +2639,7 @@
       "title": "IA-MNS",
       "group": "Project guides",
       "source": "README.md",
-      "summary": "IA-MNS is MNS's corporate AI agent, built on the Orion engineering foundation. It provides a Portuguese conversation workspace with persistent history. Business capabilities…",
+      "summary": "IA-MNS is MNS's corporate AI agent, built on the Orion engineering foundation. It provides a Portuguese conversation workspace with persistent history. The conversational…",
       "headings": [],
       "file": "pages/repository/README.json"
     }
@@ -2445,30 +2648,33 @@
     "shards": [
       { "file": "search/0000.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0001.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0002.json", "count": 16, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 15, "kinds": ["api"] },
       { "file": "search/0003.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0004.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 14, "kinds": ["api"] },
       { "file": "search/0005.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0006.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0006.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0007.json", "count": 13, "kinds": ["api", "database"] },
       {
-        "file": "search/0007.json",
-        "count": 53,
+        "file": "search/0008.json",
+        "count": 57,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0008.json", "count": 105, "kinds": ["repository"] },
-      { "file": "search/0009.json", "count": 117, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 146, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 162, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 122, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 126, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 96, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 69, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 75, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 59, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 130, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 82, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 18, "kinds": ["repository"] }
+      { "file": "search/0009.json", "count": 108, "kinds": ["repository"] },
+      { "file": "search/0010.json", "count": 118, "kinds": ["repository"] },
+      { "file": "search/0011.json", "count": 145, "kinds": ["repository"] },
+      { "file": "search/0012.json", "count": 161, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 140, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 102, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 115, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 77, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 69, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 72, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 43, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 86, "kinds": ["repository"] },
+      { "file": "search/0021.json", "count": 124, "kinds": ["repository"] },
+      { "file": "search/0022.json", "count": 80, "kinds": ["repository"] },
+      { "file": "search/0023.json", "count": 13, "kinds": ["repository"] }
     ],
-    "count": 1446
+    "count": 1611
   }
 }

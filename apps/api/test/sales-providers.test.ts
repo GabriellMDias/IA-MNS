@@ -263,6 +263,46 @@ describe("OpenAI Responses boundary", () => {
   });
 });
 describe("Oracle bounded read-only transaction", () => {
+  it("applies semantic membership to both periods with bound values without truncating totals", async () => {
+    const { connection } = driver();
+    const reader = createOracleReader(config);
+    try {
+      const selected = { ...query, productSearch: null };
+      const scope = {
+        source: "sankhya" as const,
+        catalogVersion: "synthetic",
+        description: "Synthetic semantic scope",
+        keysSql: "SELECT p.CODPROD FROM TGFPRO p WHERE p.CODVOL=:v1",
+        binds: { v1: "KG" },
+      };
+      const result = await reader.read(
+        selected,
+        new AbortController().signal,
+        scope,
+      );
+      expect(result.current.rows[0].value).toBe("123.450000000");
+      expect(result.previous).not.toBeNull();
+      const calls = connection.execute.mock.calls.slice(1);
+      expect(calls).toHaveLength(4);
+      for (const [sql, binds] of calls) {
+        expect(sql.match(/PRO.CODPROD IN \(SELECT/g)).toHaveLength(2);
+        expect(binds).toMatchObject({ v1: "KG", productSearch: null });
+      }
+      await expect(
+        reader.read(selected, new AbortController().signal, {
+          source: "vrmaster",
+          catalogVersion: "wrong",
+          description: "wrong",
+          keysSql: "SELECT id FROM produto",
+          values: [],
+        }),
+      ).rejects.toMatchObject({ code: "SALES_QUERY_INVALID" });
+      expect(connection.rollback).toHaveBeenCalledOnce();
+      expect(connection.close).toHaveBeenCalledOnce();
+    } finally {
+      await reader.close();
+    }
+  });
   it("identifies a Thin authentication failure at the connection boundary", async () => {
     createPoolMock.mockRejectedValueOnce(
       Object.assign(new Error("synthetic-private-authentication-details"), {
@@ -526,6 +566,51 @@ describe("Oracle bounded read-only transaction", () => {
       await reader.close();
     }
     expect(pool.close).toHaveBeenCalledWith(0);
+  });
+  it("shares a read-only snapshot and product metadata across all analytical measures", async () => {
+    const { connection, pool } = driver();
+    const execute = connection.execute.getMockImplementation()!;
+    connection.execute.mockImplementation(async (sql, binds) => {
+      const result = await execute(sql, binds);
+      if (sql.includes("SUM(QTDNEG)"))
+        return {
+          rows: [
+            {
+              PERIOD: "2026-07",
+              PRODUCT: null,
+              UNIT: "KG",
+              VALUE: "12.5",
+              MISSING_WEIGHT: 0,
+            },
+          ],
+        };
+      return result;
+    });
+    const reader = createOracleReader(config);
+    try {
+      const result = await reader.readMany!(
+        [
+          { ...query, comparison: "none" },
+          { ...query, comparison: "none", metric: "quantity" },
+        ],
+        new AbortController().signal,
+      );
+      expect(result.map((item) => item.current.rows[0].unit)).toEqual([
+        "BRL",
+        "KG",
+      ]);
+      expect(pool.getConnection).toHaveBeenCalledOnce();
+      expect(
+        connection.execute.mock.calls.filter(
+          ([sql]) => sql === "SET TRANSACTION READ ONLY",
+        ),
+      ).toHaveLength(1);
+      expect(connection.execute).toHaveBeenCalledTimes(4);
+      expect(connection.rollback).toHaveBeenCalledOnce();
+      expect(connection.close).toHaveBeenCalledOnce();
+    } finally {
+      await reader.close();
+    }
   });
   it.each([
     { fail: true, large: false, code: "SALES_PROVIDER_UNAVAILABLE" },

@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import type { TSchema } from "typebox";
 import { Value } from "typebox/value";
 import type { ServerConfig } from "../config.js";
+import { recordModelUsage, reserveModelCall } from "./budget.js";
+import { redactModelText } from "./transmission-text.js";
 import {
   ModelFailure,
   type StructuredModel,
@@ -23,9 +25,10 @@ export function createOpenAiModel(
   let current = typeof model === "string" ? model : "";
   const client = new OpenAI({
     apiKey: config.openaiApiKey,
-    // The request budget of interactive turns; offline tooling may extend it.
+    // Per-request budget; callers may specialize it under the agent's turn deadline.
     timeout: options.timeoutMs ?? 20000,
     maxRetries: 0,
+    logLevel: "off",
   });
   return {
     provider: "openai",
@@ -40,6 +43,12 @@ export function createOpenAiModel(
       current = id;
       const started = performance.now();
       let response: OpenAI.Responses.Response;
+      signal.throwIfAborted();
+      reserveModelCall(
+        Buffer.byteLength(JSON.stringify(request), "utf8") +
+          request.maxOutputTokens +
+          1024,
+      );
       try {
         response = await client.responses.create(
           {
@@ -49,7 +58,7 @@ export function createOpenAiModel(
             instructions: request.instructions,
             input: request.messages.map(({ role, content }) => ({
               role,
-              content,
+              content: redactModelText(content),
             })),
             tools: [
               {
@@ -73,6 +82,14 @@ export function createOpenAiModel(
       const calls = response.output.filter(
         (item) => item.type === "function_call",
       );
+      const invocation = {
+        provider: "openai" as const,
+        model: id,
+        latencyMs: Math.round(performance.now() - started),
+        inputTokens: response.usage?.input_tokens ?? null,
+        outputTokens: response.usage?.output_tokens ?? null,
+      };
+      recordModelUsage(invocation);
       if (
         response.status !== "completed" ||
         calls.length !== 1 ||
@@ -89,13 +106,7 @@ export function createOpenAiModel(
         throw new ModelFailure("invalid_output");
       return {
         value: candidate,
-        invocation: {
-          provider: "openai",
-          model: id,
-          latencyMs: Math.round(performance.now() - started),
-          inputTokens: response.usage?.input_tokens ?? null,
-          outputTokens: response.usage?.output_tokens ?? null,
-        },
+        invocation,
       };
     },
   };

@@ -1,0 +1,62 @@
+{
+  "components": [
+    {
+      "name": "ConversationMaterials",
+      "source": "apps/web/src/features/agent/materials.tsx",
+      "summary": "Manages owned operational attachments and explicit presentation preferences within one conversation.",
+      "props": [
+        {
+          "name": "token",
+          "type": "string | null",
+          "meaning": "In-memory credential supplied by the workspace, never retained in storage."
+        },
+        {
+          "name": "conversationId",
+          "type": "string (optional)",
+          "meaning": "Owned conversation; a new one is created before the first explicit save when absent."
+        },
+        {
+          "name": "source",
+          "type": "SalesSourceSelection",
+          "meaning": "ERP scope of new user-supplied material."
+        },
+        {
+          "name": "attachments",
+          "type": "Attachment[]",
+          "meaning": "Server metadata only; never inline attachment bodies."
+        },
+        {
+          "name": "preferences",
+          "type": "PresentationPreferences (optional)",
+          "meaning": "Explicitly saved language, detail and format; omitted values use automatic presentation."
+        },
+        {
+          "name": "disabled",
+          "type": "boolean",
+          "meaning": "Disables writes while access or conversation lifecycle prevents changes."
+        },
+        {
+          "name": "onCreated",
+          "type": "(id: string) => Promise<void>",
+          "meaning": "Navigates to a newly persisted conversation before material is saved."
+        }
+      ],
+      "states": [
+        "Collapsed",
+        "Empty",
+        "Owned attachments",
+        "Saving",
+        "Validation or access failure"
+      ],
+      "accessibility": "Native details, labeled inputs, file picker, fieldset and live status/alert messages support keyboard and assistive technology.",
+      "usage": "Pass current actor-owned metadata. Upload is deliberate and requires operational classification; removal invalidates derived replies. The server remains authoritative for ownership, bounds and restricted-data policy.",
+      "examples": [
+        {
+          "id": "agent-materials-disabled",
+          "label": "Conversation materials",
+          "description": "Disabled synthetic material settings; no live upload or preference request."
+        }
+      ]
+    }
+  ]
+}

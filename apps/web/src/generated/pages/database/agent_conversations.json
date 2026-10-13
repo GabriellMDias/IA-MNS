@@ -52,7 +52,7 @@
       "Nullable": "no",
       "Default": "'{}'::jsonb",
       "Classification": "CONFIDENTIAL",
-      "Meaning": "Versioned capability contexts keyed by capability id. Sales version 2 stores structured conversation state: the last executed analysis plan and query filters, an unanswered request with its known slots and awaited information, and a bounded transcript of sales questions with application-authored clarifications or filter-only answer descriptions, never financial figures or result prose. The _agent entry records the last capability and the capability awaiting an answer. No secret credentials.",
+      "Meaning": "Versioned capability contexts preserve validated sales/product selections and pending requests. Reserved _agent tracks routing state; _attachments holds at most four bounded owner-classified operational documents, removed with their conversation or explicitly with dependent replies; _preferences holds explicit language, detail and format settings. No credentials or unrestricted personal-data documents are permitted. Conversation mode never persists provider reasoning or model payload traces.",
       "Null meaning": "—",
       "Unit": "—"
     },

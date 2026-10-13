@@ -1,0 +1,113 @@
+.product-source-title {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+.product-criteria {
+  margin: 12px 0;
+  display: grid;
+  gap: 8px;
+}
+.product-criterion {
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+.product-criterion dt {
+  font-weight: 650;
+  font-size: 13px;
+}
+.product-criterion dd {
+  margin: 4px 0 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.product-criterion ul {
+  margin: 2px 0 0;
+  padding-left: 18px;
+}
+.product-interpretation {
+  color: var(--muted);
+  font-size: 12px;
+}
+.product-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+.product-sections li {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.product-sections span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.product-notes {
+  margin: 10px 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.product-table-scroll {
+  max-height: 340px;
+  overflow: auto;
+  border: 1px solid var(--surface-muted);
+  border-radius: 8px;
+}
+.product-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
+}
+.product-table-scroll caption {
+  text-align: left;
+  padding: 10px 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.product-table-scroll th {
+  background: var(--surface-muted);
+  font-weight: 650;
+}
+.product-table-scroll th,
+.product-table-scroll td {
+  padding: 8px 13px;
+  border-top: 1px solid var(--surface-muted);
+  overflow-wrap: anywhere;
+}
+.product-table-scroll td:first-child {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.product-options {
+  margin: 10px 0;
+}
+.product-options-title {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.product-options ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.product-options button {
+  width: 100%;
+  padding: 8px 12px;
+  border-color: var(--border);
+  border-radius: 10px;
+  text-align: left;
+  overflow-wrap: anywhere;
+}

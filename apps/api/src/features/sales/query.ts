@@ -1,4 +1,5 @@
 import type { SalesQuery } from "./domain.js";
+import type { SalesProductScope } from "./product-scope.js";
 import { productPhrase, productPhrasePattern } from "./product-match.js";
 
 // Bound literal phrases prevent a named product from matching another word's
@@ -197,12 +198,17 @@ export function queryBindings(query: SalesQuery) {
   };
 }
 
-export function aggregateSql(query: SalesQuery): string {
+export function aggregateSql(
+  query: SalesQuery,
+  products?: SalesProductScope,
+): string {
   // These expressions come only from validated enums, never model/user SQL.
   const period =
-    query.groupBy === "month" ? "TO_CHAR(DTNEG, 'YYYY-MM')" : "'total'";
+    query.groupBy === "month" || query.groupBy === "month_product"
+      ? "TO_CHAR(DTNEG, 'YYYY-MM')"
+      : "'total'";
   const product =
-    query.groupBy === "product"
+    query.groupBy === "product" || query.groupBy === "month_product"
       ? "TO_CHAR(CODPROD) || ' - ' || PRODUTO"
       : "CAST(NULL AS VARCHAR2(4000))";
   const unit =
@@ -216,7 +222,7 @@ export function aggregateSql(query: SalesQuery): string {
     quantity: "QTDNEG",
     weight: "PESOTOTAL",
   }[query.metric];
-  return `${referenceSalesCte}
+  return `${salesCte(products)}
     SELECT ${period} AS PERIOD, ${product} AS PRODUCT, ${unit} AS UNIT,
       TO_CHAR(NVL(SUM(${measure}), 0), 'FM99999999999999999999999999999999999990D000000000', 'NLS_NUMERIC_CHARACTERS=''.,''') AS VALUE,
       COUNT(CASE WHEN PESOPROD IS NULL OR PESOPROD <= 0 THEN 1 END) AS MISSING_WEIGHT
@@ -227,3 +233,24 @@ export function aggregateSql(query: SalesQuery): string {
 export const matchingProductsSql = `${referenceSalesCte}
   SELECT DISTINCT TO_CHAR(CODPROD) AS CODE, PRODUTO AS DESCRIPTION
   FROM FILTERED ORDER BY CODE FETCH FIRST 101 ROWS ONLY`;
+
+function salesCte(products?: SalesProductScope): string {
+  if (!products) return referenceSalesCte;
+  if (products.source !== "sankhya") throw new Error("Product source mismatch");
+  if (referenceSalesCte.split(productDescriptionPredicate).length !== 3)
+    throw new Error("Sales reference product boundaries changed");
+  // Both eligible lot controls and final sale rows use the same membership.
+  // Preserve every supplied join and DISTINCT column in the reference.
+  return referenceSalesCte.replaceAll(
+    productDescriptionPredicate,
+    `${productDescriptionPredicate} AND PRO.CODPROD IN (${products.keysSql})`,
+  );
+}
+
+export function semanticMatchingProductsSql(
+  products?: SalesProductScope,
+): string {
+  return products
+    ? matchingProductsSql.replace(referenceSalesCte, salesCte(products))
+    : matchingProductsSql;
+}

@@ -42,6 +42,8 @@ Temporary storage still needs bounded access and deletion. Do not let downloaded
 
 Apply least privilege to users, services, support, administrators, CI, and AI agents. Technical availability is not authorization. Routine development must not depend on unrestricted production database access. Encryption supplements access control; confidential/restricted data crossing untrusted networks must use protected transport without silent downgrade.
 
+The owner-approved [ERP access exception](erp-database-access.md) permits read-only development Discovery with the existing Sankhya and VRMaster administrators, while runtime remains a dedicated restricted reader. Administrative technical capability does not authorize mutation or relax data minimization, confidentiality or the prohibition on sending credentials and unnecessary personal data to AI models.
+
 Choose storage, backup, device, and any field-level encryption against the threat model. Application-level encryption is justified only by meaningful added protection and must account for key rotation, search limitations, migration, recovery, and operations; significant strategy requires an ADR. Minimize sensitive local client data and use platform-protected storage for credentials as required by [authentication policy](authentication.md).
 
 Authorize exports, minimize fields, use secure delivery, avoid unnecessary persistence, and audit where appropriate. Bulk access deserves additional scrutiny. Support access does not imply unrestricted customer/telemetry access. Email is not a safe channel for arbitrary restricted data; minimize transactional email and prefer authenticated flows where appropriate. Notifications can appear on lock screens/shared devices and must not disclose highly sensitive content without an explicit design.
@@ -53,6 +55,10 @@ Use deliberate request/response/event schemas. Do not serialize whole entities, 
 External providers create data-processing boundaries. Before transmission, determine required fields and purpose, security, access, retention/deletion, residency, and relevant subprocessors. Send only the needed subset. Apply this to analytics, search, webhooks, error reporting, file processing, and AI providers. A warehouse or cache does not reduce sensitivity or remove authorization requirements.
 
 Schema comments and documentation describe semantics with fictional examples, not real customer records, credentials, production identifiers, or infrastructure addresses. Generated artifacts inherit source classification; inspect generators for unintended exposure. Configuration templates use placeholders and document the source of a value, not its secret contents. Environment variables are not automatically secure: never dump them into startup logs, build output, diagnostics, or telemetry.
+
+## Approved IA-MNS operational analysis
+
+The owner approved necessary real business evidence in OpenAI requests on 2026-10-12. [AI data processing](ai-data-processing.md) defines the field/category policy, purpose limits, provider controls and legal prerequisites. This approval does not include credentials, unnecessary personal data, unrestricted extraction or provider training datasets.
 
 ## Telemetry and AI access
 

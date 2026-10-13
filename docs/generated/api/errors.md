@@ -58,6 +58,8 @@
 | `SALES_RESULT_TOO_LARGE` | 400 | validation | no | Narrow the product search or period. |
 | `SALES_CONVERSATION_EXPIRED` | 410 | not_found | no | The conversation is no longer available. Start a new conversation. |
 | `SALES_CONVERSATION_BUSY` | 409 | conflict | yes | A question is already being processed in this conversation. |
+| `PRODUCTS_PROVIDER_UNAVAILABLE` | 503 | availability | yes | The product catalog is unavailable. Try again later. |
+| `AGENT_ATTACHMENT_INVALID` | 400 | validation | no | The attachment is unsupported, restricted, malformed or exceeds the allowed limits. |
 | `AGENT_CONVERSATION_ARCHIVED` | 409 | conflict | no | Restore the archived conversation before submitting a new turn. |
 | `AGENT_NOT_CONFIGURED` | 503 | availability | no | The agent is not configured. |
 | `AGENT_CONVERSATION_NOT_FOUND` | 404 | not_found | no | The conversation was not found. |

@@ -39,3 +39,7 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) | Serve the Web and API from One Origin behind Restricted Trusted Proxies |
 | [ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) | Name IA-MNS Releases with Product Tags Distinct from Orion |
 | [ADR-0031](0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md) | Deploy on One Ubuntu Host with Docker Compose and a Release Tool |
+| [ADR-0032](0032-resolve-product-selections-through-a-verified-semantic-catalog.md) | Resolve Product Selections through a Verified Semantic Catalog |
+| [ADR-0033](0033-use-one-reader-and-the-existing-administrator-per-erp.md) | Use One Reader and the Existing Administrator per ERP |
+| [ADR-0034](0034-apply-verified-product-selections-to-sales-without-materializing-display-lists.md) | Apply Verified Product Selections to Sales without Materializing Display Lists |
+| [ADR-0035](0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md) | Compose Conversations over Authorized Evidence and Semantic Tools |

@@ -17,3 +17,11 @@ export function productPhrase(search: string): string {
 export function productPhrasePattern(phrase: string): string {
   return `(^|[^[:alnum:]])${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^[:alnum:]]|$)`;
 }
+
+/**
+ * Accented letters and their plain forms. SQL adapters translate them before
+ * upper(), so matching does not depend on the database's character
+ * classification for non-ASCII letters.
+ */
+export const accentedLetters = "ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç";
+export const plainLetters = "AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc";

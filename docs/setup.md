@@ -27,7 +27,7 @@ On Linux, use `pnpm -C apps/web exec playwright install --with-deps chromium` if
 
 ## Load local configuration
 
-For a new local configuration, copy the safe, schema-checked [example](../.env.example) into an ignored root `.env.local` file; preserve an existing file's settings. The example activates only `ORION_ENV=development`; uncomment and fill an optional setting only when needed. The API `dev` script uses Node's `--env-file-if-exists` to load this file before `src/main.ts` parses and validates configuration. Existing shell environment variables take precedence over file values. The following works in PowerShell and POSIX shells:
+For a new local configuration, copy the safe, schema-checked [example](../.env.example) into an ignored root `.env.local` file; preserve an existing file's settings. The example activates only `ORION_ENV=development`; uncomment and fill an optional setting only when needed. The API `dev` script uses a [local launcher](../apps/api/scripts/local-runner.ts) to read this file, exclude ERP administrative keys and start a fresh process before `src/main.ts` parses and validates configuration. It never reads `.env.discovery.local`. Existing shell environment variables take precedence over file values. The following works in PowerShell and POSIX shells:
 
 ```sh
 cp .env.example .env.local
@@ -57,7 +57,7 @@ ORION_ENV=development
 IA_MNS_LOCAL_ACCESS=true
 OPENAI_API_KEY=<dedicated-project-key>
 OPENAI_MODEL=gpt-6.1-sol
-SANKHYA_DB_USER=<select-only-account>
+SANKHYA_DB_USER=IA_MNS_RO
 SANKHYA_DB_PASSWORD=<password>
 SANKHYA_DB_CONNECT_STRING=<host>:1521/<service-name>
 ```
@@ -79,6 +79,8 @@ VRMASTER_DB_SSL_MODE=disable
 
 Host, user, password and database are configured together; the port defaults to 5432. `VRMASTER_DB_SSL_MODE` defaults to `verify-full`, which requires TLS with a verifiable certificate. The current VRMaster server offers no TLS, so it needs `disable`, which sends the credentials and sales data unencrypted on that network; return to `verify-full` once the server offers TLS. Without these settings the selector's VRMaster option answers that the source is not configured. Reconcile the source with [PH-20](project/human-actions.md#ph-20) before relying on its figures.
 
+The same settings, with `OPENAI_API_KEY`, enable [VR Master product lookup](domains/product-lookup.md): choose `Pilar da Terra (VR Master)` and ask “Quais produtos são banana fruta?”. People need `products:read`, which owners have and grant in **Administração**; local access includes it. `products:catalog` compares its catalog with live metadata/grants, and `products:regression` replays the ignored local dataset ([maintenance](architecture/semantic-product-resolution.md#maintaining-the-catalog)). The existing `SANKHYA_DB_*` settings enable the [Sankhya adapter](domains/sankhya-product-lookup.md), which additionally enforces a non-owner CREATE SESSION / SELECT-only runtime account. The existing administrator is used only by explicit Discovery tools; use the now-verified `IA_MNS_RO` for runtime; PH-08 retains business confirmations. Runtime product lookup refuses privileged accounts. `products:sankhya:sync` and `products:sankhya:regression [--model]` perform authorized local read-only discovery/validation without changing ERP state. With both catalogs configured, `Tudo` asks for one product source; selections remain independent.
+
 After pulling a new IA-MNS migration (for example `202610080001_operational_parameters`), rerun `pnpm db:local`: it applies committed migrations and keeps existing data. The API refuses to become ready against an older schema.
 
 Start `pnpm -C apps/api dev` and, in another terminal, `pnpm -C apps/web dev`. Open `http://127.0.0.1:5173/`, choose the source in the `Fonte` selector above the message box, ask “Quanto vendi de maçã por mês nos últimos 3 meses?”, then try the offered year comparison. Missing configuration disables the composer and displays an explicit message; no demo sales are substituted. The public `/sales/status` reports configuration presence, not live connectivity. Provider/network/schema failures appear on the attempted question with a safe request reference.
@@ -89,9 +91,43 @@ Run `pnpm validate` for synthetic provider, HTTP, calculation, browser, build, g
 
 ## Local database and authentication
 
+For the first real product tests, follow [UI acceptance](domains/product-lookup.md#ui-acceptance): existing authenticated user, owner-controlled `products:read`, explicit VR Master source, and a process without privileged Sankhya credentials until its dedicated reader exists.
+
 [API configuration](generated/configuration/api.md) names the runtime settings. `ORION_DATABASE_URL` enables PostgreSQL for modules that require it and adds the database to readiness. The three token settings enable bearer authentication together; a trusted issuer must provide the claims described by the [authentication policy](security/authentication.md).
 
 For a separate **local** PostgreSQL, create distinct migration and restricted runtime credentials. Supply `ORION_MIGRATION_DATABASE_URL` in the shell only for `pnpm -C apps/api db:migrate:deploy`; the Prisma CLI reads it from that process. Keep `ORION_DATABASE_URL` in the root ignored `.env.local` for the API runtime, alongside any trusted token issuer, audience, and JWKS URL. The repository does not select or provision an issuer. Do not copy Testcontainers' synthetic credentials into a persistent environment, and clear the migration credential from the shell after deployment.
+
+## ERP Discovery
+
+Follow [ERP database access](security/erp-database-access.md) and [PH-29](project/human-actions.md#ph-29). Copy [`.env.discovery.example`](../.env.discovery.example) to ignored root `.env.discovery.local` (or the owner-selected `.env.discovery`) and privately supply the existing administrative accounts. Preserve the exact VRMaster `FULLACESS` names and supply the new Sankhya pair. Move any administrative entries out of `.env.local`; preserve their values and the existing accounts. Do not put administrative credentials into runtime-named keys or load the Discovery file with environment flags. Endpoint/TLS/Oracle Client settings remain in the normal local configuration.
+
+Run explicit development inspections from the API directory:
+
+```sh
+pnpm -C apps/api erp:discovery vrmaster --schema public --table produto
+pnpm -C apps/api erp:discovery vrmaster --schema public --table produto \
+  --columns id,descricaocompleta --limit 20
+pnpm -C apps/api erp:discovery sankhya --schema ERP_OWNER --table TGFPRO
+pnpm -C apps/api products:sankhya:sync
+pnpm -C apps/api products:sankhya:regression
+```
+
+Replace `ERP_OWNER` with the actual schema privately. Without `--columns`, `erp:discovery` reads metadata/relationships only; explicit minimal-column samples are bounded to 100 rows and kept with metadata in ignored `apps/api/evals/.local/discovery`, never console/model context. Review views/functions for side effects before sampling. The tool supplies fixed inspection queries only. Administrative credentials are read explicitly from one Discovery file (`.env.discovery.local` first, otherwise `.env.discovery`), without merging or runtime fallback; production application configuration is refused. All sessions use read-only transactions and rollback. No account, grant or database modification is performed. Read-only transactions are additional protection, not sufficient containment of an administrator.
+
+Runtime checks do not load administrative credentials:
+
+```sh
+pnpm -C apps/api products:catalog
+pnpm -C apps/api products:regression
+pnpm -C apps/api products:sankhya:sync --runtime-check
+pnpm -C apps/api products:sankhya:regression --runtime
+```
+
+The optional existing `--model` regression mode retains its reviewed minimized product interpretation boundary; never transmit confidential Discovery exports, credentials or unnecessary personal data to models. ERP writes and privilege changes require explicit owner authorization. This architecture task authorizes none; the reader access is now [verified](project/runtime-access-verification.md), while PH-08 retains business-unit confirmations.
+
+### Owner-authorized Runtime access provisioning
+
+`pnpm -C apps/api erp:runtime:access` reads the current metadata and reports missing changes without applying them. After explicit owner authorization, `pnpm -C apps/api erp:runtime:access --apply` executes the reviewed [Oracle](../apps/api/scripts/erp-access/sankhya-runtime.sql) and [PostgreSQL](../apps/api/scripts/erp-access/vrmaster-runtime.sql) templates. It targets existing `IA_MNS_RO` / `ia_mns` accounts, checks Oracle schema/synonym/view conflicts, and never changes passwords or PUBLIC. `erp:runtime:audit` inspects actual ACLs; `erp:runtime:verify` exercises bounded sales and directory reads without AI calls or record output. The current authorization and verification are recorded in [PJ-41](project/implementation-plan.md#current-work); a CLI flag itself is not mutation authority.
 
 ## Identity
 
