@@ -105,7 +105,8 @@ Run explicit development inspections from the API directory:
 
 ```sh
 pnpm -C apps/api erp:discovery vrmaster --schema public --table produto
-pnpm -C apps/api erp:discovery vrmaster --schema public --table produto --columns id,descricaocompleta --limit 20
+pnpm -C apps/api erp:discovery vrmaster --schema public --table produto \
+  --columns id,descricaocompleta --limit 20
 pnpm -C apps/api erp:discovery sankhya --schema ERP_OWNER --table TGFPRO
 pnpm -C apps/api products:sankhya:sync
 pnpm -C apps/api products:sankhya:regression
