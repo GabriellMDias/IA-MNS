@@ -6,16 +6,16 @@
 
 The `identity` API module (`apps/api/src/features/identity/`) owns who a person is in IA-MNS and what they may do. The web module (`apps/web/src/features/identity/`) owns sign-in, first access, account and administration screens and the embedded host bridge. Host components only frame the web application and supply proofs: the PDT host page belongs to PDT Connect, and the Sankhya Om add-on is [`apps/sankhya-addon`](../../apps/sankhya-addon/README.md).
 
-| Concept | Meaning |
-| --- | --- |
-| Person | The single principal. Its UUID is the access-token `orion_principal_id` and the owner of conversations. Disabled or `merged` into another Person, never hard-deleted. |
-| Local account | Optional login and scrypt password, temporary lockout, optional TOTP second factor with ten single-use recovery codes. |
-| External link | A verified `(provider, issuer, subject)`: PDT `identitySubject` under `PDT_IDENTITY_ISSUER`, or Sankhya `CODUSU` under `SANKHYA_IDENTITY_ISSUER`. One account maps to one Person; one account per provider installation per Person. `established_by` is `proof` (the person proved the account) or `directory` (an owner selected the real Sankhya user). The provider-reported e-mail is kept only as a duplicate hint. |
-| Session | Method (`local`, `pdt`, `sankhya`, `bootstrap`, `enrollment`), surface (`direct`, `pdt`, `sankhya`), assurance (`single`, `mfa`), authentication time, idle and absolute expiry. |
-| Role | `owner`: principal administrator, independent of Sankhya and PDT roles. |
-| WhatsApp number | Optional number an owner linked to the Person: the only authorization of the [WhatsApp channel](whatsapp-channel.md). An identity attribute, never a sign-in method; see [WhatsApp numbers](identity.md#whatsapp-numbers). |
-| Grant | An explicit owner grant of a registered catalog permission to a Person or a group, optionally restricted to ERP records; see [Authorization](identity.md#authorization). |
-| Group | An owner-managed set of Persons; every member holds the group's grants. |
+| Concept         | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Person          | The single principal. Its UUID is the access-token `orion_principal_id` and the owner of conversations. Disabled or `merged` into another Person, never hard-deleted.                                                                                                                                                                                                                                                    |
+| Local account   | Optional login and scrypt password, temporary lockout, optional TOTP second factor with ten single-use recovery codes.                                                                                                                                                                                                                                                                                                   |
+| External link   | A verified `(provider, issuer, subject)`: PDT `identitySubject` under `PDT_IDENTITY_ISSUER`, or Sankhya `CODUSU` under `SANKHYA_IDENTITY_ISSUER`. One account maps to one Person; one account per provider installation per Person. `established_by` is `proof` (the person proved the account) or `directory` (an owner selected the real Sankhya user). The provider-reported e-mail is kept only as a duplicate hint. |
+| Session         | Method (`local`, `pdt`, `sankhya`, `bootstrap`, `enrollment`), surface (`direct`, `pdt`, `sankhya`), assurance (`single`, `mfa`), authentication time, idle and absolute expiry.                                                                                                                                                                                                                                         |
+| Role            | `owner`: principal administrator, independent of Sankhya and PDT roles.                                                                                                                                                                                                                                                                                                                                                  |
+| WhatsApp number | Optional number an owner linked to the Person: the only authorization of the [WhatsApp channel](whatsapp-channel.md). An identity attribute, never a sign-in method; see [WhatsApp numbers](identity.md#whatsapp-numbers).                                                                                                                                                                                               |
+| Grant           | An explicit owner grant of a registered catalog permission to a Person or a group, optionally restricted to ERP records; see [Authorization](identity.md#authorization).                                                                                                                                                                                                                                                 |
+| Group           | An owner-managed set of Persons; every member holds the group's grants.                                                                                                                                                                                                                                                                                                                                                  |
 
 Physical structure, constraints and classification are in the [schema reference](../generated/database/schema.md) (`identity_*` tables). Names and e-mails are never identity keys. A Person may hold any combination of a local account, a Sankhya link and a PDT link; all of them reach the same history, preferences and permissions.
 
@@ -35,7 +35,6 @@ On the direct surface every product screen requires a signed-in person; anyone e
 2. PDT: the browser goes to the contract `/integrations/authorize`; PDT redirects to `PDT_IDENTITY_REDIRECT_URI` (`GET /identity/pdt/callback`). Sankhya: the browser goes to `SANKHYA_IDENTITY_AUTHORIZE_URL?state&nonce`; the add-on form-posts `assertion` and `state` to `POST /identity/sankhya/callback`.
 3. The API checks the state ticket and the binding cookie, redeems the PDT code server-side (client secret, PKCE, identity lookup, immediate revoke) or verifies the assertion, then redirects to `/`, `/conta?novo=1` (profile created at first access), `/entrar/primeiro-acesso` (first access waiting for confirmation, or a login started from it with `resumeFirstAccess`), `/conta?vinculado=<provider>` (link or link invitation), `/conta?unificar=<provider>` (consolidation offer), `/conta?confirmado=1` (reauthentication) or `/entrar?erro=CODE`. Callback queries are never logged and responses use `Referrer-Policy: no-referrer`.
 
-
 ### Embedded handshake (bridge protocol v1)
 
 1. The frame calls `POST /identity/providers/{provider}/start` with `mode: "embedded"`. It receives a secret `pendingId` (kept in memory instead of a cookie), the configured host origin and, for PDT, `state` and `codeChallenge` (S256), or, for Sankhya, a `nonce`.
@@ -47,7 +46,6 @@ On the direct surface every product screen requires a signed-in person; anyone e
    - Sankhya: `{ v: 1, type: "ia-mns:auth-response", requestId, assertion }`
    - Failure: `{ v: 1, type: "ia-mns:auth-error", requestId, error }` (for example `pdt_login_required`, `no_authenticated_user`).
 4. The frame sends the proof to `POST /identity/providers/{provider}/complete`; the API verifies it and returns an access token (with `provisioned: true` on an automatic first access), a confirmation request, or a public error.
-
 
 PDT Connect also sets the display theme: it opens the frame with `?theme=light|dark` and sends `{ v: 1, type: "ia-mns:host-theme", theme }` on load and whenever the person changes the PDT theme. Inside PDT the frame follows that theme, hides its own theme control and stores nothing, so the direct-URL preference is unaffected; a theme message is applied only once the handshake has confirmed the PDT origin. The Sankhya Om sends no theme, and the frame keeps its own light default there.
 
@@ -69,7 +67,6 @@ The add-on ([`apps/sankhya-addon`](../../apps/sankhya-addon/README.md), [ADR-002
 - mint a compact JWS with header `{ alg: "RS256" | "ES256", typ: "JWT", kid }` and claims `iss` = `SANKHYA_IDENTITY_ISSUER`, `aud` = `IA_MNS_IDENTITY_AUDIENCE`, `sub` = CODUSU (decimal string), `nonce` = the flow nonce, `jti` = unique id, `iat`, and `exp` ≤ `iat` + 120 seconds; the `name` and `email` (the user's TSIUSU e-mail, used only as a duplicate hint) claims are optional;
 - expose the mint operation only to same-origin POST requests from its own embedding page (custom header, `Sec-Fetch-Site: same-origin`), and the direct-URL page only as a top-level document that form-posts to the fixed IA-MNS callback;
 - keep the private key outside sources editable by ordinary component authors, publishing only public keys (`SANKHYA_IDENTITY_KEYS`, a JWKS that IA-MNS pins).
-
 
 The add-on implements this contract for the embedded surface: its `IaMnsHostSP` service requires the custom header `X-IA-MNS-Host` and the configured Om origin, signs ES256 assertions valid for 60 seconds with a key kept in the WildFly configuration directory, and its screen frames IA-MNS with `referrerpolicy="no-referrer"` ([add-on guide](../../apps/sankhya-addon/README.md#how-it-works)). On 2026-10-06 it was validated in the Sankhya development Om with a real signed-in user ([PJ-24](../project/implementation-plan.md#current-work)); the direct-URL authorize page is not implemented yet. In production only the Om HTTPS name is trusted (owner decision of 2026-10-06): when the Om is opened through another address, such as a plain-HTTP address, the screen does not frame IA-MNS and tells the person to open the Om through the secure address. Trusting a production Om session awaits [PH-11](../project/human-actions.md#ph-11), and production refuses this connector until `SANKHYA_SESSION_TRUST=approved`.
 
@@ -96,13 +93,13 @@ There is no public account creation. People who use Sankhya or PDT Connect need 
 
 Each grantable permission reads one data area of one source and has a stable code that people give support. The owning module declares it, with the dimensions by which it can be restricted; composition (`apps/api/src/modules.ts`) lists them.
 
-| Code | Permission | Source | Restriction dimensions (code) |
-| --- | --- | --- | --- |
-| SNK-VEN-01 | `sales_sankhya:read` · Consultar vendas | MNS (Sankhya) | Empresa (EMP), Projeto/setor do item (PRJ, with subprojects), Vendedor (VEN, 0 = no seller), Grupo de produto (GRP, with subgroups), Centro de resultado (CR, with the centers below; awaits [PH-36](../project/human-actions.md#ph-36)) |
-| VRM-VEN-01 | `sales_vrmaster:read` · Consultar vendas | Pilar da Terra (VR Master) | Loja (LOJ), Comprador da venda (COM), Centro de custo da seção (CC, with the centers below), Mercadológico (MER, any level with the levels below) |
-| SNK-PRD-01 | `products_sankhya:read` · Consultar produtos | MNS (Sankhya) | none: the registration is shared |
-| VRM-PRD-01 | `products_vrmaster:read` · Consultar produtos | Pilar da Terra (VR Master) | none: the registration is shared |
-| IAM-ADM-01 | `identity:admin` · Administração | — | owners only, never granted |
+| Code       | Permission                                    | Source                     | Restriction dimensions (code)                                                                                                                                                                                                            |
+| ---------- | --------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SNK-VEN-01 | `sales_sankhya:read` · Consultar vendas       | MNS (Sankhya)              | Empresa (EMP), Projeto/setor do item (PRJ, with subprojects), Vendedor (VEN, 0 = no seller), Grupo de produto (GRP, with subgroups), Centro de resultado (CR, with the centers below; awaits [PH-36](../project/human-actions.md#ph-36)) |
+| VRM-VEN-01 | `sales_vrmaster:read` · Consultar vendas      | Pilar da Terra (VR Master) | Loja (LOJ), Comprador da venda (COM), Centro de custo da seção (CC, with the centers below), Mercadológico (MER, any level with the levels below)                                                                                        |
+| SNK-PRD-01 | `products_sankhya:read` · Consultar produtos  | MNS (Sankhya)              | none: the registration is shared                                                                                                                                                                                                         |
+| VRM-PRD-01 | `products_vrmaster:read` · Consultar produtos | Pilar da Terra (VR Master) | none: the registration is shared                                                                                                                                                                                                         |
+| IAM-ADM-01 | `identity:admin` · Administração              | —                          | owners only, never granted                                                                                                                                                                                                               |
 
 `sales:read` and `products:read` are capability permissions: identity adds them to the scopes of anyone holding a source permission of the family, and they are never granted. The [sales domain](sales-chat.md#access-and-restrictions) describes how each restriction is enforced.
 
@@ -130,7 +127,6 @@ When a request needs a permission the person does not hold, the agent answers in
 - Owners consolidate two Persons of the same individual (`POST /identity/admin/persons/{personId}/merge`) when they cannot be proven together; owners are never the absorbed Person and overlapping providers are refused.
 - The Sankhya directory (`GET /identity/admin/sankhya-users`) reads the DBA-provided view named in `SANKHYA_DIRECTORY_VIEW` (columns `CODUSU`, `NOMEUSU`, `NOMEUSUCPLT`, `EMAIL`, `DTLIMACESSO`) in a read-only transaction with its own two-connection pool and a 10-second call timeout, returning at most 20 users. It is off while the view is not configured ([PH-08](../project/human-actions.md#ph-08)). It needs only `SANKHYA_IDENTITY_ISSUER`, not the Om session connector, so it is not gated by PH-11.
 
-
 ## WhatsApp numbers
 
 Owners link at most one WhatsApp number to a Person in **Administração → Pessoas → WhatsApp** (`PUT`/`DELETE /identity/admin/persons/{personId}/whatsapp`), with the same owner, second-factor and recent-confirmation checks as the rest of administration ([ADR-0036](../adr/0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md)). Nobody can link, change or remove their own number in any other way, and there is no self-service through WhatsApp; **Minha conta** only shows the number.
@@ -138,6 +134,7 @@ Owners link at most one WhatsApp number to a Person in **Administração → Pes
 - **Entry.** International form with country code (`+55 11 98765-4321` or `0055…`); spaces, dots, dashes and parentheses are ignored. National numbers are refused (`IDENTITY_WHATSAPP_NUMBER_INVALID`), and a Brazilian mobile without its ninth digit is refused with its own message (`IDENTITY_WHATSAPP_NINTH_DIGIT_REQUIRED`). The number is stored as E.164 digits in `identity_whatsapp_links`.
 - **Uniqueness.** A number belongs to at most one Person, and so does its deterministic legacy Brazilian form, which WhatsApp may report for older mobile accounts ([identifiers](whatsapp-channel.md#identifiers)); a conflict is `IDENTITY_WHATSAPP_NUMBER_IN_USE`. Only active Persons receive a number.
 - **Audit.** `whatsapp.linked`, `whatsapp.changed` and `whatsapp.removed` record the owner, the affected Person, the time and only the last four digits, in the same transaction as the change; `whatsapp.confirmed` records the first accepted message.
+- **Generation.** The Person retains the last allocated WhatsApp link version even after removal. Creation, number changes and transfers allocate a later version under the Person lock in the same transaction as the audit. Recreating a number never reauthorizes work queued for a former link.
 - **Revocation.** Removing or changing the number, disabling the Person or consolidating it takes effect for the next message and for every reply not yet handed to Meta, because the channel asks identity again before processing and before sending. A changed number forgets what was learned about the previous one.
 - **Authorization.** For each signature-verified message, identity returns exactly one active Person and that Person's effective permissions computed now, as for a new access token; the number grants nothing by itself. Merging moves the absorbed Person's number to the surviving one when it has none; otherwise the absorbed number is removed.
 
@@ -162,7 +159,6 @@ Owners manage it at `/admin` → **Autenticação e segurança** (`GET`/`PUT /id
 - **Changes.** Saving requires an owner session with the second factor (per policy) and recent administrative confirmation; values outside the limits are refused (`IDENTITY_POLICY_INVALID`), `none` in production is refused (`IDENTITY_POLICY_NOT_ALLOWED`), and newly reduced settings require `acknowledgeReducedSecurity` (`IDENTITY_POLICY_CONFIRMATION_REQUIRED`). Each change is audited (`policy.updated`) with previous and new values and listed on the screen. Open direct sessions are re-derived at once from their sign-in and last activity (shorter values may end them, including the editor's); second-factor rules apply at the next sign-in, while administration always checks the current rule. Other API instances follow within 15 seconds.
 - **Not configurable.** Production always requires the second factor for administrators; outside a non-production `none` policy, owners never skip the code through a remembered browser; access tokens stay 10 minutes; embedded sessions renew silently every 10 minutes; ticket, flow and invitation lifetimes, lockout, refresh rotation with reuse detection, rate limits and audit are fixed.
 
-
 ## Operational parameters
 
 Owners administer the [operational parameters](../architecture/configuration.md#operational-parameters) at `/admin` → **Parâmetros** (`GET /identity/admin/parameters`, `PUT /identity/admin/parameters/{key}`, [ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)): the AI model, the AI trace level and the WhatsApp channel switch. Identity hosts this administration because it owns the principal administrator; the parameters themselves are declared by the runtime catalog and read by their owning consumers. Default provider groups have separate identity-owned storage and endpoints (`GET /identity/admin/provider-groups`, `PUT /identity/admin/provider-groups/{provider}`), despite appearing on the same page.
@@ -172,7 +168,6 @@ Owners administer the [operational parameters](../architecture/configuration.md#
 - **Changes.** A change applies only to the version the owner read (`IDENTITY_PARAMETER_CONFLICT` otherwise); values outside the parameter's domain are `IDENTITY_PARAMETER_INVALID`, values this environment refuses (content tracing in production) are `IDENTITY_PARAMETER_NOT_ALLOWED`, and `null` restores the installation default. Each change is audited as `parameter.updated` with the parameter, previous and new effective values (lists comma-separated), whether it was a reset and the new version, in the same database transaction as the change, so a change never persists without its audit event; parameters never hold secrets. The installation default `OPENAI_MODEL` must satisfy the same identifier domain as `ai.model`, so the default is always a value an owner could also save.
 - **Effect.** No restart: the AI model applies to the next AI request, the trace level to the next turn, and the WhatsApp switch to the next message. Default group selection applies on the next verified provider sign-in, without a restart.
 
-
 ## Security properties
 
 - Secrets (tickets, refresh credentials, recovery codes, assertion ids) are 256-bit random values or high-entropy codes stored only as SHA-256. Passwords are scrypt verifiers; TOTP secrets are AES-256-GCM sealed. None are logged or returned after creation.
@@ -180,7 +175,6 @@ Owners administer the [operational parameters](../architecture/configuration.md#
 - Cookie-authenticated endpoints (refresh, provisioning and consolidation by cookie, signed-in detection at login start) accept only same-origin web requests (`x-ia-mns-client: web`, `Sec-Fetch-Site`, `Origin`). A consolidation ticket is bound to the session that proved both profiles.
 - Audit (`identity_audit_events`) is append-only for the runtime role and stores only allowlisted codes.
 - All identity responses are `Cache-Control: no-store`.
-
 
 ## Deployment requirements
 

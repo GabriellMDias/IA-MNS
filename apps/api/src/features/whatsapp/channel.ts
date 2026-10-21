@@ -402,13 +402,24 @@ export class WhatsappChannel {
     if (turn.state === "running")
       return notice("unfinished", notices.slow, "failed");
     // Permissions or the link may have changed while the agent worked.
+    const current = await this.stillAuthorized({
+      personId: work.personId,
+      linkVersion: work.linkVersion,
+      phone: work.senderPhone,
+      userId: work.senderUserId,
+    });
     if (
-      !(await this.stillAuthorized({
-        personId: work.personId,
-        linkVersion: work.linkVersion,
-        phone: work.senderPhone,
-        userId: work.senderUserId,
-      }))
+      !current ||
+      (turn.reply !== null &&
+        !(await agent.canReadTurn(
+          {
+            id: work.personId,
+            permissions: new Set(current.permissions),
+            scopes: current.scopes,
+          },
+          conversationId,
+          turn.id,
+        )))
     )
       return finish({ state: "ignored", outcome: "revoked", turnId: turn.id });
     processingHistogram.record(
@@ -420,7 +431,10 @@ export class WhatsappChannel {
         outcome: turn.state === "completed" ? "answered" : "agent_failed",
         turnId: turn.id,
       },
-      splitText(turnText(turn)).map((body) => ({ kind: "answer", body })),
+      splitText(turnText(turn)).map((body) => ({
+        kind: turn.reply === null ? "notice" : "answer",
+        body,
+      })),
     );
   }
 
@@ -465,15 +479,32 @@ export class WhatsappChannel {
     };
     if (!(await this.options.enabled()))
       return settle({ state: "revoked", code: "channel_disabled" });
+    const current = await this.stillAuthorized({
+      personId: part.personId,
+      linkVersion: part.linkVersion,
+      phone: part.recipientPhone,
+      userId: part.recipientUserId,
+    });
+    if (!current) return settle({ state: "revoked", code: "revoked" });
+    // The inbox retains the original turn reference for every part and retry.
+    // Its server-authored reply includes derived evidence dependencies/scopes.
     if (
-      !(await this.stillAuthorized({
-        personId: part.personId,
-        linkVersion: part.linkVersion,
-        phone: part.recipientPhone,
-        userId: part.recipientUserId,
-      }))
+      part.kind !== "notice" &&
+      (part.kind !== "answer" ||
+        !part.conversationId ||
+        !part.turnId ||
+        !this.options.agent ||
+        !(await this.options.agent.canReadTurn(
+          {
+            id: part.personId,
+            permissions: new Set(current.permissions),
+            scopes: current.scopes,
+          },
+          part.conversationId,
+          part.turnId,
+        )))
     )
-      return settle({ state: "revoked", code: "revoked" });
+      return settle({ state: "revoked", code: "access_denied" });
     if (
       this.options.now().getTime() - part.inboundSentAt.getTime() >
       serviceWindowMs
@@ -523,12 +554,14 @@ export class WhatsappChannel {
   }
   private pause() {
     return new Promise<void>((resolve) => {
-      const timer = setTimeout(resolve, this.options.idleMs);
-      timer.unref();
-      this.wakeUp.push(() => {
+      const finish = () => {
         clearTimeout(timer);
+        this.wakeUp = this.wakeUp.filter((callback) => callback !== finish);
         resolve();
-      });
+      };
+      const timer = setTimeout(finish, this.options.idleMs);
+      timer.unref();
+      this.wakeUp.push(finish);
     });
   }
   private loop(step: () => Promise<boolean>, name: string) {

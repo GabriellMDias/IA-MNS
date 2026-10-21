@@ -304,6 +304,8 @@ export function createIdentityModule(
             // Refuse to serve sign-in against an incomplete identity schema.
             app.addHook("onReady", async () => {
               await resources.database!
+                .$queryRaw`SELECT whatsapp_link_version FROM identity_persons LIMIT 0`;
+              await resources.database!
                 .$queryRaw`SELECT key, value, version, updated_by, updated_at FROM operational_parameters LIMIT 0`;
               await resources.database!
                 .$queryRaw`SELECT provider, group_id, version, updated_by FROM identity_provider_groups LIMIT 0`;

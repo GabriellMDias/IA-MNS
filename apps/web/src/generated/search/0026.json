@@ -4,6 +4,15 @@
     "title": "Documentation Task Index",
     "group": "Project guides",
     "kind": "repository",
+    "heading": "Architecture and implementation",
+    "anchor": "architecture-and-implementation",
+    "text": "Architecture and implementation\nTask\nAuthoritative policy\nUnderstand IA-MNS as a corporate agent and extend its capability registry\n[Corporate agent](domains/corporate-agent.md), [sales capability](domains/sales-chat.md)\nChange conversational autonomy, evidence reuse, semantic tools, attachments or presentation preferences\n[Conversational autonomy](architecture/conversational-autonomy.md), [original proposal](project/agent-autonomy-proposal.md)\nChange how messages are interpreted, conversation state, the analytical plan, model calls or AI tracing\n[AI interpretation](architecture/ai-interpretation.md), [ADR-0024](adr/0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\nIdentify products through verified ERP-specific filters; change a semantic catalog, relationship or adapter\n[Product lookup](domains/product-lookup.md), [Sankhya dictionary and filters](domains/sankhya-product-lookup.md), [semantic product resolution](architecture/semantic-product-resolution.md), [ADR-0032](adr/0032-resolve-product-selections-through-a-verified-semantic-catalog.md)\nEvaluate AI behavior, add regression cases, compare prompts or models, generate or simulate scenarios\n[AI evaluation](architecture/ai-evaluation.md)\nSign-in, Persons, external links (PDT Connect, Sankhya), embedded surfaces, permissions and administration\n[Identity](domains/identity.md), [ADR-0022](adr/0022-own-the-ia-mns-identity-with-verified-external-links.md), [ADR-0023](adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\nPermission codes, groups, per-source permissions and data restrictions (companies, stores, buyers…)\n[Authorization](domains/identity.md#authorization), [sales access and restrictions](domains/sales-chat.md#access-and-restrictions), [ADR-0037](adr/0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md)\nWhatsApp channel: owner-linked numbers, Meta webhook, delivery, activation and rollback\n[WhatsApp channel](domains/whatsapp-channel.md), [ADR-0036](adr/0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md), [runbook](runbooks/whatsapp-channel.md)\nChange the Sankhya Om add-on that hosts IA-MNS inside the Om\n[Sankhya add-on guide](../apps/sankhya-addon/README.md), [add-on instructions](../apps/sankhya-addon/AGENTS.md), [application boundaries](architecture/application-boundaries.md#sankhya-om-add-on), [ADR-0026](adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nExecute or track implementation work\nThe implementation plan linked from the README's [Current state](../README.md#current-state)\nStart a new project from Orion, check its provenance, or upgrade its Orion baseline\n[Start and upgrade a project from Orion](project-derivation.md)\nName a stable Orion foundation release or assess derived-project compatibility\n[Foundation versioning](versioning.md)\nChange agent instruction files or tool compatibility adapters\n[Agent instructions](architecture/agent-instructions.md)\nReproduce development setup, local execution, and the validation gate\n[Development setup](setup.md)\nRun the living API/data/component portal and understand its architecture\n[Portal setup](setup.md#living-documentation-portal), [living documentation](architecture/living-documentation.md)\nResolve owner decisions, external access, or other human prerequisites\nThe human-action checklist linked from the README's [Current state](../README.md#current-state)\nAdd an API module or web workflow\n[API runtime](../apps/api/README.md#modules), [web workflow](../apps/web/README.md#modules)\nStudy a complete implemented example across database, API, SDK, and UI\n[Orion's reference implementation](project-derivation.md#orions-reference-implementation)\nEvaluate architectural tradeoffs or exceptions\n[Principles](architecture/principles.md)\nFind selected technology decisions\n[Technology decisions](architecture/technology-decisions.md)\nPlace code or create an application/package\n[Repository structure](architecture/repository-structure.md), [application boundaries](architecture/application-boundaries.md)\nAdd imports or shared dependencies\n[Dependency rules](architecture/dependency-rules.md)\nModel failures and translate boundaries\n[Error handling](architecture/error-handling.md)\nAdd configuration\n[Configuration](architecture/configuration.md)\nChoose test coverage and execution layers\n[Testing strategy](architecture/testing-strategy.md), [validation availability](validation.md)\nChange independently deployed or persisted contracts\n[Versioning and compatibility](architecture/versioning-and-compatibility.md)\nHandle delivery, retries, and external side effects\n[Delivery and side effects](architecture/delivery-and-side-effects.md)\nImplement CI or dependency automation\n[Continuous integration](architecture/continuous-integration.md)\nChange backend execution or regenerate derived references\n[Backend execution and generated artifacts](architecture/backend-execution-and-generated-artifacts.md)\nRun or extend the current API feature\n[API runtime](../apps/api/README.md), [API-local instructions](../apps/api/AGENTS.md), [generated OpenAPI](generated/api/openapi.json)\nRun or extend the web workflow or generated SDK\n[Web workflow](../apps/web/README.md), [web-local instructions](../apps/web/AGENTS.md), [SDK source](../packages/sdk/src/index.ts)\nChange IA-MNS colors, logos, or other visual identity\n[Visual identity](visual-identity.md), [web identity assets](../apps/web/README.md#identity)\nChange the SDK public surface or generated types\n[SDK package guide](../packages/sdk/README.md), [SDK-local instructions](../packages/sdk/AGENTS.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
     "heading": "APIs and data",
     "anchor": "apis-and-data",
     "text": "APIs and data\nTask\nAuthoritative policy\nDesign an operation or generate a client\n[API principles](api/principles.md)\nExpose an error\n[API error contract](api/error-contract.md)\nEvolve, deprecate, or retire an API contract\n[API versioning](api/versioning.md)\nModel persistent data and ownership\n[Database principles](database/principles.md)\nChange durable schema or migration history\n[Migrations](database/migrations.md)\nEstablish release status, test upgrades, or plan application/database recovery\n[Release and evolution workflow](database/release-evolution.md)\nDocument or generate database reference\n[Schema documentation](database/schema-documentation.md)\nInspect the migrated database schema\n[Generated database reference](generated/database/schema.md)\nFind the current machine-readable API contract and public errors\n[OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md)\nInspect API configuration names, types, defaults, and visibility\n[Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md)\nFind the generated frontend component reference\n[Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json)\nProtect atomicity or concurrent writes\n[Transactions and concurrency](database/transactions-and-concurrency.md)\n"
@@ -907,95 +916,5 @@
     "heading": "Follow-Up",
     "anchor": "follow-up",
     "text": "Follow-Up\nRecord the first durable release ([PH-10](../project/human-actions.md#ph-10)) and update the human actions with dated evidence.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Runbook: Production Release Update and Rollback",
-    "anchor": "runbook-production-release-update-and-rollback",
-    "text": "Runbook: Production Release Update and Rollback\n**Owner:** IA-MNS project owner\n**Status:** draft — update, automatic return, refused rollback, explicit rollback and forward fix are exercised by the disposable [installation rehearsal](../../infra/production/rehearsal/run.sh) in CI; not yet executed on the production host\n**Environment / applicability:** a host prepared by [host setup and first deployment](production-host-setup-and-first-deployment.md)\n**Related alerts:** the `IA_MNS_ALERT_COMMAND` notification of a failed `deploy` or `rollback`\n**Required access:** an attributable sudo account on the host\nFollow [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md).\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Purpose",
-    "anchor": "purpose",
-    "text": "Purpose\nInstall a newer IA-MNS release, and return to an earlier one when that is proven safe.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Trigger / Symptoms",
-    "anchor": "trigger--symptoms",
-    "text": "Trigger / Symptoms\nA reviewed change was merged to `main` and tagged; or a deployed release misbehaves and an earlier release must serve again.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Impact",
-    "anchor": "impact",
-    "text": "Impact\nThe API container is replaced: requests are refused for the seconds between stop and readiness. Migrations change the database schema and are never reversed in place.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Preconditions",
-    "anchor": "preconditions",
-    "text": "Preconditions\nThe release is an annotated `ia-mns-vX.Y.Z` tag on `main` whose `Orion required gate` passed ([ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)). Create it after merging:\ngit switch main && git pull --ff-only\ngit tag -a ia-mns-vX.Y.Z -m \"IA-MNS vX.Y.Z\" && git push origin ia-mns-vX.Y.Z\n\nNever move or reuse a published tag; the host refuses a tag that moved.\nRead the release's pull requests for migrations and their compatibility notes.\n`sudo ia-mns-deploy status` shows the API healthy, or the failure you are recovering from.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Diagnosis",
-    "anchor": "diagnosis",
-    "text": "Diagnosis\nsudo ia-mns-deploy status\nsudo ia-mns-deploy logs --tail 200\nsudo tail -n 5 /var/lib/ia-mns/deployments.log\n\n`deployments.log` holds one JSON line per operation: action, result, release, commit, previous release, applied migrations, pre-deployment backup and CI result.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Mitigation / Procedure",
-    "anchor": "mitigation--procedure",
-    "text": "Mitigation / Procedure\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Update",
-    "anchor": "update",
-    "text": "Update\nsudo ia-mns-deploy deploy ia-mns-vX.Y.Z\n\nThe tool verifies the tag and CI, builds the images, validates the configuration with the new image, takes a pre-deployment backup, refuses a database whose migration history the release does not match, applies pending migrations, starts the release and runs a smoke test. Outcomes:\nMessage\nState\nNext step\n`deployed <tag>`\nnew release current\nVerify (below)\nrefused before migrations (CI, tag, configuration, backup, incompatible history)\nnothing changed\nFix the cause; repeat\n`database deployment failed`\nold release still running; a migration may be partially applied\nStop. Escalate with the logs; do not retry blindly\n`<tag> failed its health checks; <previous> is running again`\nno migration ran; returned automatically\nInvestigate the release; fix forward\n`failed after applying migrations`\nmigrations applied; the failed release is not serving\nDecide below\nRepeating `deploy` with the same tag is safe: it reuses verified images and skips applied migrations.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Return to an earlier release",
-    "anchor": "return-to-an-earlier-release",
-    "text": "Return to an earlier release\nsudo ia-mns-deploy rollback                 # the last healthy release\nsudo ia-mns-deploy rollback ia-mns-vA.B.C   # a named release\n\nWithout a tag, the target is the current release when the API runs another image or none (a failed or stopped deployment), and the previous release only when the current release is the one running.\nThe tool refuses when the target does not know a migration the database applied. Then choose:\n**Fix forward (preferred):** tag and deploy a corrected release.\n**Accept the newer schema:** only after reviewing that every unknown migration is additive (new tables, nullable columns, new indexes) and the target ignores it: `sudo ia-mns-deploy rollback --accept-schema-ahead`. The decision is recorded.\n**Restore the pre-deployment backup** with [backup and restore](production-backup-and-restore.md); data written since that backup is lost.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Verification",
-    "anchor": "verification",
-    "text": "Verification\n`sudo ia-mns-deploy status` exits 0 and shows the expected `current release` and `running image`.\nThe public origin loads, an owner signs in, and a normal question succeeds.\n`deployments.log` records the operation with `\"result\": \"success\"`.\n"
   }
 ]

@@ -14,6 +14,8 @@ The My Account, Administration and conversation-material visual improvements in 
 
 ## Maintaining this checklist
 
+The PR #11 corrections in [PJ-58](implementation-plan.md#current-work) need no new human-controlled account, secret or ERP access. They add the forward application migration `202610210002_identity_whatsapp_link_generations`; deployment must apply it before the updated runtime and must not run older WhatsApp workers concurrently. Disable the channel before rolling back to an older runtime and keep it disabled there. Existing WhatsApp activation approvals remain PH-32 to PH-35.
+
 The static feature/SQL catalog in [PJ-56](implementation-plan.md#current-work) requires no new human action or ERP access. It documents the existing catalog exposure and deployment prerequisites; it does not complete or change PH-27, PH-28 or PH-36.
 
 The button theme-transition accessibility correction in [PJ-57](implementation-plan.md#current-work) requires no new human action, production access or ERP privilege.
@@ -294,7 +296,6 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Verification:** The owner confirms the account and its limits. Connecting with it and confirming that `SELECT` works on the reference tables while writes, DDL and other tables are refused is part of [PH-20](#ph-20), because only the owner holds the password.
 **Evidence / blocker:** On 2026-10-07 the owner reported the account `ia_mns` with `CONNECT` on the VRMaster database, `USAGE` on its schema, `SELECT` only on the tables of the reference SQL (`venda`, `produto`, `loja`, `fornecedor`, `produtoaliquota`, `aliquota`, `mercadologico`, `centrocusto`, `comprador`), `default_transaction_read_only = on`, `statement_timeout = 30s` and no DDL or DML. IA-MNS has not connected with it; no password was requested or recorded. The same grants are reproduced in the adapter tests on synthetic PostgreSQL, where the transcribed SQL needs nothing more. On 2026-10-06 the VRMaster PostgreSQL port was reachable from the development machine; on 2026-10-07 the server answered the TLS request negatively ([PH-21](#ph-21)).
 
-
 **Current verified limitation:** PJ-41 connected with the existing reader on 2026-10-11, verified no privileged role attributes, memberships, owned tables or writes on existing public tables, and applied PH-27. Actual database/schema CREATE and TEMP are inherited from PUBLIC. The owner explicitly requires preserving PUBLIC; PH-30 tracks coordinated restriction. The earlier owner-reported absence of DDL was not an effective-ACL verification and is superseded by this live finding.
 
 ## PH-20
@@ -462,7 +463,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Dependency / trigger:** PH-32; blocks PJ-48. The owner asked that the definitive number never be installed or registered without them.
 **Request and reason:** The number must have no WhatsApp account (it has none today) and must stay off the WhatsApp and WhatsApp Business apps afterwards. In the app's WhatsApp setup (or WhatsApp Manager → Phone numbers → Add phone number): enter the display name (it must follow Meta's display-name rules and match the business; Meta reviews it), the category and the number, then receive the **verification code by SMS or voice call** on the corporate line and confirm it. Set the number's **two-step verification PIN** and store it in the password vault. Then register the number for Cloud API use (Meta's `register` step with that PIN, done in WhatsApp Manager or by the `POST /{phone-number-id}/register` request in Meta's documentation). Until this is done, development uses the local simulator or Meta's test number from the app dashboard.
 **Configuration:** the **phone number ID** shown by Meta (later `WHATSAPP_PHONE_NUMBER_ID`); not secret. The two-step PIN is a secret kept only in the vault.
-**Verification:** WhatsApp Manager shows the number connected to the WABA with status *Connected*, the display name approved, and a messaging limit tier.
+**Verification:** WhatsApp Manager shows the number connected to the WABA with status _Connected_, the display name approved, and a messaging limit tier.
 **Evidence / blocker:** Not started. Do not use a personal or shared number.
 
 ## PH-34
@@ -493,7 +494,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 
 **Status:** pending (non-blocking: every other restriction works without it). **Owner:** project owner with ERP mutation authority.
 **Dependency / trigger:** [PJ-54](implementation-plan.md#current-work); before an owner restricts Sankhya sales by result center (CR).
-**Request and reason:** The sales restriction by *centro de resultado* filters `TGFCAB.CODCENCUS`, which the reader already reads, but listing the centers for owners and including the centers below a selected one need `SELECT` on `TSICUS` (`CODCENCUS`, `DESCRCENCUS`, `CODCENCUSPAI`, `GRAU`, `ANALITICO`, `ATIVO`). The reviewed [Sankhya template](../../apps/api/scripts/erp-access/sankhya-runtime.sql) now adds one `SELECT` grant and one private synonym for `IA_MNS_RO`; read-only Discovery confirmed the table and its 145 centers. Applying it is an ERP privilege change, which Discovery authority does not cover ([ERP database access](../security/erp-database-access.md)). Until then, searching or granting CR values answers `IDENTITY_RESTRICTION_UNAVAILABLE` and no CR restriction can exist.
+**Request and reason:** The sales restriction by _centro de resultado_ filters `TGFCAB.CODCENCUS`, which the reader already reads, but listing the centers for owners and including the centers below a selected one need `SELECT` on `TSICUS` (`CODCENCUS`, `DESCRCENCUS`, `CODCENCUSPAI`, `GRAU`, `ANALITICO`, `ATIVO`). The reviewed [Sankhya template](../../apps/api/scripts/erp-access/sankhya-runtime.sql) now adds one `SELECT` grant and one private synonym for `IA_MNS_RO`; read-only Discovery confirmed the table and its 145 centers. Applying it is an ERP privilege change, which Discovery authority does not cover ([ERP database access](../security/erp-database-access.md)). Until then, searching or granting CR values answers `IDENTITY_RESTRICTION_UNAVAILABLE` and no CR restriction can exist.
 **Configuration:** none beyond the template; run `pnpm -C apps/api erp:runtime:access` to see the plan and `--apply` only with explicit authorization.
 **Verification:** The planner reports zero missing statements; an owner searches result centers in **Administração → Permissões → SNK-VEN-01 → Conceder com restrições**, and a restricted sales answer cites the center.
 **Evidence / blocker:** Prepared on 2026-10-20; not applied.

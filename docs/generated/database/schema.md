@@ -121,6 +121,7 @@ Lifecycle: Persons are never hard-deleted by the application; an owner disables 
 | `merged_into` | `uuid` | yes | — | CONFIDENTIAL | Person that absorbed this one through a proof-based or owner-approved consolidation; links, local credential, grants and conversations moved there. | Not merged. | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock creation instant. | — | — |
 | `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock last profile or status change; informational, not an audit trail. | — | — |
+| `whatsapp_link_version` | `integer` | no | `0` | CONFIDENTIAL | Last allocated WhatsApp link generation, retained after unlinking. Changes are serialized with the Person lock; a recreated link cannot authorize older queued work. | — | — |
 
 ### Constraints and indexes
 
@@ -131,6 +132,7 @@ Lifecycle: Persons are never hard-deleted by the application; an owner disables 
 | `identity_persons_merged_into_fkey` | `FOREIGN KEY (merged_into) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE RESTRICT` | A merged Person points to an existing Person; never deleted while referenced. |
 | `identity_persons_pkey` | `PRIMARY KEY (id)` | Immutable Person identity. |
 | `identity_persons_status_check` | `CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'disabled'::character varying, 'merged'::character varying])::text[])))` | Explicit lifecycle states. |
+| `identity_persons_whatsapp_link_version_check` | `CHECK ((whatsapp_link_version >= 0))` | The persistent WhatsApp link generation starts at zero and never becomes negative. |
 | `identity_persons_display_name_idx` | `CREATE INDEX identity_persons_display_name_idx ON public.identity_persons USING btree (display_name, id)` | Bounded administrative listing ordered by name. |
 
 ## identity_external_identities

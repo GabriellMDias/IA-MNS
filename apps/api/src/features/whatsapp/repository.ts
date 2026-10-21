@@ -26,6 +26,9 @@ export type OutboundWork = {
   recipientUserId: string | null;
   body: string | null;
   attempts: number;
+  kind: string;
+  conversationId: string | null;
+  turnId: string | null;
   /** When the person sent the message this part answers. */
   inboundSentAt: Date;
 };
@@ -68,6 +71,9 @@ type OutboundRow = {
   recipient_user_id: string | null;
   body: string | null;
   attempts: number;
+  kind: string;
+  conversation_id: string | null;
+  turn_id: string | null;
   inbound_sent_at: Date;
 };
 
@@ -272,8 +278,8 @@ export class WhatsappRepository {
             ORDER BY i.sent_at, i.received_at, o.inbound_id, o.part
             LIMIT 1)
           RETURNING id, inbound_id, part, person_id, link_version,
-            recipient_phone, recipient_user_id, body, attempts)
-        SELECT claimed.*, i.sent_at AS inbound_sent_at
+            recipient_phone, recipient_user_id, body, attempts, kind)
+        SELECT claimed.*, i.sent_at AS inbound_sent_at, i.conversation_id, i.turn_id
         FROM claimed JOIN whatsapp_inbound_messages i ON i.id = claimed.inbound_id`;
     });
     const row = rows[0];
@@ -288,6 +294,9 @@ export class WhatsappRepository {
           recipientUserId: row.recipient_user_id,
           body: row.body,
           attempts: row.attempts,
+          kind: row.kind,
+          conversationId: row.conversation_id,
+          turnId: row.turn_id,
           inboundSentAt: row.inbound_sent_at,
         }
       : null;

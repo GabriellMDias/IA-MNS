@@ -1152,8 +1152,23 @@ export class IdentityRepository {
           await tx.identityWhatsappLink.deleteMany({
             where: { personId: input.sourceId },
           });
-        else
-          await tx.$executeRaw`UPDATE identity_whatsapp_links SET person_id = ${input.targetId}::uuid, version = version + 1 WHERE person_id = ${input.sourceId}::uuid`;
+        else {
+          const sourceLink = await tx.identityWhatsappLink.findUnique({
+            where: { personId: input.sourceId },
+            select: { version: true },
+          });
+          if (sourceLink) {
+            const [generation] = await tx.$queryRaw<{ version: number }[]>`
+              UPDATE identity_persons SET whatsapp_link_version =
+                GREATEST(whatsapp_link_version, ${sourceLink.version}) + 1
+              WHERE id = ${input.targetId}::uuid
+              RETURNING whatsapp_link_version AS version`;
+            await tx.identityWhatsappLink.update({
+              where: { personId: input.sourceId },
+              data: { personId: input.targetId, version: generation.version },
+            });
+          }
+        }
         await tx.identitySession.updateMany({
           where: { personId: input.sourceId, revokedAt: null },
           data: {
@@ -1658,6 +1673,12 @@ export class IdentityRepository {
         });
         if (current?.phoneNumber === input.phoneNumber)
           return "unchanged" as const;
+        // The Person lock serializes allocation and survives deleting the link.
+        const person = await tx.identityPerson.update({
+          where: { id: input.personId },
+          data: { whatsappLinkVersion: { increment: 1 } },
+          select: { whatsappLinkVersion: true },
+        });
         if (current)
           await tx.identityWhatsappLink.update({
             where: { personId: input.personId },
@@ -1666,7 +1687,7 @@ export class IdentityRepository {
               legacyIdentifier: input.legacyIdentifier,
               platformUserId: null,
               confirmedAt: null,
-              version: { increment: 1 },
+              version: person.whatsappLinkVersion,
               updatedBy: input.actor,
               updatedAt: input.now,
             },
@@ -1675,6 +1696,7 @@ export class IdentityRepository {
           await tx.identityWhatsappLink.create({
             data: {
               personId: input.personId,
+              version: person.whatsappLinkVersion,
               phoneNumber: input.phoneNumber,
               legacyIdentifier: input.legacyIdentifier,
               linkedBy: input.actor,
@@ -1699,6 +1721,7 @@ export class IdentityRepository {
     audit: (transaction: unknown) => Promise<void>,
   ): Promise<"removed" | "not_found"> {
     return this.database.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT id FROM identity_persons WHERE id = ${personId}::uuid FOR UPDATE`;
       const removed = await tx.identityWhatsappLink.deleteMany({
         where: { personId },
       });

@@ -219,9 +219,19 @@ test.beforeAll(async () => {
   stacks.push(
     await listen(
       createServer((request, response) => {
+        const requestedPath = new URL(
+          request.url ?? "/",
+          hostile,
+        ).searchParams.get("path");
+        const framePath =
+          requestedPath === "/embed/pdt"
+            ? "/embed/pdt"
+            : requestedPath === "/entrar"
+              ? "/entrar"
+              : "/";
         response.writeHead(200, { "content-type": "text/html" });
         response.end(
-          `<!doctype html><iframe id="victim" title="victim" src="${web}${new URL(request.url ?? "/", hostile).searchParams.get("path") ?? "/"}"></iframe>`,
+          `<!doctype html><iframe id="victim" title="victim" src="${web}${framePath}"></iframe>`,
         );
       }),
       hostilePort,
@@ -983,6 +993,13 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
 test("only the configured host may frame IA-MNS, and only its embedded routes", async ({
   page,
 }) => {
+  const injection =
+    '"><script>globalThis.injected = true</script><iframe src="';
+  const response = await page.request.get(
+    `${hostile}/?path=${encodeURIComponent(injection)}`,
+  );
+  expect(await response.text()).not.toContain("<script>");
+  expect(await response.text()).toContain(`src="${web}/"`);
   for (const path of ["/embed/pdt", "/", "/entrar"]) {
     await page.goto(`${hostile}/?path=${encodeURIComponent(path)}`);
     await page.waitForTimeout(500);

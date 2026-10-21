@@ -1,4 +1,6 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac, randomBytes, randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import pg from "pg";
 import { expect, it, vi } from "vitest";
 import pino from "pino";
 import type { InjectOptions } from "fastify";
@@ -27,10 +29,454 @@ import type { AgentPlanner } from "../src/features/agent/planner.js";
 import { SalesChat } from "../src/features/sales/application.js";
 import { createSalesCapability } from "../src/features/sales/capability.js";
 import type { SalesInterpreter } from "../src/features/sales/interpreter.js";
-import type { SalesQuery } from "../src/features/sales/domain.js";
+import type { SalesQuery, SalesRow } from "../src/features/sales/domain.js";
 import { createWhatsappModule } from "../src/features/whatsapp/module.js";
+import { WhatsappChannel } from "../src/features/whatsapp/channel.js";
+import { WhatsappRepository } from "../src/features/whatsapp/repository.js";
+import { GraphClient } from "../src/features/whatsapp/graph.js";
+import { readNotification } from "../src/features/whatsapp/webhook.js";
+import { IdentityRepository } from "../src/features/identity/repository.js";
 import { interpretation } from "../evals/fixtures.js";
 import { signingKey } from "./identity-helpers.js";
+
+it("withholds answers when sales access is revoked or narrowed during computation", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const { app, database, service, graph, sales, makeChannel } = await setup(
+      runtimeUrl,
+      true,
+    );
+    const channel = makeChannel();
+    try {
+      const owner = await ownerToken(app, service);
+      for (const [index, change] of ["permission", "scope"].entries()) {
+        const person = await createPerson(app, owner, `During ${change}`, true);
+        const phone = `551198765430${index}`;
+        expect(
+          (await setNumber(app, owner, person.personId, `+${phone}`))
+            .statusCode,
+        ).toBe(200);
+        await channel.receive(
+          readNotification(
+            notification({
+              messages: [
+                message(
+                  { phone },
+                  "Quanto vendemos de maçã nos últimos 3 meses?",
+                ),
+              ],
+            }),
+            { phoneNumberId: PHONE_NUMBER_ID },
+          ),
+        );
+        await database.whatsappInboundMessage.updateMany({
+          data: { notBefore: new Date(0) },
+        });
+        let release!: () => void;
+        const reached = new Promise<void>((resolve) => {
+          sales.gate.reached = resolve;
+        });
+        sales.gate.hold = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        const processing = channel.processNext();
+        try {
+          await reached;
+          if (change === "permission")
+            await database.identityCapabilityGrant.delete({
+              where: {
+                personId_permission: {
+                  personId: person.personId,
+                  permission: "sales_sankhya:read",
+                },
+              },
+            });
+          else
+            await database.identityGrantRestriction.create({
+              data: {
+                personId: person.personId,
+                permission: "sales_sankhya:read",
+                dimension: "company",
+                value: "1",
+                label: "Synthetic company",
+              },
+            });
+        } finally {
+          sales.gate.hold = null;
+          release();
+          await processing;
+        }
+        expect(
+          await database.whatsappInboundMessage.findFirst({
+            where: { personId: person.personId },
+          }),
+        ).toMatchObject({ state: "ignored", outcome: "revoked" });
+        expect(await database.whatsappOutboundMessage.count()).toBe(0);
+        expect(graph.sent).toHaveLength(0);
+      }
+    } finally {
+      await channel.close();
+      await app.close();
+      await database.$disconnect();
+    }
+  });
+}, 120_000);
+
+it("rechecks retained dependencies for every queued answer part and retry after a restart", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const { app, database, service, graph, sales, makeChannel, agent } =
+      await setup(runtimeUrl, true);
+    let channel = makeChannel();
+    try {
+      const owner = await ownerToken(app, service);
+      sales.rows.splice(
+        0,
+        1,
+        ...Array.from({ length: 20 }, (_, index) => ({
+          period: "total",
+          product: `SYNTHETIC PRODUCT ${index} ${"A".repeat(230)}`,
+          unit: "BRL",
+          value: "1",
+        })),
+      );
+      for (const [index, change] of [
+        "permission",
+        "scope",
+        "derived",
+        "deleted",
+        "between_parts",
+      ].entries()) {
+        const person = await createPerson(app, owner, `Queued ${change}`, true);
+        const phone = `552199876540${index}`;
+        expect(
+          (await setNumber(app, owner, person.personId, `+${phone}`))
+            .statusCode,
+        ).toBe(200);
+        await channel.receive(
+          readNotification(
+            notification({
+              messages: [
+                message(
+                  { phone },
+                  "Quanto vendemos de maçã nos últimos 3 meses?",
+                ),
+              ],
+            }),
+            { phoneNumberId: PHONE_NUMBER_ID },
+          ),
+        );
+        await database.whatsappInboundMessage.updateMany({
+          data: { notBefore: new Date(0) },
+        });
+        if (change === "derived") {
+          const capability = agent.capabilities[0];
+          const execute = capability.execute;
+          vi.spyOn(capability, "execute").mockImplementationOnce(
+            async (input) => {
+              const outcome = await execute(input);
+              return {
+                ...outcome,
+                reply: {
+                  kind: "conversation",
+                  capabilityId: outcome.reply.capabilityId,
+                  result: null,
+                  message: "Synthetic retained-evidence reformulation. ".repeat(
+                    120,
+                  ),
+                  suggestions: [],
+                  evidenceSnapshots: [
+                    {
+                      id: "original",
+                      capabilityId: outcome.reply.capabilityId,
+                      requiredPermissions: [],
+                      result: outcome.reply.result,
+                    },
+                  ],
+                },
+              };
+            },
+          );
+        }
+        expect(await channel.processNext()).toBe(true);
+        const work = await database.whatsappInboundMessage.findFirstOrThrow({
+          where: { personId: person.personId },
+        });
+        expect(work.outcome).toBe("answered");
+        expect(
+          await database.whatsappOutboundMessage.count({
+            where: { personId: person.personId },
+          }),
+        ).toBeGreaterThan(1);
+        const before = graph.sent.length;
+        if (change === "between_parts") {
+          expect(await channel.sendNext()).toBe(true);
+          expect(graph.sent).toHaveLength(before + 1);
+        } else {
+          graph.failures.push(() =>
+            Response.json({ error: { code: 130429 } }, { status: 429 }),
+          );
+          expect(await channel.sendNext()).toBe(true);
+          expect(graph.sent).toHaveLength(before);
+        }
+        if (change === "scope")
+          await database.identityGrantRestriction.create({
+            data: {
+              personId: person.personId,
+              permission: "sales_sankhya:read",
+              dimension: "company",
+              value: "1",
+              label: "Synthetic company",
+            },
+          });
+        else if (change === "deleted")
+          await database.agentConversation.delete({
+            where: { id: work.conversationId! },
+          });
+        else {
+          await database.identityCapabilityGrant.delete({
+            where: {
+              personId_permission: {
+                personId: person.personId,
+                permission: "sales_sankhya:read",
+              },
+            },
+          });
+        }
+        // No in-memory authorization snapshot survives the new channel instance.
+        await channel.close();
+        channel = makeChannel();
+        await database.whatsappOutboundMessage.updateMany({
+          where: { state: "pending" },
+          data: { notBefore: new Date(0) },
+        });
+        while (await channel.sendNext()) {
+          /* drain all parts */
+        }
+        expect(graph.sent).toHaveLength(
+          before + (change === "between_parts" ? 1 : 0),
+        );
+        const unsent = await database.whatsappOutboundMessage.findMany({
+          where: { personId: person.personId, state: { not: "accepted" } },
+        });
+        expect(unsent.length).toBeGreaterThan(0);
+        expect(
+          unsent.every(
+            (part) => part.state === "revoked" && part.body === null,
+          ),
+        ).toBe(true);
+      }
+    } finally {
+      await channel.close();
+      await app.close();
+      await database.$disconnect();
+    }
+  });
+}, 120_000);
+
+it("never reauthorizes old inbox or outbox work after unlinking and recreating the same number", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const { app, database, service, graph, makeChannel } = await setup(
+      runtimeUrl,
+      true,
+    );
+    const channel = makeChannel();
+    try {
+      const owner = await ownerToken(app, service);
+      const person = await createPerson(app, owner, "Relinked person", true);
+      const phone = "5531998765432";
+      const version = async () =>
+        (
+          await database.identityWhatsappLink.findUniqueOrThrow({
+            where: { personId: person.personId },
+          })
+        ).version;
+      const receive = async () => {
+        await channel.receive(
+          readNotification(
+            notification({
+              messages: [
+                message(
+                  { phone },
+                  "Quanto vendemos de maçã nos últimos 3 meses?",
+                ),
+              ],
+            }),
+            { phoneNumberId: PHONE_NUMBER_ID },
+          ),
+        );
+        await database.whatsappInboundMessage.updateMany({
+          data: { notBefore: new Date(0) },
+        });
+      };
+      const relink = async () => {
+        expect(
+          (
+            await inject(app, {
+              method: "DELETE",
+              url: `/identity/admin/persons/${person.personId}/whatsapp`,
+              headers: bearer(owner),
+            })
+          ).statusCode,
+        ).toBe(200);
+        expect(
+          (await setNumber(app, owner, person.personId, `+${phone}`))
+            .statusCode,
+        ).toBe(200);
+      };
+      expect(
+        (await setNumber(app, owner, person.personId, `+${phone}`)).statusCode,
+      ).toBe(200);
+      expect(await version()).toBe(1);
+      await receive();
+      await relink();
+      expect(await version()).toBe(2);
+      expect(await channel.processNext()).toBe(true);
+      expect((await inbound(database))[0]).toMatchObject({
+        state: "ignored",
+        outcome: "revoked",
+      });
+      await receive();
+      expect(await channel.processNext()).toBe(true);
+      expect(await database.whatsappOutboundMessage.count()).toBeGreaterThan(0);
+      await relink();
+      expect(await version()).toBe(3);
+      while (await channel.sendNext()) {
+        /* drain revoked work */
+      }
+      expect(graph.sent).toHaveLength(0);
+      expect(
+        (await database.whatsappOutboundMessage.findMany()).every(
+          (part) => part.state === "revoked",
+        ),
+      ).toBe(true);
+      await expect(
+        new IdentityRepository(database).setWhatsappLink({
+          personId: person.personId,
+          phoneNumber: "5531998765433",
+          legacyIdentifier: null,
+          actor: person.personId,
+          now: new Date(),
+          audit: () => Promise.reject(new Error("Synthetic audit failure")),
+        }),
+      ).rejects.toThrow("Synthetic audit failure");
+      expect(await version()).toBe(3);
+      expect(
+        (
+          await database.identityPerson.findUniqueOrThrow({
+            where: { id: person.personId },
+          })
+        ).whatsappLinkVersion,
+      ).toBe(3);
+      // New authorized work still succeeds; old revocation is not a channel lockout.
+      await receive();
+      expect(await channel.processNext()).toBe(true);
+      while (await channel.sendNext()) {
+        /* drain current work */
+      }
+      expect(graph.sent.length).toBeGreaterThan(0);
+      const writes = await Promise.all([
+        setNumber(app, owner, person.personId, "+55 31 99876-5433"),
+        setNumber(app, owner, person.personId, "+55 31 99876-5434"),
+      ]);
+      expect(writes.map((response) => response.statusCode)).toEqual([200, 200]);
+      expect(await version()).toBe(5);
+    } finally {
+      await channel.close();
+      await app.close();
+      await database.$disconnect();
+    }
+  });
+}, 120_000);
+
+it("backfills link generations from current links and retained channel work on upgrade", async () => {
+  await withMigratedDatabase(async (runtimeUrl, migrationUrl) => {
+    const database = createDatabase(runtimeUrl);
+    const admin = new pg.Client({ connectionString: migrationUrl });
+    await admin.connect();
+    try {
+      const linked = randomUUID(),
+        removed = randomUUID(),
+        fresh = randomUUID();
+      await database.identityPerson.createMany({
+        data: [linked, removed, fresh].map((id) => ({
+          id,
+          displayName: "Synthetic upgrade",
+        })),
+      });
+      await database.identityWhatsappLink.create({
+        data: {
+          personId: linked,
+          phoneNumber: "5511987654321",
+          version: 4,
+          linkedBy: linked,
+          updatedBy: linked,
+        },
+      });
+      const work = await database.whatsappInboundMessage.create({
+        data: {
+          id: randomUUID(),
+          messageId: "wamid.upgrade",
+          personId: removed,
+          linkVersion: 7,
+          senderPhone: "5521998765432",
+          kind: "text",
+          sentAt: new Date(),
+        },
+      });
+      await database.whatsappOutboundMessage.create({
+        data: {
+          id: randomUUID(),
+          inboundId: work.id,
+          part: 1,
+          personId: removed,
+          linkVersion: 9,
+          recipientPhone: work.senderPhone,
+          kind: "notice",
+          body: "Synthetic upgrade",
+        },
+      });
+      // Recreate only the prior column state in this disposable database.
+      await admin.query(
+        "ALTER TABLE identity_persons DROP COLUMN whatsapp_link_version",
+      );
+      await admin.query(
+        await readFile(
+          new URL(
+            "../prisma/migrations/202610210002_identity_whatsapp_link_generations/migration.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      for (const [id, expected] of [
+        [linked, 4],
+        [removed, 9],
+        [fresh, 0],
+      ] as const)
+        expect(
+          (await database.identityPerson.findUniqueOrThrow({ where: { id } }))
+            .whatsappLinkVersion,
+        ).toBe(expected);
+      await new IdentityRepository(database).setWhatsappLink({
+        personId: removed,
+        phoneNumber: "5521998765432",
+        legacyIdentifier: null,
+        actor: linked,
+        now: new Date(),
+        audit: async () => {},
+      });
+      expect(
+        (
+          await database.identityWhatsappLink.findUniqueOrThrow({
+            where: { personId: removed },
+          })
+        ).version,
+      ).toBe(10);
+    } finally {
+      await admin.end();
+      await database.$disconnect();
+    }
+  });
+}, 120_000);
 
 // Synthetic Meta identifiers and secrets; nothing here reaches Meta.
 const ORIGIN = "http://localhost:5173";
@@ -97,6 +543,9 @@ function fakeGraph() {
 /** Synthetic sales readers: they record each query and can be held. */
 function salesReaders() {
   const calls: { source: string; query: SalesQuery }[] = [];
+  const rows: SalesRow[] = [
+    { period: "total", product: null, unit: "BRL", value: "1234.5" },
+  ];
   const gate: { hold: Promise<void> | null; reached: () => void } = {
     hold: null,
     reached: () => undefined,
@@ -110,9 +559,7 @@ function salesReaders() {
       }
       return {
         current: {
-          rows: [
-            { period: "total", product: null, unit: "BRL", value: "1234.5" },
-          ],
+          rows,
           products: [{ code: "1", description: "MAÇÃ GALA" }],
           missingWeight: false,
         },
@@ -123,12 +570,13 @@ function salesReaders() {
   });
   return {
     calls,
+    rows,
     gate,
     readers: { sankhya: reader("sankhya"), vrmaster: reader("vrmaster") },
   };
 }
 
-async function setup(runtimeUrl: string) {
+async function setup(runtimeUrl: string, manual = false) {
   const key = signingKey();
   const config = parseServerConfig({
     ORION_ENV: "test",
@@ -229,10 +677,31 @@ async function setup(runtimeUrl: string) {
     idleMs: 25,
   }).activate(resources);
   const { app } = createApp(pino({ level: "silent" }), undefined, {
-    modules: [identity, agentModule, whatsapp],
+    modules: [identity, agentModule, ...(manual ? [] : [whatsapp])],
   });
   await app.ready();
-  return { app, database, service, graph, sales, router };
+  const makeChannel = () =>
+    new WhatsappChannel({
+      repository: new WhatsappRepository(database),
+      identity: {
+        authorize: (sender) => service.authorizeWhatsappSender(sender),
+        confirm: (authorization) =>
+          service.confirmWhatsappSender(authorization),
+      },
+      agent: agentChannel(agent, "whatsapp", app.log),
+      graph: new GraphClient({
+        baseUrl: config.whatsappGraphBaseUrl,
+        version: config.whatsappGraphApiVersion,
+        phoneNumberId: PHONE_NUMBER_ID,
+        accessToken: config.whatsappAccessToken!,
+        fetcher: graph.fetcher,
+      }),
+      enabled: () => Promise.resolve(true),
+      dailyLimit: 500,
+      log: app.log,
+      idleMs: 25,
+    });
+  return { app, database, service, graph, sales, router, makeChannel, agent };
 }
 
 type App = Awaited<ReturnType<typeof setup>>["app"];
@@ -921,6 +1390,22 @@ it("retries replies only when Meta refused them and never resends an uncertain o
       // number as a new version, which refuses work queued for the source.
       const caio = await createPerson(app, owner, "Caio", false);
       const davi = await createPerson(app, owner, "Davi", false);
+      // The survivor's deleted links also reserve their generations.
+      for (let index = 0; index < 2; index++) {
+        expect(
+          (await setNumber(app, owner, caio.personId, "+55 21 99876-5432"))
+            .statusCode,
+        ).toBe(200);
+        expect(
+          (
+            await inject(app, {
+              method: "DELETE",
+              url: `/identity/admin/persons/${caio.personId}/whatsapp`,
+              headers: bearer(owner),
+            })
+          ).statusCode,
+        ).toBe(200);
+      }
       expect(
         (await setNumber(app, owner, davi.personId, "+55 41 99111-2222"))
           .statusCode,
@@ -928,7 +1413,7 @@ it("retries replies only when Meta refused them and never resends an uncertain o
       expect((await merge(caio.personId, davi.personId)).statusCode).toBe(200);
       expect(await link(caio.personId)).toEqual({
         phoneNumber: "5541991112222",
-        version: 2,
+        version: 3,
       });
     } finally {
       await app.close();

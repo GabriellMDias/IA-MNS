@@ -124,7 +124,8 @@ export function renderDocument(source, text, available, sourceBase) {
       throw new Error(`Unsafe documentation URL in ${source}: ${url}`);
     return true;
   };
-  const tokens = markdown.parse(text.replace(/<!--[\s\S]*?-->/g, ""), {});
+  // A separator prevents fragments around a removed comment forming new markup.
+  const tokens = markdown.parse(text.replace(/<!--[\s\S]*?-->/g, " "), {});
   const slugger = new GithubSlugger();
   const headings = [];
   const sections = [];

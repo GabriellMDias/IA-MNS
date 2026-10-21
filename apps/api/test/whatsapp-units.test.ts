@@ -1,5 +1,8 @@
 import { createHmac, randomBytes } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import pino from "pino";
+import { WhatsappChannel } from "../src/features/whatsapp/channel.js";
+import type { WhatsappRepository } from "../src/features/whatsapp/repository.js";
 import { parseServerConfig } from "../src/config.js";
 import {
   displayWhatsappNumber,
@@ -20,6 +23,48 @@ import {
 import { GraphClient } from "../src/features/whatsapp/graph.js";
 import type { TurnView } from "../src/features/agent/contracts.js";
 import { signingKey } from "./identity-helpers.js";
+
+it("retains only live idle callbacks and clears them on shutdown", async () => {
+  vi.useFakeTimers();
+  const repository = {
+    claimInbound: () => Promise.resolve(null),
+    expireSending: () => Promise.resolve(0),
+    claimOutbound: () => Promise.resolve(null),
+  } as unknown as WhatsappRepository;
+  const channel = new WhatsappChannel({
+    repository,
+    graph: new GraphClient({
+      baseUrl: "http://127.0.0.1:9",
+      version: "v25.0",
+      phoneNumberId: "100000000001",
+      accessToken: "synthetic",
+    }),
+    identity: {
+      authorize: () =>
+        Promise.resolve({ authorized: false, reason: "unknown" }),
+      confirm: async () => {},
+    },
+    agent: undefined,
+    enabled: () => Promise.resolve(false),
+    dailyLimit: 500,
+    idleMs: 10,
+    log: pino({ level: "silent" }),
+  });
+  try {
+    channel.start();
+    await vi.advanceTimersByTimeAsync(0);
+    for (let cycle = 0; cycle < 100; cycle++) {
+      await vi.advanceTimersByTimeAsync(10);
+      expect(channel["wakeUp"]).toHaveLength(3);
+    }
+    await channel.close();
+    expect(channel["wakeUp"]).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    await channel.close();
+    vi.useRealTimers();
+  }
+});
 
 describe("WhatsApp number normalization", () => {
   it("stores E.164 digits and a deterministic legacy alias only for Brazilian mobiles", () => {

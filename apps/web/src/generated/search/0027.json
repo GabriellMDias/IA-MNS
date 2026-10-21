@@ -4,6 +4,96 @@
     "title": "Runbook: Production Release Update and Rollback",
     "group": "Runbooks",
     "kind": "repository",
+    "heading": "Runbook: Production Release Update and Rollback",
+    "anchor": "runbook-production-release-update-and-rollback",
+    "text": "Runbook: Production Release Update and Rollback\n**Owner:** IA-MNS project owner\n**Status:** draft — update, automatic return, refused rollback, explicit rollback and forward fix are exercised by the disposable [installation rehearsal](../../infra/production/rehearsal/run.sh) in CI; not yet executed on the production host\n**Environment / applicability:** a host prepared by [host setup and first deployment](production-host-setup-and-first-deployment.md)\n**Related alerts:** the `IA_MNS_ALERT_COMMAND` notification of a failed `deploy` or `rollback`\n**Required access:** an attributable sudo account on the host\nFollow [authoring policy](authoring.md), [production access](../security/production-access.md), [incident response](../security/incident-response.md), and [redaction](../security/telemetry-redaction.md).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Purpose",
+    "anchor": "purpose",
+    "text": "Purpose\nInstall a newer IA-MNS release, and return to an earlier one when that is proven safe.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Trigger / Symptoms",
+    "anchor": "trigger--symptoms",
+    "text": "Trigger / Symptoms\nA reviewed change was merged to `main` and tagged; or a deployed release misbehaves and an earlier release must serve again.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Impact",
+    "anchor": "impact",
+    "text": "Impact\nThe API container is replaced: requests are refused for the seconds between stop and readiness. Migrations change the database schema and are never reversed in place.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Preconditions",
+    "anchor": "preconditions",
+    "text": "Preconditions\nThe release is an annotated `ia-mns-vX.Y.Z` tag on `main` whose `Orion required gate` passed ([ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)). Create it after merging:\ngit switch main && git pull --ff-only\ngit tag -a ia-mns-vX.Y.Z -m \"IA-MNS vX.Y.Z\" && git push origin ia-mns-vX.Y.Z\n\nNever move or reuse a published tag; the host refuses a tag that moved.\nRead the release's pull requests for migrations and their compatibility notes.\n`sudo ia-mns-deploy status` shows the API healthy, or the failure you are recovering from.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis",
+    "anchor": "diagnosis",
+    "text": "Diagnosis\nsudo ia-mns-deploy status\nsudo ia-mns-deploy logs --tail 200\nsudo tail -n 5 /var/lib/ia-mns/deployments.log\n\n`deployments.log` holds one JSON line per operation: action, result, release, commit, previous release, applied migrations, pre-deployment backup and CI result.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Mitigation / Procedure",
+    "anchor": "mitigation--procedure",
+    "text": "Mitigation / Procedure\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Update",
+    "anchor": "update",
+    "text": "Update\nsudo ia-mns-deploy deploy ia-mns-vX.Y.Z\n\nThe tool verifies the tag and CI, builds the images, validates the configuration with the new image, takes a pre-deployment backup, refuses a database whose migration history the release does not match, applies pending migrations, starts the release and runs a smoke test. Outcomes:\nMessage\nState\nNext step\n`deployed <tag>`\nnew release current\nVerify (below)\nrefused before migrations (CI, tag, configuration, backup, incompatible history)\nnothing changed\nFix the cause; repeat\n`database deployment failed`\nold release still running; a migration may be partially applied\nStop. Escalate with the logs; do not retry blindly\n`<tag> failed its health checks; <previous> is running again`\nno migration ran; returned automatically\nInvestigate the release; fix forward\n`failed after applying migrations`\nmigrations applied; the failed release is not serving\nDecide below\nRepeating `deploy` with the same tag is safe: it reuses verified images and skips applied migrations.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Return to an earlier release",
+    "anchor": "return-to-an-earlier-release",
+    "text": "Return to an earlier release\nsudo ia-mns-deploy rollback                 # the last healthy release\nsudo ia-mns-deploy rollback ia-mns-vA.B.C   # a named release\n\nWithout a tag, the target is the current release when the API runs another image or none (a failed or stopped deployment), and the previous release only when the current release is the one running.\nThe tool refuses when the target does not know a migration the database applied. Then choose:\n**Fix forward (preferred):** tag and deploy a corrected release.\n**Accept the newer schema:** only after reviewing that every unknown migration is additive (new tables, nullable columns, new indexes) and the target ignores it: `sudo ia-mns-deploy rollback --accept-schema-ahead`. The decision is recorded.\n**Restore the pre-deployment backup** with [backup and restore](production-backup-and-restore.md); data written since that backup is lost.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\n`sudo ia-mns-deploy status` exits 0 and shows the expected `current release` and `running image`.\nThe public origin loads, an owner signs in, and a normal question succeeds.\n`deployments.log` records the operation with `\"result\": \"success\"`.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
     "heading": "Rollback / Recovery",
     "anchor": "rollback--recovery",
     "text": "Rollback / Recovery\nAutomatic return happens only when no migration ran during the failed deployment, because the previous release then meets exactly its own schema. After a migration, return is a human decision as above. Migrations are never edited or reversed in place ([migrations policy](../database/migrations.md)).\n"
@@ -988,50 +1078,5 @@
     "heading": "Scope and current availability",
     "anchor": "scope-and-current-availability",
     "text": "Scope and current availability\nProduction is a separate trust boundary from local development, CI, tests, staging, and previews. Routine development and maintenance should work through local/synthetic environments and sanitized observability without broad production access. Human access requires an operational purpose and the minimum capability for the necessary time.\nThe owner's explicit [ERP Discovery decision](erp-database-access.md) authorizes read-only inspection through the existing Sankhya/VRMaster administrators, without a third account. A development application configuration does not prove the target ERP is non-production. This scoped exception preserves confidentiality and requires separate explicit owner authorization for ERP mutations; it does not grant broader operational or deployment authority.\nProvider IAM, concrete operational roles, just-in-time access, approval/break-glass workflows, bastions/private networking, device trust, and session recording remain deployment-specific decisions. [ADR-0011](../adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md) governs accepted CI/supply-chain direction; it does not mean production access tooling is deployed. Do not invent provider commands or begin deployment work to complete this policy.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Identities, privilege, and access request",
-    "anchor": "identities-privilege-and-access-request",
-    "text": "Identities, privilege, and access request\nUse attributable identities and distinguish humans from service, CI, and deployment actors. Shared human accounts and borrowing an automation identity undermine audit/revocation and should be avoided. Match authentication strength and any recent/step-up requirement to risk. Named cloud-console access must use narrow roles; provider root/owner accounts are break-glass capabilities, not routine accounts.\nSeparate observation, data read/write, deployment, infrastructure, IAM/security administration, and secret administration where practical. An actor who grants privileges need not hold every resource permission. Deploying must not imply viewing raw credentials. Prefer delegated use, workload identity, temporary credentials, or controlled tooling over secret disclosure. Scope by system, resource, operation, environment, time, and classification; add region/tenant scope only where needed.\nAn access request should identify actor, task/reason, target environment/resource, minimum capability, duration, related incident/work item, data classification, and whether safer telemetry/read-only tools suffice. Temporary access should expire automatically where supported; standing privilege needs operational justification, narrow scope, and review. Bounded sessions/idle timeouts reduce unattended access risk; concurrency/device/session-recording controls are requirement-driven, not mandated products.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Approval",
-    "anchor": "approval",
-    "text": "Approval\nHigher-risk capabilities may require stronger approval according to privilege, destructiveness, classification, and urgency. Read-only diagnostics and unrestricted administration do not need identical workflows. Avoid unrestricted self-approval for high-risk access where separation is practical; small teams may combine requester/approver/responder with compensating auditability, time limits, and controls.\nHonor explicit delegated authority and the actual operational approval mechanism. A runbook, repository access, or technical ability is not authorization. Security-sensitive access must fail closed if permission cannot be established; access-system outage does not justify an implicit bypass.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Break-glass access",
-    "anchor": "break-glass-access",
-    "text": "Break-glass access\nUse break-glass only for genuine emergencies when normal mechanisms are unavailable or insufficient. Additional normal workflow steps are not an emergency. Protect emergency identities/credentials according to the selected architecture and [secrets policy](secrets-management.md); ordinary notes, chat, Git, or unapproved stores are not acceptable credential locations.\nGrant only necessary privilege, make use visible promptly to appropriate operators where practical, preserve attribution/audit, limit duration, revoke afterward, and review every use. Record why it was needed, why normal access failed, scope/owner, affected credentials, notifications, and improvements. Offline emergency access requires an explicit strongly controlled design; do not fabricate one in an incident.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Investigation and operational tools",
-    "anchor": "investigation-and-operational-tools",
-    "text": "Investigation and operational tools\nPrefer metrics, logs, traces, error reports, safe diagnostics, and scoped read-only inspection before shells, writes, secret reveal, or administrators. Read-only still exposes confidential data and can exhaust CPU, memory, I/O, locks, or connections. Query tooling should enforce bounded results/timeouts, safe exports, and appropriate audit. Masked/field-limited views can reduce exposure; masking does not automatically declassify data. Sensitive search inputs must not be logged indiscriminately.\nPurpose-built tools should expose only required capabilities, such as safe status inspection or a bounded repair. Admin APIs require strong authentication, authorization, validation, bounds, and audit even on internal networks. Internal placement is defense in depth, not authority. Prefer reviewed repository-controlled infrastructure/configuration and deployment automation where they exist. Emergency manual changes must be reconciled back into the repository afterward.\nShell/container/filesystem access can expose mounted credentials, private data, and network capabilities; do not enable SSH out of habit or make it the first debugging step. Remote debuggers can pause or mutate production and expose memory; require explicit operational justification. Profilers need low-overhead design and access control. Memory/core dumps are highly sensitive artifacts and need reviewed, restricted handling.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Manual data changes",
-    "anchor": "manual-data-changes",
-    "text": "Manual data changes\nDirect production writes bypass validation, domain rules, authorization, audit, and delivery behavior. Prefer application-aware admin operations, reviewed repair scripts, controlled migrations, or reconciliation. Separate runtime and elevated database identities; elevated migration credentials must not become normal runtime credentials. For external Sankhya and VRMaster access, the owner selected exactly one runtime reader and the existing administrator also used for read-only Discovery, with no third human-read account; [ERP database access](erp-database-access.md) governs that explicit exception. IA-MNS application-owned PostgreSQL runtime/migration separation remains unchanged.\nA repair must identify the violated invariant, affected records, desired canonical state, why ordinary workflow is insufficient, required side effects, concurrency handling, idempotency, verification, failure handling, and real rollback or forward recovery. Significant/reusable scripts should live in the repository for review/testing; retain the exact significant one-off procedure in an appropriate script, incident record, migration, or runbook. Repair tooling must not become a permanent unrestricted admin interface.\n"
   }
 ]

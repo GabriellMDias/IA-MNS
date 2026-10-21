@@ -65,6 +65,16 @@
       "Meaning": "Database-clock last profile or status change; informational, not an audit trail.",
       "Null meaning": "—",
       "Unit": "—"
+    },
+    {
+      "Column": "whatsapp_link_version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "0",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Last allocated WhatsApp link generation, retained after unlinking. Changes are serialized with the Person lock; a recreated link cannot authorize older queued work.",
+      "Null meaning": "—",
+      "Unit": "—"
     }
   ],
   "constraints": [
@@ -92,6 +102,11 @@
       "Object": "identity_persons_status_check",
       "Physical definition": "CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'disabled'::character varying, 'merged'::character varying])::text[])))",
       "Purpose": "Explicit lifecycle states."
+    },
+    {
+      "Object": "identity_persons_whatsapp_link_version_check",
+      "Physical definition": "CHECK ((whatsapp_link_version >= 0))",
+      "Purpose": "The persistent WhatsApp link generation starts at zero and never becomes negative."
     },
     {
       "Object": "identity_persons_display_name_idx",

@@ -21,11 +21,15 @@ Every message goes through these steps, in order; if any fails, the agent is not
 5. **Active Person.** Disabled and consolidated (`merged`) Persons are refused.
 6. **Effective permissions.** Identity computes them from trusted state for this message, exactly as it would for a new access token (personal grants, group grants, owner role; no automatic membership is created by a message).
 7. Only then does the message reach the agent, which applies its own capability permission checks, ERP source isolation and runtime credential limits as on the web.
-8. **Before each reply part is sent**, steps 2–5 are repeated against the same Person and link version.
+8. **Before each reply part is sent**, steps 2–6 are repeated against the same Person and link version. Answers must still pass the agent's `canReadReply` check, including source permissions, recorded data scope and every retained evidence dependency.
 
 Unknown, unlinked or refused senders are ignored silently: the webhook answers Meta with 200, nothing is stored and nothing is sent, so the channel never reveals whether a number or Person exists. Only a reason counter (`ia_mns.whatsapp.refused`, reason `unknown`, `ambiguous`, `conflict`, `inactive` or `channel_disabled`) and a content-free webhook summary are recorded.
 
-Authorization is decided again at receipt, before processing, after the agent answers and before every reply part. Removing or changing a number, disabling the Person, consolidating it, or turning the channel off therefore stops every reply that has not yet been handed to Meta, including answers being prepared. A change of the linked number increments the link version, and queued work carries the version it was received under. The answer remains in the Person's own conversation history; it is simply not delivered. Permission changes take effect on the next message (identity recomputes them each time; there is no channel session or cached token).
+Authorization is decided again at receipt, before processing, after the agent answers and before every reply part. Removing or changing a number, disabling the Person, consolidating it, or turning the channel off stops queued replies at their next authorization check, including answers being prepared. The answer remains in the Person's own conversation history; it is simply not delivered. Changes to permissions or data restrictions also apply after computation and before every answer part or retry, rather than waiting for another inbound message. An external send already started cannot be recalled.
+
+Queued parts retain their original conversation and turn reference through the inbox. The agent reloads that Person-owned turn and applies the same evidence checks as the web; missing turns, deleted conversations and invalidated evidence fail closed. This retains the original server-authored permissions and scopes across restarts without copying business payloads into another authorization store. Notices contain no business answer and still require the current link and enabled channel.
+
+Link versions are allocated under the Person lock from a persistent counter on the Person. Unlinking does not reset it; recreating the same number starts a later generation and cannot resume old inbox or outbox work. Migration `202610210002_identity_whatsapp_link_generations` initializes counters from existing links and the highest generations still retained in either queue. Deploy the migration before this runtime; older runtimes do not maintain the counter. Mixed WhatsApp worker versions are unsupported; disable the channel before rolling back to an older runtime and keep it disabled there.
 
 ## Identifiers
 
@@ -52,6 +56,7 @@ Meta ──signed webhook──▶ /whatsapp/webhook ──authorize──▶ wh
 - **Agent.** The message becomes an ordinary agent turn with the sales source the Person chose for WhatsApp. The turn shares the web's concurrency limit, deadline, lease recovery, progress, traces and failure codes. If another turn of the same conversation is running (for example from the web), the message waits.
 - **Bounded retries.** A failed processing attempt is retried with backoff up to three attempts, then the person receives a short failure notice.
 - **Shutdown.** Workers stop claiming before the agent closes (`preClose`) and release unfinished work for the next start; an interrupted agent turn is reported as interrupted.
+- **Idle waits.** A worker removes its wake-up callback on timeout or explicit wake-up. Only current waits are retained, including while the channel is disabled.
 
 ## Sending, delivery and the service window
 
@@ -64,7 +69,7 @@ Signed status webhooks move a part forward only (`accepted` → `sent` → `deli
 ## Conversation experience
 
 - Text only. Media, locations, reactions and other types receive "Por enquanto entendo apenas mensagens de texto." Messages longer than 2,000 characters (the agent's question limit) receive a short request to shorten them.
-- Replies contain the agent's prose followed by its result, as the web would show it: one block per ERP source headed *Fonte: …* with exact currency formatting and units, never summed across sources; up to 25 table lines and 20 products, then a pointer to the same conversation on the web; product options as a numbered list to answer by number or name; and the agent's suggestions. Texts are split at paragraph, line or word boundaries into at most six messages under WhatsApp's 4,096-character limit.
+- Replies contain the agent's prose followed by its result, as the web would show it: one block per ERP source headed _Fonte: …_ with exact currency formatting and units, never summed across sources; up to 25 table lines and 20 products, then a pointer to the same conversation on the web; product options as a numbered list to answer by number or name; and the agent's suggestions. Texts are split at paragraph, line or word boundaries into at most six messages under WhatsApp's 4,096-character limit.
 - Commands start with `/` so questions are never taken as commands: `/fonte sankhya|vrmaster|tudo` chooses the sales source (the channel's equivalent of the web `Fonte` selector, never inferred from a question; default `MNS (Sankhya)`), `/nova` starts a new conversation and `/ajuda` explains both.
 - Follow-up questions ("E no mês passado?"), pending clarifications, ambiguity resolution and the Semantic Product Resolver work as on the web because the agent keeps the same structured context per conversation.
 
@@ -74,13 +79,13 @@ WhatsApp conversations belong to the Person and appear in the web history with a
 
 ## Limits, costs and switches
 
-| Control | Value | Behavior |
-| --- | --- | --- |
-| Channel switch | **Administração → Parâmetros → Atendimento pelo WhatsApp** (`channels.whatsapp`, installation default `IA_MNS_WHATSAPP_CHANNEL`, `disabled`) | Off: webhooks are acknowledged without storing or answering anything; queued messages are ignored and queued replies revoked. Takes effect on the next message without a restart. |
-| Per-Person burst | 15 agent turns per 10 minutes | Further messages are ignored; one notice per window. |
-| Per-Person daily | 200 agent turns per 24 hours | Same. |
-| Installation daily ceiling | `WHATSAPP_DAILY_LIMIT` (default 500) agent turns per São Paulo day | Further messages that day are ignored; one notice per Person. |
-| Webhook | 600 requests/min per source address, 2 MB body | Resource protection. |
+| Control                    | Value                                                                                                                                        | Behavior                                                                                                                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Channel switch             | **Administração → Parâmetros → Atendimento pelo WhatsApp** (`channels.whatsapp`, installation default `IA_MNS_WHATSAPP_CHANNEL`, `disabled`) | Off: webhooks are acknowledged without storing or answering anything; queued messages are ignored and queued replies revoked. Takes effect on the next message without a restart. |
+| Per-Person burst           | 15 agent turns per 10 minutes                                                                                                                | Further messages are ignored; one notice per window.                                                                                                                              |
+| Per-Person daily           | 200 agent turns per 24 hours                                                                                                                 | Same.                                                                                                                                                                             |
+| Installation daily ceiling | `WHATSAPP_DAILY_LIMIT` (default 500) agent turns per São Paulo day                                                                           | Further messages that day are ignored; one notice per Person.                                                                                                                     |
+| Webhook                    | 600 requests/min per source address, 2 MB body                                                                                               | Resource protection.                                                                                                                                                              |
 
 Commands, notices and refused senders do not count as agent turns. Meta charges per its current pricing model; service (reply) conversations inside the customer service window are the only kind this version uses.
 

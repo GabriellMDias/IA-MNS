@@ -27,6 +27,16 @@ export interface WhatsappIdentity {
  * capabilities, history and context exactly as on the web.
  */
 export interface WhatsappAgent {
+  /** Checks the retained reply and all evidence against current access. */
+  canReadTurn(
+    actor: {
+      id: string;
+      permissions: ReadonlySet<string>;
+      scopes: ReadonlyMap<string, DataScope>;
+    },
+    conversationId: string,
+    turnId: string,
+  ): Promise<boolean>;
   conversation(
     owner: string,
     preferred: string | null,

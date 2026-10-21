@@ -26,6 +26,10 @@
           "description": "Database-clock last profile or status change; informational, not an audit trail.",
           "classification": "CONFIDENTIAL"
         },
+        "whatsapp_link_version": {
+          "description": "Last allocated WhatsApp link generation, retained after unlinking. Changes are serialized with the Person lock; a recreated link cannot authorize older queued work.",
+          "classification": "CONFIDENTIAL"
+        },
         "merged_into": {
           "description": "Person that absorbed this one through a proof-based or owner-approved consolidation; links, local credential, grants and conversations moved there.",
           "classification": "CONFIDENTIAL",
@@ -38,7 +42,8 @@
         "identity_persons_status_check": "Explicit lifecycle states.",
         "identity_persons_display_name_idx": "Bounded administrative listing ordered by name.",
         "identity_persons_merged_into_fkey": "A merged Person points to an existing Person; never deleted while referenced.",
-        "identity_persons_merge_check": "Merged status and target exist together and a Person never merges into itself."
+        "identity_persons_merge_check": "Merged status and target exist together and a Person never merges into itself.",
+        "identity_persons_whatsapp_link_version_check": "The persistent WhatsApp link generation starts at zero and never becomes negative."
       }
     },
     "identity_external_identities": {

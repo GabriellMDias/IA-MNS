@@ -7,6 +7,7 @@ model IdentityPerson {
   mergedSources IdentityPerson[] @relation("IdentityPersonMerge")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  whatsappLinkVersion Int @default(0) @map("whatsapp_link_version")
   externalIdentities IdentityExternalIdentity[]
   localCredential    IdentityLocalCredential?
   recoveryCodes      IdentityRecoveryCode[]
