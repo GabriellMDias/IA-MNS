@@ -73,6 +73,8 @@ The web application reads colors only from the custom properties in [`styles.css
 
 Every text pair above meets WCAG 2.2 AA (4.5:1) in both themes; the lowest is `--muted` on `--selected`, at 5.8:1 in the light theme. Keep that margin when changing a value, and recheck the automated accessibility journeys in [validation](validation.md).
 
+Shared buttons change their text and background tokens together when the theme changes. Background interpolation against immediately updated text can violate contrast even when both endpoint palettes pass. Only the border color transitions; reduced motion disables that transition too. Browser regression coverage samples both theme directions at the start, intermediate frames and end with ordinary motion enabled.
+
 ## Typography
 
 Interface text uses `Inter, ui-sans-serif, system-ui, sans-serif`; no web font is downloaded, so the operating system's interface font usually renders. Where the product name appears as live text next to the symbol, it is set at weight 800 to echo the heavy wordmark. The drawn wordmark in the lockups is artwork, not text.

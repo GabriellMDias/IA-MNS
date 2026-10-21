@@ -1,5 +1,50 @@
 [
   {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "APIs and data",
+    "anchor": "apis-and-data",
+    "text": "APIs and data\nTask\nAuthoritative policy\nDesign an operation or generate a client\n[API principles](api/principles.md)\nExpose an error\n[API error contract](api/error-contract.md)\nEvolve, deprecate, or retire an API contract\n[API versioning](api/versioning.md)\nModel persistent data and ownership\n[Database principles](database/principles.md)\nChange durable schema or migration history\n[Migrations](database/migrations.md)\nEstablish release status, test upgrades, or plan application/database recovery\n[Release and evolution workflow](database/release-evolution.md)\nDocument or generate database reference\n[Schema documentation](database/schema-documentation.md)\nInspect the migrated database schema\n[Generated database reference](generated/database/schema.md)\nFind the current machine-readable API contract and public errors\n[OpenAPI 3.1](generated/api/openapi.json), [generated error registry](generated/api/errors.md)\nInspect API configuration names, types, defaults, and visibility\n[Generated configuration reference](generated/configuration/api.md), [configuration policy](architecture/configuration.md)\nFind the generated frontend component reference\n[Web component reference](generated/components/web.md), [component-owned metadata](../apps/web/src/components.docs.json)\nProtect atomicity or concurrent writes\n[Transactions and concurrency](database/transactions-and-concurrency.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Reliability",
+    "anchor": "reliability",
+    "text": "Reliability\nTask\nAuthoritative policy\nSelect or integrate diagnostic signals\n[Observability](reliability/observability.md)\nAdd structured events\n[Logging](reliability/logging.md)\nInstrument causal execution and propagation\n[Tracing](reliability/tracing.md)\nAdd measurements and bounded dimensions\n[Metrics](reliability/metrics.md)\nCapture and group unexpected failures\n[Error reporting](reliability/error-reporting.md)\nChange startup, liveness, readiness, or shutdown\n[Health checks](reliability/health-checks.md)\nCreate actionable alerts\n[Alerting](reliability/alerting.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Security and operations",
+    "anchor": "security-and-operations",
+    "text": "Security and operations\nERP runtime and administrative Discovery access: [ERP database access](security/erp-database-access.md).\nTask\nAuthoritative policy\nClassify, expose, copy, or export data\n[Data classification](security/data-classification.md)\nReview OpenAI business-data transmission, provider controls and personal-data gates\n[AI data processing](security/ai-data-processing.md)\nCapture telemetry fields or payloads\n[Telemetry redaction](security/telemetry-redaction.md)\nIntroduce, deliver, rotate, or revoke credentials\n[Secrets management](security/secrets-management.md)\nVerify identity or manage authentication state\n[Authentication](security/authentication.md)\nEnforce capabilities and tenant/resource isolation\n[Authorization](security/authorization.md)\nAccess production or perform privileged actions\n[Production access](security/production-access.md)\nRetain, delete, restore, or propagate deletion\n[Data retention](security/data-retention.md)\nContain an incident and verify recovery\n[Incident response](security/incident-response.md)\nFollow or author an operational procedure\n[Runbook index](runbooks/README.md), [authoring](runbooks/authoring.md), [template](runbooks/template.md)\n"
+  },
+  {
+    "id": "repository/docs/README",
+    "title": "Documentation Task Index",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Decisions and documentation",
+    "anchor": "decisions-and-documentation",
+    "text": "Decisions and documentation\n[ADR index](adr/README.md): significant decisions and their rationale; status belongs to each ADR.\n[ADR authoring](adr/authoring.md) and [template](adr/template.md): proposals, acceptance, historical integrity, and supersession.\n[Contributing](contributing.md): change workflow, documentation ownership, canonical sources, maintenance, and review.\n[Global agent instructions](../AGENTS.md): invariants, command availability, and conditional routes for every contributor and agent; [agent instructions](architecture/agent-instructions.md) owns tool compatibility.\nCurrent policies describe current architectural expectations. ADRs preserve decision history; [setup](setup.md) and [release evolution](database/release-evolution.md) describe real procedures. Generated references exist for the current API, configuration, errors, database, and web components. The portal renders these sources in the existing web application. Production runbooks exist for the single-host deployment ([ADR-0031](adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)) and are drafts until exercised on the production host.\n"
+  },
+  {
+    "id": "repository/docs/reliability/alerting",
+    "title": "Alerting",
+    "group": "Reliability",
+    "kind": "repository",
+    "heading": "Alerting",
+    "anchor": "alerting",
+    "text": "Alerting\nThis policy owns actionable alert conditions, severity, ownership, notification, and rule maintenance. [Metrics](metrics.md) owns measurement semantics; [incident response](../security/incident-response.md) owns incidents; [runbooks](../runbooks/README.md) own executable procedures. Alerts direct human or automated attention to a condition requiring action, rather than notifying merely because a signal exists.\n"
+  },
+  {
     "id": "repository/docs/reliability/alerting",
     "title": "Alerting",
     "group": "Reliability",
@@ -952,86 +997,5 @@
     "heading": "Verification",
     "anchor": "verification",
     "text": "Verification\n`sudo ia-mns-deploy status` exits 0 and shows the expected `current release` and `running image`.\nThe public origin loads, an owner signs in, and a normal question succeeds.\n`deployments.log` records the operation with `\"result\": \"success\"`.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Rollback / Recovery",
-    "anchor": "rollback--recovery",
-    "text": "Rollback / Recovery\nAutomatic return happens only when no migration ran during the failed deployment, because the previous release then meets exactly its own schema. After a migration, return is a human decision as above. Migrations are never edited or reversed in place ([migrations policy](../database/migrations.md)).\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Escalation",
-    "anchor": "escalation",
-    "text": "Escalation\nStop and escalate if a migration fails, if both the new and the previous release fail to start, or if the pre-deployment backup is missing. Preserve `deployments.log` and the logs.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-release-update-and-rollback",
-    "title": "Runbook: Production Release Update and Rollback",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Follow-Up",
-    "anchor": "follow-up",
-    "text": "Follow-Up\nAfter the first production release, and every release that applies migrations, record the release in `release-history.json` as [ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) describes ([PH-10](../project/human-actions.md#ph-10)).\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-secret-rotation",
-    "title": "Runbook: Production Secret Rotation",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Runbook: Production Secret Rotation",
-    "anchor": "runbook-production-secret-rotation",
-    "text": "Runbook: Production Secret Rotation\n**Owner:** IA-MNS project owner; each external credential's issuing administrator\n**Status:** draft — the database password path (`setup` re-synchronizing passwords, then `restart`) uses commands exercised by the disposable [installation rehearsal](../../infra/production/rehearsal/run.sh); rotation itself has not been exercised on the production host\n**Environment / applicability:** a host prepared by [host setup and first deployment](production-host-setup-and-first-deployment.md)\n**Related alerts:** none\n**Required access:** an attributable sudo account on the host; the issuer of the external credential being rotated\nFollow [secrets policy](../security/secrets-management.md#secret-rotation), [production access](../security/production-access.md), and [incident response](../security/incident-response.md) for suspected exposure.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-secret-rotation",
-    "title": "Runbook: Production Secret Rotation",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Purpose",
-    "anchor": "purpose",
-    "text": "Purpose\nReplace an IA-MNS credential or key without printing it.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-secret-rotation",
-    "title": "Runbook: Production Secret Rotation",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Trigger / Symptoms",
-    "anchor": "trigger--symptoms",
-    "text": "Trigger / Symptoms\nScheduled rotation, personnel change, or suspected exposure (then also follow incident response).\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-secret-rotation",
-    "title": "Runbook: Production Secret Rotation",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Impact",
-    "anchor": "impact",
-    "text": "Impact\nThe API restarts (seconds of refused requests). Rotating the identity signing key signs every user out; rotating the identity encryption key makes enrolled second factors unreadable, so every user must enroll again.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-secret-rotation",
-    "title": "Runbook: Production Secret Rotation",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Preconditions",
-    "anchor": "preconditions",
-    "text": "Preconditions\n`sudo ia-mns-deploy status` is healthy and a fresh backup exists (`sudo ia-mns-deploy backup --label before-rotation`).\nThe new external credential exists at its issuer (OpenAI, Oracle, VRMaster, PDT), and the old one stays valid until verification.\n"
-  },
-  {
-    "id": "repository/docs/runbooks/production-secret-rotation",
-    "title": "Runbook: Production Secret Rotation",
-    "group": "Runbooks",
-    "kind": "repository",
-    "heading": "Diagnosis",
-    "anchor": "diagnosis",
-    "text": "Diagnosis\n`sudo ia-mns-deploy check-config` names the configuration keys involved without showing values.\n"
   }
 ]

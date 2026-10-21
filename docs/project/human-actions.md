@@ -16,6 +16,8 @@ The My Account, Administration and conversation-material visual improvements in 
 
 The static feature/SQL catalog in [PJ-56](implementation-plan.md#current-work) requires no new human action or ERP access. It documents the existing catalog exposure and deployment prerequisites; it does not complete or change PH-27, PH-28 or PH-36.
 
+The button theme-transition accessibility correction in [PJ-57](implementation-plan.md#current-work) requires no new human action, production access or ERP privilege.
+
 1. Inspect existing decisions, access, tools, configuration, and prior authorization before requesting human intervention. Complete authorized automation and all useful preparation first.
 2. Keep one stable `PH-NN` ID per coherent action; never reuse or renumber IDs. Split broad items into independently verifiable actions as they become concrete, and add newly discovered actions immediately.
 3. Every action retains its ID, checkbox, owner, status, dependency, and evidence. Active or conditional requests also need the exact action, reason, non-secret configuration names, and verification method. Use `pending`, `in progress`, `completed`, `blocked`, or `changed` consistently with the [plan](implementation-plan.md#maintaining-this-plan).

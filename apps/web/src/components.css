@@ -12,9 +12,8 @@
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.4;
-  transition:
-    background 120ms,
-    border-color 120ms;
+  /* Theme text and background tokens must change together to retain contrast. */
+  transition: border-color 120ms;
 }
 .ui-button-primary:hover:not(:disabled) {
   background: var(--accent-hover);

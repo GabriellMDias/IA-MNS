@@ -78,7 +78,7 @@ A themed native button with consistent action hierarchy and pending feedback.
 - Loading
 - Keyboard focus
 
-Accessibility: Native keyboard semantics, visible focus and a stable accessible name. Loading disables repeated activation and sets aria-busy; reduced motion stops the spinner.
+Accessibility: Native keyboard semantics, visible focus and a stable accessible name. Theme text and background colors change together to retain contrast; only borders transition. Loading disables repeated activation and sets aria-busy; reduced motion stops the spinner.
 
 Usage: Use primary for a form's main action, secondary for alternatives, ghost for row actions and danger for consequential actions. Set loading from the actual pending operation.
 

@@ -4,6 +4,15 @@
     "title": "Database Reference",
     "group": "Generated references",
     "kind": "repository",
+    "heading": "whatsapp_outbound_messages",
+    "anchor": "whatsapp_outbound_messages",
+    "text": "whatsapp_outbound_messages\nReplies to inbound WhatsApp messages: an outbox of text parts sent through the Graph API only after the recipient is authorized again for the same Person and link version, and only within the customer service window.\nOwner: whatsapp. Classification: CONFIDENTIAL.\nLifecycle: Created when processing produces a reply; sent in part order under a lease; retried only when Meta proves the message was not accepted (rate limits, temporary unavailability); a timeout or lost response becomes unknown and is never resent. Delivery statuses from signed webhooks advance the state. The text is cleared once Meta accepts the part or it reaches a final state. Pruned with its inbound message.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nReply part identifier.\n—\n—\n`inbound_id`\n`uuid`\nno\n—\nINTERNAL\nInbound message this part answers.\n—\n—\n`part`\n`integer`\nno\n—\nINTERNAL\nOrder of the part within the reply (1..20).\n—\n—\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPerson the reply is for; checked again before sending.\n—\n—\n`link_version`\n`integer`\nno\n—\nINTERNAL\nLink version the reply was produced under; a changed or removed link revokes it.\n—\n—\n`recipient_phone`\n`character varying(15)`\nyes\n—\nCONFIDENTIAL\nNumber to send to, exactly as the sender's message reported it.\nThe sender reported only the WhatsApp user identifier.\n—\n`recipient_user_id`\n`character varying(140)`\nyes\n—\nCONFIDENTIAL\nWhatsApp business-scoped user identifier used when no number was reported.\nA number is used.\n—\n`kind`\n`character varying(16)`\nno\n—\nINTERNAL\nanswer (agent reply) or notice (channel message such as a command result, unsupported type or limit).\n—\n—\n`body`\n`character varying(4096)`\nyes\n—\nCONFIDENTIAL\nText of the part while it awaits sending.\nAccepted by Meta or final; the reply remains in the agent conversation.\n—\n`state`\n`character varying(16)`\nno\n`'pending'::character varying`\nINTERNAL\npending, sending, accepted, sent, delivered, read, failed, unknown, revoked or expired.\n—\n—\n`attempts`\n`integer`\nno\n`0`\nINTERNAL\nSend attempts started; bounded.\n—\n—\n`not_before`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nEarliest next attempt after a retryable refusal.\n—\n—\n`lease_until`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nExpiry of the current send claim.\nNot claimed.\n—\n`provider_message_id`\n`character varying(256)`\nyes\n—\nCONFIDENTIAL\nMeta message id of the accepted part; matches delivery status webhooks.\nNot accepted by Meta.\n—\n`failure_code`\n`character varying(40)`\nyes\n—\nINTERNAL\nAllowlisted failure, refusal or Meta error code.\nNo failure.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nWhen the part was created.\n—\n—\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nLast state change.\n—\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/database/schema",
+    "title": "Database Reference",
+    "group": "Generated references",
+    "kind": "repository",
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-24",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`whatsapp_outbound_messages_attempts_check`\n`CHECK ((attempts >= 0))`\nAttempts are never negative.\n`whatsapp_outbound_messages_inbound_id_fkey`\n`FOREIGN KEY (inbound_id) REFERENCES whatsapp_inbound_messages(id) ON UPDATE CASCADE ON DELETE CASCADE`\nRemoved with the inbound message.\n`whatsapp_outbound_messages_kind_check`\n`CHECK (((kind)::text = ANY ((ARRAY['answer'::character varying, 'notice'::character varying])::text[])))`\nOnly answer and notice parts.\n`whatsapp_outbound_messages_part_check`\n`CHECK (((part >= 1) AND (part <= 20)))`\nAt most 20 parts per reply.\n`whatsapp_outbound_messages_pkey`\n`PRIMARY KEY (id)`\nReply part identity.\n`whatsapp_outbound_messages_recipient_check`\n`CHECK (((recipient_phone IS NOT NULL) OR (recipient_user_id IS NOT NULL)))`\nEvery part has a recipient.\n`whatsapp_outbound_messages_state_check`\n`CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'sending'::character varying, 'accepted'::character varying, 'sent'::character varying, 'delivered'::character varying, 'read'::character varying, 'failed'::character varying, 'unknown'::character varying, 'revoked'::character varying, 'expired'::character varying])::text[])))`\nOnly the delivery states.\n`whatsapp_outbound_messages_part_key`\n`CREATE UNIQUE INDEX whatsapp_outbound_messages_part_key ON public.whatsapp_outbound_messages USING btree (inbound_id, part)`\nOne row per part of a reply.\n`whatsapp_outbound_messages_provider_key`\n`CREATE UNIQUE INDEX whatsapp_outbound_messages_provider_key ON public.whatsapp_outbound_messages USING btree (provider_message_id)`\nStatus webhooks match one part.\n`whatsapp_outbound_messages_work_idx`\n`CREATE INDEX whatsapp_outbound_messages_work_idx ON public.whatsapp_outbound_messages USING btree (state, not_before)`\nClaiming of due parts.\n"
@@ -565,32 +574,5 @@
     "heading": "Diagnose a difference",
     "anchor": "diagnose-a-difference",
     "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
-  },
-  {
-    "id": "repository/docs/generated/features/sankhya/sales-weight-product",
-    "title": "MNS (Sankhya): weight / product",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "MNS (Sankhya): weight / product",
-    "anchor": "mns-sankhya-weight--product",
-    "text": "MNS (Sankhya): weight / product\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
-  },
-  {
-    "id": "repository/docs/generated/features/sankhya/sales-weight-product",
-    "title": "MNS (Sankhya): weight / product",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Example plan",
-    "anchor": "example-plan",
-    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"weight\",\n  \"groupBy\": \"product\",\n  \"comparison\": \"none\"\n}\n\n"
-  },
-  {
-    "id": "repository/docs/generated/features/sankhya/sales-weight-product",
-    "title": "MNS (Sankhya): weight / product",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Bound parameters",
-    "anchor": "bound-parameters",
-    "text": "Bound parameters\nNamed Oracle binds:\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"productPattern\": null\n}\n\n"
   }
 ]

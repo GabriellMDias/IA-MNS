@@ -1,5 +1,86 @@
 [
   {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Rollback / Recovery",
+    "anchor": "rollback--recovery",
+    "text": "Rollback / Recovery\nAutomatic return happens only when no migration ran during the failed deployment, because the previous release then meets exactly its own schema. After a migration, return is a human decision as above. Migrations are never edited or reversed in place ([migrations policy](../database/migrations.md)).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Escalation",
+    "anchor": "escalation",
+    "text": "Escalation\nStop and escalate if a migration fails, if both the new and the previous release fail to start, or if the pre-deployment backup is missing. Preserve `deployments.log` and the logs.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-release-update-and-rollback",
+    "title": "Runbook: Production Release Update and Rollback",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Follow-Up",
+    "anchor": "follow-up",
+    "text": "Follow-Up\nAfter the first production release, and every release that applies migrations, record the release in `release-history.json` as [ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) describes ([PH-10](../project/human-actions.md#ph-10)).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Runbook: Production Secret Rotation",
+    "anchor": "runbook-production-secret-rotation",
+    "text": "Runbook: Production Secret Rotation\n**Owner:** IA-MNS project owner; each external credential's issuing administrator\n**Status:** draft — the database password path (`setup` re-synchronizing passwords, then `restart`) uses commands exercised by the disposable [installation rehearsal](../../infra/production/rehearsal/run.sh); rotation itself has not been exercised on the production host\n**Environment / applicability:** a host prepared by [host setup and first deployment](production-host-setup-and-first-deployment.md)\n**Related alerts:** none\n**Required access:** an attributable sudo account on the host; the issuer of the external credential being rotated\nFollow [secrets policy](../security/secrets-management.md#secret-rotation), [production access](../security/production-access.md), and [incident response](../security/incident-response.md) for suspected exposure.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Purpose",
+    "anchor": "purpose",
+    "text": "Purpose\nReplace an IA-MNS credential or key without printing it.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Trigger / Symptoms",
+    "anchor": "trigger--symptoms",
+    "text": "Trigger / Symptoms\nScheduled rotation, personnel change, or suspected exposure (then also follow incident response).\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Impact",
+    "anchor": "impact",
+    "text": "Impact\nThe API restarts (seconds of refused requests). Rotating the identity signing key signs every user out; rotating the identity encryption key makes enrolled second factors unreadable, so every user must enroll again.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Preconditions",
+    "anchor": "preconditions",
+    "text": "Preconditions\n`sudo ia-mns-deploy status` is healthy and a fresh backup exists (`sudo ia-mns-deploy backup --label before-rotation`).\nThe new external credential exists at its issuer (OpenAI, Oracle, VRMaster, PDT), and the old one stays valid until verification.\n"
+  },
+  {
+    "id": "repository/docs/runbooks/production-secret-rotation",
+    "title": "Runbook: Production Secret Rotation",
+    "group": "Runbooks",
+    "kind": "repository",
+    "heading": "Diagnosis",
+    "anchor": "diagnosis",
+    "text": "Diagnosis\n`sudo ia-mns-deploy check-config` names the configuration keys involved without showing values.\n"
+  },
+  {
     "id": "repository/docs/runbooks/production-secret-rotation",
     "title": "Runbook: Production Secret Rotation",
     "group": "Runbooks",
@@ -952,32 +1033,5 @@
     "heading": "Manual data changes",
     "anchor": "manual-data-changes",
     "text": "Manual data changes\nDirect production writes bypass validation, domain rules, authorization, audit, and delivery behavior. Prefer application-aware admin operations, reviewed repair scripts, controlled migrations, or reconciliation. Separate runtime and elevated database identities; elevated migration credentials must not become normal runtime credentials. For external Sankhya and VRMaster access, the owner selected exactly one runtime reader and the existing administrator also used for read-only Discovery, with no third human-read account; [ERP database access](erp-database-access.md) governs that explicit exception. IA-MNS application-owned PostgreSQL runtime/migration separation remains unchanged.\nA repair must identify the violated invariant, affected records, desired canonical state, why ordinary workflow is insufficient, required side effects, concurrency handling, idempotency, verification, failure handling, and real rollback or forward recovery. Significant/reusable scripts should live in the repository for review/testing; retain the exact significant one-off procedure in an appropriate script, incident record, migration, or runbook. Repair tooling must not become a permanent unrestricted admin interface.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Destructive operations",
-    "anchor": "destructive-operations",
-    "text": "Destructive operations\nDeletes, drops, truncation, queue purges, broad revocation, signing-key changes, and restores need authorization/confirmation proportionate to their concrete risk. Confirmation does not replace permission or review. Make the environment obvious and require explicit production selection; production must never be an implicit destructive-tooling default. Prefer read-only, dry-run, non-production, and bounded scope where practical.\nMeaningful dry runs should show affected scope, planned changes, and validation errors without mutation, but cannot guarantee unchanged concurrent state at execution. Batch operations need bounds, progress, pause/resume where supported, failure handling, and safe retry. Resolve uncertain outcomes by inspecting state. Verify actual final conditions and document when rollback is impossible or unsafe, with a forward-recovery path.\nBackups, replicas, analytics, search, caches, and queues remain production data. Restore can overwrite state and requires explicit authorization, compatibility checks, and [retention/deletion reconciliation](data-retention.md#backups-restore-and-deletion-replay). Avoid backup downloads to personal machines. Message replay must account for duplicates, stale data, current authorization, idempotency, and provider effects; blindly releasing a backlog can cause another incident.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Data extraction, support, and AI-executed production changes",
-    "anchor": "data-extraction-support-and-ai-executed-production-changes",
-    "text": "Data extraction, support, and AI-executed production changes\nSupport should use specialized limited capabilities, not general database/secret access. Impersonation must retain the real/effective actor, reason, duration, and audit record. Configuration and feature-flag changes are production mutations; security, billing, deletion, or critical-workflow flags may need stronger controls.\nAuthorize exports explicitly and minimize secure storage/delivery. Production dumps are not default local-development inputs. Screenshots, query results, diagnostic bundles, crash dumps, clipboard, chat, issues, and AI prompts create copies: use safe references or sanitized/synthetic representations. Any unavoidable local artifact needs limited scope, controlled storage, and explicit deletion under [retention policy](data-retention.md).\nAI access requires explicit delegated capability, least privilege, sanitized data, and attributable action where supported. Preserve human principal, agent identity, delegation, and operation. Correct code generation does not grant autonomous production write authority or a broad long-lived credential. Mutations require the same review, scope, preconditions, side-effect, retry, recovery, verification, and audit controls as human actions. Destructive actions require appropriate explicit human authorization under actual tooling; ambiguous context is not approval. Prefer integrations that keep raw secrets outside agent context.\nAutomation may act within explicitly authorized bounds when preconditions, safe failure behavior, and audit exist. It reduces repetitive risk rather than bypassing controls. Do not infer that temporary access should be removed solely because one command ended; follow its explicit grant/expiration lifecycle.\n"
-  },
-  {
-    "id": "repository/docs/security/production-access",
-    "title": "Production Access",
-    "group": "Security",
-    "kind": "repository",
-    "heading": "Audit, revocation, and incident handling",
-    "anchor": "audit-revocation-and-incident-handling",
-    "text": "Audit, revocation, and incident handling\nRecord who did what, to which resource, when, through which capability, and with what outcome without secrets. Audit access requests/approvals/grants/expiry/revocation and break-glass where supported. Significant manual changes should link to an appropriate incident, work item, change record, or PR. Audit integrity/retention must not depend on sampled debug logs. Session recordings themselves need classification, access, and retention controls.\nAccess must follow joiner/mover/leaver responsibilities, and support prompt revocation for compromise or role changes where practical. Groups should represent real duties; temporary groups should expire. Review whether standing permissions remain needed, not merely whether once approved. Monitor failed privileged access or unexpected escalation proportionately; routine authorized reads/accidental denials need not notify everyone.\nIncident urgency may justify scoped temporary elevation and shortened normal timing, but preserves identity, auditability, safety, and post-change reconciliation. [Incident response](incident-response.md) governs suspected misuse, evidence, session/credential revocation, and recovery. Emergency privileges and temporary artifacts must not become permanent through neglect.\n"
   }
 ]
