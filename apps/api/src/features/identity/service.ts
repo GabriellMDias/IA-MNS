@@ -4,9 +4,15 @@ import type {
   IdentityRepository,
   OwnershipTransfer,
   PersonSnapshot,
+  RestrictionRow,
   SessionRecord,
   TicketPurpose,
 } from "./repository.js";
+import type {
+  AccessSnapshot,
+  DataScope,
+  RestrictionDirectory,
+} from "../../access.js";
 import type { PdtIdentityClient } from "./pdt.js";
 import { PdtFailure } from "./pdt.js";
 import type { SankhyaIdentityConnector } from "./sankhya.js";
@@ -20,8 +26,13 @@ import type {
 import {
   ADMIN_PERMISSION,
   defaultSecurityPolicy,
-  effectivePermissions,
+  effectiveAccess,
   effectivePolicy,
+  grantConditions,
+  normalizeGroupDescription,
+  normalizeGroupName,
+  normalizeRestrictions,
+  type EffectiveAccess,
   lifetimes,
   policyLimits,
   policyProblems,
@@ -31,11 +42,9 @@ import {
   normalizeDisplayName,
   normalizeLogin,
   passwordProblem,
-  providerGrantKey,
   type Assurance,
   type PermissionDescriptor,
   type Provider,
-  type ProviderGrant,
   type SecurityPolicy,
   type SessionMethod,
   type Surface,
@@ -56,6 +65,32 @@ import {
   verifyPassword,
   base32Encode,
 } from "./secrets.js";
+import {
+  normalizeWhatsappNumber,
+  whatsappIdPattern,
+  whatsappSuffix,
+  whatsappUserIdPattern,
+} from "./whatsapp.js";
+
+/** What a signature-verified WhatsApp message reported about its sender. */
+export type WhatsappSender = { phone: string | null; userId: string | null };
+export type WhatsappAuthorization =
+  | {
+      authorized: true;
+      personId: string;
+      /** Link version; work queued under another version is refused. */
+      linkVersion: number;
+      permissions: string[];
+      /** Data scope of each held permission, computed with the permissions. */
+      scopes: ReadonlyMap<string, DataScope>;
+      /** WhatsApp user identifier to record for this link, if new. */
+      learnUserId: string | null;
+      firstMessage: boolean;
+    }
+  | {
+      authorized: false;
+      reason: "unknown" | "ambiguous" | "conflict" | "inactive";
+    };
 
 export type Intent = "login" | "link" | "reauth" | "invite";
 export type SignInMethod = "local" | Provider;
@@ -142,6 +177,7 @@ export class IdentityService {
   readonly providers: IdentityProviders;
   private readonly transfer: OwnershipTransfer;
   private readonly production: boolean;
+  private readonly restrictions: RestrictionDirectory | undefined;
   private readonly now: Clock;
   private policyCache: { value: SecurityPolicy; at: number } | null = null;
   constructor(
@@ -153,6 +189,7 @@ export class IdentityService {
     providers: IdentityProviders,
     transfer: OwnershipTransfer,
     production: boolean,
+    restrictions?: RestrictionDirectory & { close(): Promise<void> },
     now: Clock = () => new Date(),
   ) {
     this.repository = repository;
@@ -163,8 +200,13 @@ export class IdentityService {
     this.providers = providers;
     this.transfer = transfer;
     this.production = production;
+    this.restrictions = restrictions;
+    this.closeRestrictions = restrictions
+      ? () => restrictions.close()
+      : () => Promise.resolve();
     this.now = now;
   }
+  private readonly closeRestrictions: () => Promise<void>;
 
   // ---------------- authentication policy ----------------
   /**
@@ -219,27 +261,45 @@ export class IdentityService {
 
   // ---------------- sessions and tokens ----------------
   /**
-   * Automatic read grants by provider link, as the owner set them in the
-   * operational parameters (default: the composed catalog, optionally
-   * narrowed by IA_MNS_PROVIDER_GRANTS). Read at every token issue.
+   * Effective access from trusted state: the Person's grants and its groups'
+   * grants, united; everything for owners. External links alone grant nothing.
    */
-  async providerPolicy(): Promise<ProviderGrant[]> {
-    const enabled = await this.parameters.get("access.providerGrants");
-    return this.catalog.flatMap((item) =>
-      item.autoGrantProviders
-        .map((provider) => ({ provider, permission: item.permission }))
-        .filter((grant) => enabled.includes(providerGrantKey(grant))),
+  accessOf(snapshot: PersonSnapshot): Promise<EffectiveAccess> {
+    return Promise.resolve(
+      effectiveAccess({
+        catalog: this.catalog,
+        policy: [],
+        grants: snapshot.grants.map((grant) => ({
+          permission: grant.permission,
+          restrictions: grantConditions(grant.restrictions),
+        })),
+        groupGrants: snapshot.groups.flatMap((group) =>
+          group.grants.map((grant) => ({
+            groupId: group.id,
+            permission: grant.permission,
+            restrictions: grantConditions(grant.restrictions),
+          })),
+        ),
+        linkedProviders: snapshot.links.map((item) => item.provider),
+        roles: snapshot.roles,
+      }),
     );
   }
 
   async permissionsOf(snapshot: PersonSnapshot): Promise<string[]> {
-    return effectivePermissions({
-      catalog: this.catalog,
-      policy: await this.providerPolicy(),
-      grants: snapshot.grants.map((item) => item.permission),
-      linkedProviders: snapshot.links.map((item) => item.provider),
-      roles: snapshot.roles,
-    });
+    return (await this.accessOf(snapshot)).permissions;
+  }
+
+  /**
+   * The current access of an active Person, for modules that enforce data
+   * restrictions (an AccessResolver). Null when the identifier designates no
+   * active Person.
+   */
+  async accessSnapshot(personId: string): Promise<AccessSnapshot | null> {
+    const snapshot = await this.repository.snapshot(personId);
+    if (!snapshot || snapshot.status !== "active") return null;
+    const access = await this.accessOf(snapshot);
+    return { permissions: new Set(access.permissions), scopes: access.scopes };
   }
 
   private async open(
@@ -250,6 +310,8 @@ export class IdentityService {
     provisioned = false,
   ): Promise<Authenticated> {
     const now = this.now();
+    if (method === "pdt" || method === "sankhya")
+      await this.repository.joinProviderGroup(personId, method);
     const direct = surface === "direct";
     const refreshToken = direct ? randomSecret() : null;
     // Direct sessions follow the administrable policy; embedded sessions stay
@@ -981,6 +1043,7 @@ export class IdentityService {
       !snapshot.roles.includes("owner") &&
       snapshot.local === null &&
       snapshot.grants.length === 0 &&
+      snapshot.groups.length === 0 &&
       snapshot.links.length === 1 &&
       snapshot.links[0].id === linkId,
     );
@@ -1511,7 +1574,7 @@ export class IdentityService {
       ),
       session,
       snapshot,
-      permissions: await this.permissionsOf(snapshot),
+      access: await this.accessOf(snapshot),
       sessions: await this.repository.listSessions(
         session.personId,
         this.now(),
@@ -1812,7 +1875,7 @@ export class IdentityService {
       throw new IdentityFailure("IDENTITY_PERSON_NOT_FOUND");
     return {
       snapshot,
-      permissions: await this.permissionsOf(snapshot),
+      access: await this.accessOf(snapshot),
       sessions: await this.repository.listSessions(personId, this.now()),
       audit: await this.repository.auditFor(personId, 30),
     };
@@ -2069,28 +2132,345 @@ export class IdentityService {
     });
   }
 
+  // ---------------- grants, restrictions and groups ----------------
+  /** A grantable catalog permission; never the administrative permission. */
+  private grantable(permission: string): PermissionDescriptor {
+    const descriptor = this.catalog.find(
+      (item) => item.permission === permission,
+    );
+    if (permission === ADMIN_PERMISSION || !descriptor)
+      throw new IdentityFailure("IDENTITY_UNKNOWN_PERMISSION");
+    return descriptor;
+  }
+
+  /** The grantable catalog, for owners. */
+  async ownerCatalog(sessionId: string) {
+    await this.requireOwner(sessionId, false);
+    return this.catalog;
+  }
+
+  /** Whether owners can read restriction values from the sources. */
+  restrictionsAvailable(): boolean {
+    return this.restrictions !== undefined;
+  }
+
+  /** Owner search of the real values of one restriction dimension. */
+  async searchRestrictionValues(
+    sessionId: string,
+    permission: string,
+    dimension: string,
+    query: string,
+  ) {
+    await this.requireOwner(sessionId, false);
+    const descriptor = this.grantable(permission);
+    if (!descriptor.restrictions.some((item) => item.id === dimension))
+      throw new IdentityFailure("IDENTITY_RESTRICTION_INVALID");
+    if (!this.restrictions)
+      throw new IdentityFailure("IDENTITY_RESTRICTION_UNAVAILABLE");
+    try {
+      return await this.restrictions.search(
+        permission,
+        dimension,
+        query,
+        AbortSignal.timeout(15_000),
+      );
+    } catch (error) {
+      throw new IdentityFailure("IDENTITY_RESTRICTION_UNAVAILABLE", error);
+    }
+  }
+
+  /**
+   * Validates submitted restrictions and reads each value back from its
+   * source: unknown dimensions or values are refused, and labels come from
+   * the source, never from the browser.
+   */
+  private async restrictionRows(
+    descriptor: PermissionDescriptor,
+    input: readonly { dimension: string; values: readonly string[] }[],
+  ): Promise<RestrictionRow[]> {
+    const normalized = normalizeRestrictions(descriptor, input);
+    if (!normalized) throw new IdentityFailure("IDENTITY_RESTRICTION_INVALID");
+    if (normalized.length === 0) return [];
+    if (!this.restrictions)
+      throw new IdentityFailure("IDENTITY_RESTRICTION_UNAVAILABLE");
+    const rows: RestrictionRow[] = [];
+    for (const condition of normalized) {
+      let found: readonly { value: string; label: string }[];
+      try {
+        found = await this.restrictions.resolve(
+          descriptor.permission,
+          condition.dimension,
+          condition.values,
+          AbortSignal.timeout(15_000),
+        );
+      } catch (error) {
+        throw new IdentityFailure("IDENTITY_RESTRICTION_UNAVAILABLE", error);
+      }
+      const labels = new Map(found.map((item) => [item.value, item.label]));
+      if (condition.values.some((value) => !labels.has(value)))
+        throw new IdentityFailure("IDENTITY_RESTRICTION_INVALID");
+      rows.push(
+        ...condition.values.map((value) => ({
+          dimension: condition.dimension,
+          value,
+          label: labels.get(value)!,
+        })),
+      );
+    }
+    return rows;
+  }
+
+  private static restrictionAudit(rows: readonly RestrictionRow[]) {
+    return {
+      restrictedDimensions: new Set(rows.map((row) => row.dimension)).size,
+      restrictedValues: rows.length,
+    };
+  }
+
+  /**
+   * Grants a permission to a Person (optionally restricted) or revokes it.
+   * Granting an existing permission replaces its restrictions.
+   */
   async setGrant(
     sessionId: string,
     personId: string,
     permission: string,
     granted: boolean,
+    restrictions: readonly {
+      dimension: string;
+      values: readonly string[];
+    }[] = [],
   ) {
     const session = await this.requireOwner(sessionId, true);
-    if (
-      permission === ADMIN_PERMISSION ||
-      !this.catalog.some((item) => item.permission === permission)
-    )
-      throw new IdentityFailure("IDENTITY_UNKNOWN_PERMISSION");
+    const descriptor = this.grantable(permission);
     await this.requireActivePerson(personId);
-    if (granted)
-      await this.repository.addGrant(personId, permission, session.personId);
-    else await this.repository.removeGrant(personId, permission);
-    await this.repository.audit(
-      granted ? "grant.added" : "grant.removed",
-      session.personId,
+    if (!granted) {
+      if (
+        (await this.repository.removeGrant(personId, permission)) === "removed"
+      )
+        await this.repository.audit(
+          "grant.removed",
+          session.personId,
+          personId,
+          { permission },
+        );
+      return;
+    }
+    const rows = await this.restrictionRows(descriptor, restrictions);
+    await this.repository.setGrant({
       personId,
-      { permission },
+      permission,
+      restrictions: rows,
+      actor: session.personId,
+      audit: (created, tx) =>
+        this.repository.audit(
+          created ? "grant.added" : "grant.updated",
+          session.personId,
+          personId,
+          { permission, ...IdentityService.restrictionAudit(rows) },
+          tx,
+        ),
+    });
+  }
+
+  async providerGroups(sessionId: string) {
+    await this.requireOwner(sessionId, false);
+    return this.repository.providerGroups();
+  }
+
+  async setProviderGroup(
+    sessionId: string,
+    provider: Provider,
+    input: {
+      groupId: string | null;
+      version: number;
+    },
+  ) {
+    const session = await this.requireOwner(sessionId, true);
+    const result = await this.repository.setProviderGroup({
+      provider,
+      ...input,
+      actor: session.personId,
+      now: this.now(),
+    });
+    if (result === "not_found")
+      throw new IdentityFailure("IDENTITY_GROUP_NOT_FOUND");
+    if (result === "conflict")
+      throw new IdentityFailure("IDENTITY_PROVIDER_GROUP_CONFLICT");
+  }
+
+  async listGroups(sessionId: string) {
+    await this.requireOwner(sessionId, false);
+    return this.repository.listGroups();
+  }
+
+  async groupDetail(sessionId: string, groupId: string) {
+    await this.requireOwner(sessionId, false);
+    const group = await this.repository.group(groupId);
+    if (!group) throw new IdentityFailure("IDENTITY_GROUP_NOT_FOUND");
+    return group;
+  }
+
+  private static groupName(name: string, description: string | null) {
+    const display = normalizeGroupName(name);
+    const text = normalizeGroupDescription(description);
+    if (!display || text === undefined)
+      throw new IdentityFailure("IDENTITY_GROUP_NAME_INVALID");
+    return { name: display, nameKey: display.toLowerCase(), description: text };
+  }
+
+  async createGroup(
+    sessionId: string,
+    input: { name: string; description: string | null },
+  ) {
+    const session = await this.requireOwner(sessionId, true);
+    const names = IdentityService.groupName(input.name, input.description);
+    const created = await this.repository.createGroup({
+      ...names,
+      actor: session.personId,
+      audit: (groupId, tx) =>
+        this.repository.audit(
+          "group.created",
+          session.personId,
+          null,
+          { group: groupId },
+          tx,
+        ),
+    });
+    if (created.result === "name_taken")
+      throw new IdentityFailure("IDENTITY_GROUP_NAME_TAKEN");
+    return created.id;
+  }
+
+  async updateGroup(
+    sessionId: string,
+    groupId: string,
+    input: { name: string; description: string | null; version: number },
+  ) {
+    const session = await this.requireOwner(sessionId, true);
+    const names = IdentityService.groupName(input.name, input.description);
+    const result = await this.repository.updateGroup({
+      groupId,
+      expectedVersion: input.version,
+      ...names,
+      actor: session.personId,
+      audit: (tx) =>
+        this.repository.audit(
+          "group.updated",
+          session.personId,
+          null,
+          { group: groupId },
+          tx,
+        ),
+    });
+    if (result === "not_found")
+      throw new IdentityFailure("IDENTITY_GROUP_NOT_FOUND");
+    if (result === "conflict")
+      throw new IdentityFailure("IDENTITY_GROUP_CONFLICT");
+    if (result === "name_taken")
+      throw new IdentityFailure("IDENTITY_GROUP_NAME_TAKEN");
+  }
+
+  async deleteGroup(sessionId: string, groupId: string) {
+    const session = await this.requireOwner(sessionId, true);
+    const result = await this.repository.deleteGroup(groupId, (removed, tx) =>
+      this.repository.audit(
+        "group.deleted",
+        session.personId,
+        null,
+        { group: groupId, ...removed },
+        tx,
+      ),
     );
+    if (result === "in_use") throw new IdentityFailure("IDENTITY_GROUP_IN_USE");
+    if (result === "not_found")
+      throw new IdentityFailure("IDENTITY_GROUP_NOT_FOUND");
+  }
+
+  async setGroupMember(
+    sessionId: string,
+    groupId: string,
+    personId: string,
+    member: boolean,
+  ) {
+    const session = await this.requireOwner(sessionId, true);
+    const audit = (tx: unknown) =>
+      this.repository.audit(
+        member ? "group.member_added" : "group.member_removed",
+        session.personId,
+        personId,
+        { group: groupId },
+        tx,
+      );
+    if (member) {
+      const result = await this.repository.addGroupMember({
+        groupId,
+        personId,
+        actor: session.personId,
+        audit,
+      });
+      if (result === "not_found") {
+        if (!(await this.repository.group(groupId)))
+          throw new IdentityFailure("IDENTITY_GROUP_NOT_FOUND");
+        throw new IdentityFailure("IDENTITY_PERSON_NOT_FOUND");
+      }
+      if (result === "inactive")
+        throw new IdentityFailure("IDENTITY_ACCOUNT_DISABLED");
+      return;
+    }
+    await this.repository.removeGroupMember({ groupId, personId, audit });
+  }
+
+  async setGroupGrant(
+    sessionId: string,
+    groupId: string,
+    permission: string,
+    granted: boolean,
+    restrictions: readonly {
+      dimension: string;
+      values: readonly string[];
+    }[] = [],
+  ) {
+    const session = await this.requireOwner(sessionId, true);
+    const descriptor = this.grantable(permission);
+    if (!granted) {
+      const result = await this.repository.removeGroupGrant({
+        groupId,
+        permission,
+        audit: (tx) =>
+          this.repository.audit(
+            "group.grant_removed",
+            session.personId,
+            null,
+            { group: groupId, permission },
+            tx,
+          ),
+      });
+      if (result === "not_found" && !(await this.repository.group(groupId)))
+        throw new IdentityFailure("IDENTITY_GROUP_NOT_FOUND");
+      return;
+    }
+    const rows = await this.restrictionRows(descriptor, restrictions);
+    const result = await this.repository.setGroupGrant({
+      groupId,
+      permission,
+      restrictions: rows,
+      actor: session.personId,
+      audit: (created, tx) =>
+        this.repository.audit(
+          created ? "group.grant_added" : "group.grant_updated",
+          session.personId,
+          null,
+          {
+            group: groupId,
+            permission,
+            ...IdentityService.restrictionAudit(rows),
+          },
+          tx,
+        ),
+    });
+    if (result === "not_found")
+      throw new IdentityFailure("IDENTITY_GROUP_NOT_FOUND");
   }
 
   async setOwner(sessionId: string, personId: string, owner: boolean) {
@@ -2151,6 +2531,146 @@ export class IdentityService {
       provider: removed.provider,
       byOwner: true,
     });
+  }
+
+  // ---------- WhatsApp channel ----------
+  /**
+   * Owner: links or replaces a Person's WhatsApp number. Only owners manage
+   * it; nobody links their own number through any other path.
+   */
+  async setWhatsappNumber(
+    sessionId: string,
+    personId: string,
+    input: string,
+  ): Promise<void> {
+    const session = await this.requireOwner(sessionId, true);
+    const parsed = normalizeWhatsappNumber(input);
+    if (!parsed.ok)
+      throw new IdentityFailure(
+        parsed.problem === "missing_ninth_digit"
+          ? "IDENTITY_WHATSAPP_NINTH_DIGIT_REQUIRED"
+          : "IDENTITY_WHATSAPP_NUMBER_INVALID",
+      );
+    const result = await this.repository.setWhatsappLink({
+      personId,
+      phoneNumber: parsed.value.digits,
+      legacyIdentifier: parsed.value.legacyIdentifier,
+      actor: session.personId,
+      now: this.now(),
+      audit: (action, transaction) =>
+        this.repository.audit(
+          action,
+          session.personId,
+          personId,
+          { suffix: whatsappSuffix(parsed.value.digits) },
+          transaction,
+        ),
+    });
+    if (result === "not_found")
+      throw new IdentityFailure("IDENTITY_PERSON_NOT_FOUND");
+    if (result === "conflict")
+      throw new IdentityFailure("IDENTITY_WHATSAPP_NUMBER_IN_USE");
+  }
+
+  /** Owner: removes a Person's WhatsApp number; the channel stops at once. */
+  async removeWhatsappNumber(sessionId: string, personId: string) {
+    const session = await this.requireOwner(sessionId, true);
+    const removed = await this.repository.removeWhatsappLink(
+      personId,
+      (transaction) =>
+        this.repository.audit(
+          "whatsapp.removed",
+          session.personId,
+          personId,
+          {},
+          transaction,
+        ),
+    );
+    if (removed === "not_found")
+      throw new IdentityFailure("IDENTITY_WHATSAPP_NOT_LINKED");
+  }
+
+  /**
+   * Decides whether a signature-verified WhatsApp sender is exactly one
+   * active Person, from trusted state only, and returns that Person's
+   * effective permissions now. Every message is checked again, as is every
+   * reply before it is sent. When Meta reports a number, it must match a link
+   * (exactly or through its legacy Brazilian form) and any WhatsApp user
+   * identifier reported with it must agree with what that link recorded; the
+   * identifier alone matches only a link that learned it from a message that
+   * carried the linked number. Anything else is refused without detail.
+   */
+  async authorizeWhatsappSender(
+    sender: WhatsappSender,
+  ): Promise<WhatsappAuthorization> {
+    const phone =
+      sender.phone && whatsappIdPattern.test(sender.phone)
+        ? sender.phone
+        : null;
+    const userId =
+      sender.userId && whatsappUserIdPattern.test(sender.userId)
+        ? sender.userId
+        : null;
+    if (!phone && !userId) return { authorized: false, reason: "unknown" };
+    const { byPhone, byUser } = await this.repository.whatsappCandidates({
+      phone,
+      userId,
+    });
+    let link: (typeof byPhone)[number];
+    if (phone) {
+      if (byPhone.length === 0) return { authorized: false, reason: "unknown" };
+      if (byPhone.length > 1) return { authorized: false, reason: "ambiguous" };
+      link = byPhone[0];
+      if (
+        userId &&
+        ((link.platformUserId !== null && link.platformUserId !== userId) ||
+          byUser.some((item) => item.personId !== link.personId))
+      )
+        return { authorized: false, reason: "conflict" };
+    } else {
+      if (byUser.length !== 1) return { authorized: false, reason: "unknown" };
+      link = byUser[0];
+    }
+    const snapshot = await this.repository.snapshot(link.personId);
+    if (!snapshot || snapshot.status !== "active")
+      return { authorized: false, reason: "inactive" };
+    const access = await this.accessOf(snapshot);
+    return {
+      authorized: true,
+      personId: link.personId,
+      linkVersion: link.version,
+      permissions: access.permissions,
+      scopes: access.scopes,
+      learnUserId:
+        phone !== null && userId !== null && link.platformUserId === null
+          ? userId
+          : null,
+      firstMessage: link.confirmedAt === null,
+    };
+  }
+
+  /**
+   * Records what an accepted message proved about the link: when it was first
+   * used and the WhatsApp user identifier Meta reported with the number.
+   */
+  async confirmWhatsappSender(
+    authorization: Extract<WhatsappAuthorization, { authorized: true }>,
+  ): Promise<void> {
+    if (!authorization.learnUserId && !authorization.firstMessage) return;
+    if (
+      await this.repository.confirmWhatsappLink(
+        authorization.personId,
+        authorization.linkVersion,
+        authorization.learnUserId,
+        this.now(),
+      )
+    )
+      await this.repository.audit(
+        "whatsapp.confirmed",
+        null,
+        authorization.personId,
+        { userIdentifier: authorization.learnUserId !== null },
+      );
   }
 
   /** Replaces the local credential with a one-time reset invitation; revokes sessions. */
@@ -2373,13 +2893,16 @@ export class IdentityService {
   }
 
   async close() {
-    await this.providers.sankhya?.directory?.close();
+    await Promise.all([
+      this.providers.sankhya?.directory?.close(),
+      this.closeRestrictions(),
+    ]);
   }
 }
 
-/** Parameters hold no secrets; lists are recorded as comma-separated values. */
+/** Parameters hold no secrets; history records their public setting values. */
 function auditValue(value: ParameterValues[keyof ParameterValues]): string {
-  return typeof value === "string" ? value : value.join(",");
+  return value;
 }
 
 function surfaceOf(value: unknown): Surface {

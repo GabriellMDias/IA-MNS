@@ -15,12 +15,7 @@ import {
 } from "./features/identity/module.js";
 import type { Database } from "./database.js";
 import { transferConversations } from "./features/agent/prisma-repository.js";
-import {
-  parseProviderGrants,
-  providerGrantKey,
-  providerGrantPolicy,
-  type PermissionDescriptor,
-} from "./features/identity/domain.js";
+import type { PermissionDescriptor } from "./features/identity/domain.js";
 import { OperationalParameters, type ParameterSetup } from "./parameters.js";
 import { prismaParameterStore } from "./parameter-store.js";
 import {
@@ -30,7 +25,14 @@ import {
 import {
   createProductCapability,
   productPermission,
+  productPermissions,
 } from "./features/products/capability.js";
+import {
+  salesCapabilityPermission,
+  salesPermissions,
+} from "./features/sales/access.js";
+import { createSalesRestrictionDirectory } from "./features/sales/restrictions.js";
+import type { AccessResolver } from "./access.js";
 import { ProductResolver } from "./features/products/resolver.js";
 import { createSemanticSalesCapability } from "./features/products/sales.js";
 import { createSalesAnalyticsCapability } from "./features/products/analytics.js";
@@ -43,60 +45,36 @@ import { createSankhyaProductSource } from "./features/products/sankhya/source.j
 import { sankhyaCatalog } from "./features/products/sankhya/catalog.js";
 import { vrmasterCatalog } from "./features/products/vrmaster/catalog.js";
 import { vrmasterConnection } from "./vrmaster-connection.js";
+import type { CorporateAgent } from "./features/agent/application.js";
+import { agentChannel } from "./features/agent/channel.js";
+import { createWhatsappModule } from "./features/whatsapp/module.js";
 
-/**
- * Grantable capability permissions and their default provider policy. Read
- * capabilities may be granted automatically to Persons with an active link of
- * the listed provider (narrowed by IA_MNS_PROVIDER_GRANTS and then by owners
- * in the operational parameters); write or sensitive capabilities always need
- * an explicit owner grant. Owners receive all.
- */
+/** Per-source permissions; provider sign-in joins owner-selected groups. */
 export const permissionCatalog: readonly PermissionDescriptor[] = [
-  {
-    permission: "sales:read",
-    title: "Consultas de vendas (Sankhya e VR Master)",
-    access: "read",
-    autoGrantProviders: ["sankhya"],
-  },
-  // No provider grants it automatically until the owner decides (PH-28).
-  {
-    permission: productPermission,
-    title: "Consulta de produtos (VR Master e Sankhya)",
-    access: "read",
-    autoGrantProviders: [],
-  },
+  { ...salesPermissions.sankhya, access: "read", autoGrantProviders: [] },
+  { ...salesPermissions.vrmaster, access: "read", autoGrantProviders: [] },
+  { ...productPermissions.sankhya, access: "read", autoGrantProviders: [] },
+  { ...productPermissions.vrmaster, access: "read", autoGrantProviders: [] },
 ];
 
-const providerTitles = { pdt: "PDT Connect", sankhya: "Sankhya" } as const;
+/** Every permission a development identity holds: catalog and capability permissions. */
+export const developmentPermissions: readonly string[] = [
+  ...new Set([
+    ...permissionCatalog.map((item) => item.permission),
+    salesCapabilityPermission,
+    productPermission,
+  ]),
+];
 
-/**
- * Installation defaults from the validated environment and the provider
- * grants the permission catalog makes eligible.
- */
+/** Installation defaults for operational product settings. */
 export function parameterSetup(config: ServerConfig): ParameterSetup {
-  const titles = new Map(
-    permissionCatalog.map((item) => [item.permission, item.title]),
-  );
-  // Throws at startup when IA_MNS_PROVIDER_GRANTS names an ineligible grant.
-  const installed = providerGrantPolicy(
-    permissionCatalog,
-    config.providerGrants === undefined
-      ? undefined
-      : parseProviderGrants(config.providerGrants),
-  );
   return {
     production: config.environment === "production",
     defaults: {
       "ai.model": config.openaiModel,
       "ai.traceLevel": config.aiTrace,
-      "access.providerGrants": installed.map(providerGrantKey),
+      "channels.whatsapp": config.whatsappChannel,
     },
-    providerGrantOptions: providerGrantPolicy(permissionCatalog).map(
-      (grant) => ({
-        value: providerGrantKey(grant),
-        label: `${providerTitles[grant.provider]}: ${titles.get(grant.permission)}`,
-      }),
-    ),
   };
 }
 
@@ -181,10 +159,14 @@ function productResolver(
   return resolver;
 }
 
-/** Consolidating two profiles of one person moves their conversations too. */
+/**
+ * Consolidating two profiles of one person moves their conversations too;
+ * sales supplies the read-only values of its restriction dimensions.
+ */
 export const identityPorts: IdentityPorts = {
   transferOwnership: transferConversations,
   parameters: operationalParameters,
+  restrictions: createSalesRestrictionDirectory,
 };
 
 /**
@@ -200,11 +182,67 @@ export function identityService(config: ServerConfig, database: Database) {
   );
 }
 
+// The activated agent of each configuration, shared with other channels.
+const agents = new WeakMap<ServerConfig, CorporateAgent>();
+// One identity service per configuration, shared by identity and WhatsApp.
+const identityServices = new WeakMap<
+  ServerConfig,
+  ReturnType<typeof identityServiceFor>
+>();
+function sharedIdentityService(resources: ModuleResources) {
+  const config = resources.config;
+  if (!config) return undefined;
+  if (!identityServices.has(config))
+    identityServices.set(
+      config,
+      identityServiceFor(config, resources, permissionCatalog, identityPorts),
+    );
+  return identityServices.get(config);
+}
+
+/**
+ * Current access of an authenticated principal, computed by identity from
+ * trusted state, for the modules that enforce data restrictions.
+ */
+function accessResolver(
+  resources: ModuleResources,
+): AccessResolver | undefined {
+  const service = sharedIdentityService(resources);
+  return service ? (personId) => service.accessSnapshot(personId) : undefined;
+}
+
+/**
+ * The WhatsApp channel reaches the same agent and identity as the web: the
+ * owner-linked number is its only authorization, and every answer comes from
+ * the agent with the permissions identity computes for that message.
+ */
+const whatsappModule = createWhatsappModule({
+  identity: (resources) => {
+    const service = sharedIdentityService(resources);
+    return service
+      ? {
+          authorize: (sender) => service.authorizeWhatsappSender(sender),
+          confirm: (authorization) =>
+            service.confirmWhatsappSender(authorization),
+        }
+      : undefined;
+  },
+  agent: (resources, log) => {
+    const agent = resources.config ? agents.get(resources.config) : undefined;
+    return agent ? agentChannel(agent, "whatsapp", log) : undefined;
+  },
+  enabled: (resources) => {
+    const parameters = operationalParameters(resources);
+    return async () =>
+      (await parameters.get("channels.whatsapp")) === "enabled";
+  },
+});
+
 // Composition owned by this repository. Add each API module here; the shared
 // runtime activates the ones whose requirements are configured.
 export const apiModules: readonly ApiModule[] = [
-  createIdentityModule(permissionCatalog, identityPorts),
-  createSalesModule(salesService),
+  createIdentityModule(permissionCatalog, identityPorts, sharedIdentityService),
+  createSalesModule(salesService, accessResolver),
   createProductsModule(),
   createAgentModule(
     (resources) => {
@@ -241,7 +279,12 @@ export const apiModules: readonly ApiModule[] = [
       ];
     },
     undefined,
-    ["sales:read", productPermission],
+    developmentPermissions,
     operationalParameters,
+    (resources, agent) => {
+      if (resources.config && agent) agents.set(resources.config, agent);
+    },
+    accessResolver,
   ),
+  whatsappModule,
 ];

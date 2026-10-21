@@ -149,7 +149,11 @@ describe("semantic sales execution", () => {
       vr = reader();
     const result = await executeSemanticSales({
       plan,
-      permissions: new Set(["sales:read"]),
+      permissions: new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+      ]),
       selection: "all",
       readers: { sankhya: sk, vrmaster: vr },
       today,
@@ -181,7 +185,11 @@ describe("semantic sales execution", () => {
     const vr = reader();
     const result = await executeSemanticSales({
       plan: { ...plan, metrics: ["quantity", "weight"] },
-      permissions: new Set(["sales:read"]),
+      permissions: new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+      ]),
       selection: "vrmaster",
       readers: { vrmaster: vr },
       today,
@@ -206,7 +214,11 @@ describe("semantic sales execution", () => {
     };
     const input = {
       plan,
-      permissions: new Set(["sales:read"]),
+      permissions: new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+      ]),
       selection: "vrmaster" as const,
       readers: { vrmaster: vr },
       today,
@@ -226,7 +238,14 @@ describe("semantic sales execution", () => {
     await expect(
       executeSemanticSales({
         ...input,
-        permissions: new Set(["sales:read", "products:read"]),
+        permissions: new Set([
+          "sales:read",
+          "sales_sankhya:read",
+          "sales_vrmaster:read",
+          "products:read",
+          "products_sankhya:read",
+          "products_vrmaster:read",
+        ]),
         selection: "all",
       }),
     ).rejects.toThrow("SALES_QUERY_INVALID");
@@ -243,7 +262,14 @@ describe("semantic sales execution", () => {
     };
     const result = await executeSemanticSales({
       plan,
-      permissions: new Set(["sales:read", "products:read"]),
+      permissions: new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+        "products:read",
+        "products_sankhya:read",
+        "products_vrmaster:read",
+      ]),
       selection: "vrmaster",
       readers: { vrmaster: vr },
       today,
@@ -265,7 +291,11 @@ describe("semantic sales execution", () => {
     await expect(
       executeSemanticSales({
         plan,
-        permissions: new Set(["sales:read"]),
+        permissions: new Set([
+          "sales:read",
+          "sales_sankhya:read",
+          "sales_vrmaster:read",
+        ]),
         selection: "vrmaster",
         readers: { vrmaster: vr },
         today,

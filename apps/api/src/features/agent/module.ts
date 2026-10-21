@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import rateLimit from "@fastify/rate-limit";
 import { Value } from "typebox/value";
 import type { FastifyReply, FastifyRequest } from "fastify";
@@ -8,11 +7,9 @@ import {
   isLocalRequest,
   isDevelopmentTokenRequest,
 } from "../../local-access.js";
-import { errorDiagnostics } from "../../error-diagnostics.js";
 import { currentTraceId } from "../../request-context.js";
-import { SalesFailure } from "../sales/errors.js";
-import { ProductFailure } from "../products/errors.js";
 import type { SourceSelection } from "../sales/sources.js";
+import { agentFailureCode } from "./failures.js";
 import { AgentFailure, agentErrors } from "./errors.js";
 import { CorporateAgent, type AgentActor } from "./application.js";
 import { AgentRepository } from "./prisma-repository.js";
@@ -22,6 +19,7 @@ import { createOpenAiConversationModel } from "../../ai/openai-conversation.js";
 import { canReadReply } from "./evidence.js";
 import type { AgentCapability } from "./capabilities.js";
 import type { OperationalParameters } from "../../parameters.js";
+import type { AccessResolver } from "../../access.js";
 import type { PresentationPreferences } from "./preferences.js";
 import { presentationPreferencesSchema } from "./preferences.js";
 import { uploadAttachmentSchema } from "./attachments.js";
@@ -49,6 +47,20 @@ export function createAgentModule(
   developmentPermissions: readonly string[] = [],
   /** Composition's operational parameters (AI model and trace level). */
   parametersFor?: (resources: ModuleResources) => OperationalParameters,
+  /**
+   * Receives the activated agent so composition can hand other channels the
+   * same instance (one turn lifecycle, concurrency limit and shutdown).
+   */
+  publish?: (
+    resources: ModuleResources,
+    agent: CorporateAgent | undefined,
+  ) => void,
+  /**
+   * Current permissions and data scopes of an authenticated principal, from
+   * identity. Without it (isolated tests, external issuers) the token scopes
+   * apply without data restriction.
+   */
+  accessFor?: (resources: ModuleResources) => AccessResolver | undefined,
 ): ApiModule {
   return {
     name: "agent",
@@ -71,6 +83,7 @@ export function createAgentModule(
         );
       const capabilities =
         injected?.capabilities ?? capabilityFactory(resources);
+      const access = accessFor?.(resources);
       // Without composition parameters (isolated tests) the installation
       // defaults apply; composition always supplies them.
       const parameters = parametersFor?.(resources);
@@ -108,6 +121,7 @@ export function createAgentModule(
             )
           : undefined);
       const configured = Boolean(agent && (injected || config.openaiApiKey));
+      publish?.(resources, configured ? agent : undefined);
       return {
         name: "agent",
         register(app) {
@@ -147,7 +161,12 @@ export function createAgentModule(
                 actors.set(request, {
                   id: "local-developer",
                   permissions: new Set(
-                    capabilities.map((item) => item.permission),
+                    capabilities.flatMap((item) => [
+                      item.permission,
+                      ...Object.values(item.sourcePermissions ?? {}).map(
+                        (info) => info.permission,
+                      ),
+                    ]),
                   ),
                 });
                 return;
@@ -164,55 +183,34 @@ export function createAgentModule(
                 await reply.code(failure.status).send(failure.body);
                 return;
               }
-              actors.set(request, {
-                id: principal.id,
-                permissions: principal.scopes,
-              });
+              // Access is computed now from trusted identity state, so a
+              // revoked or narrowed grant applies to the next request.
+              const current = access ? await access(principal.id) : undefined;
+              if (current === null) {
+                const failure = respond(
+                  "AUTHENTICATION_REQUIRED",
+                  request.id,
+                  currentTraceId(),
+                );
+                await reply.code(failure.status).send(failure.body);
+                return;
+              }
+              actors.set(
+                request,
+                current
+                  ? {
+                      id: principal.id,
+                      permissions: current.permissions,
+                      scopes: current.scopes,
+                    }
+                  : { id: principal.id, permissions: principal.scopes },
+              );
             };
-            function report(
+            const report = (
               error: unknown,
               request: FastifyRequest,
               turnId: string,
-            ): string {
-              if (
-                error instanceof SalesFailure &&
-                error.code !== "SALES_PROVIDER_UNAVAILABLE"
-              )
-                return error.code;
-              if (
-                error instanceof AgentFailure &&
-                error.code !== "AGENT_PROVIDER_UNAVAILABLE"
-              )
-                return error.code;
-              if (
-                error instanceof ProductFailure &&
-                error.code !== "PRODUCTS_PROVIDER_UNAVAILABLE"
-              )
-                return error.code;
-              request.log.error(
-                {
-                  errorId: `err_${randomUUID()}`,
-                  turnId,
-                  ...(error instanceof SalesFailure ||
-                  error instanceof ProductFailure
-                    ? error.boundary
-                    : {
-                        provider:
-                          error instanceof AgentFailure
-                            ? "openai"
-                            : "application",
-                        stage: "execution",
-                      }),
-                  diagnostic: errorDiagnostics(error),
-                },
-                "agent_execution_failed",
-              );
-              return error instanceof SalesFailure ||
-                error instanceof AgentFailure ||
-                error instanceof ProductFailure
-                ? error.code
-                : "INTERNAL_ERROR";
-            }
+            ): string => agentFailureCode(error, request.log, turnId);
             const requireAgent = () => {
               if (!agent) throw new AgentFailure("AGENT_NOT_CONFIGURED");
               return agent;
@@ -320,6 +318,7 @@ export function createAgentModule(
                           turn.reply,
                           actor.permissions,
                           capabilities,
+                          actor.scopes,
                         ),
                     )
                   )

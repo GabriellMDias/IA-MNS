@@ -95,7 +95,9 @@ async function oracleAccess() {
           )?.[1],
       )
       .filter((name): name is string => Boolean(name) && name !== directory);
-    if (tables.length !== 24 || new Set(tables).size !== 24)
+    // The reviewed template's tables: sales, products, dictionary and the
+    // result centers of the sales restrictions (PH-36).
+    if (tables.length !== 25 || new Set(tables).size !== 25)
       throw new Error("Unexpected Oracle runtime grant scope");
     if (
       (await query("SELECT USERNAME FROM ALL_USERS WHERE USERNAME='IA_MNS_RO'"))
@@ -115,7 +117,7 @@ async function oracleAccess() {
           `SELECT TABLE_NAME FROM ALL_TABLES WHERE OWNER=:owner AND TABLE_NAME IN (${placeholders})`,
           bindings,
         )
-      ).length !== 24
+      ).length !== tables.length
     )
       throw new Error(
         "Required ERP tables are not all in the resolved source schema",

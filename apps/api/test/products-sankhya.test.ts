@@ -464,6 +464,11 @@ describe("one capability with ERP-scoped state", () => {
     context,
     message,
     history: [],
+    permissions: new Set([
+      "products:read",
+      "products_sankhya:read",
+      "products_vrmaster:read",
+    ]),
     signal: signal(),
     progress: () => Promise.resolve(),
     trace: {

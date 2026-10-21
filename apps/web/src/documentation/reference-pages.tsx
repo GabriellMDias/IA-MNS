@@ -8,6 +8,49 @@ const pages = import.meta.glob<string>("../generated/pages/**/*.json", {
   query: "?url",
   import: "default",
 });
+// SQL is a static artifact, fetched only after an explicit copy/download action.
+const sqlFiles = import.meta.glob<string>(
+  "../../../../docs/generated/features/**/*.sql",
+  { eager: true, query: "?url", import: "default" },
+);
+
+function SqlActions({ url, filename }: { url: string; filename: string }) {
+  const [status, setStatus] = useState("");
+  const [copying, setCopying] = useState(false);
+  async function copy() {
+    setCopying(true);
+    setStatus("");
+    try {
+      const response = await fetch(url, { credentials: "omit" });
+      if (!response.ok) throw new Error("SQL unavailable");
+      await navigator.clipboard.writeText(await response.text());
+      setStatus("SQL copiado.");
+    } catch {
+      setStatus(
+        "Não foi possível copiar. Use Baixar SQL para obter a consulta.",
+      );
+    } finally {
+      setCopying(false);
+    }
+  }
+  return (
+    <section aria-label="Arquivo SQL da consulta" className="docs-sql-actions">
+      <button
+        type="button"
+        disabled={copying}
+        onClick={() => {
+          void copy();
+        }}
+      >
+        {copying ? "Copiando…" : "Copiar SQL"}
+      </button>
+      <a href={url} download={filename}>
+        Baixar SQL
+      </a>
+      <p role="status">{status}</p>
+    </section>
+  );
+}
 type Field = { name: string; type: string; required: boolean };
 type ApiPage = ExplorerOperation & {
   kind: "api";
@@ -332,10 +375,21 @@ export function Detail({
   if (data.kind === "api") return <ApiDetail data={data} />;
   if (data.kind === "database") return <DataDetail data={data} />;
   if (data.kind === "component") return <ComponentDetail data={data} />;
+  const sqlUrl =
+    sqlFiles[`../../../../${entry.source.replace(/\.md$/, ".sql")}`];
   return (
-    <div
-      className="docs-markdown"
-      dangerouslySetInnerHTML={{ __html: data.html }}
-    />
+    <>
+      {sqlUrl && (
+        <SqlActions
+          key={entry.id}
+          url={sqlUrl}
+          filename={entry.source.split("/").at(-1)!.replace(/\.md$/, ".sql")}
+        />
+      )}
+      <div
+        className="docs-markdown"
+        dangerouslySetInnerHTML={{ __html: data.html }}
+      />
+    </>
   );
 }

@@ -6,9 +6,19 @@
 
 This checklist records IA-MNS's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.
 
-IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), the terms for publishing the Sankhya add-on template (PH-17), and the production deployment decisions approved on 2026-10-07: proxy topology and hop protection, a production OpenAI key, the remaining operations, and Oracle transit protection (PH-22 to PH-25), the column grants and business confirmations that refine product lookup (PH-27, PH-28), and the completed isolation of existing administrative Discovery credentials (PH-29), and inherited PostgreSQL PUBLIC DDL privileges awaiting coordinated review (PH-30). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.
+IA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), the terms for publishing the Sankhya add-on template (PH-17), and the production deployment decisions approved on 2026-10-07: proxy topology and hop protection, a production OpenAI key, the remaining operations, and Oracle transit protection (PH-22 to PH-25), the column grants and business confirmations that refine product lookup (PH-27, PH-28), and the completed isolation of existing administrative Discovery credentials (PH-29), inherited PostgreSQL PUBLIC DDL privileges awaiting coordinated review (PH-30), and the Meta account, dedicated number, credentials, webhook and approvals that activate the WhatsApp channel (PH-32 to PH-35), and the Runtime read of Sankhya result centers for the sales restriction by result center (PH-36). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.
+
+Local development startup is covered by [PJ-49](implementation-plan.md#current-work): the web server reuses the configured provider origins from the root ignored `.env.local`, without a repeated shell assignment or a new human prerequisite. The existing Om installation and access requirements remain under [PH-16](#ph-16).
+
+The My Account, Administration and conversation-material visual improvements in [PJ-50 to PJ-53](implementation-plan.md#current-work) require no new human action or external access; existing account, security and channel prerequisites still apply.
 
 ## Maintaining this checklist
+
+The PR #11 corrections in [PJ-58](implementation-plan.md#current-work) need no new human-controlled account, secret or ERP access. They add the forward application migrations `202610210002_identity_whatsapp_link_generations` and `202610210003_rotate_legacy_whatsapp_generations`; deployment must apply both before the updated runtime and must not run older WhatsApp workers concurrently. Disable the channel before rolling back to an older runtime and keep it disabled there. Existing WhatsApp activation approvals remain PH-32 to PH-35.
+
+The static feature/SQL catalog in [PJ-56](implementation-plan.md#current-work) requires no new human action or ERP access. It documents the existing catalog exposure and deployment prerequisites; it does not complete or change PH-27, PH-28 or PH-36.
+
+The button theme-transition accessibility correction in [PJ-57](implementation-plan.md#current-work) requires no new human action, production access or ERP privilege.
 
 1. Inspect existing decisions, access, tools, configuration, and prior authorization before requesting human intervention. Complete authorized automation and all useful preparation first.
 2. Keep one stable `PH-NN` ID per coherent action; never reuse or renumber IDs. Split broad items into independently verifiable actions as they become concrete, and add newly discovered actions immediately.
@@ -195,14 +205,13 @@ Record the HTTPS evidence.
 
 ## PH-13
 
-- [ ] **Confirm the automatic read-capability policy for linked Persons.**
+- [ ] **Select and review default user groups for PDT Connect and Sankhya before shared use.**
 
-**Status:** pending (non-blocking). **Owner:** project owner.
-**Dependency / trigger:** PJ-15 policy; before shared use.
-**Request and reason:** The composed policy grants `sales:read` to any active Person with an active Sankhya link, so new users need no manual approval for basic reading, as the owner requested. This includes Persons created automatically at a Sankhya first access and Sankhya users that an owner associates from the directory. Sales reading covers all companies in the ERP reference, with no row scoping, and PDT links grant no business capability yet. Confirm that this is acceptable, narrow it, or disable it with `IA_MNS_PROVIDER_GRANTS=none` (then owners grant explicitly).
-**Configuration:** **Administração → Parâmetros → Liberação automática por vínculo** ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)); optional installation default `IA_MNS_PROVIDER_GRANTS`.
-**Verification:** The decision is recorded here and reflected in configuration.
-**Evidence / blocker:** Awaiting the owner's decision; default policy active in code and covered by tests.
+**Status:** pending (non-blocking for implementation). **Owner:** project owner.
+**Dependency / trigger:** PJ-55; before shared use after applying migration `202610210001_identity_provider_groups`.
+**Request and reason:** On 2026-10-21 the owner replaced automatic permission grants by provider link with automatic entry into a default user group after verified sign-in. Both selections start empty. In **Administração → Grupos**, create or choose the groups and review their per-source permissions and restrictions, particularly whether Sankhya users may read Pilar da Terra sales and which product permissions they receive. Then select each group in **Parâmetros → Grupo de Usuário padrão por vínculo**, or retain **Nenhum grupo**. Personal restrictions do not narrow a broader group grant. Existing memberships persist after changing or clearing a selection; remove unwanted memberships explicitly.
+**Verification:** A verified login through each configured system shows the expected group, permissions and restrictions; a local login or mere stored link does not add membership. Record the chosen production groups here.
+**Evidence / blocker:** The authorization model is resolved by the owner's request. The actual installation groups and grants remain owner selections; legacy automatic-grant settings no longer grant permissions ([ADR-0038](../adr/0038-join-default-user-groups-after-verified-provider-sign-in.md)).
 
 ## PH-14
 
@@ -233,7 +242,7 @@ Record the HTTPS evidence.
 - Web hosting that sends `frame-ancestors 'none'` on every route except `/embed/pdt` and `/embed/sankhya`, which allow only their host origins.
 - Running `pnpm identity:bootstrap` on the server to create the first owner, plus a second owner for recovery.
 - An owner reviewing **Administração → Autenticação e segurança** before opening production: a policy relaxed for development (long sessions, remembered browsers) should return to production values; production always keeps the administrators' second factor ([ADR-0025](../adr/0025-administer-the-authentication-policy-within-fixed-safeguards.md)).
-- An owner reviewing **Administração → Parâmetros** before opening production: the AI model in use (evaluated with `pnpm eval` before any change), the trace level (content tracing is refused in production), and the automatic grants by provider link ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)). Values saved in a development database do not travel to production; production starts from its environment defaults.
+- An owner reviewing **Administração → Parâmetros** before opening production: the AI model in use (evaluated with `pnpm eval` before any change), the trace level (content tracing is refused in production), and the default user groups by provider with their permissions and restrictions ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)). Values saved in a development database do not travel to production; production starts from its environment defaults.
   **Configuration:** `IA_MNS_PUBLIC_ORIGIN`, `IA_MNS_IDENTITY_SIGNING_KEY`, `IA_MNS_IDENTITY_ENCRYPTION_KEY` (both secret), optional `IA_MNS_IDENTITY_AUDIENCE`.
   **Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP, the reviewed authentication policy and operational parameters are verified in the deployed environment.
   **Evidence / blocker:** No deployment environment yet. On 2026-10-07 [PJ-32](implementation-plan.md#current-work) implemented the application side: the API serves the web build at one origin with per-surface framing from `PDT_EMBED_ORIGIN`/`SANKHYA_EMBED_ORIGIN`, `pnpm identity:keys` (or `dist/cli/identity-keys.js`) writes fresh keys to a new owner-only file, and `dist/cli/identity-bootstrap.js` issues the owner invitation from a build ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)). Nothing was configured in an environment. On 2026-10-07 [PJ-33](implementation-plan.md#current-work) added `ia-mns-deploy init-secrets` (generates the identity keys and database passwords in `/etc/ia-mns` without displaying them) and `ia-mns-deploy bootstrap-owner` ([host setup runbook](../runbooks/production-host-setup-and-first-deployment.md)).
@@ -286,7 +295,6 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Configuration:** `VRMASTER_DB_HOST`, `VRMASTER_DB_PORT`, `VRMASTER_DB_NAME`, `VRMASTER_DB_USER`, `VRMASTER_DB_PASSWORD` and `VRMASTER_DB_SSL_MODE` ([generated configuration reference](../generated/configuration/api.md), [setup](../setup.md#sales-chat)).
 **Verification:** The owner confirms the account and its limits. Connecting with it and confirming that `SELECT` works on the reference tables while writes, DDL and other tables are refused is part of [PH-20](#ph-20), because only the owner holds the password.
 **Evidence / blocker:** On 2026-10-07 the owner reported the account `ia_mns` with `CONNECT` on the VRMaster database, `USAGE` on its schema, `SELECT` only on the tables of the reference SQL (`venda`, `produto`, `loja`, `fornecedor`, `produtoaliquota`, `aliquota`, `mercadologico`, `centrocusto`, `comprador`), `default_transaction_read_only = on`, `statement_timeout = 30s` and no DDL or DML. IA-MNS has not connected with it; no password was requested or recorded. The same grants are reproduced in the adapter tests on synthetic PostgreSQL, where the transcribed SQL needs nothing more. On 2026-10-06 the VRMaster PostgreSQL port was reachable from the development machine; on 2026-10-07 the server answered the TLS request negatively ([PH-21](#ph-21)).
-
 
 **Current verified limitation:** PJ-41 connected with the existing reader on 2026-10-11, verified no privileged role attributes, memberships, owned tables or writes on existing public tables, and applied PH-27. Actual database/schema CREATE and TEMP are inherited from PUBLIC. The owner explicitly requires preserving PUBLIC; PH-30 tracks coordinated restriction. The earlier owner-reported absence of DDL was not an effective-ACL verification and is superseded by this live finding.
 
@@ -398,7 +406,7 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 
 **Status:** pending (product lookup is usable; these refine it). **Owner:** project owner.
 **Dependency / trigger:** [PJ-35](implementation-plan.md#current-work).
-**Request and reason:** The [product lookup](../domains/product-lookup.md#limits-and-open-questions) records interpretations the data cannot decide: (1) cost centers are taken from the level-1 mercadológico section, so SECOS includes the sections named INATIVO and FEIRA INATIVO — confirm or name the sections to leave out; (2) the "fornecedor fabricante" column holds distributors and a placeholder — define what "fabricante" should mean, or keep it unavailable; (3) the operational meaning of the "pesável" flag, which fresh produce sold by KG does not carry; (4) "banana fruta" means the FLV › FRUTAS › BANANA products without chips and without raw materials — confirm this regression reference; (5) whether people with a PDT Connect or Sankhya link should receive `products:read` automatically (today only owners have it until granted).
+**Request and reason:** The [product lookup](../domains/product-lookup.md#limits-and-open-questions) records interpretations the data cannot decide: (1) cost centers are taken from the level-1 mercadológico section, so SECOS includes the sections named INATIVO and FEIRA INATIVO — confirm or name the sections to leave out; (2) the "fornecedor fabricante" column holds distributors and a placeholder — define what "fabricante" should mean, or keep it unavailable; (3) the operational meaning of the "pesável" flag, which fresh produce sold by KG does not carry; (4) "banana fruta" means the FLV › FRUTAS › BANANA products without chips and without raw materials — confirm this regression reference; (5) which product permissions SNK-PRD-01 or VRM-PRD-01 should be granted to the default user groups selected for PDT Connect and Sankhya (PH-13).
 **Configuration:** for (5), the operational parameter of automatic grants after a catalog decision; otherwise none.
 **Verification:** Each answer is recorded here with its date; the catalog, its interpretations, the regression dataset and the permission policy follow in a reviewed change.
 **Evidence / blocker:** Not started.
@@ -435,6 +443,61 @@ Until this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MN
 **Configuration:** none changed by this task; do not claim ZDR or regional processing without account evidence.
 **Verification:** Dated corporate record of the applicable category, purpose, terms and account settings; a reviewed field contract and deny-path tests before enabling it.
 **Evidence / blocker:** Owner business-data scope approved on 2026-10-12. Official OpenAI data controls, LGPD and ANPD Resolution 19 checked on 2026-10-13; organization-specific contracts/settings were not inspected. Personal catalog values remain withheld from model evidence, and no individual customer/employee or sensitive-personal-data tool is exposed.
+
+## PH-32
+
+- [ ] **Prepare the Meta business assets for the WhatsApp channel: Business Portfolio, WhatsApp Business Account and app.**
+
+**Status:** pending. **Owner:** project owner as Meta Business Portfolio administrator.
+**Dependency / trigger:** PJ-48 (activation of the [WhatsApp channel](../domains/whatsapp-channel.md)); the implementation (PJ-47) does not depend on it and works with the local simulator.
+**Request and reason:** In Meta Business Suite / Business Manager: use (or create) the MNS **Business Portfolio**, complete **business verification** with the company's legal documents (required for higher messaging limits and a verified display name), and enable two-factor authentication for its administrators. In Meta for Developers, create an app of type **Business** owned by that portfolio and add the **WhatsApp** product; this creates or connects the **WhatsApp Business Account (WABA)**. Add a payment method to the WABA (Meta charges per its current pricing; reply messages inside the 24-hour service window are what IA-MNS uses). Meta account creation, legal verification and payment cannot be automated by contributors.
+**Configuration:** none in IA-MNS yet. Record, without secrets, the WhatsApp Business Account ID (later `WHATSAPP_BUSINESS_ACCOUNT_ID`) and the app ID in the owner's password vault notes.
+**Verification:** Business Manager shows the portfolio as verified (or the verification request pending, with its date), the app owned by the portfolio with the WhatsApp product, and the WABA with a payment method.
+**Evidence / blocker:** Requested on 2026-10-13 by the owner's WhatsApp integration request. The implementation used only synthetic Meta identifiers.
+
+## PH-33
+
+- [ ] **Register the dedicated corporate number on the Cloud API, with the owner present.**
+
+**Status:** pending. **Owner:** project owner (holder of the corporate line).
+**Dependency / trigger:** PH-32; blocks PJ-48. The owner asked that the definitive number never be installed or registered without them.
+**Request and reason:** The number must have no WhatsApp account (it has none today) and must stay off the WhatsApp and WhatsApp Business apps afterwards. In the app's WhatsApp setup (or WhatsApp Manager → Phone numbers → Add phone number): enter the display name (it must follow Meta's display-name rules and match the business; Meta reviews it), the category and the number, then receive the **verification code by SMS or voice call** on the corporate line and confirm it. Set the number's **two-step verification PIN** and store it in the password vault. Then register the number for Cloud API use (Meta's `register` step with that PIN, done in WhatsApp Manager or by the `POST /{phone-number-id}/register` request in Meta's documentation). Until this is done, development uses the local simulator or Meta's test number from the app dashboard.
+**Configuration:** the **phone number ID** shown by Meta (later `WHATSAPP_PHONE_NUMBER_ID`); not secret. The two-step PIN is a secret kept only in the vault.
+**Verification:** WhatsApp Manager shows the number connected to the WABA with status _Connected_, the display name approved, and a messaging limit tier.
+**Evidence / blocker:** Not started. Do not use a personal or shared number.
+
+## PH-34
+
+- [ ] **Issue the API credentials and configure the production webhook.**
+
+**Status:** pending. **Owner:** project owner (Meta administrator) and the production host operator.
+**Dependency / trigger:** PH-32, PH-33 and a production deployment that serves the public HTTPS origin ([PH-26](#ph-26)); blocks PJ-48.
+**Request and reason:** In Business Settings → Users → **System users**, create a system user for IA-MNS (Admin only if Meta requires it for asset assignment), assign it the app and the WABA with full control of messaging, and generate a **non-expiring system-user token** with the permissions `whatsapp_business_messaging` and `whatsapp_business_management`. Read the **app secret** (App settings → Basic). Generate a random **verify token**. Place the token, app secret and verify token directly in `/etc/ia-mns/runtime.env` (never in chat, tickets or the repository) and follow the [activation runbook](../runbooks/whatsapp-channel.md#activate): configure the callback URL `https://<public origin>/api/whatsapp/webhook` with the verify token, subscribe to the **messages** field, and switch the app to **Live** mode. Webhook subscription requires the HTTPS endpoint to be reachable by Meta, which only the deployed host provides.
+**Configuration:** `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` (secrets), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID` ([configuration reference](../generated/configuration/api.md)). The channel stays off until an owner turns on **Atendimento pelo WhatsApp** (PH-35).
+**Verification:** `ia-mns-deploy check-config` passes; Meta reports the webhook verified and the log shows `whatsapp_verification_accepted`; the app is Live; a test message from an unlinked phone produces no reply.
+**Evidence / blocker:** Not started.
+
+## PH-35
+
+- [ ] **Approve the WhatsApp processing boundary and the pilot, then link numbers and turn the channel on.**
+
+**Status:** pending. **Owner:** project owner and the corporate privacy/legal accountable person.
+**Dependency / trigger:** PH-34 and [PH-09](#ph-09) (retention); related to [PH-31](#ph-31); blocks PJ-48.
+**Request and reason:** Answers with business data will transit Meta (as platform operator) and remain on the recipients' devices, outside IA-MNS control; the linked phone works as a credential without a second factor ([residual risks](../domains/whatsapp-channel.md#security-notes-and-residual-risks)). Confirm in writing that this boundary is acceptable for the current read-only sales and product capabilities, which people may use the channel and with which grants, that the provisional 30-day retention of channel metadata is acceptable until PH-09, the daily ceiling (`WHATSAPP_DAILY_LIMIT`, default 500) and the people/transparency notice required by the company's LGPD practice. Then, as owner: link the pilot numbers in **Administração → Pessoas**, set **Atendimento pelo WhatsApp** to **Ligado** in **Parâmetros**, and run the pilot checks of the runbook. Product, legal and cost acceptance cannot be decided by contributors.
+**Configuration:** operational parameter `channels.whatsapp` (no secret); optionally `WHATSAPP_DAILY_LIMIT`.
+**Verification:** Dated approval recorded here; the runbook's activation verification passes with a real pilot phone and is recorded in PJ-48.
+**Evidence / blocker:** Not started.
+
+## PH-36
+
+- [ ] **Authorize and apply the Runtime read of Sankhya result centers (`TSICUS`).**
+
+**Status:** pending (non-blocking: every other restriction works without it). **Owner:** project owner with ERP mutation authority.
+**Dependency / trigger:** [PJ-54](implementation-plan.md#current-work); before an owner restricts Sankhya sales by result center (CR).
+**Request and reason:** The sales restriction by _centro de resultado_ filters `TGFCAB.CODCENCUS`, which the reader already reads, but listing the centers for owners and including the centers below a selected one need `SELECT` on `TSICUS` (`CODCENCUS`, `DESCRCENCUS`, `CODCENCUSPAI`, `GRAU`, `ANALITICO`, `ATIVO`). The reviewed [Sankhya template](../../apps/api/scripts/erp-access/sankhya-runtime.sql) now adds one `SELECT` grant and one private synonym for `IA_MNS_RO`; read-only Discovery confirmed the table and its 145 centers. Applying it is an ERP privilege change, which Discovery authority does not cover ([ERP database access](../security/erp-database-access.md)). Until then, searching or granting CR values answers `IDENTITY_RESTRICTION_UNAVAILABLE` and no CR restriction can exist.
+**Configuration:** none beyond the template; run `pnpm -C apps/api erp:runtime:access` to see the plan and `--apply` only with explicit authorization.
+**Verification:** The planner reports zero missing statements; an owner searches result centers in **Administração → Permissões → SNK-VEN-01 → Conceder com restrições**, and a restricted sales answer cites the center.
+**Evidence / blocker:** Prepared on 2026-10-20; not applied.
 
 ## New action template
 

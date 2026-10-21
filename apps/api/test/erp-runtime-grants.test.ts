@@ -5,6 +5,23 @@ import { sankhyaCatalog } from "../src/features/products/sankhya/catalog.js";
 import { vrmasterCatalog } from "../src/features/products/vrmaster/catalog.js";
 import { referenceSalesCte } from "../src/features/sales/query.js";
 import { vrmasterSalesCte } from "../src/features/sales/vrmaster-query.js";
+import {
+  salesPermissions,
+  sankhyaRestriction,
+  vrmasterRestriction,
+} from "../src/features/sales/access.js";
+import { restrictionTables } from "../src/features/sales/restrictions.js";
+
+/** A scope restricted by every dimension a source permission declares. */
+const everyDimension = (source: "sankhya" | "vrmaster") => ({
+  kind: "restricted" as const,
+  rules: [
+    salesPermissions[source].restrictions.map((dimension) => ({
+      dimension: dimension.id,
+      values: [{ value: "1", label: "x" }],
+    })),
+  ],
+});
 
 const template = async (name: string) =>
   (
@@ -37,6 +54,13 @@ describe("reviewed external ERP Runtime grants", () => {
       ...[...metadata.matchAll(/\b(?:FROM|JOIN)\s+(TDD[A-Z]+)\b/g)].map(
         (match) => match[1],
       ),
+      // Sales restrictions and the owner-facing values of their dimensions.
+      ...[
+        ...sankhyaRestriction(everyDimension("sankhya"))!.sql.matchAll(
+          /\bFROM\s+([A-Z][A-Z0-9_]+)\b/g,
+        ),
+      ].map((match) => match[1]),
+      ...restrictionTables.sankhya,
     ]);
     const granted = [
       ...sql.matchAll(
@@ -46,7 +70,7 @@ describe("reviewed external ERP Runtime grants", () => {
     expect(
       granted.filter((name) => name !== "IA_MNS_USER_DIRECTORY").sort(),
     ).toEqual([...required].sort());
-    expect(required.size).toBe(24);
+    expect(required.size).toBe(25);
     for (const table of required)
       expect(sql).toContain(
         `CREATE SYNONYM IA_MNS_RO.${table} FOR {{ERP_OWNER}}.${table}`,
@@ -79,6 +103,16 @@ describe("reviewed external ERP Runtime grants", () => {
       ...sql.matchAll(/GRANT SELECT ON public\.([a-z_]+) TO ia_mns/g),
     ].map((match) => match[1]);
     expect(tables.sort()).toEqual(sales.sort());
+    // Restrictions and their values read only tables the reference reads.
+    for (const table of [
+      ...[
+        ...vrmasterRestriction(everyDimension("vrmaster"), 0)!.sql.matchAll(
+          /\b(?:FROM|JOIN) public\.([a-z_]+)/g,
+        ),
+      ].map((match) => match[1]),
+      ...restrictionTables.vrmaster,
+    ])
+      expect(tables).toContain(table);
     const columns = [
       ...sql.matchAll(
         /GRANT SELECT \(([^)]+)\) ON public\.([a-z_]+) TO ia_mns/g,

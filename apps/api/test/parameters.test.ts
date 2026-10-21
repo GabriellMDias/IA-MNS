@@ -112,9 +112,6 @@ describe("operational parameter catalog", () => {
     const parameters = parametersFor();
     await expect(parameters.get("ai.model")).resolves.toBe("gpt-6.1-sol");
     await expect(parameters.get("ai.traceLevel")).resolves.toBe("metadata");
-    await expect(parameters.get("access.providerGrants")).resolves.toEqual([
-      "sankhya:sales:read",
-    ]);
     const states = await parameters.states();
     expect(states.every((item) => item.source === "default")).toBe(true);
     expect(states.every((item) => item.version === 0)).toBe(true);
@@ -125,26 +122,17 @@ describe("operational parameter catalog", () => {
       ...identityEnv,
       OPENAI_MODEL: "gpt-env",
       IA_MNS_AI_TRACE: "off",
-      IA_MNS_PROVIDER_GRANTS: "none",
     };
     const { store, rows } = memoryStore();
     const parameters = parametersFor(env, store);
     // Environment over product default.
     await expect(parameters.get("ai.model")).resolves.toBe("gpt-env");
     await expect(parameters.get("ai.traceLevel")).resolves.toBe("off");
-    await expect(parameters.get("access.providerGrants")).resolves.toEqual([]);
     // Owner value over environment.
     rows.set("ai.model", stored("ai.model", "gpt-owner"));
     rows.set("ai.traceLevel", stored("ai.traceLevel", "content"));
-    rows.set(
-      "access.providerGrants",
-      stored("access.providerGrants", ["sankhya:sales:read"]),
-    );
     await expect(parameters.get("ai.model")).resolves.toBe("gpt-owner");
     await expect(parameters.get("ai.traceLevel")).resolves.toBe("content");
-    await expect(parameters.get("access.providerGrants")).resolves.toEqual([
-      "sankhya:sales:read",
-    ]);
     const model = (await parameters.states()).find(
       (item) => item.definition.key === "ai.model",
     )!;
@@ -179,23 +167,7 @@ describe("operational parameter catalog", () => {
       ok: true,
       value: "content",
     });
-    expect(
-      parameters.check("access.providerGrants", [
-        "sankhya:sales:read",
-        "sankhya:sales:read",
-      ]),
-    ).toEqual({ ok: true, value: ["sankhya:sales:read"] });
-    // Only catalog-eligible read grants: never a new provider or permission.
-    for (const invalid of [
-      ["pdt:sales:read"],
-      ["sankhya:identity:admin"],
-      "sankhya:sales:read",
-      [1],
-    ])
-      expect(parameters.check("access.providerGrants", invalid)).toEqual({
-        ok: false,
-        reason: "invalid",
-      });
+    expect(parameters.definition("access.providerGrants")).toBeUndefined();
   });
 
   it("never uses content tracing in production, whatever is stored", async () => {
@@ -217,22 +189,19 @@ describe("operational parameter catalog", () => {
     rows.clear();
   });
 
-  it("ignores invalid stored values safely and narrows grants that left the catalog", async () => {
+  it("ignores invalid stored values and retired parameters safely", async () => {
     const { store } = memoryStore([
       stored("ai.model", "not a model"),
-      stored("access.providerGrants", ["sankhya:sales:read", "pdt:old:read"]),
+      { ...stored("ai.model", []), key: "access.providerGrants" },
     ]);
     const parameters = parametersFor({}, store);
     await expect(parameters.get("ai.model")).resolves.toBe("gpt-6.1-sol");
-    await expect(parameters.get("access.providerGrants")).resolves.toEqual([
-      "sankhya:sales:read",
-    ]);
     const states = await parameters.states();
     expect(
       states
         .filter((item) => item.storedInvalid)
         .map((item) => item.definition.key),
-    ).toEqual(["ai.model", "access.providerGrants"]);
+    ).toEqual(["ai.model"]);
   });
 
   it("saves conditionally on the version that was read and reports before/after", async () => {

@@ -6,6 +6,209 @@
   ],
   "components": [
     {
+      "name": "PageHeader",
+      "summary": "A page title and description with optional back navigation and primary actions.",
+      "props": [
+        {
+          "name": "title / description",
+          "type": "string / string (optional)",
+          "meaning": "The page h1 and concise supporting text."
+        },
+        {
+          "name": "back / actions",
+          "type": "ReactNode (optional)",
+          "meaning": "Caller-owned navigation and action controls. No routing or mutation is performed by this component."
+        }
+      ],
+      "states": [
+        "Title and description",
+        "Back navigation",
+        "Primary action",
+        "Stacked mobile layout"
+      ],
+      "accessibility": "Provides the page's h1. The caller supplies real links and buttons with accessible names; actions stay in reading order when the layout stacks.",
+      "usage": "Use once below the application shell. Keep routing in the caller and provide Button controls for actions. Back navigation appears above the title.",
+      "examples": [
+        {
+          "id": "ui-page-header",
+          "label": "Settings page header",
+          "description": "A synthetic page heading with a local demonstration action."
+        }
+      ]
+    },
+    {
+      "name": "SelectField",
+      "summary": "A themed native select with an associated label, help and validation messages.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "meaning": "Visible accessible name associated with the select."
+        },
+        {
+          "name": "hint / error",
+          "type": "string (optional)",
+          "meaning": "Described-by text; error also marks the control invalid. The owning form controls announcements."
+        },
+        {
+          "name": "native select props",
+          "type": "ComponentProps<select>",
+          "meaning": "Includes options as children, value/defaultValue, disabled, id, handlers, ref and ARIA attributes. An omitted id is generated uniquely."
+        }
+      ],
+      "states": [
+        "Selected option",
+        "Disabled option or control",
+        "Help text",
+        "Invalid",
+        "Keyboard focus"
+      ],
+      "accessibility": "Retains native select keyboard behavior and disabled options. Label and help/error IDs are associated; caller-supplied aria-describedby is retained.",
+      "usage": "Use for a bounded choice. Supply native options and preserve server-owned option restrictions. Match TextField's label/help conventions.",
+      "examples": [
+        {
+          "id": "ui-select-field",
+          "label": "Native choice",
+          "description": "Synthetic options and help; the selection is not saved or sent."
+        }
+      ]
+    },
+    {
+      "name": "Button",
+      "summary": "A themed native button with consistent action hierarchy and pending feedback.",
+      "props": [
+        {
+          "name": "variant",
+          "type": "primary | secondary | ghost | danger",
+          "meaning": "Action emphasis; defaults to primary. Danger uses semantic error tokens."
+        },
+        {
+          "name": "loading",
+          "type": "boolean",
+          "meaning": "Disables interaction, exposes aria-busy and adds a decorative spinner without replacing the accessible name."
+        },
+        {
+          "name": "type",
+          "type": "button | submit | reset",
+          "meaning": "Defaults to button. Forms must explicitly use submit."
+        },
+        {
+          "name": "native button props",
+          "type": "ComponentProps<button>",
+          "meaning": "Forwards native handlers, disabled state, ARIA attributes, ref and children."
+        }
+      ],
+      "states": [
+        "Primary, secondary, ghost and danger",
+        "Disabled",
+        "Loading",
+        "Keyboard focus"
+      ],
+      "accessibility": "Native keyboard semantics, visible focus and a stable accessible name. Theme text and background colors change together to retain contrast; only borders transition. Loading disables repeated activation and sets aria-busy; reduced motion stops the spinner.",
+      "usage": "Use primary for a form's main action, secondary for alternatives, ghost for row actions and danger for consequential actions. Set loading from the actual pending operation.",
+      "examples": [
+        {
+          "id": "ui-buttons",
+          "label": "Action hierarchy",
+          "description": "Button variants and pending feedback; no request or account change."
+        }
+      ]
+    },
+    {
+      "name": "TextField",
+      "summary": "A labeled text-like input with associated help and validation messages.",
+      "props": [
+        {
+          "name": "label",
+          "type": "string",
+          "meaning": "Visible accessible name, associated with the native input."
+        },
+        {
+          "name": "hint / error",
+          "type": "string (optional)",
+          "meaning": "Described-by text; error also marks the input invalid. The owning form controls error announcements."
+        },
+        {
+          "name": "native input props",
+          "type": "ComponentProps<input>",
+          "meaning": "Includes type, value/defaultValue, autocomplete, required, id, handlers, ref and ARIA attributes. An omitted id is generated uniquely."
+        }
+      ],
+      "states": [
+        "Empty or filled",
+        "Help text",
+        "Invalid",
+        "Disabled",
+        "Keyboard focus"
+      ],
+      "accessibility": "Label and help/error IDs remain associated across renders. Caller-supplied aria-describedby is retained. Uses native input and validation semantics.",
+      "usage": "Use for text-like inputs, including password and one-time codes. Supply appropriate autocomplete and validation attributes. Keep credentials in temporary form state only.",
+      "examples": [
+        {
+          "id": "ui-text-fields",
+          "label": "Labels, help and errors",
+          "description": "Synthetic profile fields with no persistence or network request."
+        }
+      ]
+    },
+    {
+      "name": "SectionCard",
+      "summary": "A named section with a consistent heading, optional description and decorative icon.",
+      "props": [
+        {
+          "name": "title",
+          "type": "string",
+          "meaning": "Level-two heading and accessible section name."
+        },
+        {
+          "name": "description / icon",
+          "type": "string / ReactNode (optional)",
+          "meaning": "Supporting text and an aria-hidden decorative icon."
+        },
+        {
+          "name": "native section props",
+          "type": "ComponentProps<section>",
+          "meaning": "Includes children, className and native section attributes. The heading owns aria-labelledby."
+        }
+      ],
+      "states": ["Title only", "Description and content", "Decorative icon"],
+      "accessibility": "Uses a semantic section named by a unique h2. Icons are decorative; the title must communicate meaning without them.",
+      "usage": "Group related settings below a page's h1. Parent layouts own grid placement; the card adapts to its available width.",
+      "examples": [
+        {
+          "id": "ui-section-card",
+          "label": "Settings section",
+          "description": "A synthetic settings group demonstrating the shared surface and controls."
+        }
+      ]
+    },
+    {
+      "name": "StatusBadge",
+      "summary": "A compact textual label for a state or category.",
+      "props": [
+        {
+          "name": "children",
+          "type": "ReactNode",
+          "meaning": "Visible text communicating the state or category."
+        },
+        {
+          "name": "tone",
+          "type": "neutral | accent",
+          "meaning": "Defaults to neutral; accent emphasizes an enabled or current state without implying a global severity."
+        }
+      ],
+      "states": ["Neutral", "Accent", "Light and dark themes"],
+      "accessibility": "Meaning is conveyed by visible text, never color alone. This is static text, not a live region or an interactive control.",
+      "usage": "Use short text for enabled settings, current sessions and permission categories. Announce dynamic outcomes separately in the owning workflow.",
+      "examples": [
+        {
+          "id": "ui-status-badges",
+          "label": "State labels",
+          "description": "Synthetic neutral and accent states."
+        }
+      ]
+    },
+    {
       "name": "ErrorNotice",
       "summary": "Displays a public API failure message and an optional reload action.",
       "props": [

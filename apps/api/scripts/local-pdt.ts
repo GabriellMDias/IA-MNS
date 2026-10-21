@@ -134,9 +134,6 @@ if (pdt.added.length) await writeFile(pdtEnvFile, pdt.content);
 if (local.added.length)
   await writeFile(envFile, local.content, { mode: 0o600 });
 
-const embedAncestors = [env.SANKHYA_EMBED_ORIGIN, pdtOrigin]
-  .filter(Boolean)
-  .join(" ");
 process.stdout.write(
   [
     local.added.length
@@ -146,7 +143,7 @@ process.stdout.write(
       ? `Registered the IA-MNS client in ${pdtEnvFile} (${pdt.added.join(", ")}; only the secret's SHA-256). Restart the PDT API.`
       : `PDT identity settings already present in ${pdtEnvFile}.`,
     `In the PDT, set Configurações → Parâmetros: IA_MNS_URL=${publicOrigin}, IA_MNS_CLIENT_ID=ia-mns, IA_MNS_REDIRECT_URI=${redirectUri}; grant ia-mns:acessar.`,
-    `Serve the PDT web at ${pdtOrigin} and start the IA-MNS web with ORION_WEB_EMBED_ANCESTORS="${embedAncestors}".`,
+    `Serve the PDT web at ${pdtOrigin} and start the IA-MNS web with pnpm -C apps/web dev (it reuses PDT_EMBED_ORIGIN from .env.local).`,
     "",
   ].join("\n"),
 );

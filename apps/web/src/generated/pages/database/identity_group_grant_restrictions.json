@@ -1,0 +1,87 @@
+{
+  "kind": "database",
+  "name": "identity_group_grant_restrictions",
+  "description": "Data restrictions of a group grant, with the same meaning as identity_grant_restrictions.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Replaced together with its grant by owners with recent strong authentication; removed with the grant or the group. Audited with value counts.",
+  "columns": [
+    {
+      "Column": "group_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Group.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "permission",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "The restricted permission of the grant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "dimension",
+      "PostgreSQL type": "character varying(32)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Restriction dimension the permission declares, such as company or store; enforced by the module that owns the data.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "value",
+      "PostgreSQL type": "character varying(40)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "ERP record code admitted for the dimension (for example CODEMP or loja.id), validated against the source when saved.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "label",
+      "PostgreSQL type": "character varying(200)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display label read from the ERP when saved (company, project, seller, buyer, store or classification name); may be a person's name. Never typed by the browser.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_group_grant_restrictions_dimension_check",
+      "Physical definition": "CHECK (((dimension)::text ~ '^[a-z][a-z_]{1,30}$'::text))",
+      "Purpose": "Dimension naming convention."
+    },
+    {
+      "Object": "identity_group_grant_restrictions_grant_fkey",
+      "Physical definition": "FOREIGN KEY (group_id, permission) REFERENCES identity_group_grants(group_id, permission) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Restriction belongs to its group grant and is removed with it."
+    },
+    {
+      "Object": "identity_group_grant_restrictions_label_check",
+      "Physical definition": "CHECK ((length(btrim((label)::text)) > 0))",
+      "Purpose": "A label is never blank."
+    },
+    {
+      "Object": "identity_group_grant_restrictions_pkey",
+      "Physical definition": "PRIMARY KEY (group_id, permission, dimension, value)",
+      "Purpose": "A value is admitted once per dimension of a group grant."
+    },
+    {
+      "Object": "identity_group_grant_restrictions_value_check",
+      "Physical definition": "CHECK (((value)::text ~ '^-?[0-9]{1,15}$'::text))",
+      "Purpose": "ERP codes are integers."
+    }
+  ]
+}

@@ -18,6 +18,61 @@ import {
 import { useIdentity, useIdentityStart } from "./session.js";
 import { identityMessage, isFailure } from "./messages.js";
 import { ProviderButton, TotpSetup } from "./pages.js";
+import {
+  Button,
+  PageHeader,
+  SectionCard,
+  StatusBadge,
+  TextField,
+} from "../../components.js";
+import { AccessSummary } from "./permissions.js";
+import "./account.css";
+
+function AccountIcon({
+  kind,
+}: {
+  kind: "security" | "link" | "phone" | "sessions" | "back";
+}) {
+  const paths = {
+    security: (
+      <>
+        <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z" />
+        <path d="m8.5 12 2.5 2.5 4.5-5" />
+      </>
+    ),
+    link: (
+      <>
+        <path d="m10 13 4-4m-6 6-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 2 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" />
+      </>
+    ),
+    phone: (
+      <>
+        <rect x="6" y="2" width="12" height="20" rx="3" />
+        <path d="M10 18h4" />
+      </>
+    ),
+    sessions: (
+      <>
+        <rect x="3" y="3" width="18" height="13" rx="2" />
+        <path d="M8 21h8m-4-5v5" />
+      </>
+    ),
+    back: <path d="m12 5-7 7 7 7M5 12h15" />,
+  };
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[kind]}
+    </svg>
+  );
+}
 
 const providerName: Record<Provider, string> = {
   pdt: "PDT Connect",
@@ -62,6 +117,7 @@ function Reauthenticate({
   const [password, setPasswordValue] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   return (
     <section
       className="identity-card identity-warning"
@@ -75,6 +131,7 @@ function Reauthenticate({
           onSubmit={(event: FormEvent) =>
             void (async () => {
               event.preventDefault();
+              setBusy(true);
               setError(null);
               try {
                 const result = await reauthenticate(
@@ -85,12 +142,14 @@ function Reauthenticate({
                 onDone(result.accessToken, result.expiresIn);
               } catch (failure) {
                 setError(identityMessage(failure));
+              } finally {
+                setBusy(false);
               }
             })()
           }
         >
-          <label htmlFor="identity-reauth-password">Senha</label>
-          <input
+          <TextField
+            label="Senha"
             id="identity-reauth-password"
             type="password"
             autoComplete="current-password"
@@ -99,20 +158,18 @@ function Reauthenticate({
             required
           />
           {me.person.local.totpEnabled && (
-            <>
-              <label htmlFor="identity-reauth-code">
-                Código de verificação
-              </label>
-              <input
-                id="identity-reauth-code"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-                required
-              />
-            </>
+            <TextField
+              label="Código de verificação"
+              id="identity-reauth-code"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+              required
+            />
           )}
-          <button>Confirmar</button>
+          <Button type="submit" loading={busy}>
+            Confirmar
+          </Button>
         </form>
       )}
       {identity.surface === "direct" &&
@@ -178,6 +235,9 @@ function Account({ token }: { token: string }) {
   const [enrolling, setEnrolling] = useState(false);
   const refresh = () =>
     void queryClient.invalidateQueries({ queryKey: ["identity-me"] });
+  const [pendingForm, setPendingForm] = useState<"profile" | "password" | null>(
+    null,
+  );
   const action = useMutation({
     mutationFn: (work: () => Promise<unknown>) => work(),
     onSuccess: () => {
@@ -188,6 +248,7 @@ function Account({ token }: { token: string }) {
       if (isFailure(error, "IDENTITY_RECENT_AUTHENTICATION_REQUIRED"))
         setNeedsReauth(true);
     },
+    onSettled: () => setPendingForm(null),
   });
   const [name, setName] = useState("");
   const [login, setLogin] = useState("");
@@ -203,14 +264,26 @@ function Account({ token }: { token: string }) {
   const person = data.person;
   const embedded = identity.surface !== "direct";
   return (
-    <main className="identity-page identity-wide">
-      <p>
-        <Link to="/">← Voltar para as conversas</Link>
-      </p>
-      <h1>Minha conta</h1>
-      {notice && <p role="status">{notice}</p>}
+    <div className="identity-page account-page">
+      <PageHeader
+        title="Minha conta"
+        description="Seu perfil, suas formas de acesso e a segurança da sua conta."
+        back={
+          <Link to="/">
+            <AccountIcon kind="back" />
+            Voltar para as conversas
+          </Link>
+        }
+      />
+      {notice && (
+        <p role="status" className="account-notice">
+          {notice}
+        </p>
+      )}
       {action.error && !needsReauth && (
-        <p role="alert">{identityMessage(action.error)}</p>
+        <p role="alert" className="account-notice account-notice-error">
+          {identityMessage(action.error)}
+        </p>
       )}
       {mergeOpen && mergeProvider && (
         <section
@@ -225,16 +298,16 @@ function Account({ token }: { token: string }) {
             existir.
           </p>
           <div className="identity-actions">
-            <button disabled={merge.isPending} onClick={() => merge.mutate()}>
+            <Button loading={merge.isPending} onClick={() => merge.mutate()}>
               Unificar
-            </button>
-            <button
-              className="identity-secondary"
+            </Button>
+            <Button
+              variant="secondary"
               disabled={merge.isPending}
               onClick={() => setMergeOpen(false)}
             >
               Agora não
-            </button>
+            </Button>
           </div>
           {merge.error && <p role="alert">{identityMessage(merge.error)}</p>}
         </section>
@@ -252,236 +325,347 @@ function Account({ token }: { token: string }) {
         />
       )}
 
-      <section
-        className="identity-card"
-        aria-labelledby="identity-profile-title"
-      >
-        <h2 id="identity-profile-title">Perfil</h2>
+      <SectionCard title="Perfil" className="account-profile">
+        <div className="account-person">
+          <span className="account-avatar" aria-hidden="true">
+            {person.displayName
+              .trim()
+              .split(/\s+/)
+              .slice(0, 2)
+              .map((part) => part[0])
+              .join("")
+              .toLocaleUpperCase("pt-BR")}
+          </span>
+          <div>
+            <h3>{person.displayName}</h3>
+            <p>
+              {person.owner
+                ? "Administrador do IA-MNS"
+                : "Seu perfil no IA-MNS"}
+            </p>
+          </div>
+        </div>
         <form
-          className="identity-inline"
+          className="account-profile-form"
           onSubmit={(event) => {
             event.preventDefault();
+            setPendingForm("profile");
             action.mutate(() => renameMe(token, name || person.displayName));
           }}
         >
-          <label htmlFor="identity-display-name">Nome</label>
-          <input
+          <TextField
+            label="Nome"
             id="identity-display-name"
             defaultValue={person.displayName}
             maxLength={120}
+            autoComplete="name"
+            required
             onChange={(event) => setName(event.target.value)}
           />
-          <button disabled={action.isPending}>Salvar nome</button>
+          <Button
+            type="submit"
+            disabled={action.isPending}
+            loading={action.isPending && pendingForm === "profile"}
+          >
+            Salvar nome
+          </Button>
         </form>
-        <p>
-          Capacidades:{" "}
-          {person.permissions.length
-            ? person.permissions.join(", ")
-            : "nenhuma ainda — fale com o administrador se precisar de acesso."}
-        </p>
-      </section>
+        <div className="account-permissions">
+          <span>Permissões de acesso</span>
+          <AccessSummary
+            access={person.access}
+            admin={person.permissions.includes("identity:admin")}
+          />
+        </div>
+      </SectionCard>
 
-      <section className="identity-card" aria-labelledby="identity-local-title">
-        <h2 id="identity-local-title">Acesso com usuário e senha</h2>
-        {person.local ? (
-          <p>
-            Usuário: <strong>{person.local.login}</strong>
-          </p>
-        ) : (
-          <p>
-            Crie um usuário e senha do IA-MNS como alternativa aos sistemas
-            vinculados.
-          </p>
-        )}
-        <form
-          className="identity-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            action.mutate(async () => {
-              await setPassword(
-                token,
-                password,
-                person.local ? undefined : login,
-              );
-              setPasswordValue("");
-            });
-          }}
+      <div className="account-grid">
+        <SectionCard
+          title="Acesso e segurança"
+          description="Gerencie sua senha e a verificação em duas etapas."
+          icon={<AccountIcon kind="security" />}
+          className="account-security"
         >
-          {!person.local && (
-            <>
-              <label htmlFor="identity-account-login">Usuário</label>
-              <input
+          <div className="account-section-label">
+            <h3>Acesso com usuário e senha</h3>
+            <StatusBadge tone={person.local ? "accent" : "neutral"}>
+              {person.local ? "Configurado" : "Não configurado"}
+            </StatusBadge>
+          </div>
+          {person.local ? (
+            <p className="account-description">
+              Usuário: <strong>{person.local.login}</strong>
+            </p>
+          ) : (
+            <p>
+              Crie um usuário e senha do IA-MNS como alternativa aos sistemas
+              vinculados.
+            </p>
+          )}
+          <form
+            className="account-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setPendingForm("password");
+              action.mutate(async () => {
+                await setPassword(
+                  token,
+                  password,
+                  person.local ? undefined : login,
+                );
+                setPasswordValue("");
+              });
+            }}
+          >
+            {!person.local && (
+              <TextField
+                label="Usuário"
                 id="identity-account-login"
                 autoComplete="username"
                 value={login}
                 onChange={(event) => setLogin(event.target.value)}
                 required
               />
-            </>
-          )}
-          <label htmlFor="identity-account-password">
-            {person.local ? "Nova senha" : "Senha"} (mínimo 12 caracteres)
-          </label>
-          <input
-            id="identity-account-password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPasswordValue(event.target.value)}
-            required
-          />
-          <button disabled={action.isPending}>
-            {person.local ? "Alterar senha" : "Criar acesso local"}
-          </button>
-        </form>
-        {person.local && !person.local.totpEnabled && !enrolling && (
-          <button onClick={() => setEnrolling(true)}>
-            Ativar verificação em duas etapas
-          </button>
-        )}
-        {person.local && enrolling && (
-          <TotpSetup
-            token={token}
-            onDone={(next, expiresIn) => {
-              identity.accept(next, expiresIn);
-              setEnrolling(false);
-              refresh();
-            }}
-          />
-        )}
-        {person.local?.totpEnabled && (
-          <div className="identity-actions">
-            <span>
-              Verificação em duas etapas ativa ·{" "}
-              {person.local.recoveryCodesRemaining} códigos de recuperação
-              restantes
-            </span>
-            <button
-              onClick={() =>
-                action.mutate(async () =>
-                  setCodes(
-                    (await regenerateRecoveryCodes(token)).recoveryCodes,
-                  ),
-                )
-              }
-            >
-              Gerar novos códigos
-            </button>
-            {!person.owner && (
-              <button
-                className="identity-secondary"
-                onClick={() => action.mutate(() => disableTotp(token))}
+            )}
+            <TextField
+              label={`${person.local ? "Nova senha" : "Senha"} (mínimo 12 caracteres)`}
+              id="identity-account-password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPasswordValue(event.target.value)}
+              required
+            />
+            <div className="account-form-actions">
+              <Button
+                type="submit"
+                disabled={action.isPending}
+                loading={action.isPending && pendingForm === "password"}
               >
-                Desativar
-              </button>
+                {person.local ? "Alterar senha" : "Criar acesso local"}
+              </Button>
+            </div>
+          </form>
+          <div className="account-security-factor">
+            <div className="account-section-label">
+              <h3>Verificação em duas etapas</h3>
+              <StatusBadge
+                tone={person.local?.totpEnabled ? "accent" : "neutral"}
+              >
+                {person.local?.totpEnabled ? "Ativa" : "Não ativada"}
+              </StatusBadge>
+            </div>
+            {!person.local && (
+              <p className="account-description">
+                Crie um acesso com usuário e senha para ativar um aplicativo
+                autenticador no IA-MNS.
+              </p>
+            )}
+            {person.local && !person.local.totpEnabled && !enrolling && (
+              <>
+                <p className="account-description">
+                  Adicione uma camada de proteção com um aplicativo
+                  autenticador.
+                </p>
+                <Button variant="secondary" onClick={() => setEnrolling(true)}>
+                  Ativar verificação em duas etapas
+                </Button>
+              </>
+            )}
+            {person.local && enrolling && (
+              <TotpSetup
+                token={token}
+                onDone={(next, expiresIn) => {
+                  identity.accept(next, expiresIn);
+                  setEnrolling(false);
+                  refresh();
+                }}
+              />
+            )}
+            {person.local?.totpEnabled && (
+              <>
+                <p className="account-description">
+                  {person.local.recoveryCodesRemaining} códigos de recuperação
+                  restantes. Guarde-os em um lugar seguro.
+                </p>
+                <div className="account-form-actions">
+                  <Button
+                    variant="secondary"
+                    disabled={action.isPending}
+                    onClick={() =>
+                      action.mutate(async () =>
+                        setCodes(
+                          (await regenerateRecoveryCodes(token)).recoveryCodes,
+                        ),
+                      )
+                    }
+                  >
+                    Gerar novos códigos
+                  </Button>
+                  {!person.owner && (
+                    <Button
+                      variant="ghost"
+                      disabled={action.isPending}
+                      onClick={() => action.mutate(() => disableTotp(token))}
+                    >
+                      Desativar
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
+            {data.rememberedDevices > 0 && (
+              <div className="account-remembered">
+                <p className="account-description">
+                  {data.rememberedDevices === 1
+                    ? "1 navegador não pede o código ao entrar."
+                    : `${data.rememberedDevices} navegadores não pedem o código ao entrar.`}
+                </p>
+                <Button
+                  variant="ghost"
+                  disabled={action.isPending}
+                  onClick={() =>
+                    action.mutate(() => forgetRememberedDevices(token))
+                  }
+                >
+                  Voltar a pedir o código em todos
+                </Button>
+              </div>
+            )}
+            {codes && (
+              <ul
+                className="identity-codes"
+                aria-label="Novos códigos de recuperação"
+              >
+                {codes.map((item) => (
+                  <li key={item}>
+                    <code>{item}</code>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
-        )}
-        {data.rememberedDevices > 0 && (
-          <div className="identity-actions">
-            <span>
-              {data.rememberedDevices === 1
-                ? "1 navegador não pede o código ao entrar."
-                : `${data.rememberedDevices} navegadores não pedem o código ao entrar.`}
-            </span>
-            <button
-              className="identity-secondary"
-              disabled={action.isPending}
-              onClick={() =>
-                action.mutate(() => forgetRememberedDevices(token))
-              }
-            >
-              Voltar a pedir o código em todos
-            </button>
-          </div>
-        )}
-        {codes && (
-          <ul
-            className="identity-codes"
-            aria-label="Novos códigos de recuperação"
+        </SectionCard>
+
+        <div className="account-connections">
+          <SectionCard
+            title="Sistemas vinculados"
+            description="Entre com as contas dos sistemas que você já utiliza."
+            icon={<AccountIcon kind="link" />}
           >
-            {codes.map((item) => (
-              <li key={item}>
-                <code>{item}</code>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="identity-card" aria-labelledby="identity-links-title">
-        <h2 id="identity-links-title">Sistemas vinculados</h2>
-        {!person.links.length && <p>Nenhum sistema vinculado.</p>}
-        <ul className="identity-list">
-          {person.links.map((link) => (
-            <li key={link.id}>
-              <span>
-                <strong>{providerName[link.provider]}</strong>{" "}
-                {link.label ? `· ${link.label}` : ""} · vinculado em{" "}
-                {date(link.linkedAt)}
-              </span>
-              <button
-                className="identity-secondary"
-                disabled={action.isPending}
-                onClick={() => action.mutate(() => unlink(token, link.id))}
-              >
-                Remover vínculo
-              </button>
-            </li>
-          ))}
-        </ul>
-        {data.linkableProviders.length > 0 &&
-          (embedded ? (
-            <p className="identity-hint">
-              Para vincular outro sistema, abra o IA-MNS pelo seu endereço
-              próprio.
-            </p>
-          ) : (
-            <div className="identity-actions">
-              {data.linkableProviders.map((provider) => (
-                <ProviderButton
-                  key={provider}
-                  provider={provider}
-                  intent="link"
-                  token={token}
-                />
+            {!person.links.length && (
+              <p className="account-empty">Nenhum sistema vinculado.</p>
+            )}
+            <ul className="account-list">
+              {person.links.map((link) => (
+                <li key={link.id}>
+                  <div className="account-list-copy">
+                    <p>
+                      <strong>{providerName[link.provider]}</strong>{" "}
+                      {link.label ? `· ${link.label}` : ""}
+                    </p>
+                    <p className="account-description">
+                      Vinculado em {date(link.linkedAt)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    disabled={action.isPending}
+                    onClick={() => action.mutate(() => unlink(token, link.id))}
+                  >
+                    Remover vínculo
+                  </Button>
+                </li>
               ))}
-            </div>
-          ))}
-      </section>
+            </ul>
+            {data.linkableProviders.length > 0 &&
+              (embedded ? (
+                <p className="account-description account-footnote">
+                  Para vincular outro sistema, abra o IA-MNS pelo seu endereço
+                  próprio.
+                </p>
+              ) : (
+                <div className="identity-actions">
+                  {data.linkableProviders.map((provider) => (
+                    <ProviderButton
+                      key={provider}
+                      provider={provider}
+                      intent="link"
+                      token={token}
+                    />
+                  ))}
+                </div>
+              ))}
+          </SectionCard>
 
-      <section
-        className="identity-card"
-        aria-labelledby="identity-sessions-title"
+          <SectionCard
+            title="WhatsApp"
+            description="Converse com o IA-MNS também pelo celular."
+            icon={<AccountIcon kind="phone" />}
+          >
+            {person.whatsapp ? (
+              <p>
+                Você pode conversar com o IA-MNS pelo WhatsApp a partir do
+                número <strong>{person.whatsapp.number}</strong>.
+              </p>
+            ) : (
+              <p className="account-empty">
+                Nenhum número de WhatsApp cadastrado.
+              </p>
+            )}
+            <p className="account-description account-footnote">
+              Somente o administrador cadastra, altera ou remove este número.
+            </p>
+          </SectionCard>
+        </div>
+      </div>
+
+      <SectionCard
+        title="Sessões ativas"
+        description="Veja onde sua conta está conectada e encerre os acessos que não utiliza."
+        icon={<AccountIcon kind="sessions" />}
       >
-        <h2 id="identity-sessions-title">Sessões ativas</h2>
-        <ul className="identity-list">
+        <ul className="account-list account-session-list">
           {person.sessions.map((item) => (
             <li key={item.id}>
-              <span>
-                {surfaceName[item.surface]} · desde {date(item.createdAt)}{" "}
-                {item.assurance === "mfa" ? "· duas etapas" : ""}
-                {item.current ? " · esta sessão" : ""}
-              </span>
+              <div className="account-session-icon" aria-hidden="true">
+                <AccountIcon kind="sessions" />
+              </div>
+              <div className="account-list-copy">
+                <p>
+                  <strong>{surfaceName[item.surface]}</strong>
+                </p>
+                <p className="account-description">
+                  Desde {date(item.createdAt)}
+                  {item.assurance === "mfa" ? " · duas etapas" : ""}
+                </p>
+              </div>
+              {item.current && (
+                <StatusBadge tone="accent">Esta sessão</StatusBadge>
+              )}
               {!item.current && (
-                <button
-                  className="identity-secondary"
+                <Button
+                  variant="ghost"
+                  disabled={action.isPending}
+                  aria-label={`Encerrar sessão: ${surfaceName[item.surface]}, ${date(item.createdAt)}`}
                   onClick={() =>
                     action.mutate(() => revokeSession(token, item.id))
                   }
                 >
                   Encerrar
-                </button>
+                </Button>
               )}
             </li>
           ))}
         </ul>
         {identity.surface === "direct" && (
-          <button onClick={() => void identity.signOut()}>
-            Sair desta sessão
-          </button>
+          <div className="account-session-footer">
+            <Button variant="danger" onClick={() => void identity.signOut()}>
+              Sair desta sessão
+            </Button>
+          </div>
         )}
-      </section>
-    </main>
+      </SectionCard>
+    </div>
   );
 }

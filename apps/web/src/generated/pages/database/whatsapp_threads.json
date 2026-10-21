@@ -1,0 +1,62 @@
+{
+  "kind": "database",
+  "name": "whatsapp_threads",
+  "description": "Per-Person WhatsApp channel state: the agent conversation that new messages continue and the sales source the person chose with a command.",
+  "owner": "whatsapp",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created at the first processed message; the conversation pointer changes when the person asks for a new conversation, after 12 hours without activity, or when the conversation was archived or deleted. Kept while the Person exists; no foreign key across modules.",
+  "columns": [
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person the state belongs to.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "conversation_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Agent conversation that the next message continues, if still owned, active and recent.",
+      "Null meaning": "The next message starts a new conversation.",
+      "Unit": "—"
+    },
+    {
+      "Column": "source",
+      "PostgreSQL type": "character varying(20)",
+      "Nullable": "no",
+      "Default": "'sankhya'::character varying",
+      "Classification": "INTERNAL",
+      "Meaning": "Sales source chosen with the /fonte command: sankhya, vrmaster or all.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Last change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "whatsapp_threads_pkey",
+      "Physical definition": "PRIMARY KEY (person_id)",
+      "Purpose": "One channel state per Person."
+    },
+    {
+      "Object": "whatsapp_threads_source_check",
+      "Physical definition": "CHECK (((source)::text = ANY ((ARRAY['sankhya'::character varying, 'vrmaster'::character varying, 'all'::character varying])::text[])))",
+      "Purpose": "Only the implemented source selections."
+    }
+  ]
+}

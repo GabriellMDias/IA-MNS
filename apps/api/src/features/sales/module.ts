@@ -21,6 +21,8 @@ import {
 import { createOpenAiModel } from "../../ai/openai.js";
 import { createModelInterpreter } from "./interpreter.js";
 import { createSalesReaders } from "./readers.js";
+import { salesPermission } from "./access.js";
+import type { AccessResolver } from "../../access.js";
 
 const respond = errorResponder({ ...coreErrors, ...salesErrors });
 export function providersConfigured(config: ServerConfig) {
@@ -35,6 +37,8 @@ export function providersConfigured(config: ServerConfig) {
 export function createSalesModule(
   injected?:
     SalesChat | ((resources: ModuleResources) => SalesChat | undefined),
+  /** Current access from identity; without it token scopes apply unrestricted. */
+  accessFor?: (resources: ModuleResources) => AccessResolver | undefined,
 ): ApiModule {
   return {
     name: "sales",
@@ -69,6 +73,7 @@ export function createSalesModule(
             )
           : undefined);
       const actors = new WeakMap<FastifyRequest, SalesActor>();
+      const access = accessFor?.(resources);
       return {
         name: "sales",
         register(app) {
@@ -110,9 +115,18 @@ export function createSalesModule(
                 await reply.code(failure.status).send(failure.body);
                 return;
               }
-              const actor = {
+              // The legacy contract reads only the Sankhya source, under the
+              // scope identity computes now for its permission.
+              const current = access ? await access(principal.id) : undefined;
+              const permission = salesPermission("sankhya");
+              const scope = current?.scopes.get(permission);
+              const actor: SalesActor = {
                 id: principal.id,
-                canReadSales: principal.scopes.has("sales:read"),
+                canReadSales:
+                  current === undefined
+                    ? principal.scopes.has(permission)
+                    : current !== null && scope !== undefined,
+                ...(scope ? { restriction: scope } : {}),
               };
               try {
                 authorizeSales(actor);

@@ -67,7 +67,11 @@ it("enforces HTTP derived-reply revocation, attachment contracts and metadata-on
       conversation: model,
       traceLevel: "content",
     });
-    let permissions = new Set(["sales:read"]);
+    let permissions = new Set([
+      "sales:read",
+      "sales_sankhya:read",
+      "sales_vrmaster:read",
+    ]);
     const module = createAgentModule(() => [], agent).activate({
       config: parseServerConfig({ ORION_ENV: "test" }),
       verifier: {
@@ -193,7 +197,11 @@ it("enforces HTTP derived-reply revocation, attachment contracts and metadata-on
           })
         ).statusCode,
       ).toBe(409);
-      permissions = new Set(["sales:read"]);
+      permissions = new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+      ]);
       const observe = vi.fn();
       await agent.submit(
         { id: "alice", permissions },

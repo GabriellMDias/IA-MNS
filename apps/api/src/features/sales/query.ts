@@ -1,5 +1,7 @@
+import type { DataScope } from "../../access.js";
 import type { SalesQuery } from "./domain.js";
 import type { SalesProductScope } from "./product-scope.js";
+import { sankhyaRestriction } from "./access.js";
 import { productPhrase, productPhrasePattern } from "./product-match.js";
 
 // Bound literal phrases prevent a named product from matching another word's
@@ -187,7 +189,7 @@ WITH ELIGIBLE_CONTROLS AS (
   WHERE TIPMOV = 'V'
 )`;
 
-export function queryBindings(query: SalesQuery) {
+export function queryBindings(query: SalesQuery, restriction?: DataScope) {
   const search =
     query.productSearch === null ? null : productPhrase(query.productSearch);
   return {
@@ -195,12 +197,14 @@ export function queryBindings(query: SalesQuery) {
     endDate: query.endDate,
     productSearch: search,
     productPattern: search === null ? null : productPhrasePattern(search),
+    ...sankhyaRestriction(restriction)?.binds,
   };
 }
 
 export function aggregateSql(
   query: SalesQuery,
   products?: SalesProductScope,
+  restriction?: DataScope,
 ): string {
   // These expressions come only from validated enums, never model/user SQL.
   const period =
@@ -222,7 +226,7 @@ export function aggregateSql(
     quantity: "QTDNEG",
     weight: "PESOTOTAL",
   }[query.metric];
-  return `${salesCte(products)}
+  return `${salesCte(products, restriction)}
     SELECT ${period} AS PERIOD, ${product} AS PRODUCT, ${unit} AS UNIT,
       TO_CHAR(NVL(SUM(${measure}), 0), 'FM99999999999999999999999999999999999990D000000000', 'NLS_NUMERIC_CHARACTERS=''.,''') AS VALUE,
       COUNT(CASE WHEN PESOPROD IS NULL OR PESOPROD <= 0 THEN 1 END) AS MISSING_WEIGHT
@@ -234,23 +238,37 @@ export const matchingProductsSql = `${referenceSalesCte}
   SELECT DISTINCT TO_CHAR(CODPROD) AS CODE, PRODUTO AS DESCRIPTION
   FROM FILTERED ORDER BY CODE FETCH FIRST 101 ROWS ONLY`;
 
-function salesCte(products?: SalesProductScope): string {
-  if (!products) return referenceSalesCte;
-  if (products.source !== "sankhya") throw new Error("Product source mismatch");
+function salesCte(
+  products?: SalesProductScope,
+  restriction?: DataScope,
+): string {
+  const access = sankhyaRestriction(restriction);
+  if (!products && !access) return referenceSalesCte;
+  if (products && products.source !== "sankhya")
+    throw new Error("Product source mismatch");
   if (referenceSalesCte.split(productDescriptionPredicate).length !== 3)
     throw new Error("Sales reference product boundaries changed");
-  // Both eligible lot controls and final sale rows use the same membership.
-  // Preserve every supplied join and DISTINCT column in the reference.
+  // Both eligible lot controls and final sale rows use the same membership
+  // and the same data restriction; filtering rows keeps every supplied join
+  // and DISTINCT column of the reference, so admitted rows count as before.
   return referenceSalesCte.replaceAll(
     productDescriptionPredicate,
-    `${productDescriptionPredicate} AND PRO.CODPROD IN (${products.keysSql})`,
+    [
+      productDescriptionPredicate,
+      ...(products ? [`PRO.CODPROD IN (${products.keysSql})`] : []),
+      ...(access ? [access.sql] : []),
+    ].join(" AND "),
   );
 }
 
 export function semanticMatchingProductsSql(
   products?: SalesProductScope,
+  restriction?: DataScope,
 ): string {
-  return products
-    ? matchingProductsSql.replace(referenceSalesCte, salesCte(products))
+  return products || sankhyaRestriction(restriction)
+    ? matchingProductsSql.replace(
+        referenceSalesCte,
+        salesCte(products, restriction),
+      )
     : matchingProductsSql;
 }

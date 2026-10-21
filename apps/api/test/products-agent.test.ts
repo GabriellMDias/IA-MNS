@@ -254,12 +254,18 @@ it("composes both resolvers through authenticated conversation HTTP with permiss
         );
         return detail.turns.at(-1)!;
       };
-      expect((await submit("vrmaster")).failureCode).toBe(
-        "AGENT_ACCESS_DENIED",
-      );
+      // A request the person may not make is answered with the missing
+      // permission's identification, without reading any registration.
+      const denied = await submit("vrmaster");
+      expect(denied.failureCode).toBeNull();
+      expect(denied.reply?.message).toContain("VRM-PRD-01");
       expect(vr.find).not.toHaveBeenCalled();
       expect(sk.find).not.toHaveBeenCalled();
-      permissions = new Set(["products:read"]);
+      permissions = new Set([
+        "products:read",
+        "products_sankhya:read",
+        "products_vrmaster:read",
+      ]);
       const requestId = randomUUID();
       expect((await submit("vrmaster", requestId)).reply?.result).toMatchObject(
         { kind: "products", source: "vrmaster", total: 1 },
@@ -274,11 +280,15 @@ it("composes both resolvers through authenticated conversation HTTP with permiss
       });
       expect(sk.find).toHaveBeenCalledOnce();
       const salesMessage = "Vendas desses produtos em setembro de 2026.";
-      expect(
-        (await submit("vrmaster", randomUUID(), salesMessage)).failureCode,
-      ).toBe("AGENT_ACCESS_DENIED");
+      const salesRefused = await submit("vrmaster", randomUUID(), salesMessage);
+      expect(salesRefused.failureCode).toBeNull();
+      expect(salesRefused.reply?.message).toContain("VRM-VEN-01");
       expect(salesRead).not.toHaveBeenCalled();
-      permissions = new Set(["sales:read"]);
+      permissions = new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+      ]);
       // Product history remains protected after removing products permission.
       expect(
         (
@@ -297,11 +307,23 @@ it("composes both resolvers through authenticated conversation HTTP with permiss
           payload: {},
         })
       ).json<{ id: string }>().id;
-      expect(
-        (await submit("vrmaster", randomUUID(), salesMessage)).failureCode,
-      ).toBe("AGENT_ACCESS_DENIED");
+      // A selection of products needs the registration permission too.
+      const productsRefused = await submit(
+        "vrmaster",
+        randomUUID(),
+        salesMessage,
+      );
+      expect(productsRefused.failureCode).toBeNull();
+      expect(productsRefused.reply?.message).toContain("VRM-PRD-01");
       expect(salesRead).not.toHaveBeenCalled();
-      permissions = new Set(["sales:read", "products:read"]);
+      permissions = new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+        "products:read",
+        "products_sankhya:read",
+        "products_vrmaster:read",
+      ]);
       targetId = id;
       for (const erp of ["vrmaster", "sankhya"] as const) {
         expect(
@@ -328,7 +350,11 @@ it("composes both resolvers through authenticated conversation HTTP with permiss
         (await submit("vrmaster", semanticRequestId, semanticMessage)).reply
           ?.kind,
       ).toBe("answer");
-      permissions = new Set(["sales:read"]);
+      permissions = new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+      ]);
       expect(
         (
           await app.inject({
@@ -353,7 +379,14 @@ it("composes both resolvers through authenticated conversation HTTP with permiss
         ).statusCode,
       ).toBe(403);
       expect(salesRead).toHaveBeenCalledTimes(3);
-      permissions = new Set(["sales:read", "products:read"]);
+      permissions = new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+        "products:read",
+        "products_sankhya:read",
+        "products_vrmaster:read",
+      ]);
       targetId = id;
       expect((await submit("all")).reply?.kind).toBe("clarification");
       expect(vr.find).toHaveBeenCalledTimes(2);

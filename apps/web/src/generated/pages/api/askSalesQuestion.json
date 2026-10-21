@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "askSalesQuestion",
   "summary": "",
-  "description": "Interprets a Portuguese sales question and executes a fixed read-only sales query. Context is actor-owned, in memory, expires after 30 minutes idle and is limited to 12 questions. Local development access is explicitly restricted to loopback. Requires sales:read otherwise.",
+  "description": "Interprets a Portuguese sales question and executes a fixed read-only sales query against the Sankhya source. Context is actor-owned, in memory, expires after 30 minutes idle and is limited to 12 questions. Local development access is explicitly restricted to loopback. Requires sales_sankhya:read (SNK-VEN-01) otherwise; a restricted grant limits the figures to its data restriction.",
   "security": [{ "bearerAuth": [] }],
   "components": {
     "securitySchemes": {
@@ -255,6 +255,45 @@
                           }
                         },
                         "additionalProperties": false
+                      },
+                      "access": {
+                        "type": "object",
+                        "required": ["rules"],
+                        "properties": {
+                          "rules": {
+                            "type": "array",
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": ["dimension", "values"],
+                                "properties": {
+                                  "dimension": {
+                                    "type": "string",
+                                    "pattern": "^[a-z][a-z_]{1,30}$"
+                                  },
+                                  "values": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 40
+                                    },
+                                    "minItems": 1,
+                                    "maxItems": 100
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "minItems": 1,
+                              "maxItems": 12
+                            },
+                            "minItems": 1,
+                            "maxItems": 64
+                          }
+                        },
+                        "additionalProperties": false,
+                        "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                       }
                     },
                     "additionalProperties": false
@@ -460,6 +499,45 @@
                       }
                     },
                     "additionalProperties": false
+                  },
+                  "access": {
+                    "type": "object",
+                    "required": ["rules"],
+                    "properties": {
+                      "rules": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["dimension", "values"],
+                            "properties": {
+                              "dimension": {
+                                "type": "string",
+                                "pattern": "^[a-z][a-z_]{1,30}$"
+                              },
+                              "values": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 40
+                                },
+                                "minItems": 1,
+                                "maxItems": 100
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "minItems": 1,
+                          "maxItems": 12
+                        },
+                        "minItems": 1,
+                        "maxItems": 64
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                   }
                 },
                 "additionalProperties": false

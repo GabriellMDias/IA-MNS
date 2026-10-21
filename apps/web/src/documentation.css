@@ -562,6 +562,18 @@
   gap: 1rem;
   font-size: 0.84rem;
 }
+
+.docs-sql-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-block: 1rem;
+}
+
+.docs-sql-actions p {
+  margin: 0;
+}
 .docs-pagination {
   display: flex;
   align-items: center;

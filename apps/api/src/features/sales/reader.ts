@@ -5,6 +5,7 @@ import {
   type SalesQuery,
   type SalesRow,
 } from "./domain.js";
+import type { DataScope } from "../../access.js";
 import type { SalesProductScope } from "./product-scope.js";
 import { SalesFailure } from "./errors.js";
 import { supportsMetric, type SalesSource } from "./sources.js";
@@ -17,7 +18,8 @@ export type SalesReadResult = {
 /**
  * The read port of one sales source. Each adapter owns its database, its
  * reviewed fixed SQL and its read-only transaction; the application chooses
- * which adapters run and never combines their figures.
+ * which adapters run and never combines their figures. A restricted scope
+ * admits only the rows its rules admit, enforced in the adapter's SQL.
  */
 export interface SalesReader {
   read(
@@ -25,6 +27,7 @@ export interface SalesReader {
     query: SalesQuery,
     signal: AbortSignal,
     products?: SalesProductScope,
+    restriction?: DataScope,
   ): Promise<SalesReadResult>;
   /** A bounded analytical plan; all measures read one ERP snapshot. */
   readMany?(
@@ -32,6 +35,7 @@ export interface SalesReader {
     queries: readonly SalesQuery[],
     signal: AbortSignal,
     products?: SalesProductScope,
+    restriction?: DataScope,
   ): Promise<SalesReadResult[]>;
   close(this: void): Promise<void>;
 }

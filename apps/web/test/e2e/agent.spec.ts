@@ -1,6 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { expectNoStoredUserData } from "./storage.ts";
+import type {
+  Attachment,
+  PresentationPreferences,
+} from "../../src/features/agent/api.js";
 const id = "10000000-0000-4000-8000-000000000001";
 const result = {
   query: {
@@ -120,6 +124,12 @@ async function fixture(
   let exists = false;
   let polls = 0;
   let requests = 0;
+  let attachments: Attachment[] = [];
+  let preferences: PresentationPreferences = {
+    language: "auto",
+    detail: "auto",
+    format: "auto",
+  };
   const conversation = {
     id,
     title: "Conversa de teste",
@@ -191,6 +201,30 @@ async function fixture(
           nextCursor: null,
         },
       });
+      return;
+    }
+    if (path.endsWith("/preferences") && method === "PATCH") {
+      preferences = request.postDataJSON() as PresentationPreferences;
+      await route.fulfill({ json: preferences });
+      return;
+    }
+    if (path.endsWith("/attachments") && method === "POST") {
+      const body = request.postDataJSON() as Attachment;
+      const attachment = {
+        id: body.id,
+        name: body.name,
+        purpose: body.purpose,
+        mediaType: body.mediaType,
+        source: body.source,
+      };
+      attachments.push(attachment);
+      await route.fulfill({ status: 201, json: attachment });
+      return;
+    }
+    if (path.includes("/attachments/") && method === "DELETE") {
+      attachments = attachments.filter((item) => !path.endsWith(item.id));
+      turns.splice(0);
+      await route.fulfill({ json: { deleted: true } });
       return;
     }
     if (method === "PATCH") {
@@ -344,11 +378,221 @@ async function fixture(
           };
       }
     }
-    await route.fulfill({ json: { conversation, turns, olderThan: null } });
+    await route.fulfill({
+      json: { conversation, turns, attachments, preferences, olderThan: null },
+    });
   });
   return { turns, requests: () => requests, sources: () => sources };
 }
 const webUrl = () => process.env.ORION_E2E_WEB_URL!;
+
+test("conversation materials keep explicit upload consent and preferences in a responsive panel", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await fixture(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(webUrl());
+  const plus = page.getByRole("button", {
+    name: "Anexos e preferências",
+    exact: true,
+  });
+  const composer = page.locator(".agent-composer");
+  await expect(
+    composer.getByRole("button", {
+      name: "Anexos e preferências",
+      exact: true,
+    }),
+  ).toBeVisible();
+  const closedBox = (await composer.boundingBox())!;
+  await plus.focus();
+  await page.keyboard.press("Enter");
+  const popup = page.getByRole("dialog", {
+    name: "Adicionar à conversa",
+    exact: true,
+  });
+  await expect(popup).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /^Adicionar arquivo/ }),
+  ).toBeFocused();
+  const popupBox = (await popup.boundingBox())!;
+  expect(popupBox.y + popupBox.height).toBeLessThan(closedBox.y);
+  expect((await composer.boundingBox())!.y).toBe(closedBox.y);
+  const files = page.getByRole("region", { name: "Arquivos da conversa" });
+  const settings = page.getByRole("region", {
+    name: "Preferências desta conversa",
+  });
+  await expect(page.getByLabel("Sua mensagem")).toBeInViewport();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: "test-results/materials-desktop.png" });
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "dark";
+  });
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: "test-results/materials-desktop-dark.png" });
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "light";
+  });
+  await page.keyboard.press("Escape");
+  await expect(popup).toBeHidden();
+  await expect(plus).toBeFocused();
+  await plus.click();
+  const pickerOpened = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: /^Adicionar arquivo/ }).click();
+  const picker = await pickerOpened;
+  await expect(files).toBeVisible();
+  await expect(settings).toBeHidden();
+
+  const chooser = page.getByLabel("Arquivo", { exact: true });
+  await picker.setFiles({
+    name: "large.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.alloc(48001),
+  });
+  await expect(chooser).toHaveAttribute("aria-invalid", "true");
+  await expect(
+    page.getByText("O arquivo de texto deve ter até 48 KB.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Adicionar à conversa" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Descartar seleção" }).click();
+  await expect(page.getByLabel("Finalidade da análise")).toHaveCount(0);
+  await expect(chooser).toHaveValue("");
+
+  let uploads = 0;
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      new URL(request.url()).pathname.endsWith("/attachments")
+    )
+      uploads++;
+  });
+  await chooser.setInputFiles({
+    name: "relatorio-operacional-de-exemplo-para-analise.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("Synthetic operational note."),
+  });
+  await page
+    .getByLabel("Finalidade da análise")
+    .fill("Resumir os pontos principais");
+  await page.getByLabel("Sua mensagem").click();
+  await page.getByLabel("Sua mensagem").fill("Rascunho da próxima pergunta");
+  await expect(
+    page.getByRole("dialog", { name: "Anexos da conversa", exact: true }),
+  ).toBeHidden();
+  await plus.click();
+  await page.getByRole("button", { name: /^Continuar anexo/ }).click();
+  await page.getByLabel("Finalidade da análise").press("Enter");
+  await expect(page.getByLabel("Sua mensagem")).toHaveValue(
+    "Rascunho da próxima pergunta",
+  );
+  await expect(page.getByRole("article")).toHaveCount(0);
+  expect(uploads).toBe(0);
+  await expect(
+    page.getByRole("button", { name: "Adicionar à conversa" }),
+  ).toBeDisabled();
+  await page
+    .getByRole("checkbox", { name: /Confirmo que este arquivo/ })
+    .check();
+  await chooser.setInputFiles({
+    name: "relatorio-operacional-de-exemplo-para-analise.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("Updated synthetic operational note."),
+  });
+  await expect(
+    page.getByRole("checkbox", { name: /Confirmo que este arquivo/ }),
+  ).not.toBeChecked();
+  await expect(
+    page.getByRole("button", { name: "Adicionar à conversa" }),
+  ).toBeDisabled();
+  await page
+    .getByRole("checkbox", { name: /Confirmo que este arquivo/ })
+    .check();
+  await page.getByRole("button", { name: "Adicionar à conversa" }).click();
+  const list = page.getByRole("list", { name: "Anexos desta conversa" });
+  await expect(list.getByRole("listitem")).toHaveCount(1);
+  expect(uploads).toBe(1);
+  await expect(list).toContainText("MNS (Sankhya)");
+  await page
+    .getByRole("button", { name: "Voltar às opções de anexos e preferências" })
+    .click();
+  await page.getByRole("button", { name: /^Preferências da conversa/ }).click();
+  await expect(settings).toBeVisible();
+  await page
+    .getByRole("combobox", { name: "Idioma", exact: true })
+    .selectOption("pt-BR");
+  await page
+    .getByRole("combobox", { name: "Detalhamento", exact: true })
+    .selectOption("concise");
+  await page.getByRole("button", { name: "Salvar preferências" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Preferências salvas" }),
+  ).toBeVisible();
+  await page.reload();
+  await plus.click();
+  await page.getByRole("button", { name: /^Preferências da conversa/ }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Idioma", exact: true }),
+  ).toHaveValue("pt-BR");
+  await page
+    .getByRole("button", { name: "Fechar anexos e preferências" })
+    .click();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const theme of ["light", "dark"] as const) {
+    await page.evaluate((value) => {
+      document.documentElement.dataset.theme = value;
+    }, theme);
+    await plus.click();
+    const mobilePopup = page.getByRole("dialog", {
+      name: "Adicionar à conversa",
+      exact: true,
+    });
+    await expect(mobilePopup).toBeInViewport();
+    const mobileBox = (await mobilePopup.boundingBox())!;
+    expect(mobileBox.x).toBeGreaterThanOrEqual(12);
+    expect(mobileBox.x + mobileBox.width).toBeLessThanOrEqual(390 - 12);
+    await expect(page.getByLabel("Sua mensagem")).toBeInViewport();
+    const selectorBox = (await page
+      .getByRole("combobox", { name: "Fonte", exact: true })
+      .boundingBox())!;
+    const inputBox = (await page.getByLabel("Sua mensagem").boundingBox())!;
+    expect(inputBox.y - (selectorBox.y + selectorBox.height)).toBeLessThan(40);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.screenshot({
+      path: `test-results/materials-mobile-${theme}.png`,
+    });
+    await page.keyboard.press("Escape");
+    await expect(plus).toBeFocused();
+  }
+  await plus.click();
+  await page.getByRole("button", { name: /^Preferências da conversa/ }).click();
+  await page
+    .getByRole("combobox", { name: "Idioma", exact: true })
+    .scrollIntoViewIfNeeded();
+  await expect(
+    page.getByRole("combobox", { name: "Formato", exact: true }),
+  ).toBeInViewport();
+  await expect(page.getByLabel("Sua mensagem")).toBeInViewport();
+  await page.screenshot({
+    path: "test-results/materials-mobile-preferences.png",
+  });
+  await page
+    .getByRole("button", { name: "Voltar às opções de anexos e preferências" })
+    .click();
+  await page.getByRole("button", { name: /^Anexos desta conversa/ }).click();
+  await page
+    .getByRole("button", { name: /^Remover relatorio-operacional/ })
+    .click();
+  await expect(list).toHaveCount(0);
+  await expectNoStoredUserData(page);
+});
 test("a prose follow-up preserves evidence without duplicating result cards across reload", async ({
   page,
 }) => {

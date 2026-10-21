@@ -6,7 +6,7 @@ This page owns Sankhya product semantics, discovery evidence, adapter difference
 
 ## Availability and scope
 
-The adapter identifies physical `TGFPRO` registrations through the existing `products` capability and `products:read` permission. Choose **MNS (Sankhya)** in the source selector. When both adapters are configured, **Tudo** asks for one ERP: product codes, selections and pending choices remain independent. It does not calculate sales, quantities, conversion factors, prices, stock, legal certificate validity or availability by company.
+The adapter identifies physical `TGFPRO` registrations through the existing `products` capability and the SNK-PRD-01 permission (`products_sankhya:read`). Choose **MNS (Sankhya)** in the source selector. When both adapters are configured, **Tudo** asks for one ERP: product codes, selections and pending choices remain independent. It does not calculate sales, quantities, conversion factors, prices, stock, legal certificate validity or availability by company.
 
 The configured privileged account is authorized for local discovery only. The runtime refuses ERP object owners and accounts with privileges beyond CREATE SESSION and object SELECT, before executing product queries. The subsequent [owner-authorized provisioning](../project/runtime-access-verification.md) granted the existing `IA_MNS_RO` account its minimum access and verified Runtime execution; PH-08 retains business confirmations. No ERP grants, writes, migrations or procedures were executed. The later [ERP access decision](../security/erp-database-access.md) separates administrative Discovery credential delivery from runtime; actual Runtime grant verification is recorded separately.
 

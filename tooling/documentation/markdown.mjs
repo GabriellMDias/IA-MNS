@@ -111,6 +111,9 @@ export function rewriteLink(href, source, available, sourceBase) {
 
 export function renderDocument(source, text, available, sourceBase) {
   const markdown = new MarkdownIt({ html: false, linkify: false });
+  const renderFence = markdown.renderer.rules.fence;
+  markdown.renderer.rules.fence = (...args) =>
+    renderFence(...args).replace("<pre>", '<pre tabindex="0">');
   const safeLink = markdown.validateLink.bind(markdown);
   markdown.validateLink = (url) => {
     if (
@@ -121,7 +124,8 @@ export function renderDocument(source, text, available, sourceBase) {
       throw new Error(`Unsafe documentation URL in ${source}: ${url}`);
     return true;
   };
-  const tokens = markdown.parse(text.replace(/<!--[\s\S]*?-->/g, ""), {});
+  // A separator prevents fragments around a removed comment forming new markup.
+  const tokens = markdown.parse(text.replace(/<!--[\s\S]*?-->/g, " "), {});
   const slugger = new GithubSlugger();
   const headings = [];
   const sections = [];

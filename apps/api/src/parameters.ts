@@ -19,19 +19,20 @@ export type ParameterValues = {
   "ai.model": string;
   /** How much of each AI turn is traced (see `ai/trace.ts`). */
   "ai.traceLevel": AiTraceLevel;
-  /** Enabled automatic read grants, as `provider:permission`. */
-  "access.providerGrants": readonly string[];
+  /** Whether the WhatsApp channel processes and answers messages. */
+  "channels.whatsapp": "enabled" | "disabled";
 };
 export type ParameterKey = keyof ParameterValues;
 export const parameterKeys = [
   "ai.model",
   "ai.traceLevel",
-  "access.providerGrants",
+  "channels.whatsapp",
 ] as const satisfies readonly ParameterKey[];
 
-export type ParameterGroup = "ai" | "access";
+export type ParameterGroup = "ai" | "access" | "channels";
 /** When a saved change starts to apply; no parameter needs a restart. */
-export type ParameterEffect = "next_turn" | "next_access_token";
+export type ParameterEffect =
+  "next_turn" | "next_access_token" | "next_message";
 export type ParameterOption = Readonly<{ value: string; label: string }>;
 export type ParameterControl =
   | Readonly<{ kind: "text"; pattern: string; maxLength: number }>
@@ -56,8 +57,6 @@ export type ParameterDefinition = Readonly<{
 export type ParameterSetup = Readonly<{
   production: boolean;
   defaults: Readonly<ParameterValues>;
-  /** Provider grants eligible under the permission catalog. */
-  providerGrantOptions: readonly ParameterOption[];
 }>;
 
 export type StoredParameter = Readonly<{
@@ -140,11 +139,15 @@ export class OperationalParameters {
         },
       },
       {
-        key: "access.providerGrants",
-        group: "access",
-        effect: "next_access_token",
-        environment: "IA_MNS_PROVIDER_GRANTS",
-        control: { kind: "set", options: setup.providerGrantOptions },
+        key: "channels.whatsapp",
+        group: "channels",
+        effect: "next_message",
+        environment: "IA_MNS_WHATSAPP_CHANNEL",
+        control: {
+          kind: "choice",
+          options: ["enabled", "disabled"],
+          refused: [],
+        },
       },
     ];
   }

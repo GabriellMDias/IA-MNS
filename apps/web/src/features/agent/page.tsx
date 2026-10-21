@@ -699,21 +699,6 @@ export function AgentPage() {
               )}
             </div>
           )}
-          <ConversationMaterials
-            token={token}
-            conversationId={conversationId}
-            source={source}
-            attachments={detail.data?.pages[0].attachments ?? []}
-            preferences={detail.data?.pages[0].preferences}
-            disabled={!ready || busy || unresolved || archived}
-            onCreated={async (id) => {
-              await navigate({
-                to: "/chat/$conversationId",
-                params: { conversationId: id },
-                search: { view: scope },
-              });
-            }}
-          />
           <div className="agent-source">
             <label htmlFor="agent-source">Fonte</label>
             <select
@@ -742,6 +727,21 @@ export function AgentPage() {
               send();
             }}
           >
+            <ConversationMaterials
+              token={token}
+              conversationId={conversationId}
+              source={source}
+              attachments={detail.data?.pages[0].attachments ?? []}
+              preferences={detail.data?.pages[0].preferences}
+              disabled={!ready || busy || unresolved || archived}
+              onCreated={async (id) => {
+                await navigate({
+                  to: "/chat/$conversationId",
+                  params: { conversationId: id },
+                  search: { view: scope },
+                });
+              }}
+            />
             <label className="agent-sr-only" htmlFor="agent-message">
               Sua mensagem
             </label>
@@ -766,6 +766,7 @@ export function AgentPage() {
               }}
             />
             <button
+              className="agent-send"
               type="submit"
               aria-label="Enviar mensagem"
               disabled={

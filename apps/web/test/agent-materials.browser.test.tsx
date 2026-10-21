@@ -24,7 +24,12 @@ test("explicit conversation preferences save without changing data access or sou
       />
     </QueryClientProvider>,
   );
-  await screen.getByText("Anexos e preferências").click();
+  await screen
+    .getByRole("button", { name: "Anexos e preferências", exact: true })
+    .click();
+  await screen
+    .getByRole("button", { name: /^Preferências da conversa/ })
+    .click();
   await screen.getByRole("combobox", { name: /^Idioma/ }).selectOptions("en");
   await screen
     .getByRole("combobox", { name: /^Detalhamento/ })
@@ -64,7 +69,10 @@ test("attachment removal is explicit and busy conversations disable changes", as
       />
     </QueryClientProvider>,
   );
-  await screen.getByText("Anexos e preferências").click();
+  await screen
+    .getByRole("button", { name: "Anexos e preferências", exact: true })
+    .click();
+  await screen.getByRole("button", { name: /^Anexos desta conversa/ }).click();
   await expect
     .element(screen.getByRole("button", { name: "Remover example.txt" }))
     .toBeDisabled();
@@ -75,4 +83,48 @@ test("attachment removal is explicit and busy conversations disable changes", as
       ),
     )
     .toBeVisible();
+});
+
+test("pending saves block material edits and a failure retains the preference draft", async () => {
+  const pending = Promise.withResolvers<api.PresentationPreferences>();
+  vi.mocked(api.setPreferences).mockReturnValueOnce(pending.promise);
+  const screen = await render(
+    <QueryClientProvider client={new QueryClient()}>
+      <ConversationMaterials
+        token={null}
+        conversationId="synthetic-chat"
+        source="sankhya"
+        attachments={[]}
+        disabled={false}
+        onCreated={async () => {}}
+      />
+    </QueryClientProvider>,
+  );
+  await screen
+    .getByRole("button", { name: "Anexos e preferências", exact: true })
+    .click();
+  await screen
+    .getByRole("button", { name: /^Preferências da conversa/ })
+    .click();
+  const language = screen.getByRole("combobox", {
+    name: "Idioma",
+    exact: true,
+  });
+  await language.selectOptions("es");
+  await screen.getByRole("button", { name: "Salvar preferências" }).click();
+  await expect.element(language).toBeDisabled();
+  await expect
+    .element(screen.getByRole("button", { name: "Salvar preferências" }))
+    .toBeDisabled();
+  await expect
+    .element(screen.getByRole("status"))
+    .toHaveTextContent("Salvando…");
+  pending.reject(new Error("synthetic_save_failure"));
+  await expect
+    .element(screen.getByRole("alert"))
+    .toHaveTextContent(
+      "Não foi possível salvar. Verifique acesso, formato, tamanho e conteúdo do arquivo, ou se a conversa está ocupada.",
+    );
+  await expect.element(language).toBeEnabled();
+  await expect.element(language).toHaveValue("es");
 });

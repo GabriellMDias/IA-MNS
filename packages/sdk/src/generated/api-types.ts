@@ -697,11 +697,152 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Owner: grant a registered capability permission. Audited. */
+        /** @description Owner: grant a registered permission, optionally restricted, or replace the restrictions of an existing grant. Personal and group grants are united; external links alone grant nothing. Audited. */
         put: operations["grantIdentityPermission"];
         post?: never;
         /** @description Owner: revoke an explicit grant. Provider-policy grants follow the links. Audited. */
         delete: operations["revokeIdentityPermission"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Owner: the grantable permissions grouped by source, with their identification codes, restriction dimensions. The legacy automatic-grant field is empty; provider sign-in joins owner-selected groups. */
+        get: operations["getIdentityPermissionCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/restriction-values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Owner: real values of one restriction dimension of a permission, read-only from its source; at most 30, by code or name. Labels may be personal names (sellers, buyers). */
+        get: operations["searchIdentityRestrictionValues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Owner: every group with its member count and granted permissions. */
+        get: operations["listIdentityGroups"];
+        put?: never;
+        /** @description Owner: create a group of Persons whose grants every member holds. Names are unique regardless of case. Audited. */
+        post: operations["createIdentityGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/provider-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Owner: the default group selected for each external sign-in provider. Verified sign-in joins the group before issuing a token. No selection means no automatic membership. */
+        get: operations["getIdentityProviderGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/provider-groups/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Owner with recent strong authentication: select an existing default group or clear the selection, conditionally on the version read. Existing memberships remain; future verified provider sign-ins join the selected group. The selection and audit commit together. */
+        put: operations["setIdentityProviderGroup"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/groups/{groupId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Owner: a group's members, grants with their restrictions, and the grantable catalog. */
+        get: operations["getIdentityGroup"];
+        put?: never;
+        post?: never;
+        /** @description Owner: delete a group; its members lose the group's grants at their next access token and next agent turn. Audited. */
+        delete: operations["deleteIdentityGroup"];
+        options?: never;
+        head?: never;
+        /** @description Owner: rename or redescribe the version of the group that was read. Audited. */
+        patch: operations["updateIdentityGroup"];
+        trace?: never;
+    };
+    "/identity/admin/groups/{groupId}/members/{personId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Owner: add an active Person to a group. Idempotent. Audited. */
+        put: operations["addIdentityGroupMember"];
+        post?: never;
+        /** @description Owner: remove a Person from a group. Audited. */
+        delete: operations["removeIdentityGroupMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/groups/{groupId}/grants/{permission}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Owner: grant a registered permission to a group, optionally restricted, or replace the restrictions of its grant. Audited. */
+        put: operations["grantIdentityGroupPermission"];
+        post?: never;
+        /** @description Owner: revoke a group's grant. Audited. */
+        delete: operations["revokeIdentityGroupPermission"];
         options?: never;
         head?: never;
         patch?: never;
@@ -737,6 +878,24 @@ export interface paths {
         post?: never;
         /** @description Owner: remove a Person's external link (never the last sign-in method). Audited. */
         delete: operations["removeIdentityPersonLink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/identity/admin/persons/{personId}/whatsapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Owner: link or replace an active Person's WhatsApp number, the only authorization of the WhatsApp channel. International form with country code; Brazilian mobiles need the ninth digit. A number belongs to at most one Person. A change revokes the previous number at once. Audited. */
+        put: operations["setIdentityPersonWhatsapp"];
+        post?: never;
+        /** @description Owner: remove a Person's WhatsApp number; the channel stops answering it at once, including messages already being processed. Audited. */
+        delete: operations["removeIdentityPersonWhatsapp"];
         options?: never;
         head?: never;
         patch?: never;
@@ -802,7 +961,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Interprets a Portuguese sales question and executes a fixed read-only sales query. Context is actor-owned, in memory, expires after 30 minutes idle and is limited to 12 questions. Local development access is explicitly restricted to loopback. Requires sales:read otherwise. */
+        /** @description Interprets a Portuguese sales question and executes a fixed read-only sales query against the Sankhya source. Context is actor-owned, in memory, expires after 30 minutes idle and is limited to 12 questions. Local development access is explicitly restricted to loopback. Requires sales_sankhya:read (SNK-VEN-01) otherwise; a restricted grant limits the figures to its data restriction. */
         post: operations["askSalesQuestion"];
         delete?: never;
         options?: never;
@@ -960,6 +1119,24 @@ export interface paths {
         put?: never;
         /** @description Persist and accept one bounded turn. source is the sales source selected in the interface (default sankhya); the message never changes it. Replay the same requestId, message and source to recover an unknown acceptance outcome; never repeat provider execution. Poll conversation detail for actual progress and outcome. Requires the selected capability permission at execution. */
         post: operations["submitAgentTurn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/whatsapp/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Meta webhook subscription check: answers the challenge in plain text only when the mode is subscribe and the verify token matches WHATSAPP_VERIFY_TOKEN. Mounted only when the WhatsApp channel is configured. */
+        get: operations["verifyWhatsappWebhook"];
+        put?: never;
+        /** @description Meta webhook notifications for the IA-MNS number. Requires a valid X-Hub-Signature-256 over the exact body. Messages of senders linked by an owner to an active Person are recorded once and processed asynchronously; any other sender is ignored silently. Delivery statuses update sent replies. Mounted only when the WhatsApp channel is configured. */
+        post: operations["receiveWhatsappWebhook"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4006,8 +4183,57 @@ export interface operations {
                             displayName: string;
                             status: "active" | "disabled";
                             owner: boolean;
-                            grants: string[];
+                            grants: {
+                                permission: string;
+                                /** Format: date-time */
+                                grantedAt: string;
+                                /** @description Empty: every row of the source. */
+                                restrictions: {
+                                    dimension: string;
+                                    values: {
+                                        value: string;
+                                        label: string;
+                                    }[];
+                                }[];
+                            }[];
+                            groups: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            }[];
                             permissions: string[];
+                            /** @description Effective catalog permissions with their identification, data scope (null rules: unrestricted) and where each comes from. */
+                            access: {
+                                permission: string;
+                                code: string;
+                                title: string;
+                                source: {
+                                    id: string;
+                                    title: string;
+                                } | null;
+                                /** @description Restriction dimensions of the permission, for display. */
+                                dimensions: {
+                                    id: string;
+                                    code: string;
+                                    title: string;
+                                }[];
+                                rules: {
+                                    dimension: string;
+                                    values: {
+                                        value: string;
+                                        label: string;
+                                    }[];
+                                }[][] | null;
+                                origins: {
+                                    kind: "owner" | "grant" | "group" | "provider";
+                                    group: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                    } | null;
+                                    provider: ("pdt" | "sankhya") | null;
+                                }[];
+                            }[];
                             links: {
                                 /** Format: uuid */
                                 id: string;
@@ -4038,6 +4264,15 @@ export interface operations {
                                 expiresAt: string;
                                 current: boolean;
                             }[];
+                            whatsapp: {
+                                /** @description Linked number in international display form, for example +55 11 98765-4321. */
+                                number: string;
+                                /** Format: date-time */
+                                linkedAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                                confirmedAt: string | null;
+                            } | null;
                         };
                         /** @description Browsers currently remembered to skip the second factor. */
                         rememberedDevices: number;
@@ -5877,6 +6112,8 @@ export interface operations {
                             sankhyaDirectory: boolean;
                             /** @description Providers whose sign-in can complete a link invitation. */
                             linkInvitations: ("pdt" | "sankhya")[];
+                            /** @description Owners can restrict grants by values read from the sources. */
+                            restrictions: boolean;
                         };
                     };
                 };
@@ -6220,8 +6457,57 @@ export interface operations {
                             displayName: string;
                             status: "active" | "disabled";
                             owner: boolean;
-                            grants: string[];
+                            grants: {
+                                permission: string;
+                                /** Format: date-time */
+                                grantedAt: string;
+                                /** @description Empty: every row of the source. */
+                                restrictions: {
+                                    dimension: string;
+                                    values: {
+                                        value: string;
+                                        label: string;
+                                    }[];
+                                }[];
+                            }[];
+                            groups: {
+                                /** Format: uuid */
+                                id: string;
+                                name: string;
+                            }[];
                             permissions: string[];
+                            /** @description Effective catalog permissions with their identification, data scope (null rules: unrestricted) and where each comes from. */
+                            access: {
+                                permission: string;
+                                code: string;
+                                title: string;
+                                source: {
+                                    id: string;
+                                    title: string;
+                                } | null;
+                                /** @description Restriction dimensions of the permission, for display. */
+                                dimensions: {
+                                    id: string;
+                                    code: string;
+                                    title: string;
+                                }[];
+                                rules: {
+                                    dimension: string;
+                                    values: {
+                                        value: string;
+                                        label: string;
+                                    }[];
+                                }[][] | null;
+                                origins: {
+                                    kind: "owner" | "grant" | "group" | "provider";
+                                    group: {
+                                        /** Format: uuid */
+                                        id: string;
+                                        name: string;
+                                    } | null;
+                                    provider: ("pdt" | "sankhya") | null;
+                                }[];
+                            }[];
                             links: {
                                 /** Format: uuid */
                                 id: string;
@@ -6252,18 +6538,45 @@ export interface operations {
                                 expiresAt: string;
                                 current: boolean;
                             }[];
+                            whatsapp: {
+                                /** @description Linked number in international display form, for example +55 11 98765-4321. */
+                                number: string;
+                                /** Format: date-time */
+                                linkedAt: string;
+                                /** Format: date-time */
+                                updatedAt: string;
+                                confirmedAt: string | null;
+                            } | null;
                         };
                         capabilities: {
                             /** @description Owners can select real Sankhya users from the ERP directory. */
                             sankhyaDirectory: boolean;
                             /** @description Providers whose sign-in can complete a link invitation. */
                             linkInvitations: ("pdt" | "sankhya")[];
+                            /** @description Owners can restrict grants by values read from the sources. */
+                            restrictions: boolean;
                         };
                         catalog: {
                             permission: string;
+                            /** @description Stable identification given to support, for example SNK-VEN-01. */
+                            code: string;
                             title: string;
+                            description: string;
+                            source: {
+                                id: string;
+                                title: string;
+                            } | null;
+                            capability: string | null;
                             access: "read" | "write" | "sensitive";
                             autoGrantProviders: ("pdt" | "sankhya")[];
+                            restrictions: {
+                                id: string;
+                                code: string;
+                                title: string;
+                                description: string;
+                                /** @description Selecting a value also admits the values below it. */
+                                hierarchical: boolean;
+                            }[];
                         }[];
                         audit: {
                             action: string;
@@ -7869,9 +8182,9 @@ export interface operations {
                     "application/json": {
                         production: boolean;
                         parameters: {
-                            key: "ai.model" | "ai.traceLevel" | "access.providerGrants";
-                            group: "ai" | "access";
-                            effect: "next_turn" | "next_access_token";
+                            key: "ai.model" | "ai.traceLevel" | "channels.whatsapp";
+                            group: "ai" | "access" | "channels";
+                            effect: "next_turn" | "next_access_token" | "next_message";
                             control: {
                                 /** @constant */
                                 kind: "text";
@@ -8228,7 +8541,17 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Data restrictions: values of one dimension are alternatives; every listed dimension must match. Empty admits every row of the source. Values are ERP codes chosen from GET /identity/admin/restriction-values; labels are read from the source. */
+                    restrictions: {
+                        dimension: string;
+                        values: string[];
+                    }[];
+                };
+            };
+        };
         responses: {
             /** @description Response */
             200: {
@@ -8388,6 +8711,2243 @@ export interface operations {
             header?: never;
             path: {
                 personId: string;
+                permission: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getIdentityPermissionCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        catalog: {
+                            permission: string;
+                            /** @description Stable identification given to support, for example SNK-VEN-01. */
+                            code: string;
+                            title: string;
+                            description: string;
+                            source: {
+                                id: string;
+                                title: string;
+                            } | null;
+                            capability: string | null;
+                            access: "read" | "write" | "sensitive";
+                            autoGrantProviders: ("pdt" | "sankhya")[];
+                            restrictions: {
+                                id: string;
+                                code: string;
+                                title: string;
+                                description: string;
+                                /** @description Selecting a value also admits the values below it. */
+                                hierarchical: boolean;
+                            }[];
+                        }[];
+                        /** @description Restriction values can be read from the sources; without it, only unrestricted grants can be saved. */
+                        restrictionsAvailable: boolean;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    searchIdentityRestrictionValues: {
+        parameters: {
+            query: {
+                permission: string;
+                dimension: string;
+                query?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            value: string;
+                            label: string;
+                            detail: string | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    listIdentityGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            description: string | null;
+                            version: number;
+                            members: number;
+                            permissions: string[];
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    createIdentityGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    description: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        groupId: string;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getIdentityProviderGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            provider: "pdt" | "sankhya";
+                            groupId: string | null;
+                            version: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    setIdentityProviderGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "pdt" | "sankhya";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    groupId: string | null;
+                    version: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getIdentityGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        group: {
+                            /** Format: uuid */
+                            id: string;
+                            name: string;
+                            description: string | null;
+                            version: number;
+                            /** Format: date-time */
+                            createdAt: string;
+                            /** Format: date-time */
+                            updatedAt: string;
+                            members: {
+                                /** Format: uuid */
+                                personId: string;
+                                displayName: string;
+                                status: "active" | "disabled";
+                                /** Format: date-time */
+                                addedAt: string;
+                            }[];
+                            grants: {
+                                permission: string;
+                                /** Format: date-time */
+                                grantedAt: string;
+                                /** @description Empty: every row of the source. */
+                                restrictions: {
+                                    dimension: string;
+                                    values: {
+                                        value: string;
+                                        label: string;
+                                    }[];
+                                }[];
+                            }[];
+                        };
+                        catalog: {
+                            permission: string;
+                            /** @description Stable identification given to support, for example SNK-VEN-01. */
+                            code: string;
+                            title: string;
+                            description: string;
+                            source: {
+                                id: string;
+                                title: string;
+                            } | null;
+                            capability: string | null;
+                            access: "read" | "write" | "sensitive";
+                            autoGrantProviders: ("pdt" | "sankhya")[];
+                            restrictions: {
+                                id: string;
+                                code: string;
+                                title: string;
+                                description: string;
+                                /** @description Selecting a value also admits the values below it. */
+                                hierarchical: boolean;
+                            }[];
+                        }[];
+                        restrictionsAvailable: boolean;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    deleteIdentityGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    updateIdentityGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    description: string | null;
+                    version: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    addIdentityGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    removeIdentityGroupMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    grantIdentityGroupPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
+                permission: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Data restrictions: values of one dimension are alternatives; every listed dimension must match. Empty admits every row of the source. Values are ERP codes chosen from GET /identity/admin/restriction-values; labels are read from the source. */
+                    restrictions: {
+                        dimension: string;
+                        values: string[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    revokeIdentityGroupPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: string;
                 permission: string;
             };
             cookie?: never;
@@ -9036,6 +11596,338 @@ export interface operations {
             };
         };
     };
+    setIdentityPersonWhatsapp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    number: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    removeIdentityPersonWhatsapp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        ok: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     resetIdentityLocalCredential: {
         parameters: {
             query?: never;
@@ -9455,6 +12347,13 @@ export interface operations {
                                 source: "sankhya" | "vrmaster";
                                 catalogVersion: string;
                                 description: string;
+                            };
+                            /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                            access?: {
+                                rules: {
+                                    dimension: string;
+                                    values: string[];
+                                }[][];
                             };
                         } | null;
                         suggestions: string[];
@@ -10337,6 +13236,8 @@ export interface operations {
                             title: string;
                             pinned: boolean;
                             archived: boolean;
+                            /** @description Where the conversation started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. The same owner, permissions and history apply on every channel. */
+                            channel: "web" | "whatsapp";
                             /** Format: date-time */
                             updatedAt: string;
                         }[];
@@ -10509,6 +13410,8 @@ export interface operations {
                         title: string;
                         pinned: boolean;
                         archived: boolean;
+                        /** @description Where the conversation started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. The same owner, permissions and history apply on every channel. */
+                        channel: "web" | "whatsapp";
                         /** Format: date-time */
                         updatedAt: string;
                     };
@@ -10680,6 +13583,8 @@ export interface operations {
                             title: string;
                             pinned: boolean;
                             archived: boolean;
+                            /** @description Where the conversation started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. The same owner, permissions and history apply on every channel. */
+                            channel: "web" | "whatsapp";
                             /** Format: date-time */
                             updatedAt: string;
                         };
@@ -10702,8 +13607,8 @@ export interface operations {
                                     selection: "sankhya" | "vrmaster" | "all";
                                     sections: {
                                         source: "sankhya" | "vrmaster";
-                                        status: "answered" | "unavailable" | "unsupported";
-                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                        status: "answered" | "unavailable" | "unsupported" | "denied";
+                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | "access_denied" | null;
                                         result: {
                                             query: {
                                                 productSearch: string | null;
@@ -10745,6 +13650,13 @@ export interface operations {
                                                 catalogVersion: string;
                                                 description: string;
                                             };
+                                            /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                                            access?: {
+                                                rules: {
+                                                    dimension: string;
+                                                    values: string[];
+                                                }[][];
+                                            };
                                         } | null;
                                     }[];
                                 } | {
@@ -10755,8 +13667,8 @@ export interface operations {
                                         selection: "sankhya" | "vrmaster" | "all";
                                         sections: {
                                             source: "sankhya" | "vrmaster";
-                                            status: "answered" | "unavailable" | "unsupported";
-                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                            status: "answered" | "unavailable" | "unsupported" | "denied";
+                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | "access_denied" | null;
                                             result: {
                                                 query: {
                                                     productSearch: string | null;
@@ -10797,6 +13709,13 @@ export interface operations {
                                                     source: "sankhya" | "vrmaster";
                                                     catalogVersion: string;
                                                     description: string;
+                                                };
+                                                /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                                                access?: {
+                                                    rules: {
+                                                        dimension: string;
+                                                        values: string[];
+                                                    }[][];
                                                 };
                                             } | null;
                                         }[];
@@ -10851,8 +13770,8 @@ export interface operations {
                                         selection: "sankhya" | "vrmaster" | "all";
                                         sections: {
                                             source: "sankhya" | "vrmaster";
-                                            status: "answered" | "unavailable" | "unsupported";
-                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                            status: "answered" | "unavailable" | "unsupported" | "denied";
+                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | "access_denied" | null;
                                             result: {
                                                 query: {
                                                     productSearch: string | null;
@@ -10894,6 +13813,13 @@ export interface operations {
                                                     catalogVersion: string;
                                                     description: string;
                                                 };
+                                                /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                                                access?: {
+                                                    rules: {
+                                                        dimension: string;
+                                                        values: string[];
+                                                    }[][];
+                                                };
                                             } | null;
                                         }[];
                                     } | {
@@ -10904,8 +13830,8 @@ export interface operations {
                                             selection: "sankhya" | "vrmaster" | "all";
                                             sections: {
                                                 source: "sankhya" | "vrmaster";
-                                                status: "answered" | "unavailable" | "unsupported";
-                                                reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                                status: "answered" | "unavailable" | "unsupported" | "denied";
+                                                reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | "access_denied" | null;
                                                 result: {
                                                     query: {
                                                         productSearch: string | null;
@@ -10946,6 +13872,13 @@ export interface operations {
                                                         source: "sankhya" | "vrmaster";
                                                         catalogVersion: string;
                                                         description: string;
+                                                    };
+                                                    /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                                                    access?: {
+                                                        rules: {
+                                                            dimension: string;
+                                                            values: string[];
+                                                        }[][];
                                                     };
                                                 } | null;
                                             }[];
@@ -11350,6 +14283,8 @@ export interface operations {
                         title: string;
                         pinned: boolean;
                         archived: boolean;
+                        /** @description Where the conversation started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. The same owner, permissions and history apply on every channel. */
+                        channel: "web" | "whatsapp";
                         /** Format: date-time */
                         updatedAt: string;
                     };
@@ -11524,6 +14459,8 @@ export interface operations {
                             title: string;
                             pinned: boolean;
                             archived: boolean;
+                            /** @description Where the conversation started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. The same owner, permissions and history apply on every channel. */
+                            channel: "web" | "whatsapp";
                             /** Format: date-time */
                             updatedAt: string;
                         }[];
@@ -11717,8 +14654,8 @@ export interface operations {
                                 selection: "sankhya" | "vrmaster" | "all";
                                 sections: {
                                     source: "sankhya" | "vrmaster";
-                                    status: "answered" | "unavailable" | "unsupported";
-                                    reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                    status: "answered" | "unavailable" | "unsupported" | "denied";
+                                    reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | "access_denied" | null;
                                     result: {
                                         query: {
                                             productSearch: string | null;
@@ -11760,6 +14697,13 @@ export interface operations {
                                             catalogVersion: string;
                                             description: string;
                                         };
+                                        /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                                        access?: {
+                                            rules: {
+                                                dimension: string;
+                                                values: string[];
+                                            }[][];
+                                        };
                                     } | null;
                                 }[];
                             } | {
@@ -11770,8 +14714,8 @@ export interface operations {
                                     selection: "sankhya" | "vrmaster" | "all";
                                     sections: {
                                         source: "sankhya" | "vrmaster";
-                                        status: "answered" | "unavailable" | "unsupported";
-                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                        status: "answered" | "unavailable" | "unsupported" | "denied";
+                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | "access_denied" | null;
                                         result: {
                                             query: {
                                                 productSearch: string | null;
@@ -11812,6 +14756,13 @@ export interface operations {
                                                 source: "sankhya" | "vrmaster";
                                                 catalogVersion: string;
                                                 description: string;
+                                            };
+                                            /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                                            access?: {
+                                                rules: {
+                                                    dimension: string;
+                                                    values: string[];
+                                                }[][];
                                             };
                                         } | null;
                                     }[];
@@ -11866,8 +14817,8 @@ export interface operations {
                                     selection: "sankhya" | "vrmaster" | "all";
                                     sections: {
                                         source: "sankhya" | "vrmaster";
-                                        status: "answered" | "unavailable" | "unsupported";
-                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                        status: "answered" | "unavailable" | "unsupported" | "denied";
+                                        reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | "access_denied" | null;
                                         result: {
                                             query: {
                                                 productSearch: string | null;
@@ -11909,6 +14860,13 @@ export interface operations {
                                                 catalogVersion: string;
                                                 description: string;
                                             };
+                                            /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                                            access?: {
+                                                rules: {
+                                                    dimension: string;
+                                                    values: string[];
+                                                }[][];
+                                            };
                                         } | null;
                                     }[];
                                 } | {
@@ -11919,8 +14877,8 @@ export interface operations {
                                         selection: "sankhya" | "vrmaster" | "all";
                                         sections: {
                                             source: "sankhya" | "vrmaster";
-                                            status: "answered" | "unavailable" | "unsupported";
-                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | null;
+                                            status: "answered" | "unavailable" | "unsupported" | "denied";
+                                            reason: "provider_unavailable" | "not_configured" | "result_too_large" | "measure" | "access_denied" | null;
                                             result: {
                                                 query: {
                                                     productSearch: string | null;
@@ -11961,6 +14919,13 @@ export interface operations {
                                                     source: "sankhya" | "vrmaster";
                                                     catalogVersion: string;
                                                     description: string;
+                                                };
+                                                /** @description Data restriction this result was computed under; absent when it covers every row of its source. */
+                                                access?: {
+                                                    rules: {
+                                                        dimension: string;
+                                                        values: string[];
+                                                    }[][];
                                                 };
                                             } | null;
                                         }[];
@@ -12139,6 +15104,191 @@ export interface operations {
             };
             /** @description Response */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    verifyWhatsappWebhook: {
+        parameters: {
+            query: {
+                "hub.mode": string;
+                "hub.verify_token": string;
+                "hub.challenge": string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    receiveWhatsappWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                "x-hub-signature-256": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    object: string;
+                    entry: {
+                        id: string;
+                        changes: {
+                            field: string;
+                            value: Record<string, never>;
+                        }[];
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        received: true;
+                    };
+                };
+            };
+            /** @description Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            429: {
+                headers: {
+                    /** @description Seconds until a bounded retry is allowed. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: {
+                            code: string;
+                            message: string;
+                            requestId: string;
+                            traceId?: string;
+                            errorId?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Response */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

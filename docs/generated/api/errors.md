@@ -50,7 +50,19 @@
 | `IDENTITY_EXTERNAL_ACCOUNT_INACTIVE` | 409 | conflict | no | The external account can no longer sign in. |
 | `IDENTITY_MERGE_NOT_ALLOWED` | 409 | conflict | no | These profiles cannot be combined automatically. |
 | `IDENTITY_MERGE_BUSY` | 409 | conflict | yes | A conversation is still running. Try again shortly. |
+| `IDENTITY_WHATSAPP_NUMBER_INVALID` | 400 | validation | no | Enter the WhatsApp number in international form with the country code. |
+| `IDENTITY_WHATSAPP_NINTH_DIGIT_REQUIRED` | 400 | validation | no | Enter the Brazilian mobile number with its ninth digit. |
+| `IDENTITY_WHATSAPP_NUMBER_IN_USE` | 409 | conflict | no | This WhatsApp number is already linked to another person. |
+| `IDENTITY_WHATSAPP_NOT_LINKED` | 404 | not_found | no | This person has no WhatsApp number. |
 | `IDENTITY_LOCAL_CREDENTIAL_REQUIRED` | 409 | conflict | no | Create a local password first. |
+| `IDENTITY_RESTRICTION_INVALID` | 400 | validation | no | The restriction uses a dimension this permission does not have or a value that does not exist in its source. |
+| `IDENTITY_RESTRICTION_UNAVAILABLE` | 503 | availability | yes | The values of this restriction cannot be read from its source. |
+| `IDENTITY_GROUP_NOT_FOUND` | 404 | not_found | no | The group does not exist. |
+| `IDENTITY_GROUP_NAME_INVALID` | 400 | validation | no | The group name or description is invalid. |
+| `IDENTITY_GROUP_NAME_TAKEN` | 409 | conflict | no | Another group already has this name. |
+| `IDENTITY_GROUP_CONFLICT` | 409 | conflict | no | The group changed since it was read. Reload and try again. |
+| `IDENTITY_PROVIDER_GROUP_CONFLICT` | 409 | conflict | no | The provider's default group changed. Reload and try again. |
+| `IDENTITY_GROUP_IN_USE` | 409 | conflict | no | Select another default group for the provider before deleting this group. |
 | `SALES_ACCESS_DENIED` | 403 | authorization | no | Sales access is not permitted. |
 | `SALES_NOT_CONFIGURED` | 503 | configuration | no | Sales providers are not configured. |
 | `SALES_PROVIDER_UNAVAILABLE` | 503 | availability | yes | The sales provider is unavailable. Try again later. |
@@ -67,3 +79,6 @@
 | `AGENT_REQUEST_CONFLICT` | 409 | conflict | no | This request identifier has different content. |
 | `AGENT_ACCESS_DENIED` | 403 | authorization | no | This capability is not permitted. |
 | `AGENT_PROVIDER_UNAVAILABLE` | 503 | availability | yes | The agent provider is unavailable. |
+| `WHATSAPP_SIGNATURE_INVALID` | 401 | authentication | no | The webhook signature is missing or invalid. |
+| `WHATSAPP_VERIFICATION_FAILED` | 403 | authorization | no | The webhook verification request was refused. |
+| `WHATSAPP_PAYLOAD_INVALID` | 400 | validation | no | The webhook payload is not valid JSON. |

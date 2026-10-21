@@ -2,12 +2,23 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getParameters,
+  getProviderGroups,
+  listGroups,
+  setProviderGroup,
+  type GroupList,
+  type ProviderGroups,
   updateParameter,
   type OperationalParameter,
   type ParameterValue,
   type ParametersView,
 } from "./api.js";
 import { identityMessage, isFailure } from "./messages.js";
+import {
+  Button,
+  SectionCard,
+  SelectField,
+  TextField,
+} from "../../components.js";
 
 type Key = OperationalParameter["key"];
 type Group = OperationalParameter["group"];
@@ -30,19 +41,23 @@ const presentation: Record<
       content: "Metadados e conteúdo",
     },
   },
-  "access.providerGrants": {
-    label: "Liberação automática por vínculo",
-    help: "Capacidades de consulta liberadas sem aprovação para quem tem vínculo ativo com o sistema indicado. Desmarcadas, cada pessoa precisa de concessão manual em Pessoas; administradores principais continuam com acesso total.",
+  "channels.whatsapp": {
+    label: "Atendimento pelo WhatsApp",
+    help: "Liga ou desliga as respostas do IA-MNS no número de WhatsApp da empresa. Só conversa quem tem número de WhatsApp cadastrado em Pessoas. Desligado, nenhuma mensagem é processada nem respondida, inclusive as que estiverem aguardando.",
+    options: { enabled: "Ligado", disabled: "Desligado" },
   },
 };
 const groups: { id: Group; title: string }[] = [
   { id: "ai", title: "Inteligência artificial" },
   { id: "access", title: "Acesso" },
+  { id: "channels", title: "Canais" },
 ];
 const effectText: Record<OperationalParameter["effect"], string> = {
   next_turn: "Vale a partir da próxima pergunta, sem reiniciar o IA-MNS.",
   next_access_token:
     "Vale no próximo acesso de cada pessoa e, para quem já está conectado, em até 10 minutos, sem reiniciar o IA-MNS.",
+  next_message:
+    "Vale a partir da próxima mensagem recebida, sem reiniciar o IA-MNS.",
 };
 
 function describe(parameter: OperationalParameter, value: unknown): string {
@@ -117,48 +132,195 @@ export function ParametersPanel({ token }: { token: string }) {
     return <p role="alert">{identityMessage(view.error)}</p>;
   const data = view.data;
   return (
-    <section
-      className="identity-card identity-policy identity-parameters"
-      aria-labelledby="identity-parameters-title"
-    >
-      <h2 id="identity-parameters-title">Parâmetros</h2>
-      <p className="identity-hint">
-        Ajuste o comportamento do IA-MNS sem publicar uma nova versão nem
-        reiniciar o servidor. Senhas, chaves e endereços de infraestrutura
-        continuam na configuração do servidor e não aparecem aqui.
-      </p>
-      <p className="identity-policy-banner" role="note">
-        {data.production
-          ? "Ambiente de produção: opções reservadas a desenvolvimento e testes ficam indisponíveis."
-          : "Ambiente de desenvolvimento ou testes: algumas opções de diagnóstico só existem aqui. Ao publicar em produção, revise esta página."}
-      </p>
-      {groups.map((group) => (
-        <section
-          key={group.id}
-          className="identity-parameter-group"
-          aria-labelledby={`parameters-${group.id}`}
-        >
-          <h3 id={`parameters-${group.id}`}>{group.title}</h3>
-          {data.parameters
-            .filter((parameter) => parameter.group === group.id)
-            .map((parameter) => (
-              <ParameterCard
-                key={`${parameter.key}:${parameter.version}`}
-                token={token}
-                parameter={parameter}
-                notice={notices[parameter.key] ?? null}
-                setNotice={(notice) =>
-                  setNotices((current) => ({
-                    ...current,
-                    [parameter.key]: notice ?? undefined,
-                  }))
-                }
-              />
-            ))}
-        </section>
-      ))}
+    <div className="admin-parameters">
+      <SectionCard
+        title="Parâmetros"
+        description="Ajuste o comportamento do IA-MNS sem reiniciar o servidor. Senhas, chaves e endereços de infraestrutura ficam na configuração do servidor."
+      >
+        <p className="identity-policy-banner" role="note">
+          {data.production
+            ? "Ambiente de produção: opções reservadas a desenvolvimento e testes ficam indisponíveis."
+            : "Ambiente de desenvolvimento ou testes: algumas opções de diagnóstico só existem aqui. Ao publicar em produção, revise esta página."}
+        </p>
+      </SectionCard>
+      <div className="admin-parameter-groups">
+        {groups.map((group) => (
+          <section
+            key={group.id}
+            className="identity-parameter-group"
+            data-group={group.id}
+            aria-labelledby={`parameters-${group.id}`}
+          >
+            <h3 id={`parameters-${group.id}`}>{group.title}</h3>
+            <div className="admin-parameter-grid">
+              {group.id === "access" && <ProviderGroupsCard token={token} />}
+              {data.parameters
+                .filter((parameter) => parameter.group === group.id)
+                .map((parameter) => (
+                  <ParameterCard
+                    key={`${parameter.key}:${parameter.version}`}
+                    token={token}
+                    parameter={parameter}
+                    notice={notices[parameter.key] ?? null}
+                    setNotice={(notice) =>
+                      setNotices((current) => ({
+                        ...current,
+                        [parameter.key]: notice ?? undefined,
+                      }))
+                    }
+                  />
+                ))}
+            </div>
+          </section>
+        ))}
+      </div>
       <History view={data} />
-    </section>
+    </div>
+  );
+}
+
+function ProviderGroupsCard({ token }: { token: string }) {
+  const view = useQuery({
+    queryKey: ["identity-provider-groups", token],
+    queryFn: ({ signal }) => getProviderGroups(token, signal),
+  });
+  const groups = useQuery({
+    queryKey: ["identity-groups", token],
+    queryFn: ({ signal }) => listGroups(token, signal),
+  });
+  const [notices, setNotices] = useState<Record<string, string>>({});
+  return (
+    <SectionCard
+      title="Grupo de Usuário padrão por vínculo"
+      description="Ao entrar pelo sistema indicado, a pessoa é incluída automaticamente no grupo escolhido e recebe suas permissões e restrições. Cadastre os grupos e ajuste suas permissões na seção Grupos."
+    >
+      <p className="identity-hint">
+        A escolha vale no próximo login pelo sistema, inclusive para pessoas já
+        cadastradas. Entrar com senha do IA-MNS não inclui a pessoa em um grupo
+        por vínculo. Trocar ou desativar o padrão mantém as participações
+        existentes; remova-as em Grupos quando necessário.
+      </p>
+      {view.error || groups.error ? (
+        <p role="alert">{identityMessage(view.error ?? groups.error)}</p>
+      ) : !view.data || !groups.data ? (
+        <p role="status">Carregando os grupos padrão…</p>
+      ) : (
+        view.data.items.map((item) => (
+          <ProviderGroupForm
+            key={`${item.provider}:${item.version}`}
+            token={token}
+            item={item}
+            groups={groups.data.items}
+            notice={notices[item.provider] ?? null}
+            setNotice={(notice) =>
+              setNotices((current) => ({
+                ...current,
+                [item.provider]: notice ?? "",
+              }))
+            }
+          />
+        ))
+      )}
+    </SectionCard>
+  );
+}
+
+function ProviderGroupForm({
+  token,
+  item,
+  groups,
+  notice,
+  setNotice,
+}: {
+  token: string;
+  item: ProviderGroups["items"][number];
+  groups: GroupList["items"];
+  notice: string | null;
+  setNotice: (notice: string | null) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [groupId, setGroupId] = useState(item.groupId ?? "");
+  const save = useMutation({
+    mutationFn: () =>
+      setProviderGroup(token, item.provider, {
+        groupId: groupId || null,
+        version: item.version,
+      }),
+    onSuccess: () => {
+      setNotice("Grupo padrão salvo. Vale no próximo login pelo sistema.");
+      void queryClient.invalidateQueries({
+        queryKey: ["identity-provider-groups"],
+      });
+    },
+    onError: (error) => {
+      if (isFailure(error, "IDENTITY_PROVIDER_GROUP_CONFLICT")) {
+        setNotice(identityMessage(error));
+        void queryClient.invalidateQueries({
+          queryKey: ["identity-provider-groups"],
+        });
+      }
+      if (isFailure(error, "IDENTITY_GROUP_NOT_FOUND"))
+        void queryClient.invalidateQueries({ queryKey: ["identity-groups"] });
+    },
+  });
+  const title = item.provider === "pdt" ? "PDT Connect" : "Sankhya";
+  return (
+    <form
+      className="identity-parameter"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (groupId !== (item.groupId ?? "")) save.mutate();
+      }}
+    >
+      <SelectField
+        label={`Grupo padrão — ${title}`}
+        id={`provider-group-${item.provider}`}
+        value={groupId}
+        disabled={save.isPending}
+        onChange={(event) => {
+          setGroupId(event.target.value);
+          setNotice(null);
+          save.reset();
+        }}
+      >
+        <option value="">Nenhum grupo</option>
+        {item.groupId && !groups.some((group) => group.id === item.groupId) && (
+          <option value={item.groupId}>Grupo atual (fora desta lista)</option>
+        )}
+        {groups.map((group) => (
+          <option key={group.id} value={group.id}>
+            {group.name}
+          </option>
+        ))}
+      </SelectField>
+      {!groups.length && (
+        <p className="identity-hint">
+          Crie um grupo na seção Grupos para selecioná-lo aqui.
+        </p>
+      )}
+      <div className="identity-actions">
+        <Button
+          type="submit"
+          loading={save.isPending}
+          disabled={save.isPending || groupId === (item.groupId ?? "")}
+        >
+          Salvar grupo — {title}
+        </Button>
+      </div>
+      {notice && (
+        <p role="status" className="admin-notice">
+          {notice}
+        </p>
+      )}
+      {save.error &&
+        !isFailure(save.error, "IDENTITY_PROVIDER_GROUP_CONFLICT") && (
+          <p role="alert">
+            {isFailure(save.error, "IDENTITY_RECENT_AUTHENTICATION_REQUIRED")
+              ? "Confirme sua identidade em Minha conta (senha e código) e salve novamente."
+              : identityMessage(save.error)}
+          </p>
+        )}
+    </form>
   );
 }
 
@@ -249,11 +411,9 @@ function ParameterCard({
           </fieldset>
         ) : (
           <>
-            <label id={`${id}-label`} htmlFor={id}>
-              {text.label}
-            </label>
             {control.kind === "choice" ? (
-              <select
+              <SelectField
+                label={text.label}
                 id={id}
                 value={String(draft)}
                 aria-describedby={`${id}-help`}
@@ -272,9 +432,10 @@ function ParameterCard({
                       : ""}
                   </option>
                 ))}
-              </select>
+              </SelectField>
             ) : (
-              <input
+              <TextField
+                label={text.label}
                 id={id}
                 value={String(draft)}
                 maxLength={control.maxLength}
@@ -328,23 +489,31 @@ function ParameterCard({
         </dl>
       </div>
       <div className="identity-actions">
-        <button disabled={save.isPending || !changed || Boolean(invalid)}>
+        <Button
+          type="submit"
+          loading={save.isPending}
+          disabled={save.isPending || !changed || Boolean(invalid)}
+        >
           Salvar
-        </button>
+        </Button>
         {parameter.source === "administration" && (
-          <button
+          <Button
             type="button"
-            className="identity-secondary"
+            variant="secondary"
             disabled={save.isPending}
             onClick={() => save.mutate(null)}
           >
             Restaurar padrão
-          </button>
+          </Button>
         )}
       </div>
-      {notice && <p role="status">{notice}</p>}
+      {notice && (
+        <p role="status" className="admin-notice">
+          {notice}
+        </p>
+      )}
       {save.error && (
-        <p role="alert">
+        <p role="alert" className="admin-notice admin-notice-error">
           {isFailure(save.error, "IDENTITY_RECENT_AUTHENTICATION_REQUIRED")
             ? "Confirme sua identidade em Minha conta (senha e código) e salve novamente."
             : identityMessage(save.error)}
@@ -357,8 +526,7 @@ function ParameterCard({
 function History({ view }: { view: ParametersView }) {
   const byKey = new Map(view.parameters.map((item) => [item.key, item]));
   return (
-    <>
-      <h3>Alterações recentes</h3>
+    <SectionCard title="Alterações recentes" className="admin-history">
       {!view.history.length && (
         <p className="identity-hint">
           Nenhuma alteração: os padrões desta instalação estão em uso.
@@ -384,6 +552,6 @@ function History({ view }: { view: ParametersView }) {
           );
         })}
       </ul>
-    </>
+    </SectionCard>
   );
 }

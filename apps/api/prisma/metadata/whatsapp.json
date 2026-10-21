@@ -1,0 +1,226 @@
+{
+  "tables": {
+    "whatsapp_inbound_messages": {
+      "owner": "whatsapp",
+      "classification": "CONFIDENTIAL",
+      "description": "WhatsApp messages from senders that matched exactly one active Person through an owner-linked number when the signature-verified webhook arrived. Unknown, unlinked or unauthorized senders are never recorded. Each row is processed once, in order per Person, after the sender is authorized again.",
+      "lifecycle": "Inserted before the webhook is acknowledged and deduplicated by the Meta message id; claimed under a lease, retried a bounded number of times, then completed, ignored (revoked, disabled channel, limits, expired window) or failed. The message text is cleared when processing ends, because the question is kept in the agent conversation. Rows older than 30 days are pruned with their replies (provisional until PH-09).",
+      "columns": {
+        "id": {
+          "description": "Inbound work identifier; also the agent turn request id, so a repeated attempt replays the same turn.",
+          "classification": "INTERNAL"
+        },
+        "message_id": {
+          "description": "Meta message id (wamid); the deduplication key for repeated webhook deliveries.",
+          "classification": "CONFIDENTIAL"
+        },
+        "person_id": {
+          "description": "Person the sender matched when the message arrived; processing refuses the message if the sender no longer matches this Person.",
+          "classification": "CONFIDENTIAL"
+        },
+        "link_version": {
+          "description": "Version of the Person's WhatsApp link when the message arrived; a changed or removed link refuses the message.",
+          "classification": "INTERNAL"
+        },
+        "sender_phone": {
+          "description": "Sender number exactly as Meta reported it (digits), used only to answer the same sender.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Meta reported only the WhatsApp user identifier."
+        },
+        "sender_user_id": {
+          "description": "WhatsApp business-scoped user identifier Meta reported.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Not reported by Meta for this message."
+        },
+        "kind": {
+          "description": "text, or unsupported for media and other message types this version does not process.",
+          "classification": "INTERNAL"
+        },
+        "body": {
+          "description": "Text of the message while it awaits processing.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Not text, or processing ended and the text was cleared."
+        },
+        "sent_at": {
+          "description": "When the person sent the message, according to Meta; orders processing per Person and bounds the customer service window.",
+          "classification": "CONFIDENTIAL"
+        },
+        "received_at": {
+          "description": "When the webhook delivered the message.",
+          "classification": "CONFIDENTIAL"
+        },
+        "state": {
+          "description": "pending, processing, completed, ignored or failed.",
+          "classification": "INTERNAL"
+        },
+        "outcome": {
+          "description": "Allowlisted code of how processing ended, for example answered, command, revoked, channel_disabled, rate_limited or expired.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Still pending or processing."
+        },
+        "attempts": {
+          "description": "Processing attempts started; bounded.",
+          "classification": "INTERNAL"
+        },
+        "not_before": {
+          "description": "Earliest time the message may be claimed (backoff after a busy conversation or a failed attempt).",
+          "classification": "INTERNAL"
+        },
+        "lease_until": {
+          "description": "Expiry of the current processing claim; an expired claim is reclaimed.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not claimed."
+        },
+        "conversation_id": {
+          "description": "Agent conversation that received the message as a turn.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No turn was submitted (command, refusal or still pending)."
+        },
+        "turn_id": {
+          "description": "Agent turn created for the message.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No turn was submitted."
+        },
+        "finished_at": {
+          "description": "When processing ended.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Still pending or processing."
+        }
+      },
+      "objects": {
+        "whatsapp_inbound_messages_pkey": "Inbound work identity.",
+        "whatsapp_inbound_messages_message_key": "One row per Meta message: repeated webhook deliveries are ignored.",
+        "whatsapp_inbound_messages_work_idx": "Claiming of due work.",
+        "whatsapp_inbound_messages_person_idx": "Per-Person ordering and usage limits.",
+        "whatsapp_inbound_messages_received_idx": "Daily cost ceiling and pruning.",
+        "whatsapp_inbound_messages_sender_check": "Every message has a sender identifier.",
+        "whatsapp_inbound_messages_kind_check": "Only the processed message kinds.",
+        "whatsapp_inbound_messages_state_check": "Only the processing states.",
+        "whatsapp_inbound_messages_attempts_check": "Attempts are never negative."
+      }
+    },
+    "whatsapp_outbound_messages": {
+      "owner": "whatsapp",
+      "classification": "CONFIDENTIAL",
+      "description": "Replies to inbound WhatsApp messages: an outbox of text parts sent through the Graph API only after the recipient is authorized again for the same Person and link version, and only within the customer service window.",
+      "lifecycle": "Created when processing produces a reply; sent in part order under a lease; retried only when Meta proves the message was not accepted (rate limits, temporary unavailability); a timeout or lost response becomes unknown and is never resent. Delivery statuses from signed webhooks advance the state. The text is cleared once Meta accepts the part or it reaches a final state. Pruned with its inbound message.",
+      "columns": {
+        "id": {
+          "description": "Reply part identifier.",
+          "classification": "INTERNAL"
+        },
+        "inbound_id": {
+          "description": "Inbound message this part answers.",
+          "classification": "INTERNAL"
+        },
+        "part": {
+          "description": "Order of the part within the reply (1..20).",
+          "classification": "INTERNAL"
+        },
+        "person_id": {
+          "description": "Person the reply is for; checked again before sending.",
+          "classification": "CONFIDENTIAL"
+        },
+        "link_version": {
+          "description": "Link version the reply was produced under; a changed or removed link revokes it.",
+          "classification": "INTERNAL"
+        },
+        "recipient_phone": {
+          "description": "Number to send to, exactly as the sender's message reported it.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The sender reported only the WhatsApp user identifier."
+        },
+        "recipient_user_id": {
+          "description": "WhatsApp business-scoped user identifier used when no number was reported.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "A number is used."
+        },
+        "kind": {
+          "description": "answer (agent reply) or notice (channel message such as a command result, unsupported type or limit).",
+          "classification": "INTERNAL"
+        },
+        "body": {
+          "description": "Text of the part while it awaits sending.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Accepted by Meta or final; the reply remains in the agent conversation."
+        },
+        "state": {
+          "description": "pending, sending, accepted, sent, delivered, read, failed, unknown, revoked or expired.",
+          "classification": "INTERNAL"
+        },
+        "attempts": {
+          "description": "Send attempts started; bounded.",
+          "classification": "INTERNAL"
+        },
+        "not_before": {
+          "description": "Earliest next attempt after a retryable refusal.",
+          "classification": "INTERNAL"
+        },
+        "lease_until": {
+          "description": "Expiry of the current send claim.",
+          "classification": "INTERNAL",
+          "nullMeaning": "Not claimed."
+        },
+        "provider_message_id": {
+          "description": "Meta message id of the accepted part; matches delivery status webhooks.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "Not accepted by Meta."
+        },
+        "failure_code": {
+          "description": "Allowlisted failure, refusal or Meta error code.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No failure."
+        },
+        "created_at": {
+          "description": "When the part was created.",
+          "classification": "CONFIDENTIAL"
+        },
+        "updated_at": {
+          "description": "Last state change.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "whatsapp_outbound_messages_pkey": "Reply part identity.",
+        "whatsapp_outbound_messages_inbound_id_fkey": "Removed with the inbound message.",
+        "whatsapp_outbound_messages_provider_key": "Status webhooks match one part.",
+        "whatsapp_outbound_messages_part_key": "One row per part of a reply.",
+        "whatsapp_outbound_messages_work_idx": "Claiming of due parts.",
+        "whatsapp_outbound_messages_recipient_check": "Every part has a recipient.",
+        "whatsapp_outbound_messages_kind_check": "Only answer and notice parts.",
+        "whatsapp_outbound_messages_state_check": "Only the delivery states.",
+        "whatsapp_outbound_messages_part_check": "At most 20 parts per reply.",
+        "whatsapp_outbound_messages_attempts_check": "Attempts are never negative."
+      }
+    },
+    "whatsapp_threads": {
+      "owner": "whatsapp",
+      "classification": "CONFIDENTIAL",
+      "description": "Per-Person WhatsApp channel state: the agent conversation that new messages continue and the sales source the person chose with a command.",
+      "lifecycle": "Created at the first processed message; the conversation pointer changes when the person asks for a new conversation, after 12 hours without activity, or when the conversation was archived or deleted. Kept while the Person exists; no foreign key across modules.",
+      "columns": {
+        "person_id": {
+          "description": "Person the state belongs to.",
+          "classification": "CONFIDENTIAL"
+        },
+        "conversation_id": {
+          "description": "Agent conversation that the next message continues, if still owned, active and recent.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The next message starts a new conversation."
+        },
+        "source": {
+          "description": "Sales source chosen with the /fonte command: sankhya, vrmaster or all.",
+          "classification": "INTERNAL"
+        },
+        "updated_at": {
+          "description": "Last change.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "whatsapp_threads_pkey": "One channel state per Person.",
+        "whatsapp_threads_source_check": "Only the implemented source selections."
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "kind": "component",
+  "name": "Button",
+  "summary": "A themed native button with consistent action hierarchy and pending feedback.",
+  "props": [
+    {
+      "name": "variant",
+      "type": "primary | secondary | ghost | danger",
+      "meaning": "Action emphasis; defaults to primary. Danger uses semantic error tokens."
+    },
+    {
+      "name": "loading",
+      "type": "boolean",
+      "meaning": "Disables interaction, exposes aria-busy and adds a decorative spinner without replacing the accessible name."
+    },
+    {
+      "name": "type",
+      "type": "button | submit | reset",
+      "meaning": "Defaults to button. Forms must explicitly use submit."
+    },
+    {
+      "name": "native button props",
+      "type": "ComponentProps<button>",
+      "meaning": "Forwards native handlers, disabled state, ARIA attributes, ref and children."
+    }
+  ],
+  "states": [
+    "Primary, secondary, ghost and danger",
+    "Disabled",
+    "Loading",
+    "Keyboard focus"
+  ],
+  "accessibility": "Native keyboard semantics, visible focus and a stable accessible name. Theme text and background colors change together to retain contrast; only borders transition. Loading disables repeated activation and sets aria-busy; reduced motion stops the spinner.",
+  "usage": "Use primary for a form's main action, secondary for alternatives, ghost for row actions and danger for consequential actions. Set loading from the actual pending operation.",
+  "examples": [
+    {
+      "id": "ui-buttons",
+      "label": "Action hierarchy",
+      "description": "Button variants and pending feedback; no request or account change."
+    }
+  ]
+}

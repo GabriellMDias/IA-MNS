@@ -66,7 +66,16 @@ test("documentation sections isolate details and preserve deep links and browser
     .getByRole("link", { name: "API reference", exact: true })
     .click();
   await expect(page).toHaveURL(/\/docs\/api$/);
-  await page.locator('a[href="/docs/api/getReadiness"]').first().click();
+  // The reference is paginated; the operation may be on a later page.
+  const readiness = page.locator('a[href="/docs/api/getReadiness"]').first();
+  for (
+    let pageTurns = 0;
+    pageTurns < 5 && !(await readiness.isVisible());
+    pageTurns++
+  )
+    await page.getByRole("button", { name: "Next" }).click();
+  const apiListUrl = page.url();
+  await readiness.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "getReadiness",
   );
@@ -81,7 +90,7 @@ test("documentation sections isolate details and preserve deep links and browser
     "getReadiness",
   );
   await page.goBack();
-  await expect(page).toHaveURL(/\/docs\/api$/);
+  await expect(page).toHaveURL(apiListUrl);
   await page.goForward();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "getReadiness",

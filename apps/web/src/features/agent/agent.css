@@ -127,6 +127,11 @@
   flex: 1;
   min-width: 0;
 }
+.agent-channel-mark {
+  color: var(--muted);
+  font-size: 0.75em;
+  font-weight: 600;
+}
 .agent-conversation-more {
   flex-shrink: 0;
   width: 30px;
@@ -348,8 +353,9 @@
   font-size: 12px;
 }
 .agent-composer {
-  display: flex;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
   gap: 10px;
   padding: 12px;
   border: 1px solid var(--border);
@@ -357,7 +363,8 @@
   background: var(--input);
 }
 .agent-composer textarea {
-  flex: 1;
+  grid-column: 1 / -1;
+  grid-row: 1;
   min-width: 0;
   min-height: 34px;
   max-height: 180px;
@@ -378,7 +385,9 @@
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-.agent-composer button {
+.agent-composer .agent-send {
+  grid-column: 2;
+  grid-row: 2;
   flex-shrink: 0;
   width: 36px;
   height: 36px;
@@ -437,12 +446,6 @@
   overflow-wrap: anywhere;
 }
 
-.agent-materials { margin: 0.5rem 0; font-size: 0.85rem; }
-.agent-materials summary { cursor: pointer; }
-.agent-materials-content { display: grid; gap: 0.65rem; max-height: 40vh; overflow: auto; padding: 0.75rem 0; }
-.agent-materials-content label { display: block; margin: 0.4rem 0; }
-.agent-materials-content fieldset { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
-.agent-materials-content input, .agent-materials-content select { max-width: 100%; }
 .agent-suggestions {
   display: flex;
   flex-wrap: wrap;

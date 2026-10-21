@@ -1,0 +1,72 @@
+{
+  "kind": "database",
+  "name": "identity_group_members",
+  "description": "Membership of a Person in a group; the member holds the group's grants.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Added and removed by owners with recent strong authentication; removed with the group or the Person, moved to the surviving Person on consolidation. Audited.",
+  "columns": [
+    {
+      "Column": "group_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Group.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Member Person.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "added_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner (identity_persons.id) who added the member; attribution without a foreign key.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "added_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock instant the member was added.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_group_members_group_id_fkey",
+      "Physical definition": "FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Removed with the group."
+    },
+    {
+      "Object": "identity_group_members_person_id_fkey",
+      "Physical definition": "FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Removed with the Person."
+    },
+    {
+      "Object": "identity_group_members_pkey",
+      "Physical definition": "PRIMARY KEY (group_id, person_id)",
+      "Purpose": "A Person belongs to a group once."
+    },
+    {
+      "Object": "identity_group_members_person_idx",
+      "Physical definition": "CREATE INDEX identity_group_members_person_idx ON public.identity_group_members USING btree (person_id)",
+      "Purpose": "Groups of a Person when computing access."
+    }
+  ]
+}

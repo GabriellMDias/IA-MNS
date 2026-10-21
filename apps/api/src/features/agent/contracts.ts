@@ -148,6 +148,10 @@ export const conversationSchema = Type.Object(
     title: Type.String(),
     pinned: Type.Boolean(),
     archived: Type.Boolean(),
+    channel: Type.Union([Type.Literal("web"), Type.Literal("whatsapp")], {
+      description:
+        "Where the conversation started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. The same owner, permissions and history apply on every channel.",
+    }),
     updatedAt: Type.String({ format: "date-time" }),
   },
   object,

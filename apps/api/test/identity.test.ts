@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import pino from "pino";
 import {
   decodeJwt,
@@ -30,6 +30,7 @@ import {
 } from "../src/features/agent/prisma-repository.js";
 import type { SankhyaUser } from "../src/features/identity/sankhya-directory.js";
 import { signingKey } from "./identity-helpers.js";
+import { IdentityRepository } from "../src/features/identity/repository.js";
 
 const ORIGIN = "http://localhost:5173";
 const PDT = "https://pdt.example.test";
@@ -609,7 +610,7 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
         };
       }>();
       expect(omMe.person.id).toBe(me.person.id);
-      expect(omMe.person.permissions).toEqual(["sales:read"]);
+      expect(omMe.person.permissions).toEqual([]);
       const omConversations = (
         await app.inject({
           method: "GET",
@@ -912,13 +913,19 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
       expect(adminMe.person.permissions).toEqual([
         "identity:admin",
         "products:read",
+        "products_sankhya:read",
+        "products_vrmaster:read",
         "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
       ]);
+      // Capability permissions are derived, never granted.
       expect(
         (
           await app.inject({
             method: "PUT",
-            url: `/identity/admin/persons/${strangerId}/grants/identity:admin`,
+            url: `/identity/admin/persons/${strangerId}/grants/sales:read`,
+            payload: { restrictions: [] },
             headers: bearer(admin.accessToken),
           })
         ).json<ErrorBody>().error.code,
@@ -927,7 +934,18 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
         (
           await app.inject({
             method: "PUT",
-            url: `/identity/admin/persons/${strangerId}/grants/sales:read`,
+            url: `/identity/admin/persons/${strangerId}/grants/identity:admin`,
+            payload: { restrictions: [] },
+            headers: bearer(admin.accessToken),
+          })
+        ).json<ErrorBody>().error.code,
+      ).toBe("IDENTITY_UNKNOWN_PERMISSION");
+      expect(
+        (
+          await app.inject({
+            method: "PUT",
+            url: `/identity/admin/persons/${strangerId}/grants/sales_sankhya:read`,
+            payload: { restrictions: [] },
             headers: bearer(admin.accessToken),
           })
         ).statusCode,
@@ -936,7 +954,8 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
         (
           await app.inject({
             method: "PUT",
-            url: `/identity/admin/persons/${strangerId}/grants/sales:read`,
+            url: `/identity/admin/persons/${strangerId}/grants/sales_sankhya:read`,
+            payload: { restrictions: [] },
             headers: bearer(strangerFresh),
           })
         ).json<ErrorBody>().error.code,
@@ -957,19 +976,40 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
           headers: bearer(admin.accessToken),
         })
       ).json<{
-        person: { grants: string[] };
-        catalog: { permission: string; autoGrantProviders: string[] }[];
+        person: { grants: { permission: string; restrictions: unknown[] }[] };
+        catalog: {
+          permission: string;
+          code: string;
+          autoGrantProviders: string[];
+        }[];
         audit: { action: string }[];
       }>();
-      expect(detail.person.grants).toEqual(["sales:read"]);
+      expect(detail.person.grants).toEqual([
+        expect.objectContaining({
+          permission: "sales_sankhya:read",
+          restrictions: [],
+        }),
+      ]);
       expect(detail.catalog).toEqual([
         expect.objectContaining({
-          permission: "sales:read",
-          autoGrantProviders: ["sankhya"],
+          permission: "sales_sankhya:read",
+          code: "SNK-VEN-01",
+          autoGrantProviders: [],
         }),
-        // No provider grants product lookup until the owner decides (PH-28).
         expect.objectContaining({
-          permission: "products:read",
+          permission: "sales_vrmaster:read",
+          code: "VRM-VEN-01",
+          autoGrantProviders: [],
+        }),
+        // Links never grant permissions directly.
+        expect.objectContaining({
+          permission: "products_sankhya:read",
+          code: "SNK-PRD-01",
+          autoGrantProviders: [],
+        }),
+        expect.objectContaining({
+          permission: "products_vrmaster:read",
+          code: "VRM-PRD-01",
           autoGrantProviders: [],
         }),
       ]);
@@ -977,12 +1017,13 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
         "grant.added",
       );
       // Product consultation uses the same owner-controlled grant mechanism.
-      const productGrant = `/identity/admin/persons/${strangerId}/grants/products:read`;
+      const productGrant = `/identity/admin/persons/${strangerId}/grants/products_vrmaster:read`;
       expect(
         (
           await app.inject({
             method: "PUT",
             url: productGrant,
+            payload: { restrictions: [] },
             headers: bearer(strangerFresh),
           })
         ).statusCode,
@@ -992,6 +1033,7 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
           await app.inject({
             method: "PUT",
             url: productGrant,
+            payload: { restrictions: [] },
             headers: bearer(admin.accessToken),
           })
         ).statusCode,
@@ -1003,8 +1045,10 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
             url: `/identity/admin/persons/${strangerId}`,
             headers: bearer(admin.accessToken),
           })
-        ).json<{ person: { grants: string[] } }>().person.grants,
-      ).toEqual(["products:read", "sales:read"]);
+        )
+          .json<{ person: { grants: { permission: string }[] } }>()
+          .person.grants.map((grant) => grant.permission),
+      ).toEqual(["products_vrmaster:read", "sales_sankhya:read"]);
       expect(
         (
           await app.inject({
@@ -1044,7 +1088,8 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
       clock.now += 31 * 60_000;
       const stale = await app.inject({
         method: "PUT",
-        url: `/identity/admin/persons/${strangerId}/grants/sales:read`,
+        url: `/identity/admin/persons/${strangerId}/grants/sales_sankhya:read`,
+        payload: { restrictions: [] },
         headers: bearer(admin.accessToken),
       });
       expect(stale.json<ErrorBody>().error.code).toBe(
@@ -1256,7 +1301,7 @@ it("provisions, links and authorizes one Person across local, PDT and Sankhya si
       expect(joanaMe.person.links).toEqual([
         expect.objectContaining({ establishedBy: "directory" }),
       ]);
-      expect(joanaMe.person.permissions).toEqual(["sales:read"]);
+      expect(joanaMe.person.permissions).toEqual([]);
       // A PDT account reporting Joana's directory e-mail is asked for proof;
       // this person declares the profile is not theirs and gets a separate one.
       const namesake = (
@@ -2158,21 +2203,21 @@ it("lets only owners read and change operational parameters, audits changes and 
       const scopes = (token: string) =>
         String(decodeJwt(token).scope).split(" ");
 
-      // ---- a Sankhya-linked person receives sales by the default policy ----
+      // ---- a Sankhya-linked person has no implicit permissions ----
       const sankhyaToken = async () =>
         (
           await embeddedSankhya(app, (nonce) => sankhyaAssertion(nonce, "321"))
         ).json<{ accessToken: string }>().accessToken;
       const person = await sankhyaToken();
-      expect(scopes(person)).toContain("sales:read");
+      expect(scopes(person)).not.toContain("sales:read");
 
       // ---- people without the owner role cannot list, read or change ----
       expect((await read()).statusCode).toBe(401);
       for (const response of [
         await read(bearer(person)),
         await write(
-          "access.providerGrants",
-          { value: [], version: 0 },
+          "ai.traceLevel",
+          { value: "off", version: 0 },
           bearer(person),
         ),
         await write(
@@ -2200,10 +2245,11 @@ it("lets only owners read and change operational parameters, audits changes and 
         }),
         expect.objectContaining({ key: "ai.traceLevel", value: "metadata" }),
         expect.objectContaining({
-          key: "access.providerGrants",
-          value: ["sankhya:sales:read"],
-          defaultValue: ["sankhya:sales:read"],
-          effect: "next_access_token",
+          key: "channels.whatsapp",
+          value: "disabled",
+          defaultValue: "disabled",
+          group: "channels",
+          effect: "next_message",
         }),
       ]);
       for (const secret of [
@@ -2217,7 +2263,12 @@ it("lets only owners read and change operational parameters, audits changes and 
       expect(initial.body).not.toMatch(/PASSWORD|SECRET|API_KEY|DATABASE_URL/);
 
       // ---- secrets and unknown keys cannot be written; invalid values are refused ----
-      for (const key of ["OPENAI_API_KEY", "databaseUrl", "pdtClientSecret"])
+      for (const key of [
+        "OPENAI_API_KEY",
+        "databaseUrl",
+        "pdtClientSecret",
+        "access.providerGrants",
+      ])
         expect(
           (
             await write(key, { value: "x", version: 0 }, bearer(owner))
@@ -2226,8 +2277,7 @@ it("lets only owners read and change operational parameters, audits changes and 
       for (const [key, value] of [
         ["ai.model", "modelo com espaço"],
         ["ai.traceLevel", "verbose"],
-        ["access.providerGrants", ["pdt:sales:read"]],
-        ["access.providerGrants", "sankhya:sales:read"],
+        ["channels.whatsapp", "on"],
       ] as const)
         expect(
           (
@@ -2247,18 +2297,21 @@ it("lets only owners read and change operational parameters, audits changes and 
       ).toBe(0);
 
       // ---- a valid change persists, is audited and reaches the consumer ----
-      const saved = await write(
-        "access.providerGrants",
-        { value: [], version: 0 },
-        bearer(owner),
-      );
-      expect(saved.json()).toEqual({ version: 1 });
+      expect(
+        (
+          await write(
+            "ai.traceLevel",
+            { value: "off", version: 0 },
+            bearer(owner),
+          )
+        ).json(),
+      ).toEqual({ version: 1 });
       const after = (await read(bearer(owner))).json<View>();
       expect(
-        after.parameters.find((item) => item.key === "access.providerGrants"),
+        after.parameters.find((item) => item.key === "ai.traceLevel"),
       ).toMatchObject({
-        value: [],
-        defaultValue: ["sankhya:sales:read"],
+        value: "off",
+        defaultValue: "metadata",
         source: "administration",
         version: 1,
         updatedBy: "Dona",
@@ -2266,18 +2319,17 @@ it("lets only owners read and change operational parameters, audits changes and 
       expect(after.history[0]).toMatchObject({
         actorName: "Dona",
         details: {
-          parameter: "access.providerGrants",
-          from: "sankhya:sales:read",
-          to: "",
+          parameter: "ai.traceLevel",
+          from: "metadata",
+          to: "off",
           reset: false,
           version: 1,
         },
       });
-      // The next access token of the Sankhya-linked person no longer carries
-      // the automatic grant; no restart is involved.
+      await expect(service.parameters.get("ai.traceLevel")).resolves.toBe(
+        "off",
+      );
       expect(scopes(await sankhyaToken())).not.toContain("sales:read");
-
-      // ---- the model applies to the next read; a reset restores the default ----
       expect(
         (
           await write(
@@ -2293,28 +2345,30 @@ it("lets only owners read and change operational parameters, audits changes and 
       expect(
         (
           await write(
-            "access.providerGrants",
+            "ai.traceLevel",
             { value: null, version: 1 },
             bearer(owner),
           )
         ).json(),
       ).toEqual({ version: 2 });
-      expect(scopes(await sankhyaToken())).toContain("sales:read");
+      await expect(service.parameters.get("ai.traceLevel")).resolves.toBe(
+        "metadata",
+      );
       const audit = await database.identityAuditEvent.findMany({
         where: { action: "parameter.updated" },
         orderBy: { occurredAt: "asc" },
       });
       expect(audit.map((item) => item.details)).toEqual([
-        expect.objectContaining({ parameter: "access.providerGrants", to: "" }),
+        expect.objectContaining({ parameter: "ai.traceLevel", to: "off" }),
         expect.objectContaining({
           parameter: "ai.model",
           from: "gpt-6.1-sol",
           to: "gpt-6.2-mini",
         }),
         expect.objectContaining({
-          parameter: "access.providerGrants",
-          from: "",
-          to: "sankhya:sales:read",
+          parameter: "ai.traceLevel",
+          from: "off",
+          to: "metadata",
           reset: true,
         }),
       ]);
@@ -2340,15 +2394,341 @@ it("lets only owners read and change operational parameters, audits changes and 
       await expect(
         database.$executeRaw`INSERT INTO operational_parameters (key, value, version, updated_by, updated_at) VALUES ('openai.apiKey', '"sk-x"'::jsonb, 1, gen_random_uuid(), now())`,
       ).rejects.toThrow();
-      await expect(
-        database.$executeRaw`UPDATE operational_parameters SET value = '[1]'::jsonb WHERE key = 'access.providerGrants'`,
-      ).rejects.toThrow();
     } finally {
       await app.close();
       await database.$disconnect();
     }
   });
 }, 180000);
+
+it("joins owner-selected provider groups only after verified sign-in, with normal restricted grants and atomic audit", async () => {
+  await withMigratedDatabase(async (runtimeUrl) => {
+    const { app, database, service, pdt, sankhyaAssertion, clock } =
+      await setup(runtimeUrl);
+    try {
+      const boot = await post(app, "/identity/bootstrap", {
+        token: await service.createBootstrapTicket(false),
+        displayName: "Owner",
+        login: "owner",
+        password: "a safe passphrase for provider testing",
+      });
+      expect(boot.statusCode).toBe(200);
+      const bootToken = boot.json<{ accessToken: string }>().accessToken;
+      const totp = (
+        await post(app, "/identity/me/totp", {}, bearer(bootToken))
+      ).json<{ setup: string; secret: string }>();
+      const owner = (
+        await post(
+          app,
+          "/identity/me/totp/confirm",
+          {
+            setup: totp.setup,
+            code: totpCode(
+              base32Decode(totp.secret),
+              Math.floor(clock.now / 30_000),
+            ),
+          },
+          bearer(bootToken),
+        )
+      ).json<{ accessToken: string }>().accessToken;
+      const read = (token?: string) =>
+        app.inject({
+          method: "GET",
+          url: "/identity/admin/provider-groups",
+          headers: token ? bearer(token) : {},
+        });
+      const select = (
+        provider: string,
+        groupId: string | null,
+        version: number,
+        token = owner,
+      ) =>
+        app.inject({
+          method: "PUT",
+          url: `/identity/admin/provider-groups/${provider}`,
+          headers: bearer(token),
+          payload: { groupId, version },
+        });
+      const login = async (subject: string) => {
+        const response = await embeddedSankhya(app, (nonce) =>
+          sankhyaAssertion(nonce, subject),
+        );
+        expect(response.statusCode).toBe(200);
+        return response.json<{ accessToken: string }>().accessToken;
+      };
+      expect((await read()).statusCode).toBe(401);
+      expect((await read(owner)).json()).toEqual({
+        items: [
+          { provider: "pdt", groupId: null, version: 0 },
+          { provider: "sankhya", groupId: null, version: 0 },
+        ],
+      });
+      await database.operationalParameter.create({
+        data: {
+          key: "access.providerGrants",
+          value: ["sankhya:sales_sankhya:read"],
+          version: 1,
+          updatedBy: await personId(app, owner),
+          updatedAt: new Date(clock.now),
+        },
+      });
+      const existingToken = await login("321");
+      const existingId = await personId(app, existingToken);
+      expect((await service.accessSnapshot(existingId))?.permissions.size).toBe(
+        0,
+      );
+      expect((await read(existingToken)).json<ErrorBody>().error.code).toBe(
+        "IDENTITY_ACCESS_DENIED",
+      );
+      expect(
+        (await select("sankhya", null, 0, existingToken)).json<ErrorBody>()
+          .error.code,
+      ).toBe("IDENTITY_ACCESS_DENIED");
+      expect((await select("unknown", null, 0)).statusCode).toBe(400);
+      expect(
+        (await select("sankhya", randomUUID(), 0)).json<ErrorBody>().error.code,
+      ).toBe("IDENTITY_GROUP_NOT_FOUND");
+      const makeGroup = async (name: string) => {
+        const response = await app.inject({
+          method: "POST",
+          url: "/identity/admin/groups",
+          headers: bearer(owner),
+          payload: { name, description: null },
+        });
+        expect(response.statusCode).toBe(201);
+        return response.json<{ groupId: string }>().groupId;
+      };
+      const first = await makeGroup("Sankhya default");
+      const second = await makeGroup("PDT default");
+      const repository = new IdentityRepository(database);
+      const failedAudit = vi
+        .spyOn(repository, "audit")
+        .mockRejectedValueOnce(new Error("Synthetic audit failure"));
+      await expect(
+        repository.setProviderGroup({
+          provider: "sankhya",
+          groupId: first,
+          version: 0,
+          actor: await personId(app, owner),
+          now: new Date(clock.now),
+        }),
+      ).rejects.toThrow("Synthetic audit failure");
+      expect(
+        (await read(owner))
+          .json<{ items: { version: number }[] }>()
+          .items.every((item) => item.version === 0),
+      ).toBe(true);
+      failedAudit.mockRestore();
+      expect(
+        (
+          await app.inject({
+            method: "PUT",
+            url: `/identity/admin/groups/${first}/grants/sales_sankhya:read`,
+            headers: bearer(owner),
+            payload: { restrictions: [] },
+          })
+        ).statusCode,
+      ).toBe(200);
+      await database.identityGroupGrantRestriction.create({
+        data: {
+          groupId: first,
+          permission: "sales_sankhya:read",
+          dimension: "company",
+          value: "1",
+          label: "MATRIZ",
+        },
+      });
+      const races = await Promise.all([
+        select("sankhya", first, 0),
+        select("sankhya", second, 0),
+      ]);
+      expect(races.map((response) => response.statusCode).sort()).toEqual([
+        200, 409,
+      ]);
+      expect(
+        await database.identityAuditEvent.count({
+          where: { action: "provider_group.updated" },
+        }),
+      ).toBe(1);
+      // Ensure the remainder uses the restricted first group, whichever owner won.
+      expect((await select("sankhya", first, 1)).statusCode).toBe(200);
+      expect((await select("pdt", second, 0)).statusCode).toBe(200);
+      expect(await database.identityGroupMember.count()).toBe(0);
+      const failedMembershipAudit = vi
+        .spyOn(repository, "audit")
+        .mockRejectedValueOnce(new Error("Synthetic membership audit failure"));
+      await expect(
+        repository.joinProviderGroup(existingId, "sankhya"),
+      ).rejects.toThrow("Synthetic membership audit failure");
+      expect(await database.identityGroupMember.count()).toBe(0);
+      failedMembershipAudit.mockRestore();
+      const signedIn = await login("321");
+      expect(String(decodeJwt(signedIn).scope).split(" ")).toContain(
+        "sales_sankhya:read",
+      );
+      expect(
+        (await service.accessSnapshot(existingId))?.scopes.get(
+          "sales_sankhya:read",
+        ),
+      ).toEqual({
+        kind: "restricted",
+        rules: [
+          [{ dimension: "company", values: [{ value: "1", label: "MATRIZ" }] }],
+        ],
+      });
+      await Promise.all([login("321"), login("321"), login("321")]);
+      expect(
+        await database.identityGroupMember.count({
+          where: { personId: existingId },
+        }),
+      ).toBe(1);
+      expect(
+        await database.identityAuditEvent.count({
+          where: { action: "group.member_added", targetPersonId: existingId },
+        }),
+      ).toBe(1);
+      const newToken = await login("999");
+      const newId = await personId(app, newToken);
+      expect(
+        await database.identityGroupMember.count({
+          where: { personId: newId, groupId: first },
+        }),
+      ).toBe(1);
+      const pdtResponse = await embeddedPdt(app, pdt, randomUUID());
+      expect(pdtResponse.statusCode).toBe(200);
+      const pdtId = await personId(
+        app,
+        pdtResponse.json<{ accessToken: string }>().accessToken,
+      );
+      expect(
+        (
+          await database.identityGroupMember.findMany({
+            where: { personId: pdtId },
+          })
+        ).map((row) => row.groupId),
+      ).toEqual([second]);
+      // Rejected proofs and disabled people never acquire memberships.
+      await database.identityGroupMember.deleteMany({
+        where: { personId: newId },
+      });
+      await database.identityPerson.update({
+        where: { id: newId },
+        data: { status: "disabled" },
+      });
+      const disabled = await embeddedSankhya(app, (nonce) =>
+        sankhyaAssertion(nonce, "999"),
+      );
+      expect(disabled.json<ErrorBody>().error.code).toBe(
+        "IDENTITY_ACCOUNT_DISABLED",
+      );
+      expect(
+        await database.identityGroupMember.count({
+          where: { personId: newId },
+        }),
+      ).toBe(0);
+      const invalid = await embeddedSankhya(app, (nonce) =>
+        sankhyaAssertion(`${nonce}wrong`, "555"),
+      );
+      expect(invalid.statusCode).toBe(401);
+      expect(await database.identityGroupMember.count()).toBe(2);
+      // Normal membership persists when the default changes, is cleared or the link is removed.
+      expect((await select("sankhya", second, 2)).statusCode).toBe(200);
+      await login("321");
+      expect(
+        await database.identityGroupMember.count({
+          where: { personId: existingId },
+        }),
+      ).toBe(2);
+      const deletion = await app.inject({
+        method: "DELETE",
+        url: `/identity/admin/groups/${second}`,
+        headers: bearer(owner),
+      });
+      expect(deletion.json<ErrorBody>().error.code).toBe(
+        "IDENTITY_GROUP_IN_USE",
+      );
+      expect((await select("sankhya", null, 3)).statusCode).toBe(200);
+      await database.identityGroupMember.deleteMany({
+        where: { personId: existingId, groupId: second },
+      });
+      await login("321");
+      expect(
+        await database.identityGroupMember.count({
+          where: { personId: existingId },
+        }),
+      ).toBe(1);
+      // A local login and refresh cannot use an existing external link to join.
+      const ownerId = await personId(app, owner);
+      await database.identityExternalIdentity.create({
+        data: {
+          id: randomUUID(),
+          personId: ownerId,
+          provider: "sankhya",
+          issuer: SANKHYA_ISSUER,
+          subject: "12345",
+        },
+      });
+      expect((await select("sankhya", first, 4)).statusCode).toBe(200);
+      const local = await post(app, "/identity/login/local", {
+        login: "owner",
+        password: "a safe passphrase for provider testing",
+      });
+      expect(local.statusCode).toBe(200);
+      clock.now += 30_000;
+      const localMfa = await post(app, "/identity/login/mfa", {
+        challenge: local.json<{ challenge: string }>().challenge,
+        code: totpCode(
+          base32Decode(totp.secret),
+          Math.floor(clock.now / 30_000),
+        ),
+      });
+      expect(localMfa.json<{ kind: string }>().kind).toBe("authenticated");
+      const refreshed = await post(
+        app,
+        "/identity/session/refresh",
+        {},
+        {
+          cookie: String(localMfa.headers["set-cookie"]).split(";")[0],
+          ...web,
+        },
+      );
+      expect(refreshed.statusCode).toBe(200);
+      expect(
+        await database.identityGroupMember.count({
+          where: { personId: ownerId },
+        }),
+      ).toBe(0);
+      const deletionRace = await Promise.all([
+        select("sankhya", first, 5),
+        app.inject({
+          method: "DELETE",
+          url: `/identity/admin/groups/${first}`,
+          headers: bearer(owner),
+        }),
+      ]);
+      expect(deletionRace.map((response) => response.statusCode)).toEqual([
+        200, 409,
+      ]);
+      // Stale strong authentication refuses configuration changes.
+      clock.now += 31 * 60_000;
+      expect(
+        (await select("sankhya", null, 6)).json<ErrorBody>().error.code,
+      ).toBe("IDENTITY_RECENT_AUTHENTICATION_REQUIRED");
+    } finally {
+      await app.close();
+      await database.$disconnect();
+    }
+  });
+}, 180000);
+
+it("refuses sign-in startup when the provider-group migration is missing", async () => {
+  await withMigratedDatabase(async (runtimeUrl, migrationUrl) => {
+    const migration = createDatabase(migrationUrl);
+    await migration.$executeRaw`DROP TABLE identity_provider_groups`;
+    await migration.$disconnect();
+    await expect(setup(runtimeUrl)).rejects.toThrow();
+  });
+}, 120000);
 
 it("refuses to become ready against a schema without the operational parameters", async () => {
   await withMigratedDatabase(async (runtimeUrl, migrationUrl) => {

@@ -36,6 +36,71 @@ import {
   type Surface,
 } from "./domain.js";
 import * as contracts from "./contracts.js";
+import { displayWhatsappNumber } from "./whatsapp.js";
+import type { RestrictionDirectory } from "../../access.js";
+import type { EffectiveAccess } from "./domain.js";
+import type { RestrictionRow } from "./repository.js";
+import { grantConditions } from "./domain.js";
+
+type RestrictionInput = { dimension: string; values: string[] }[];
+
+/** A stored grant as owners see it: restrictions by dimension. */
+function grantView(grant: {
+  permission: string;
+  grantedAt: Date;
+  restrictions: RestrictionRow[];
+}) {
+  return {
+    permission: grant.permission,
+    grantedAt: grant.grantedAt.toISOString(),
+    restrictions: grantConditions(grant.restrictions),
+  };
+}
+
+/** Effective access with identification, scope and origins, for the person and owners. */
+function accessView(
+  service: IdentityService,
+  access: EffectiveAccess,
+  groups: readonly { id: string; name: string }[],
+) {
+  return service.catalog
+    .filter((item) => access.scopes.has(item.permission))
+    .map((item) => {
+      const scope = access.scopes.get(item.permission)!;
+      return {
+        permission: item.permission,
+        code: item.code,
+        title: item.title,
+        source: item.source,
+        dimensions: item.restrictions.map(({ id, code, title }) => ({
+          id,
+          code,
+          title,
+        })),
+        rules:
+          scope.kind === "all"
+            ? null
+            : scope.rules.map((rule) =>
+                rule.map((condition) => ({
+                  dimension: condition.dimension,
+                  values: [...condition.values],
+                })),
+              ),
+        origins: (access.origins.get(item.permission) ?? []).map((origin) => {
+          // Only the listed fields: a union branch rejects extra properties.
+          const group =
+            origin.kind === "group"
+              ? groups.find((item) => item.id === origin.groupId)
+              : undefined;
+          return {
+            kind: origin.kind,
+            group: group ? { id: group.id, name: group.name } : null,
+            provider: origin.kind === "provider" ? origin.provider : null,
+          };
+        }),
+      };
+    });
+}
 
 const respond = errorResponder({ ...coreErrors, ...identityErrors });
 type CookieKind =
@@ -44,14 +109,18 @@ type CookieKind =
 /**
  * What identity needs from the composition: moving another module's
  * Person-owned data when two profiles are consolidated, the operational
- * parameters that owners administer here (and that set the provider grant
- * policy), and optionally a Sankhya user directory factory (replaceable in
+ * parameters that owners administer here, and optionally a Sankhya user
+ * directory factory (replaceable in
  * tests).
  */
 export type IdentityPorts = {
   transferOwnership: OwnershipTransfer;
   parameters: (resources: ModuleResources) => OperationalParameters;
   sankhyaDirectory?: (config: ServerConfig) => SankhyaDirectory;
+  /** Read-only values of the restriction dimensions, from the modules that own them. */
+  restrictions?: (
+    config: ServerConfig,
+  ) => (RestrictionDirectory & { close(): Promise<void> }) | undefined;
 };
 
 /**
@@ -90,16 +159,18 @@ function cookieJar(origin: string) {
   };
 }
 
-/** The permission catalog with the provider grants currently enabled. */
-async function catalogView(service: IdentityService) {
-  const policy = await service.providerPolicy();
+/** The catalog retains its empty legacy automatic-grant field for clients. */
+function catalogView(service: IdentityService) {
   return service.catalog.map((item) => ({
     permission: item.permission,
+    code: item.code,
     title: item.title,
+    description: item.description,
+    source: item.source,
+    capability: item.capability,
     access: item.access,
-    autoGrantProviders: policy
-      .filter((rule) => rule.permission === item.permission)
-      .map((rule) => rule.provider),
+    autoGrantProviders: [],
+    restrictions: [...item.restrictions],
   }));
 }
 
@@ -187,6 +258,7 @@ export function identityServiceFor(
     configured,
     ports.transferOwnership,
     config.environment === "production",
+    ports.restrictions?.(config),
     options.now,
   );
 }
@@ -229,11 +301,16 @@ export function createIdentityModule(
         register(app) {
           let pruning: NodeJS.Timeout | undefined;
           if (service && resources.database)
-            // Every token issue reads the provider grants; refuse to start
-            // against a schema without the operational parameters.
+            // Refuse to serve sign-in against an incomplete identity schema.
             app.addHook("onReady", async () => {
               await resources.database!
+                .$queryRaw`SELECT whatsapp_link_version FROM identity_persons LIMIT 0`;
+              await resources.database!
                 .$queryRaw`SELECT key, value, version, updated_by, updated_at FROM operational_parameters LIMIT 0`;
+              await resources.database!
+                .$queryRaw`SELECT provider, group_id, version, updated_by FROM identity_provider_groups LIMIT 0`;
+              await resources.database!
+                .$queryRaw`SELECT group_id, person_id FROM identity_group_members LIMIT 0`;
             });
           if (service) {
             app.addHook("onReady", (done) => {
@@ -870,16 +947,22 @@ export function createIdentityModule(
             const personView = (
               detail: Pick<
                 Awaited<ReturnType<IdentityService["me"]>>,
-                "snapshot" | "permissions" | "sessions"
+                "snapshot" | "access" | "sessions"
               >,
               current: string | null,
+              svc: IdentityService,
             ) => ({
               id: detail.snapshot.id,
               displayName: detail.snapshot.displayName,
               status: detail.snapshot.status,
               owner: detail.snapshot.roles.includes("owner"),
-              grants: detail.snapshot.grants.map((item) => item.permission),
-              permissions: detail.permissions,
+              grants: detail.snapshot.grants.map(grantView),
+              groups: detail.snapshot.groups.map((group) => ({
+                id: group.id,
+                name: group.name,
+              })),
+              permissions: detail.access.permissions,
+              access: accessView(svc, detail.access, detail.snapshot.groups),
               links: detail.snapshot.links.map((link) => ({
                 id: link.id,
                 provider: link.provider,
@@ -906,6 +989,18 @@ export function createIdentityModule(
                 expiresAt: iso(item.expiresAt),
                 current: item.id === current,
               })),
+              whatsapp: detail.snapshot.whatsapp
+                ? {
+                    number: displayWhatsappNumber(
+                      detail.snapshot.whatsapp.phoneNumber,
+                    ),
+                    linkedAt: iso(detail.snapshot.whatsapp.linkedAt),
+                    updatedAt: iso(detail.snapshot.whatsapp.updatedAt),
+                    confirmedAt: detail.snapshot.whatsapp.confirmedAt
+                      ? iso(detail.snapshot.whatsapp.confirmedAt)
+                      : null,
+                  }
+                : null,
             });
 
             scope.get(
@@ -914,7 +1009,7 @@ export function createIdentityModule(
               authed(async (svc, sessionId) => {
                 const detail = await svc.me(sessionId);
                 return {
-                  person: personView(detail, sessionId),
+                  person: personView(detail, sessionId, svc),
                   session: {
                     id: detail.session.id,
                     method: detail.session.method,
@@ -1132,6 +1227,7 @@ export function createIdentityModule(
               linkInvitations: providers.filter((item) =>
                 svc.signInAvailable(item),
               ),
+              restrictions: svc.restrictionsAvailable(),
             });
             scope.get<{ Querystring: { query?: string; cursor?: string } }>(
               contracts.adminListOperation.url,
@@ -1156,9 +1252,9 @@ export function createIdentityModule(
                   request.params.personId,
                 );
                 return {
-                  person: personView(detail, null),
+                  person: personView(detail, null, svc),
                   capabilities: capabilities(svc),
-                  catalog: await catalogView(svc),
+                  catalog: catalogView(svc),
                   audit: detail.audit.map((event) => ({
                     action: event.action,
                     occurredAt: iso(event.occurredAt),
@@ -1268,15 +1364,20 @@ export function createIdentityModule(
             type GrantParams = {
               Params: { personId: string; permission: string };
             };
-            scope.put<GrantParams>(
+            scope.put<
+              GrantParams & { Body: { restrictions: RestrictionInput } }
+            >(
               contracts.adminGrantOperation.url,
               { schema: contracts.adminGrantOperation.schema },
-              authed<GrantParams>(async (svc, sessionId, request) => {
+              authed<
+                GrantParams & { Body: { restrictions: RestrictionInput } }
+              >(async (svc, sessionId, request) => {
                 await svc.setGrant(
                   sessionId,
                   request.params.personId,
                   request.params.permission,
                   true,
+                  request.body.restrictions,
                 );
                 return ok;
               }),
@@ -1293,6 +1394,204 @@ export function createIdentityModule(
                 );
                 return ok;
               }),
+            );
+            scope.get(
+              contracts.adminCatalogOperation.url,
+              { schema: contracts.adminCatalogOperation.schema },
+              authed(async (svc, sessionId) => {
+                await svc.ownerCatalog(sessionId);
+                return {
+                  catalog: catalogView(svc),
+                  restrictionsAvailable: svc.restrictionsAvailable(),
+                };
+              }),
+            );
+            type ValueQuery = {
+              Querystring: {
+                permission: string;
+                dimension: string;
+                query?: string;
+              };
+            };
+            scope.get<ValueQuery>(
+              contracts.adminRestrictionValuesOperation.url,
+              { schema: contracts.adminRestrictionValuesOperation.schema },
+              authed<ValueQuery>(async (svc, sessionId, request) => ({
+                items: [
+                  ...(await svc.searchRestrictionValues(
+                    sessionId,
+                    request.query.permission,
+                    request.query.dimension,
+                    request.query.query ?? "",
+                  )),
+                ].slice(0, 30),
+              })),
+            );
+            scope.get(
+              contracts.adminProviderGroupsOperation.url,
+              { schema: contracts.adminProviderGroupsOperation.schema },
+              authed(async (svc, sessionId) => ({
+                items: await svc.providerGroups(sessionId),
+              })),
+            );
+            type ProviderGroupRequest = {
+              Params: { provider: Provider };
+              Body: { groupId: string | null; version: number };
+            };
+            scope.put<ProviderGroupRequest>(
+              contracts.adminUpdateProviderGroupOperation.url,
+              { schema: contracts.adminUpdateProviderGroupOperation.schema },
+              authed<ProviderGroupRequest>(async (svc, sessionId, request) => {
+                await svc.setProviderGroup(
+                  sessionId,
+                  request.params.provider,
+                  request.body,
+                );
+                return { ok: true as const };
+              }),
+            );
+            scope.get(
+              contracts.adminGroupsOperation.url,
+              { schema: contracts.adminGroupsOperation.schema },
+              authed(async (svc, sessionId) => ({
+                items: (await svc.listGroups(sessionId)).slice(0, 200),
+              })),
+            );
+            type GroupBody = {
+              Body: { name: string; description: string | null };
+            };
+            scope.post<GroupBody>(
+              contracts.adminCreateGroupOperation.url,
+              { schema: contracts.adminCreateGroupOperation.schema },
+              async (request, reply) => {
+                const sessionId = await requireSession(request, reply);
+                if (!sessionId) return reply;
+                return handle(request, reply, async (svc) => {
+                  const groupId = await svc.createGroup(sessionId, {
+                    name: request.body.name,
+                    description: request.body.description,
+                  });
+                  reply.code(201);
+                  return { groupId };
+                });
+              },
+            );
+            type GroupParams = { Params: { groupId: string } };
+            scope.get<GroupParams>(
+              contracts.adminGroupOperation.url,
+              { schema: contracts.adminGroupOperation.schema },
+              authed<GroupParams>(async (svc, sessionId, request) => {
+                const group = await svc.groupDetail(
+                  sessionId,
+                  request.params.groupId,
+                );
+                return {
+                  group: {
+                    ...group,
+                    createdAt: iso(group.createdAt),
+                    updatedAt: iso(group.updatedAt),
+                    members: group.members.map((member) => ({
+                      ...member,
+                      addedAt: iso(member.addedAt),
+                    })),
+                    grants: group.grants.map(grantView),
+                  },
+                  catalog: catalogView(svc),
+                  restrictionsAvailable: svc.restrictionsAvailable(),
+                };
+              }),
+            );
+            scope.patch<
+              GroupParams & {
+                Body: {
+                  name: string;
+                  description: string | null;
+                  version: number;
+                };
+              }
+            >(
+              contracts.adminUpdateGroupOperation.url,
+              { schema: contracts.adminUpdateGroupOperation.schema },
+              authed<
+                GroupParams & {
+                  Body: {
+                    name: string;
+                    description: string | null;
+                    version: number;
+                  };
+                }
+              >(async (svc, sessionId, request) => {
+                await svc.updateGroup(
+                  sessionId,
+                  request.params.groupId,
+                  request.body,
+                );
+                return ok;
+              }),
+            );
+            scope.delete<GroupParams>(
+              contracts.adminDeleteGroupOperation.url,
+              { schema: contracts.adminDeleteGroupOperation.schema },
+              authed<GroupParams>(async (svc, sessionId, request) => {
+                await svc.deleteGroup(sessionId, request.params.groupId);
+                return ok;
+              }),
+            );
+            type MemberParams = {
+              Params: { groupId: string; personId: string };
+            };
+            for (const [operation, member] of [
+              [contracts.adminAddGroupMemberOperation, true],
+              [contracts.adminRemoveGroupMemberOperation, false],
+            ] as const)
+              scope.route<MemberParams>({
+                method: operation.method,
+                url: operation.url,
+                schema: operation.schema,
+                handler: authed<MemberParams>(
+                  async (svc, sessionId, request) => {
+                    await svc.setGroupMember(
+                      sessionId,
+                      request.params.groupId,
+                      request.params.personId,
+                      member,
+                    );
+                    return ok;
+                  },
+                ),
+              });
+            type GroupGrantParams = {
+              Params: { groupId: string; permission: string };
+              Body: { restrictions: RestrictionInput };
+            };
+            scope.put<GroupGrantParams>(
+              contracts.adminGroupGrantOperation.url,
+              { schema: contracts.adminGroupGrantOperation.schema },
+              authed<GroupGrantParams>(async (svc, sessionId, request) => {
+                await svc.setGroupGrant(
+                  sessionId,
+                  request.params.groupId,
+                  request.params.permission,
+                  true,
+                  request.body.restrictions,
+                );
+                return ok;
+              }),
+            );
+            scope.delete<Omit<GroupGrantParams, "Body">>(
+              contracts.adminRevokeGroupGrantOperation.url,
+              { schema: contracts.adminRevokeGroupGrantOperation.schema },
+              authed<Omit<GroupGrantParams, "Body">>(
+                async (svc, sessionId, request) => {
+                  await svc.setGroupGrant(
+                    sessionId,
+                    request.params.groupId,
+                    request.params.permission,
+                    false,
+                  );
+                  return ok;
+                },
+              ),
             );
             scope.put<PersonParams>(
               contracts.adminOwnerOperation.url,
@@ -1339,6 +1638,31 @@ export function createIdentityModule(
                   return ok;
                 },
               ),
+            );
+            scope.put<PersonParams & { Body: { number: string } }>(
+              contracts.adminSetWhatsappOperation.url,
+              { schema: contracts.adminSetWhatsappOperation.schema },
+              authed<PersonParams & { Body: { number: string } }>(
+                async (svc, sessionId, request) => {
+                  await svc.setWhatsappNumber(
+                    sessionId,
+                    request.params.personId,
+                    request.body.number,
+                  );
+                  return ok;
+                },
+              ),
+            );
+            scope.delete<PersonParams>(
+              contracts.adminRemoveWhatsappOperation.url,
+              { schema: contracts.adminRemoveWhatsappOperation.schema },
+              authed<PersonParams>(async (svc, sessionId, request) => {
+                await svc.removeWhatsappNumber(
+                  sessionId,
+                  request.params.personId,
+                );
+                return ok;
+              }),
             );
             scope.post<PersonParams>(
               contracts.adminResetOperation.url,

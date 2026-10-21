@@ -26,6 +26,10 @@
           "description": "Database-clock last profile or status change; informational, not an audit trail.",
           "classification": "CONFIDENTIAL"
         },
+        "whatsapp_link_version": {
+          "description": "Last allocated WhatsApp link generation, retained after unlinking. Changes are serialized with the Person lock; a recreated link cannot authorize older queued work.",
+          "classification": "CONFIDENTIAL"
+        },
         "merged_into": {
           "description": "Person that absorbed this one through a proof-based or owner-approved consolidation; links, local credential, grants and conversations moved there.",
           "classification": "CONFIDENTIAL",
@@ -38,7 +42,8 @@
         "identity_persons_status_check": "Explicit lifecycle states.",
         "identity_persons_display_name_idx": "Bounded administrative listing ordered by name.",
         "identity_persons_merged_into_fkey": "A merged Person points to an existing Person; never deleted while referenced.",
-        "identity_persons_merge_check": "Merged status and target exist together and a Person never merges into itself."
+        "identity_persons_merge_check": "Merged status and target exist together and a Person never merges into itself.",
+        "identity_persons_whatsapp_link_version_check": "The persistent WhatsApp link generation starts at zero and never becomes negative."
       }
     },
     "identity_external_identities": {
@@ -319,24 +324,24 @@
     "identity_capability_grants": {
       "owner": "identity",
       "classification": "CONFIDENTIAL",
-      "description": "Explicit capability permissions granted to a Person by an owner, in addition to provider-policy grants derived from active links. The language model never creates grants.",
-      "lifecycle": "Granted and revoked by owners with recent strong authentication; changes reach new access tokens within their 10-minute lifetime. Audited.",
+      "description": "Explicit capability permissions granted to a Person by an owner, united with group grants. External links alone grant no permission. A grant may be narrowed by data restrictions (identity_grant_restrictions); an explicit grant takes precedence over the provider policy for its permission. The language model never creates grants.",
+      "lifecycle": "Granted, restricted and revoked by owners with recent strong authentication; changes reach new access tokens within their 10-minute lifetime and agent turns at once. Audited.",
       "columns": {
         "person_id": {
           "description": "Grantee.",
           "classification": "CONFIDENTIAL"
         },
         "permission": {
-          "description": "Registered capability permission such as sales:read; validated against the composed catalog.",
+          "description": "Registered source permission such as sales_sankhya:read; validated against the composed catalog. Capability permissions (sales:read, products:read) are derived and never stored.",
           "classification": "CONFIDENTIAL"
         },
         "granted_by": {
-          "description": "Owner Person who granted it.",
+          "description": "Owner Person who granted it or last changed its restrictions.",
           "classification": "CONFIDENTIAL",
           "nullMeaning": "Granted by the server-side bootstrap flow."
         },
         "granted_at": {
-          "description": "Database-clock grant instant.",
+          "description": "Database-clock instant of the grant or of its last restriction change.",
           "classification": "CONFIDENTIAL"
         }
       },
@@ -344,6 +349,187 @@
         "identity_capability_grants_pkey": "A permission is granted once per Person.",
         "identity_capability_grants_person_id_fkey": "Grant belongs to its Person.",
         "identity_capability_grants_permission_check": "Permission naming convention."
+      }
+    },
+    "identity_grant_restrictions": {
+      "owner": "identity",
+      "classification": "CONFIDENTIAL",
+      "description": "Data restrictions of a Person's explicit grant (ADR-0037): each row admits one value of one dimension. Values of a dimension are alternatives; every restricted dimension of the grant must match. A grant without rows admits every row of its source.",
+      "lifecycle": "Replaced together with its grant by owners with recent strong authentication; removed with the grant or the Person. Moved with the grant on consolidation. Audited with value counts.",
+      "columns": {
+        "person_id": {
+          "description": "Grantee.",
+          "classification": "CONFIDENTIAL"
+        },
+        "permission": {
+          "description": "The restricted permission of the grant.",
+          "classification": "CONFIDENTIAL"
+        },
+        "dimension": {
+          "description": "Restriction dimension the permission declares, such as company or store; enforced by the module that owns the data.",
+          "classification": "CONFIDENTIAL"
+        },
+        "value": {
+          "description": "ERP record code admitted for the dimension (for example CODEMP or loja.id), validated against the source when saved.",
+          "classification": "CONFIDENTIAL"
+        },
+        "label": {
+          "description": "Display label read from the ERP when saved (company, project, seller, buyer, store or classification name); may be a person's name. Never typed by the browser.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "identity_grant_restrictions_pkey": "A value is admitted once per dimension of a grant.",
+        "identity_grant_restrictions_grant_fkey": "Restriction belongs to its grant and is removed with it.",
+        "identity_grant_restrictions_dimension_check": "Dimension naming convention.",
+        "identity_grant_restrictions_value_check": "ERP codes are integers.",
+        "identity_grant_restrictions_label_check": "A label is never blank."
+      }
+    },
+    "identity_groups": {
+      "owner": "identity",
+      "classification": "CONFIDENTIAL",
+      "description": "Owner-managed groups of Persons (ADR-0037). Every member holds the group's grants, united with its own grants.",
+      "lifecycle": "Created, renamed and deleted by owners with recent strong authentication; deleting a group removes its memberships and grants. Audited.",
+      "columns": {
+        "id": {
+          "description": "Immutable group UUID.",
+          "classification": "INTERNAL"
+        },
+        "name": {
+          "description": "Display name chosen by an owner, for example Comercial Matriz.",
+          "classification": "CONFIDENTIAL"
+        },
+        "name_key": {
+          "description": "Case-insensitive normalized name (NFKC, lower case) that makes names unique; written by the application.",
+          "classification": "CONFIDENTIAL"
+        },
+        "description": {
+          "description": "Optional owner description of who belongs to the group.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No description."
+        },
+        "version": {
+          "description": "Incremented by every change of name or description; updates apply only to the version the owner saw.",
+          "classification": "INTERNAL"
+        },
+        "created_by": {
+          "description": "Owner (identity_persons.id) who created the group; attribution without a foreign key, the audit trail is authoritative.",
+          "classification": "CONFIDENTIAL"
+        },
+        "created_at": {
+          "description": "Database-clock creation instant.",
+          "classification": "CONFIDENTIAL"
+        },
+        "updated_by": {
+          "description": "Owner (identity_persons.id) who made the last change.",
+          "classification": "CONFIDENTIAL"
+        },
+        "updated_at": {
+          "description": "Database-clock instant of the last change.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "identity_groups_pkey": "Group identity.",
+        "identity_groups_name_key": "Group names are unique regardless of case.",
+        "identity_groups_name_check": "Names have 2 to 80 visible characters.",
+        "identity_groups_description_check": "A description is never blank.",
+        "identity_groups_version_check": "Versions start at 1."
+      }
+    },
+    "identity_group_members": {
+      "owner": "identity",
+      "classification": "CONFIDENTIAL",
+      "description": "Membership of a Person in a group; the member holds the group's grants.",
+      "lifecycle": "Added and removed by owners with recent strong authentication; removed with the group or the Person, moved to the surviving Person on consolidation. Audited.",
+      "columns": {
+        "group_id": {
+          "description": "Group.",
+          "classification": "INTERNAL"
+        },
+        "person_id": {
+          "description": "Member Person.",
+          "classification": "CONFIDENTIAL"
+        },
+        "added_by": {
+          "description": "Owner (identity_persons.id) who added the member; attribution without a foreign key.",
+          "classification": "CONFIDENTIAL"
+        },
+        "added_at": {
+          "description": "Database-clock instant the member was added.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "identity_group_members_pkey": "A Person belongs to a group once.",
+        "identity_group_members_group_id_fkey": "Removed with the group.",
+        "identity_group_members_person_id_fkey": "Removed with the Person.",
+        "identity_group_members_person_idx": "Groups of a Person when computing access."
+      }
+    },
+    "identity_group_grants": {
+      "owner": "identity",
+      "classification": "CONFIDENTIAL",
+      "description": "Permissions an owner granted to a group, optionally narrowed by identity_group_grant_restrictions; every member holds them.",
+      "lifecycle": "Granted, restricted and revoked by owners with recent strong authentication; removed with the group. Audited.",
+      "columns": {
+        "group_id": {
+          "description": "Group.",
+          "classification": "INTERNAL"
+        },
+        "permission": {
+          "description": "Registered source permission such as sales_vrmaster:read; validated against the composed catalog.",
+          "classification": "CONFIDENTIAL"
+        },
+        "granted_by": {
+          "description": "Owner (identity_persons.id) who granted it or last changed its restrictions.",
+          "classification": "CONFIDENTIAL"
+        },
+        "granted_at": {
+          "description": "Database-clock instant of the grant or of its last restriction change.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "identity_group_grants_pkey": "A permission is granted once per group.",
+        "identity_group_grants_group_id_fkey": "Removed with the group.",
+        "identity_group_grants_permission_check": "Permission naming convention."
+      }
+    },
+    "identity_group_grant_restrictions": {
+      "owner": "identity",
+      "classification": "CONFIDENTIAL",
+      "description": "Data restrictions of a group grant, with the same meaning as identity_grant_restrictions.",
+      "lifecycle": "Replaced together with its grant by owners with recent strong authentication; removed with the grant or the group. Audited with value counts.",
+      "columns": {
+        "group_id": {
+          "description": "Group.",
+          "classification": "INTERNAL"
+        },
+        "permission": {
+          "description": "The restricted permission of the grant.",
+          "classification": "CONFIDENTIAL"
+        },
+        "dimension": {
+          "description": "Restriction dimension the permission declares, such as company or store; enforced by the module that owns the data.",
+          "classification": "CONFIDENTIAL"
+        },
+        "value": {
+          "description": "ERP record code admitted for the dimension (for example CODEMP or loja.id), validated against the source when saved.",
+          "classification": "CONFIDENTIAL"
+        },
+        "label": {
+          "description": "Display label read from the ERP when saved (company, project, seller, buyer, store or classification name); may be a person's name. Never typed by the browser.",
+          "classification": "CONFIDENTIAL"
+        }
+      },
+      "objects": {
+        "identity_group_grant_restrictions_pkey": "A value is admitted once per dimension of a group grant.",
+        "identity_group_grant_restrictions_grant_fkey": "Restriction belongs to its group grant and is removed with it.",
+        "identity_group_grant_restrictions_dimension_check": "Dimension naming convention.",
+        "identity_group_grant_restrictions_value_check": "ERP codes are integers.",
+        "identity_group_grant_restrictions_label_check": "A label is never blank."
       }
     },
     "identity_tickets": {
@@ -555,6 +741,105 @@
         "identity_trusted_devices_person_id_fkey": "Removed with the Person.",
         "identity_trusted_devices_token_key": "Token lookup; one row per browser token.",
         "identity_trusted_devices_person_idx": "Revocation of a Person's remembered browsers."
+      }
+    },
+    "identity_whatsapp_links": {
+      "owner": "identity",
+      "classification": "CONFIDENTIAL",
+      "description": "The WhatsApp number that an owner linked to a Person: the only authorization of the WhatsApp channel. An external identity attribute of an existing Person, never a sign-in method; it grants no permission by itself.",
+      "lifecycle": "Created, changed and removed only by owners through administration with recent strong authentication, each change audited in identity_audit_events in the same transaction. A change or removal revokes the channel at once for every message not yet answered. Moved to the surviving Person on consolidation when that Person has none, otherwise removed. Removed with the Person.",
+      "columns": {
+        "person_id": {
+          "description": "Person that this number identifies on WhatsApp; one number per Person.",
+          "classification": "CONFIDENTIAL"
+        },
+        "phone_number": {
+          "description": "E.164 digits of the number without the plus sign, as validated and normalized on entry.",
+          "classification": "CONFIDENTIAL"
+        },
+        "legacy_identifier": {
+          "description": "Deterministic legacy WhatsApp identifier of a Brazilian mobile (the number without its ninth digit), under which WhatsApp may report the same account; part of the uniqueness rule.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The number has no legacy form (not a Brazilian mobile, or a subscriber range where the legacy form would be ambiguous)."
+        },
+        "platform_user_id": {
+          "description": "WhatsApp business-scoped user identifier (BSUID) that Meta reported together with this exact number in a signature-verified message; later messages that omit the number match it, and a different identifier together with the number is refused as a conflict.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No verified message from this number has been received since the number was linked or changed."
+        },
+        "version": {
+          "description": "Incremented by every change of the number; queued channel work records it and is refused when it no longer matches.",
+          "classification": "INTERNAL"
+        },
+        "linked_by": {
+          "description": "Owner (identity_persons.id) who first linked a number; historical attribution without a foreign key, the audit trail is authoritative.",
+          "classification": "CONFIDENTIAL"
+        },
+        "linked_at": {
+          "description": "When a number was first linked to the Person.",
+          "classification": "CONFIDENTIAL"
+        },
+        "updated_by": {
+          "description": "Owner (identity_persons.id) who made the last change.",
+          "classification": "CONFIDENTIAL"
+        },
+        "updated_at": {
+          "description": "When the number was last set.",
+          "classification": "CONFIDENTIAL"
+        },
+        "confirmed_at": {
+          "description": "When a verified message from the current number was first accepted.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "No message from the current number has been accepted yet."
+        }
+      },
+      "objects": {
+        "identity_whatsapp_links_pkey": "One WhatsApp number per Person.",
+        "identity_whatsapp_links_person_id_fkey": "Removed with the Person.",
+        "identity_whatsapp_links_phone_key": "A number identifies at most one Person.",
+        "identity_whatsapp_links_legacy_key": "A legacy Brazilian identifier identifies at most one Person.",
+        "identity_whatsapp_links_platform_user_key": "A WhatsApp user identifier identifies at most one Person.",
+        "identity_whatsapp_links_phone_check": "E.164 digits only (8 to 15, no leading zero).",
+        "identity_whatsapp_links_legacy_check": "Only the legacy form of a Brazilian mobile, different from the number itself.",
+        "identity_whatsapp_links_platform_user_check": "Only the business-scoped user identifier format.",
+        "identity_whatsapp_links_version_check": "Versions start at 1."
+      }
+    },
+    "identity_provider_groups": {
+      "owner": "identity",
+      "classification": "INTERNAL",
+      "description": "Owner-selected default group for each external sign-in provider; no implicit permission policy.",
+      "lifecycle": "Two fixed rows seeded by migration. Owners update with recent strong authentication and optimistic version checks. Verified provider sign-in adds normal, audited membership; changing the selection does not remove existing memberships. A selected group cannot be deleted.",
+      "columns": {
+        "provider": {
+          "description": "External sign-in provider: pdt or sankhya.",
+          "classification": "INTERNAL"
+        },
+        "group_id": {
+          "description": "Existing normal group joined after successful provider sign-in.",
+          "classification": "INTERNAL",
+          "nullMeaning": "No automatic membership for this provider."
+        },
+        "version": {
+          "description": "Optimistic concurrency version incremented on every selection change.",
+          "classification": "INTERNAL"
+        },
+        "updated_by": {
+          "description": "Owner who selected the group; historical identity_persons identifier without a foreign key, retained through consolidation.",
+          "classification": "CONFIDENTIAL",
+          "nullMeaning": "The selection has never been changed by an owner."
+        },
+        "updated_at": {
+          "description": "When the selection was last changed, or initially seeded.",
+          "classification": "INTERNAL"
+        }
+      },
+      "objects": {
+        "identity_provider_groups_pkey": "One selection per sign-in provider.",
+        "identity_provider_groups_provider_check": "Only the two supported external sign-in providers.",
+        "identity_provider_groups_version_check": "Nonnegative optimistic version.",
+        "identity_provider_groups_actor_check": "A selected group must have an attributable selecting owner.",
+        "identity_provider_groups_group_id_fkey": "An owner must clear or replace a default before deleting its group."
       }
     }
   }

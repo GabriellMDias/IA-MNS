@@ -52,19 +52,21 @@
                       "anyOf": [
                         { "type": "string", "const": "ai.model" },
                         { "type": "string", "const": "ai.traceLevel" },
-                        { "type": "string", "const": "access.providerGrants" }
+                        { "type": "string", "const": "channels.whatsapp" }
                       ]
                     },
                     "group": {
                       "anyOf": [
                         { "type": "string", "const": "ai" },
-                        { "type": "string", "const": "access" }
+                        { "type": "string", "const": "access" },
+                        { "type": "string", "const": "channels" }
                       ]
                     },
                     "effect": {
                       "anyOf": [
                         { "type": "string", "const": "next_turn" },
-                        { "type": "string", "const": "next_access_token" }
+                        { "type": "string", "const": "next_access_token" },
+                        { "type": "string", "const": "next_message" }
                       ]
                     },
                     "control": {
@@ -217,19 +219,21 @@
                   "anyOf": [
                     { "type": "string", "const": "ai.model" },
                     { "type": "string", "const": "ai.traceLevel" },
-                    { "type": "string", "const": "access.providerGrants" }
+                    { "type": "string", "const": "channels.whatsapp" }
                   ]
                 },
                 "group": {
                   "anyOf": [
                     { "type": "string", "const": "ai" },
-                    { "type": "string", "const": "access" }
+                    { "type": "string", "const": "access" },
+                    { "type": "string", "const": "channels" }
                   ]
                 },
                 "effect": {
                   "anyOf": [
                     { "type": "string", "const": "next_turn" },
-                    { "type": "string", "const": "next_access_token" }
+                    { "type": "string", "const": "next_access_token" },
+                    { "type": "string", "const": "next_message" }
                   ]
                 },
                 "control": {
@@ -358,17 +362,17 @@
         { "name": "parameters", "type": "array of object", "required": true },
         {
           "name": "parameters[].key",
-          "type": "\"ai.model\" | \"ai.traceLevel\" | \"access.providerGrants\"",
+          "type": "\"ai.model\" | \"ai.traceLevel\" | \"channels.whatsapp\"",
           "required": true
         },
         {
           "name": "parameters[].group",
-          "type": "\"ai\" | \"access\"",
+          "type": "\"ai\" | \"access\" | \"channels\"",
           "required": true
         },
         {
           "name": "parameters[].effect",
-          "type": "\"next_turn\" | \"next_access_token\"",
+          "type": "\"next_turn\" | \"next_access_token\" | \"next_message\"",
           "required": true
         },
         {

@@ -15,11 +15,22 @@ import {
   semanticSalesPlanSchema,
 } from "../sales/semantic.js";
 import { salesAnalysisSchema } from "../sales/contracts.js";
-import { sourceCatalog } from "../sales/sources.js";
-import { productPermission, scopedProductState } from "./capability.js";
+import { sourceCatalog, sourcesOf } from "../sales/sources.js";
+import {
+  deniedProductSelection,
+  productPermission,
+  productSourcePermission,
+  scopedProductState,
+} from "./capability.js";
+import {
+  deniedSalesMessage,
+  deniedSourceText,
+  salesAccessOf,
+  salesPermissions,
+} from "../sales/access.js";
 import { productOptionsSchema } from "./contracts.js";
 import type { ProductResolver } from "./resolver.js";
-import { salesProductState } from "./sales.js";
+import { salesProductState, selectionScopeConflict } from "./sales.js";
 import { emptyProductState, productStateSchema } from "./state.js";
 
 const object = { additionalProperties: false };
@@ -111,6 +122,21 @@ export function createSalesAnalyticsCapability(
     compileSemanticSalesPlan(args.plan, today, literal);
     input.signal.throwIfAborted();
     const context = load(input.context);
+    const access = salesAccessOf(input.permissions, input.scopes);
+    const selectedSources = sourcesOf(input.source);
+    if (!selectedSources.some((source) => access[source]))
+      return {
+        reply: {
+          kind: "unavailable",
+          capabilityId: "analytics",
+          message: deniedSalesMessage(selectedSources),
+          result: null,
+          suggestions: [],
+          requiredPermissions: ["sales:read"],
+        },
+        context,
+        awaiting: null,
+      };
     const inherited =
       resume && input.source !== "all" ? context.sources.all : undefined;
     const scoped = context.sources[input.source] ?? {
@@ -146,8 +172,18 @@ export function createSalesAnalyticsCapability(
     });
     let scope;
     if (semantic) {
-      if (!input.permissions.has(productPermission))
-        throw new AgentFailure("AGENT_ACCESS_DENIED");
+      if (
+        !input.permissions.has(productPermission) ||
+        (input.source !== "all" &&
+          !input.permissions.has(productSourcePermission(input.source)))
+      )
+        return clarification(
+          deniedProductSelection(input.source, input.permissions),
+          "product",
+          null,
+          [],
+          true,
+        );
       scoped.pending = structuredClone(args);
       scoped.request = resume
         ? (scoped.request ?? inherited?.request ?? input.message)
@@ -229,6 +265,12 @@ export function createSalesAnalyticsCapability(
           "Identifique ou conclua a escolha dos produtos nesta fonte antes de analisar suas vendas.",
           "product",
         );
+      const conflict = selectionScopeConflict(
+        input.source,
+        scoped.products.active,
+        access,
+      );
+      if (conflict) return clarification(conflict, "product", null, [], true);
       scope = await resolver.salesScope(scoped.products.active, input.signal);
     } else {
       scoped.products = structuredClone(emptyProductState);
@@ -239,6 +281,7 @@ export function createSalesAnalyticsCapability(
       plan: args.plan,
       selection: input.source,
       permissions: input.permissions,
+      access,
       readers,
       today,
       signal: input.signal,
@@ -255,15 +298,16 @@ export function createSalesAnalyticsCapability(
     }
     await input.progress("organizing");
     const lines = result.panels.flatMap((panel) =>
-      panel.sections.map(
-        (section) =>
-          `${sourceCatalog[section.source].label}: ${
-            section.result
-              ? answerFor(section.result, section.source)
-              : section.status === "unsupported"
-                ? "esta medida não está disponível nesta fonte."
-                : "não foi possível consultar esta fonte; nenhum valor foi presumido."
-          }`,
+      panel.sections.map((section) =>
+        section.status === "denied"
+          ? deniedSourceText(section.source)
+          : `${sourceCatalog[section.source].label}: ${
+              section.result
+                ? answerFor(section.result, section.source)
+                : section.status === "unsupported"
+                  ? "esta medida não está disponível nesta fonte."
+                  : "não foi possível consultar esta fonte; nenhum valor foi presumido."
+            }`,
       ),
     );
     return {
@@ -288,6 +332,7 @@ export function createSalesAnalyticsCapability(
     description,
     examples: ["Compare valor e quantidade por produto e por mês."],
     permission: "sales:read",
+    sourcePermissions: salesPermissions,
     tools: [
       {
         name: "query_sales",

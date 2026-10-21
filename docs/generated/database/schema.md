@@ -26,11 +26,13 @@ Lifecycle: Local history persists until the owner explicitly deletes the convers
 | `title_manual` | `boolean` | no | `false` | CONFIDENTIAL | Owner explicitly named this conversation; automatic first-turn naming must not replace it. | — | — |
 | `pinned` | `boolean` | no | `false` | CONFIDENTIAL | Owner favorite retained across archive/restore; archived favorites are excluded from the active pinned list. | — | — |
 | `archived` | `boolean` | no | `false` | CONFIDENTIAL | Hidden from active history without deleting turns or context. Restore before accepting new turns. | — | — |
+| `channel` | `character varying(16)` | no | `'web'::character varying` | INTERNAL | Channel through which the conversation was started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. Metadata only; the same owner, permissions and history apply on every channel. | — | — |
 
 ### Constraints and indexes
 
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
+| `agent_conversations_channel_check` | `CHECK (((channel)::text = ANY ((ARRAY['web'::character varying, 'whatsapp'::character varying])::text[])))` | Only the implemented channels. |
 | `agent_conversations_contexts_check` | `CHECK ((jsonb_typeof(contexts) = 'object'::text))` | Capability context must be a JSON object. |
 | `agent_conversations_lease_check` | `CHECK (((active_turn_id IS NULL) = (lease_until IS NULL)))` | Lease holder and expiry exist together. |
 | `agent_conversations_owner_check` | `CHECK ((length((owner)::text) > 0))` | Ownership is required. |
@@ -119,6 +121,7 @@ Lifecycle: Persons are never hard-deleted by the application; an owner disables 
 | `merged_into` | `uuid` | yes | — | CONFIDENTIAL | Person that absorbed this one through a proof-based or owner-approved consolidation; links, local credential, grants and conversations moved there. | Not merged. | — |
 | `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock creation instant. | — | — |
 | `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock last profile or status change; informational, not an audit trail. | — | — |
+| `whatsapp_link_version` | `integer` | no | `0` | CONFIDENTIAL | Last allocated WhatsApp link generation, retained after unlinking. Changes are serialized with the Person lock; a recreated link cannot authorize older queued work. | — | — |
 
 ### Constraints and indexes
 
@@ -129,6 +132,7 @@ Lifecycle: Persons are never hard-deleted by the application; an owner disables 
 | `identity_persons_merged_into_fkey` | `FOREIGN KEY (merged_into) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE RESTRICT` | A merged Person points to an existing Person; never deleted while referenced. |
 | `identity_persons_pkey` | `PRIMARY KEY (id)` | Immutable Person identity. |
 | `identity_persons_status_check` | `CHECK (((status)::text = ANY ((ARRAY['active'::character varying, 'disabled'::character varying, 'merged'::character varying])::text[])))` | Explicit lifecycle states. |
+| `identity_persons_whatsapp_link_version_check` | `CHECK ((whatsapp_link_version >= 0))` | The persistent WhatsApp link generation starts at zero and never becomes negative. |
 | `identity_persons_display_name_idx` | `CREATE INDEX identity_persons_display_name_idx ON public.identity_persons USING btree (display_name, id)` | Bounded administrative listing ordered by name. |
 
 ## identity_external_identities
@@ -292,18 +296,18 @@ Lifecycle: Assigned by bootstrap or an existing owner with recent strong authent
 
 ## identity_capability_grants
 
-Explicit capability permissions granted to a Person by an owner, in addition to provider-policy grants derived from active links. The language model never creates grants.
+Explicit capability permissions granted to a Person by an owner, united with group grants. External links alone grant no permission. A grant may be narrowed by data restrictions (identity_grant_restrictions); an explicit grant takes precedence over the provider policy for its permission. The language model never creates grants.
 
 Owner: identity. Classification: CONFIDENTIAL.
 
-Lifecycle: Granted and revoked by owners with recent strong authentication; changes reach new access tokens within their 10-minute lifetime. Audited.
+Lifecycle: Granted, restricted and revoked by owners with recent strong authentication; changes reach new access tokens within their 10-minute lifetime and agent turns at once. Audited.
 
 | Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `person_id` | `uuid` | no | — | CONFIDENTIAL | Grantee. | — | — |
-| `permission` | `character varying(80)` | no | — | CONFIDENTIAL | Registered capability permission such as sales:read; validated against the composed catalog. | — | — |
-| `granted_by` | `uuid` | yes | — | CONFIDENTIAL | Owner Person who granted it. | Granted by the server-side bootstrap flow. | — |
-| `granted_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock grant instant. | — | — |
+| `permission` | `character varying(80)` | no | — | CONFIDENTIAL | Registered source permission such as sales_sankhya:read; validated against the composed catalog. Capability permissions (sales:read, products:read) are derived and never stored. | — | — |
+| `granted_by` | `uuid` | yes | — | CONFIDENTIAL | Owner Person who granted it or last changed its restrictions. | Granted by the server-side bootstrap flow. | — |
+| `granted_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock instant of the grant or of its last restriction change. | — | — |
 
 ### Constraints and indexes
 
@@ -312,6 +316,135 @@ Lifecycle: Granted and revoked by owners with recent strong authentication; chan
 | `identity_capability_grants_permission_check` | `CHECK (((permission)::text ~ '^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$'::text))` | Permission naming convention. |
 | `identity_capability_grants_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Grant belongs to its Person. |
 | `identity_capability_grants_pkey` | `PRIMARY KEY (person_id, permission)` | A permission is granted once per Person. |
+
+## identity_grant_restrictions
+
+Data restrictions of a Person's explicit grant (ADR-0037): each row admits one value of one dimension. Values of a dimension are alternatives; every restricted dimension of the grant must match. A grant without rows admits every row of its source.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Replaced together with its grant by owners with recent strong authentication; removed with the grant or the Person. Moved with the grant on consolidation. Audited with value counts.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Grantee. | — | — |
+| `permission` | `character varying(80)` | no | — | CONFIDENTIAL | The restricted permission of the grant. | — | — |
+| `dimension` | `character varying(32)` | no | — | CONFIDENTIAL | Restriction dimension the permission declares, such as company or store; enforced by the module that owns the data. | — | — |
+| `value` | `character varying(40)` | no | — | CONFIDENTIAL | ERP record code admitted for the dimension (for example CODEMP or loja.id), validated against the source when saved. | — | — |
+| `label` | `character varying(200)` | no | — | CONFIDENTIAL | Display label read from the ERP when saved (company, project, seller, buyer, store or classification name); may be a person's name. Never typed by the browser. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_grant_restrictions_dimension_check` | `CHECK (((dimension)::text ~ '^[a-z][a-z_]{1,30}$'::text))` | Dimension naming convention. |
+| `identity_grant_restrictions_grant_fkey` | `FOREIGN KEY (person_id, permission) REFERENCES identity_capability_grants(person_id, permission) ON UPDATE CASCADE ON DELETE CASCADE` | Restriction belongs to its grant and is removed with it. |
+| `identity_grant_restrictions_label_check` | `CHECK ((length(btrim((label)::text)) > 0))` | A label is never blank. |
+| `identity_grant_restrictions_pkey` | `PRIMARY KEY (person_id, permission, dimension, value)` | A value is admitted once per dimension of a grant. |
+| `identity_grant_restrictions_value_check` | `CHECK (((value)::text ~ '^-?[0-9]{1,15}$'::text))` | ERP codes are integers. |
+
+## identity_groups
+
+Owner-managed groups of Persons (ADR-0037). Every member holds the group's grants, united with its own grants.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Created, renamed and deleted by owners with recent strong authentication; deleting a group removes its memberships and grants. Audited.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Immutable group UUID. | — | — |
+| `name` | `character varying(80)` | no | — | CONFIDENTIAL | Display name chosen by an owner, for example Comercial Matriz. | — | — |
+| `name_key` | `character varying(80)` | no | — | CONFIDENTIAL | Case-insensitive normalized name (NFKC, lower case) that makes names unique; written by the application. | — | — |
+| `description` | `character varying(300)` | yes | — | CONFIDENTIAL | Optional owner description of who belongs to the group. | No description. | — |
+| `version` | `integer` | no | `1` | INTERNAL | Incremented by every change of name or description; updates apply only to the version the owner saw. | — | — |
+| `created_by` | `uuid` | no | — | CONFIDENTIAL | Owner (identity_persons.id) who created the group; attribution without a foreign key, the audit trail is authoritative. | — | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock creation instant. | — | — |
+| `updated_by` | `uuid` | no | — | CONFIDENTIAL | Owner (identity_persons.id) who made the last change. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock instant of the last change. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_groups_description_check` | `CHECK (((description IS NULL) OR (length(btrim((description)::text)) > 0)))` | A description is never blank. |
+| `identity_groups_name_check` | `CHECK (((length(btrim((name)::text)) >= 2) AND (length(btrim((name)::text)) <= 80)))` | Names have 2 to 80 visible characters. |
+| `identity_groups_pkey` | `PRIMARY KEY (id)` | Group identity. |
+| `identity_groups_version_check` | `CHECK ((version >= 1))` | Versions start at 1. |
+| `identity_groups_name_key` | `CREATE UNIQUE INDEX identity_groups_name_key ON public.identity_groups USING btree (name_key)` | Group names are unique regardless of case. |
+
+## identity_group_members
+
+Membership of a Person in a group; the member holds the group's grants.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Added and removed by owners with recent strong authentication; removed with the group or the Person, moved to the surviving Person on consolidation. Audited.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `group_id` | `uuid` | no | — | INTERNAL | Group. | — | — |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Member Person. | — | — |
+| `added_by` | `uuid` | no | — | CONFIDENTIAL | Owner (identity_persons.id) who added the member; attribution without a foreign key. | — | — |
+| `added_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock instant the member was added. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_group_members_group_id_fkey` | `FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE CASCADE` | Removed with the group. |
+| `identity_group_members_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Removed with the Person. |
+| `identity_group_members_pkey` | `PRIMARY KEY (group_id, person_id)` | A Person belongs to a group once. |
+| `identity_group_members_person_idx` | `CREATE INDEX identity_group_members_person_idx ON public.identity_group_members USING btree (person_id)` | Groups of a Person when computing access. |
+
+## identity_group_grants
+
+Permissions an owner granted to a group, optionally narrowed by identity_group_grant_restrictions; every member holds them.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Granted, restricted and revoked by owners with recent strong authentication; removed with the group. Audited.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `group_id` | `uuid` | no | — | INTERNAL | Group. | — | — |
+| `permission` | `character varying(80)` | no | — | CONFIDENTIAL | Registered source permission such as sales_vrmaster:read; validated against the composed catalog. | — | — |
+| `granted_by` | `uuid` | no | — | CONFIDENTIAL | Owner (identity_persons.id) who granted it or last changed its restrictions. | — | — |
+| `granted_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Database-clock instant of the grant or of its last restriction change. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_group_grants_group_id_fkey` | `FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE CASCADE` | Removed with the group. |
+| `identity_group_grants_permission_check` | `CHECK (((permission)::text ~ '^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$'::text))` | Permission naming convention. |
+| `identity_group_grants_pkey` | `PRIMARY KEY (group_id, permission)` | A permission is granted once per group. |
+
+## identity_group_grant_restrictions
+
+Data restrictions of a group grant, with the same meaning as identity_grant_restrictions.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Replaced together with its grant by owners with recent strong authentication; removed with the grant or the group. Audited with value counts.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `group_id` | `uuid` | no | — | INTERNAL | Group. | — | — |
+| `permission` | `character varying(80)` | no | — | CONFIDENTIAL | The restricted permission of the grant. | — | — |
+| `dimension` | `character varying(32)` | no | — | CONFIDENTIAL | Restriction dimension the permission declares, such as company or store; enforced by the module that owns the data. | — | — |
+| `value` | `character varying(40)` | no | — | CONFIDENTIAL | ERP record code admitted for the dimension (for example CODEMP or loja.id), validated against the source when saved. | — | — |
+| `label` | `character varying(200)` | no | — | CONFIDENTIAL | Display label read from the ERP when saved (company, project, seller, buyer, store or classification name); may be a person's name. Never typed by the browser. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_group_grant_restrictions_dimension_check` | `CHECK (((dimension)::text ~ '^[a-z][a-z_]{1,30}$'::text))` | Dimension naming convention. |
+| `identity_group_grant_restrictions_grant_fkey` | `FOREIGN KEY (group_id, permission) REFERENCES identity_group_grants(group_id, permission) ON UPDATE CASCADE ON DELETE CASCADE` | Restriction belongs to its group grant and is removed with it. |
+| `identity_group_grant_restrictions_label_check` | `CHECK ((length(btrim((label)::text)) > 0))` | A label is never blank. |
+| `identity_group_grant_restrictions_pkey` | `PRIMARY KEY (group_id, permission, dimension, value)` | A value is admitted once per dimension of a group grant. |
+| `identity_group_grant_restrictions_value_check` | `CHECK (((value)::text ~ '^-?[0-9]{1,15}$'::text))` | ERP codes are integers. |
 
 ## identity_tickets
 
@@ -451,13 +584,74 @@ Lifecycle: Valid while not revoked and younger than the policy's remember_device
 | `identity_trusted_devices_person_idx` | `CREATE INDEX identity_trusted_devices_person_idx ON public.identity_trusted_devices USING btree (person_id)` | Revocation of a Person's remembered browsers. |
 | `identity_trusted_devices_token_key` | `CREATE UNIQUE INDEX identity_trusted_devices_token_key ON public.identity_trusted_devices USING btree (token_hash)` | Token lookup; one row per browser token. |
 
+## identity_whatsapp_links
+
+The WhatsApp number that an owner linked to a Person: the only authorization of the WhatsApp channel. An external identity attribute of an existing Person, never a sign-in method; it grants no permission by itself.
+
+Owner: identity. Classification: CONFIDENTIAL.
+
+Lifecycle: Created, changed and removed only by owners through administration with recent strong authentication, each change audited in identity_audit_events in the same transaction. A change or removal revokes the channel at once for every message not yet answered. Moved to the surviving Person on consolidation when that Person has none, otherwise removed. Removed with the Person.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Person that this number identifies on WhatsApp; one number per Person. | — | — |
+| `phone_number` | `character varying(15)` | no | — | CONFIDENTIAL | E.164 digits of the number without the plus sign, as validated and normalized on entry. | — | — |
+| `legacy_identifier` | `character varying(15)` | yes | — | CONFIDENTIAL | Deterministic legacy WhatsApp identifier of a Brazilian mobile (the number without its ninth digit), under which WhatsApp may report the same account; part of the uniqueness rule. | The number has no legacy form (not a Brazilian mobile, or a subscriber range where the legacy form would be ambiguous). | — |
+| `platform_user_id` | `character varying(140)` | yes | — | CONFIDENTIAL | WhatsApp business-scoped user identifier (BSUID) that Meta reported together with this exact number in a signature-verified message; later messages that omit the number match it, and a different identifier together with the number is refused as a conflict. | No verified message from this number has been received since the number was linked or changed. | — |
+| `version` | `integer` | no | `1` | INTERNAL | Incremented by every change of the number; queued channel work records it and is refused when it no longer matches. | — | — |
+| `linked_by` | `uuid` | no | — | CONFIDENTIAL | Owner (identity_persons.id) who first linked a number; historical attribution without a foreign key, the audit trail is authoritative. | — | — |
+| `linked_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | When a number was first linked to the Person. | — | — |
+| `updated_by` | `uuid` | no | — | CONFIDENTIAL | Owner (identity_persons.id) who made the last change. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | When the number was last set. | — | — |
+| `confirmed_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | When a verified message from the current number was first accepted. | No message from the current number has been accepted yet. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_whatsapp_links_legacy_check` | `CHECK (((legacy_identifier IS NULL) OR (((legacy_identifier)::text ~ '^55[1-9]{2}[6-9][0-9]{7}$'::text) AND ((legacy_identifier)::text <> (phone_number)::text))))` | Only the legacy form of a Brazilian mobile, different from the number itself. |
+| `identity_whatsapp_links_person_id_fkey` | `FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE` | Removed with the Person. |
+| `identity_whatsapp_links_phone_check` | `CHECK (((phone_number)::text ~ '^[1-9][0-9]{7,14}$'::text))` | E.164 digits only (8 to 15, no leading zero). |
+| `identity_whatsapp_links_pkey` | `PRIMARY KEY (person_id)` | One WhatsApp number per Person. |
+| `identity_whatsapp_links_platform_user_check` | `CHECK (((platform_user_id IS NULL) OR ((platform_user_id)::text ~ '^[A-Z]{2}\.(ENT\.)?[A-Za-z0-9]{1,128}$'::text)))` | Only the business-scoped user identifier format. |
+| `identity_whatsapp_links_version_check` | `CHECK ((version >= 1))` | Versions start at 1. |
+| `identity_whatsapp_links_legacy_key` | `CREATE UNIQUE INDEX identity_whatsapp_links_legacy_key ON public.identity_whatsapp_links USING btree (legacy_identifier)` | A legacy Brazilian identifier identifies at most one Person. |
+| `identity_whatsapp_links_phone_key` | `CREATE UNIQUE INDEX identity_whatsapp_links_phone_key ON public.identity_whatsapp_links USING btree (phone_number)` | A number identifies at most one Person. |
+| `identity_whatsapp_links_platform_user_key` | `CREATE UNIQUE INDEX identity_whatsapp_links_platform_user_key ON public.identity_whatsapp_links USING btree (platform_user_id)` | A WhatsApp user identifier identifies at most one Person. |
+
+## identity_provider_groups
+
+Owner-selected default group for each external sign-in provider; no implicit permission policy.
+
+Owner: identity. Classification: INTERNAL.
+
+Lifecycle: Two fixed rows seeded by migration. Owners update with recent strong authentication and optimistic version checks. Verified provider sign-in adds normal, audited membership; changing the selection does not remove existing memberships. A selected group cannot be deleted.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `provider` | `character varying(16)` | no | — | INTERNAL | External sign-in provider: pdt or sankhya. | — | — |
+| `group_id` | `uuid` | yes | — | INTERNAL | Existing normal group joined after successful provider sign-in. | No automatic membership for this provider. | — |
+| `version` | `integer` | no | `0` | INTERNAL | Optimistic concurrency version incremented on every selection change. | — | — |
+| `updated_by` | `uuid` | yes | — | CONFIDENTIAL | Owner who selected the group; historical identity_persons identifier without a foreign key, retained through consolidation. | The selection has never been changed by an owner. | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | When the selection was last changed, or initially seeded. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `identity_provider_groups_actor_check` | `CHECK (((group_id IS NULL) OR (updated_by IS NOT NULL)))` | A selected group must have an attributable selecting owner. |
+| `identity_provider_groups_group_id_fkey` | `FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE RESTRICT` | An owner must clear or replace a default before deleting its group. |
+| `identity_provider_groups_pkey` | `PRIMARY KEY (provider)` | One selection per sign-in provider. |
+| `identity_provider_groups_provider_check` | `CHECK (((provider)::text = ANY ((ARRAY['pdt'::character varying, 'sankhya'::character varying])::text[])))` | Only the two supported external sign-in providers. |
+| `identity_provider_groups_version_check` | `CHECK ((version >= 0))` | Nonnegative optimistic version. |
+
 ## operational_parameters
 
 Values that owners saved for the operational parameters declared by the runtime catalog in apps/api/src/parameters.ts (ADR-0028). The catalog owns each parameter's type, domain, installation default and effect; a missing row or a null value means the installation default applies. Secrets and bootstrap settings are never stored here.
 
 Owner: runtime (operational parameters). Classification: INTERNAL.
 
-Lifecycle: At most one row per catalog key, written only by owners through administration with strong recent authentication; a reset stores null instead of deleting. Every change is recorded in identity_audit_events with previous and new values.
+Lifecycle: At most one row per catalog key, written only by owners through administration with strong recent authentication; a reset stores null instead of deleting. Every change is recorded in identity_audit_events with previous and new values. Retired access.providerGrants rows remain as historical evidence and are ignored by the runtime catalog; provider default groups have separate identity-owned storage.
 
 | Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -471,7 +665,115 @@ Lifecycle: At most one row per catalog key, written only by owners through admin
 
 | Object | Physical definition | Purpose |
 | --- | --- | --- |
-| `operational_parameters_key_check` | `CHECK (((key)::text = ANY ((ARRAY['ai.model'::character varying, 'ai.traceLevel'::character varying, 'access.providerGrants'::character varying])::text[])))` | Only parameters declared by the catalog. |
+| `operational_parameters_key_check` | `CHECK (((key)::text = ANY ((ARRAY['ai.model'::character varying, 'ai.traceLevel'::character varying, 'access.providerGrants'::character varying, 'channels.whatsapp'::character varying])::text[])))` | Only parameters declared by the catalog. |
 | `operational_parameters_pkey` | `PRIMARY KEY (key)` | One saved value per parameter. |
-| `operational_parameters_value_check` | `CHECK (((value IS NULL) OR (((key)::text = 'ai.model'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$'::text)) OR (((key)::text = 'ai.traceLevel'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) = ANY (ARRAY['off'::text, 'metadata'::text, 'content'::text]))) OR (((key)::text = 'access.providerGrants'::text) AND (jsonb_typeof(value) = 'array'::text) AND (jsonb_array_length(value) <= 32) AND (NOT jsonb_path_exists(value, '$[*]?(@.type() != "string")'::jsonpath)))))` | Each known key holds only its catalog type and domain (model identifier pattern, trace level, list of at most 32 strings). |
+| `operational_parameters_value_check` | `CHECK (((value IS NULL) OR (((key)::text = 'ai.model'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$'::text)) OR (((key)::text = 'ai.traceLevel'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) = ANY (ARRAY['off'::text, 'metadata'::text, 'content'::text]))) OR (((key)::text = 'access.providerGrants'::text) AND (jsonb_typeof(value) = 'array'::text) AND (jsonb_array_length(value) <= 32) AND (NOT jsonb_path_exists(value, '$[*]?(@.type() != "string")'::jsonpath))) OR (((key)::text = 'channels.whatsapp'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) = ANY (ARRAY['enabled'::text, 'disabled'::text])))))` | Each known key holds only its catalog type and domain (model identifier pattern, trace level, list of at most 32 strings, channel switch). |
 | `operational_parameters_version_check` | `CHECK ((version >= 1))` | Versions start at 1. |
+
+## whatsapp_inbound_messages
+
+WhatsApp messages from senders that matched exactly one active Person through an owner-linked number when the signature-verified webhook arrived. Unknown, unlinked or unauthorized senders are never recorded. Each row is processed once, in order per Person, after the sender is authorized again.
+
+Owner: whatsapp. Classification: CONFIDENTIAL.
+
+Lifecycle: Inserted before the webhook is acknowledged and deduplicated by the Meta message id; claimed under a lease, retried a bounded number of times, then completed, ignored (revoked, disabled channel, limits, expired window) or failed. The message text is cleared when processing ends, because the question is kept in the agent conversation. Rows older than 30 days are pruned with their replies (provisional until PH-09).
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Inbound work identifier; also the agent turn request id, so a repeated attempt replays the same turn. | — | — |
+| `message_id` | `character varying(256)` | no | — | CONFIDENTIAL | Meta message id (wamid); the deduplication key for repeated webhook deliveries. | — | — |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Person the sender matched when the message arrived; processing refuses the message if the sender no longer matches this Person. | — | — |
+| `link_version` | `integer` | no | — | INTERNAL | Version of the Person's WhatsApp link when the message arrived; a changed or removed link refuses the message. | — | — |
+| `sender_phone` | `character varying(15)` | yes | — | CONFIDENTIAL | Sender number exactly as Meta reported it (digits), used only to answer the same sender. | Meta reported only the WhatsApp user identifier. | — |
+| `sender_user_id` | `character varying(140)` | yes | — | CONFIDENTIAL | WhatsApp business-scoped user identifier Meta reported. | Not reported by Meta for this message. | — |
+| `kind` | `character varying(16)` | no | — | INTERNAL | text, or unsupported for media and other message types this version does not process. | — | — |
+| `body` | `character varying(4096)` | yes | — | CONFIDENTIAL | Text of the message while it awaits processing. | Not text, or processing ended and the text was cleared. | — |
+| `sent_at` | `timestamp(3) with time zone` | no | — | CONFIDENTIAL | When the person sent the message, according to Meta; orders processing per Person and bounds the customer service window. | — | — |
+| `received_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | When the webhook delivered the message. | — | — |
+| `state` | `character varying(16)` | no | `'pending'::character varying` | INTERNAL | pending, processing, completed, ignored or failed. | — | — |
+| `outcome` | `character varying(40)` | yes | — | INTERNAL | Allowlisted code of how processing ended, for example answered, command, revoked, channel_disabled, rate_limited or expired. | Still pending or processing. | — |
+| `attempts` | `integer` | no | `0` | INTERNAL | Processing attempts started; bounded. | — | — |
+| `not_before` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | Earliest time the message may be claimed (backoff after a busy conversation or a failed attempt). | — | — |
+| `lease_until` | `timestamp(3) with time zone` | yes | — | INTERNAL | Expiry of the current processing claim; an expired claim is reclaimed. | Not claimed. | — |
+| `conversation_id` | `uuid` | yes | — | CONFIDENTIAL | Agent conversation that received the message as a turn. | No turn was submitted (command, refusal or still pending). | — |
+| `turn_id` | `uuid` | yes | — | CONFIDENTIAL | Agent turn created for the message. | No turn was submitted. | — |
+| `finished_at` | `timestamp(3) with time zone` | yes | — | CONFIDENTIAL | When processing ended. | Still pending or processing. | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `whatsapp_inbound_messages_attempts_check` | `CHECK ((attempts >= 0))` | Attempts are never negative. |
+| `whatsapp_inbound_messages_kind_check` | `CHECK (((kind)::text = ANY ((ARRAY['text'::character varying, 'unsupported'::character varying])::text[])))` | Only the processed message kinds. |
+| `whatsapp_inbound_messages_pkey` | `PRIMARY KEY (id)` | Inbound work identity. |
+| `whatsapp_inbound_messages_sender_check` | `CHECK (((sender_phone IS NOT NULL) OR (sender_user_id IS NOT NULL)))` | Every message has a sender identifier. |
+| `whatsapp_inbound_messages_state_check` | `CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'processing'::character varying, 'completed'::character varying, 'ignored'::character varying, 'failed'::character varying])::text[])))` | Only the processing states. |
+| `whatsapp_inbound_messages_message_key` | `CREATE UNIQUE INDEX whatsapp_inbound_messages_message_key ON public.whatsapp_inbound_messages USING btree (message_id)` | One row per Meta message: repeated webhook deliveries are ignored. |
+| `whatsapp_inbound_messages_person_idx` | `CREATE INDEX whatsapp_inbound_messages_person_idx ON public.whatsapp_inbound_messages USING btree (person_id, sent_at, received_at)` | Per-Person ordering and usage limits. |
+| `whatsapp_inbound_messages_received_idx` | `CREATE INDEX whatsapp_inbound_messages_received_idx ON public.whatsapp_inbound_messages USING btree (received_at)` | Daily cost ceiling and pruning. |
+| `whatsapp_inbound_messages_work_idx` | `CREATE INDEX whatsapp_inbound_messages_work_idx ON public.whatsapp_inbound_messages USING btree (state, not_before)` | Claiming of due work. |
+
+## whatsapp_outbound_messages
+
+Replies to inbound WhatsApp messages: an outbox of text parts sent through the Graph API only after the recipient is authorized again for the same Person and link version, and only within the customer service window.
+
+Owner: whatsapp. Classification: CONFIDENTIAL.
+
+Lifecycle: Created when processing produces a reply; sent in part order under a lease; retried only when Meta proves the message was not accepted (rate limits, temporary unavailability); a timeout or lost response becomes unknown and is never resent. Delivery statuses from signed webhooks advance the state. The text is cleared once Meta accepts the part or it reaches a final state. Pruned with its inbound message.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `id` | `uuid` | no | — | INTERNAL | Reply part identifier. | — | — |
+| `inbound_id` | `uuid` | no | — | INTERNAL | Inbound message this part answers. | — | — |
+| `part` | `integer` | no | — | INTERNAL | Order of the part within the reply (1..20). | — | — |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Person the reply is for; checked again before sending. | — | — |
+| `link_version` | `integer` | no | — | INTERNAL | Link version the reply was produced under; a changed or removed link revokes it. | — | — |
+| `recipient_phone` | `character varying(15)` | yes | — | CONFIDENTIAL | Number to send to, exactly as the sender's message reported it. | The sender reported only the WhatsApp user identifier. | — |
+| `recipient_user_id` | `character varying(140)` | yes | — | CONFIDENTIAL | WhatsApp business-scoped user identifier used when no number was reported. | A number is used. | — |
+| `kind` | `character varying(16)` | no | — | INTERNAL | answer (agent reply) or notice (channel message such as a command result, unsupported type or limit). | — | — |
+| `body` | `character varying(4096)` | yes | — | CONFIDENTIAL | Text of the part while it awaits sending. | Accepted by Meta or final; the reply remains in the agent conversation. | — |
+| `state` | `character varying(16)` | no | `'pending'::character varying` | INTERNAL | pending, sending, accepted, sent, delivered, read, failed, unknown, revoked or expired. | — | — |
+| `attempts` | `integer` | no | `0` | INTERNAL | Send attempts started; bounded. | — | — |
+| `not_before` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | INTERNAL | Earliest next attempt after a retryable refusal. | — | — |
+| `lease_until` | `timestamp(3) with time zone` | yes | — | INTERNAL | Expiry of the current send claim. | Not claimed. | — |
+| `provider_message_id` | `character varying(256)` | yes | — | CONFIDENTIAL | Meta message id of the accepted part; matches delivery status webhooks. | Not accepted by Meta. | — |
+| `failure_code` | `character varying(40)` | yes | — | INTERNAL | Allowlisted failure, refusal or Meta error code. | No failure. | — |
+| `created_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | When the part was created. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Last state change. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `whatsapp_outbound_messages_attempts_check` | `CHECK ((attempts >= 0))` | Attempts are never negative. |
+| `whatsapp_outbound_messages_inbound_id_fkey` | `FOREIGN KEY (inbound_id) REFERENCES whatsapp_inbound_messages(id) ON UPDATE CASCADE ON DELETE CASCADE` | Removed with the inbound message. |
+| `whatsapp_outbound_messages_kind_check` | `CHECK (((kind)::text = ANY ((ARRAY['answer'::character varying, 'notice'::character varying])::text[])))` | Only answer and notice parts. |
+| `whatsapp_outbound_messages_part_check` | `CHECK (((part >= 1) AND (part <= 20)))` | At most 20 parts per reply. |
+| `whatsapp_outbound_messages_pkey` | `PRIMARY KEY (id)` | Reply part identity. |
+| `whatsapp_outbound_messages_recipient_check` | `CHECK (((recipient_phone IS NOT NULL) OR (recipient_user_id IS NOT NULL)))` | Every part has a recipient. |
+| `whatsapp_outbound_messages_state_check` | `CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'sending'::character varying, 'accepted'::character varying, 'sent'::character varying, 'delivered'::character varying, 'read'::character varying, 'failed'::character varying, 'unknown'::character varying, 'revoked'::character varying, 'expired'::character varying])::text[])))` | Only the delivery states. |
+| `whatsapp_outbound_messages_part_key` | `CREATE UNIQUE INDEX whatsapp_outbound_messages_part_key ON public.whatsapp_outbound_messages USING btree (inbound_id, part)` | One row per part of a reply. |
+| `whatsapp_outbound_messages_provider_key` | `CREATE UNIQUE INDEX whatsapp_outbound_messages_provider_key ON public.whatsapp_outbound_messages USING btree (provider_message_id)` | Status webhooks match one part. |
+| `whatsapp_outbound_messages_work_idx` | `CREATE INDEX whatsapp_outbound_messages_work_idx ON public.whatsapp_outbound_messages USING btree (state, not_before)` | Claiming of due parts. |
+
+## whatsapp_threads
+
+Per-Person WhatsApp channel state: the agent conversation that new messages continue and the sales source the person chose with a command.
+
+Owner: whatsapp. Classification: CONFIDENTIAL.
+
+Lifecycle: Created at the first processed message; the conversation pointer changes when the person asks for a new conversation, after 12 hours without activity, or when the conversation was archived or deleted. Kept while the Person exists; no foreign key across modules.
+
+| Column | PostgreSQL type | Nullable | Default | Classification | Meaning | Null meaning | Unit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `person_id` | `uuid` | no | — | CONFIDENTIAL | Person the state belongs to. | — | — |
+| `conversation_id` | `uuid` | yes | — | CONFIDENTIAL | Agent conversation that the next message continues, if still owned, active and recent. | The next message starts a new conversation. | — |
+| `source` | `character varying(20)` | no | `'sankhya'::character varying` | INTERNAL | Sales source chosen with the /fonte command: sankhya, vrmaster or all. | — | — |
+| `updated_at` | `timestamp(3) with time zone` | no | `CURRENT_TIMESTAMP` | CONFIDENTIAL | Last change. | — | — |
+
+### Constraints and indexes
+
+| Object | Physical definition | Purpose |
+| --- | --- | --- |
+| `whatsapp_threads_pkey` | `PRIMARY KEY (person_id)` | One channel state per Person. |
+| `whatsapp_threads_source_check` | `CHECK (((source)::text = ANY ((ARRAY['sankhya'::character varying, 'vrmaster'::character varying, 'all'::character varying])::text[])))` | Only the implemented source selections. |

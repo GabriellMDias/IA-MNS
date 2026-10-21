@@ -97,9 +97,6 @@ export const serverConfigSchema = Type.Object(
       Type.String({ pattern: "^[A-Za-z0-9_-]{43}$" }),
     ),
     identityAudience: Type.String({ pattern: "^[A-Za-z0-9._:-]{1,100}$" }),
-    providerGrants: Type.Optional(
-      Type.String({ minLength: 1, maxLength: 1000 }),
-    ),
     pdtBaseUrl: Type.Optional(Type.String({ minLength: 1 })),
     pdtIssuer: Type.Optional(Type.String({ minLength: 1 })),
     pdtClientId: Type.Optional(
@@ -126,6 +123,28 @@ export const serverConfigSchema = Type.Object(
       Type.Literal("pending"),
       Type.Literal("approved"),
     ]),
+    whatsappChannel: Type.Union([
+      Type.Literal("enabled"),
+      Type.Literal("disabled"),
+    ]),
+    whatsappPhoneNumberId: Type.Optional(
+      Type.String({ pattern: "^[0-9]{5,30}$" }),
+    ),
+    whatsappBusinessAccountId: Type.Optional(
+      Type.String({ pattern: "^[0-9]{5,30}$" }),
+    ),
+    whatsappAccessToken: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9_.|-]{20,1000}$" }),
+    ),
+    whatsappAppSecret: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9]{16,200}$" }),
+    ),
+    whatsappVerifyToken: Type.Optional(
+      Type.String({ pattern: "^[A-Za-z0-9_-]{32,200}$" }),
+    ),
+    whatsappGraphBaseUrl: Type.String({ minLength: 1 }),
+    whatsappGraphApiVersion: Type.String({ pattern: "^v[1-9][0-9]?\\.0$" }),
+    whatsappDailyLimit: Type.Integer({ minimum: 1, maximum: 100000 }),
   },
   { additionalProperties: false },
 );
@@ -655,19 +674,6 @@ export const configReference = Object.freeze([
     purpose: "Audience of IA-MNS access tokens.",
   },
   {
-    key: "providerGrants",
-    name: "IA_MNS_PROVIDER_GRANTS",
-    role: "parameter",
-    type: "none | comma list of provider:permission",
-    required: false,
-    default: "",
-    visibility: "server",
-    classification: "INTERNAL",
-    secret: false,
-    purpose:
-      "Installation default of automatic read grants by provider link; an owner value in administration (Parâmetros) takes precedence. Unset uses the composed capability defaults, none disables them.",
-  },
-  {
     key: "pdtBaseUrl",
     name: "PDT_IDENTITY_BASE_URL",
     role: "bootstrap",
@@ -821,6 +827,122 @@ export const configReference = Object.freeze([
     secret: false,
     purpose:
       "Human gate for Om-session sign-in in production (PH-11); production refuses the Sankhya connector until approved.",
+  },
+  {
+    key: "whatsappChannel",
+    name: "IA_MNS_WHATSAPP_CHANNEL",
+    role: "parameter",
+    type: "enabled | disabled",
+    required: false,
+    default: "disabled",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Installation default of the WhatsApp channel switch; an owner value in administration (Parâmetros) takes precedence. Disabled acknowledges Meta webhooks without processing or answering any message.",
+  },
+  {
+    key: "whatsappPhoneNumberId",
+    name: "WHATSAPP_PHONE_NUMBER_ID",
+    role: "bootstrap",
+    type: "Meta numeric identifier",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Meta phone number ID of the dedicated IA-MNS WhatsApp number; enables the WhatsApp module with the access token, app secret and verify token. Webhook events for any other number are ignored.",
+  },
+  {
+    key: "whatsappBusinessAccountId",
+    name: "WHATSAPP_BUSINESS_ACCOUNT_ID",
+    role: "bootstrap",
+    type: "Meta numeric identifier",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "WhatsApp Business Account ID; when set, webhook entries of any other account are ignored.",
+  },
+  {
+    key: "whatsappAccessToken",
+    name: "WHATSAPP_ACCESS_TOKEN",
+    role: "secret",
+    type: "Meta system user access token",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "System user token with whatsapp_business_messaging for sending replies through the Graph API; never logged.",
+  },
+  {
+    key: "whatsappAppSecret",
+    name: "WHATSAPP_APP_SECRET",
+    role: "secret",
+    type: "Meta app secret",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Meta app secret that signs webhook payloads (X-Hub-Signature-256); unsigned or mismatched payloads are refused.",
+  },
+  {
+    key: "whatsappVerifyToken",
+    name: "WHATSAPP_VERIFY_TOKEN",
+    role: "secret",
+    type: "32..200 letters, digits, _ or -",
+    required: false,
+    default: "",
+    visibility: "server",
+    classification: "RESTRICTED",
+    secret: true,
+    purpose:
+      "Random token entered in the Meta app's webhook configuration; answers only the matching subscription verification.",
+  },
+  {
+    key: "whatsappGraphBaseUrl",
+    name: "WHATSAPP_GRAPH_BASE_URL",
+    role: "bootstrap",
+    type: "HTTPS origin (HTTP loopback outside production)",
+    required: false,
+    default: "https://graph.facebook.com",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Graph API origin; a loopback simulator may replace it outside production.",
+  },
+  {
+    key: "whatsappGraphApiVersion",
+    name: "WHATSAPP_GRAPH_API_VERSION",
+    role: "bootstrap",
+    type: "vNN.0",
+    required: false,
+    default: "v25.0",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose: "Graph API version used to send WhatsApp messages.",
+  },
+  {
+    key: "whatsappDailyLimit",
+    name: "WHATSAPP_DAILY_LIMIT",
+    role: "bootstrap",
+    type: "integer 1..100000",
+    required: false,
+    default: "500",
+    visibility: "server",
+    classification: "INTERNAL",
+    secret: false,
+    purpose:
+      "Cost ceiling: WhatsApp messages the agent processes per day (São Paulo time) across all people; later messages that day are not processed.",
   },
 ] as const satisfies readonly ConfigMetadata[]);
 
@@ -1065,10 +1187,50 @@ function validateIdentity(candidate: Static<typeof serverConfigSchema>): void {
         "Invalid API configuration: Sankhya session sign-in requires SANKHYA_SESSION_TRUST=approved after PH-11",
       );
   }
-  if (candidate.providerGrants !== undefined && !enabled)
+}
+
+/**
+ * The WhatsApp channel needs all four Meta values together, the database and
+ * the IA-MNS identity (its only authorization is an owner-linked number).
+ */
+function validateWhatsapp(
+  candidate: Static<typeof serverConfigSchema>,
+  env: Readonly<Record<string, string | undefined>>,
+): void {
+  const values = [
+    candidate.whatsappPhoneNumberId,
+    candidate.whatsappAccessToken,
+    candidate.whatsappAppSecret,
+    candidate.whatsappVerifyToken,
+  ];
+  const configured = values.some((value) => value !== undefined);
+  if (
+    !configured &&
+    (candidate.whatsappBusinessAccountId !== undefined ||
+      [
+        "WHATSAPP_GRAPH_BASE_URL",
+        "WHATSAPP_GRAPH_API_VERSION",
+        "WHATSAPP_DAILY_LIMIT",
+      ].some((name) => env[name] !== undefined))
+  )
     throw new Error(
-      "Invalid API configuration: provider grants require identity",
+      "Invalid API configuration: incomplete WhatsApp configuration",
     );
+  if (!configured) return;
+  if (values.some((value) => value === undefined))
+    throw new Error(
+      "Invalid API configuration: incomplete WhatsApp configuration (WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN, WHATSAPP_APP_SECRET and WHATSAPP_VERIFY_TOKEN)",
+    );
+  if (!candidate.databaseUrl || !candidate.publicOrigin)
+    throw new Error(
+      "Invalid API configuration: the WhatsApp channel requires the database and the IA-MNS identity",
+    );
+  secureUrl(
+    candidate.whatsappGraphBaseUrl,
+    candidate.environment,
+    "origin",
+    "WHATSAPP_GRAPH_BASE_URL",
+  );
 }
 
 export function parseServerConfig(
@@ -1094,10 +1256,19 @@ export function parseServerConfig(
     aiTrace: env.IA_MNS_AI_TRACE ?? "metadata",
     identityAudience: env.IA_MNS_IDENTITY_AUDIENCE ?? "ia-mns-api",
     sankhyaSessionTrust: env.SANKHYA_SESSION_TRUST ?? "pending",
+    whatsappChannel: env.IA_MNS_WHATSAPP_CHANNEL ?? "disabled",
+    ...optional("whatsappPhoneNumberId", env.WHATSAPP_PHONE_NUMBER_ID),
+    ...optional("whatsappBusinessAccountId", env.WHATSAPP_BUSINESS_ACCOUNT_ID),
+    ...optional("whatsappAccessToken", env.WHATSAPP_ACCESS_TOKEN),
+    ...optional("whatsappAppSecret", env.WHATSAPP_APP_SECRET),
+    ...optional("whatsappVerifyToken", env.WHATSAPP_VERIFY_TOKEN),
+    whatsappGraphBaseUrl:
+      env.WHATSAPP_GRAPH_BASE_URL ?? "https://graph.facebook.com",
+    whatsappGraphApiVersion: env.WHATSAPP_GRAPH_API_VERSION ?? "v25.0",
+    whatsappDailyLimit: numberFromEnv(env.WHATSAPP_DAILY_LIMIT, 500),
     ...optional("publicOrigin", env.IA_MNS_PUBLIC_ORIGIN),
     ...optional("identitySigningKey", env.IA_MNS_IDENTITY_SIGNING_KEY),
     ...optional("identityEncryptionKey", env.IA_MNS_IDENTITY_ENCRYPTION_KEY),
-    ...optional("providerGrants", env.IA_MNS_PROVIDER_GRANTS),
     ...optional("pdtBaseUrl", env.PDT_IDENTITY_BASE_URL),
     ...optional("pdtIssuer", env.PDT_IDENTITY_ISSUER),
     ...optional("pdtClientId", env.PDT_IDENTITY_CLIENT_ID),
@@ -1335,6 +1506,7 @@ export function parseServerConfig(
     candidate.tokenAudience.trim() === ""
   )
     throw new Error("Invalid API configuration: token audience");
+  validateWhatsapp(candidate, env);
   return Object.freeze(candidate);
 }
 

@@ -67,7 +67,7 @@ Known development-environment behavior, observed on 2026-10-06:
 
 1. Start the local IA-MNS database, API and identity as in [setup](../../docs/setup.md#corporate-agent-and-local-postgresql).
 2. Run `pnpm sankhya:local --wildfly-home <WildFly folder>` from the repository root. It generates a development P-256 signing key and `ia-mns-addon.properties` in the WildFly `standalone/configuration` folder (outside this repository) and adds `SANKHYA_IDENTITY_ISSUER=sankhya-om-development`, the matching public `SANKHYA_IDENTITY_KEYS` and `SANKHYA_EMBED_ORIGIN=http://localhost:8080` to the ignored root `.env.local`. It refuses non-loopback origins and production. Restart the API afterwards.
-3. Start the web server so the Om may frame IA-MNS, for example in PowerShell: `$env:ORION_WEB_EMBED_ANCESTORS='http://localhost:8080'; pnpm -C apps/web dev`.
+3. Start the web server with `pnpm -C apps/web dev`. It reads the root ignored `.env.local` and allows the configured `SANKHYA_EMBED_ORIGIN` to frame `/embed/sankhya`; no repeated shell assignment is needed. An explicit `ORION_WEB_EMBED_ANCESTORS` overrides the provider origins, and an empty override disables framing. Restart the web server after changing the local origins.
 4. Deploy the add-on (below) and, as an Om administrator, grant the screen **IA-MNS** (resource `ia-mns.IaMns`) to the development users through the Om access control.
 5. Sign in to the Om at `http://localhost:8080/mge` with a development user and open **IA-MNS** from the menu. Use `localhost`, not `127.0.0.1`: the frame policy allows only the configured Om origin.
 

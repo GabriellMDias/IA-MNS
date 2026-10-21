@@ -90,7 +90,11 @@
               },
               "capabilities": {
                 "type": "object",
-                "required": ["sankhyaDirectory", "linkInvitations"],
+                "required": [
+                  "sankhyaDirectory",
+                  "linkInvitations",
+                  "restrictions"
+                ],
                 "properties": {
                   "sankhyaDirectory": {
                     "type": "boolean",
@@ -105,6 +109,10 @@
                       ]
                     },
                     "description": "Providers whose sign-in can complete a link invitation."
+                  },
+                  "restrictions": {
+                    "type": "boolean",
+                    "description": "Owners can restrict grants by values read from the sources."
                   }
                 },
                 "additionalProperties": false
@@ -158,7 +166,7 @@
           "nextCursor": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
           "capabilities": {
             "type": "object",
-            "required": ["sankhyaDirectory", "linkInvitations"],
+            "required": ["sankhyaDirectory", "linkInvitations", "restrictions"],
             "properties": {
               "sankhyaDirectory": {
                 "type": "boolean",
@@ -173,6 +181,10 @@
                   ]
                 },
                 "description": "Providers whose sign-in can complete a link invitation."
+              },
+              "restrictions": {
+                "type": "boolean",
+                "description": "Owners can restrict grants by values read from the sources."
               }
             },
             "additionalProperties": false
@@ -206,6 +218,11 @@
         {
           "name": "capabilities.linkInvitations",
           "type": "array of \"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        {
+          "name": "capabilities.restrictions",
+          "type": "boolean",
           "required": true
         }
       ]

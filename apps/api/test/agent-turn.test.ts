@@ -47,7 +47,14 @@ function harness() {
   const history: { question: string; reply: AgentReply }[] = [];
   const turn = async (message: string, trace = new TurnTrace("content")) => {
     const result = await runAgentTurn(router, [sales], {
-      actor: { id: "alice", permissions: new Set(["sales:read"]) },
+      actor: {
+        id: "alice",
+        permissions: new Set([
+          "sales:read",
+          "sales_sankhya:read",
+          "sales_vrmaster:read",
+        ]),
+      },
       message,
       history: [...history],
       contexts,

@@ -12,6 +12,7 @@ import {
   IdentityNavigation,
 } from "./features/identity/navigation.js";
 import type { AccountMenuProps } from "./module-navigation.js";
+import { parseAdminSearch } from "./features/identity/admin-search.js";
 
 /** Product providers: credentials, then identity (sign-in), then feature state. */
 export function ProductProvider({ children }: { children: ReactNode }) {
@@ -34,12 +35,6 @@ const text = (value: unknown) =>
   typeof value === "string" ? value.slice(0, 80) : undefined;
 const loginSearch = (search: Record<string, unknown>): { erro?: string } =>
   text(search.erro) ? { erro: text(search.erro) } : {};
-const adminSearch = (
-  search: Record<string, unknown>,
-): { secao?: "seguranca" | "parametros" } =>
-  search.secao === "seguranca" || search.secao === "parametros"
-    ? { secao: search.secao }
-    : {};
 const accountSearch = (
   search: Record<string, unknown>,
 ): {
@@ -144,7 +139,7 @@ const identityRoutes = [
   createRoute({
     getParentRoute: () => rootRoute,
     path: "/admin",
-    validateSearch: adminSearch,
+    validateSearch: parseAdminSearch,
     component: () => (
       <RequireSignIn>
         <LazyAdminPage />

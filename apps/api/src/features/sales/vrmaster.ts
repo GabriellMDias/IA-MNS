@@ -15,6 +15,8 @@ import {
   type SalesReadResult,
 } from "./reader.js";
 import type { SalesProductScope } from "./product-scope.js";
+import type { DataScope } from "../../access.js";
+import { vrmasterRestriction } from "./access.js";
 import {
   vrmasterAggregateSql,
   vrmasterParameters,
@@ -60,6 +62,7 @@ export function createVrmasterReader(
     queries: readonly SalesQuery[],
     signal: AbortSignal,
     scope?: SalesProductScope,
+    restriction?: DataScope,
   ): Promise<SalesReadResult[]> {
     validateReadBatch(queries, "vrmaster", scope);
     let client: pg.PoolClient | undefined;
@@ -86,12 +89,14 @@ export function createVrmasterReader(
       const productCache = new Map<string, ProductRow[]>();
       const fetch = async (period: SalesQuery): Promise<SalesData> => {
         signal.throwIfAborted();
-        const values = [
+        const base = [
           ...vrmasterParameters(period),
           ...(scope?.source === "vrmaster" ? scope.values : []),
         ];
+        const access = vrmasterRestriction(restriction, base.length);
+        const values = [...base, ...(access?.values ?? [])];
         const aggregates = await client!.query<AggregateRow>(
-          vrmasterAggregateSql(period, scope),
+          vrmasterAggregateSql(period, scope, access?.sql),
           values,
         );
         if (!Value.Check(aggregateRowsSchema, aggregates.rows))
@@ -113,7 +118,7 @@ export function createVrmasterReader(
             ? []
             : (
                 await client!.query<ProductRow>(
-                  vrmasterMatchingProductsSql(scope),
+                  vrmasterMatchingProductsSql(scope, access?.sql),
                   values,
                 )
               ).rows);
@@ -173,8 +178,8 @@ export function createVrmasterReader(
     return result!;
   }
   return {
-    async read(query, signal, scope) {
-      return (await readMany([query], signal, scope))[0];
+    async read(query, signal, scope, restriction) {
+      return (await readMany([query], signal, scope, restriction))[0];
     },
     readMany,
     async close() {

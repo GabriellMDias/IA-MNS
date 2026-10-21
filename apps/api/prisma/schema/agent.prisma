@@ -5,6 +5,7 @@ model AgentConversation {
   titleManual  Boolean  @default(false) @map("title_manual")
   pinned       Boolean  @default(false)
   archived     Boolean  @default(false)
+  channel      String   @default("web") @db.VarChar(16)
   version      Int      @default(0)
   contexts     Json     @default("{}")
   activeTurnId String?  @map("active_turn_id") @db.Uuid

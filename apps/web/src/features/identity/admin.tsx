@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminUnlink,
@@ -16,13 +16,26 @@ import {
   setGrant,
   setOwner,
   setPersonStatus,
+  setWhatsappNumber,
+  removeWhatsappNumber,
   type Provider,
   type SankhyaUsers,
 } from "./api.js";
 import { useIdentityStart } from "./session.js";
 import { SecurityPolicyPanel } from "./security-policy.js";
 import { ParametersPanel } from "./parameters.js";
+import { GroupsPanel } from "./groups.js";
+import { PermissionGrants } from "./permissions.js";
 import { identityMessage, isFailure } from "./messages.js";
+import {
+  Button,
+  PageHeader,
+  SectionCard,
+  StatusBadge,
+  TextField,
+} from "../../components.js";
+import { Avatar } from "./navigation.js";
+import "./admin.css";
 
 const providerName: Record<Provider, string> = {
   pdt: "PDT Connect",
@@ -37,8 +50,11 @@ const auditName: Record<string, string> = {
   "link.added": "Sistema vinculado",
   "link.removed": "Vínculo removido",
   "link.invitation_issued": "Convite de vínculo emitido",
-  "grant.added": "Capacidade concedida",
-  "grant.removed": "Capacidade revogada",
+  "grant.added": "Permissão concedida",
+  "grant.updated": "Restrições da permissão alteradas",
+  "grant.removed": "Permissão revogada",
+  "group.member_added": "Incluída em grupo",
+  "group.member_removed": "Removida de grupo",
   "role.added": "Administrador principal atribuído",
   "role.removed": "Administrador principal removido",
   "session.started": "Sessão iniciada",
@@ -46,6 +62,10 @@ const auditName: Record<string, string> = {
   "mfa.enabled": "Duas etapas ativadas",
   "credential.enrollment_issued": "Convite de acesso local emitido",
   "credential.reset_issued": "Redefinição de acesso emitida",
+  "whatsapp.linked": "WhatsApp cadastrado",
+  "whatsapp.changed": "WhatsApp alterado",
+  "whatsapp.removed": "WhatsApp removido",
+  "whatsapp.confirmed": "Primeira mensagem do WhatsApp recebida",
 };
 
 type Invite = { label: string; url: string };
@@ -108,17 +128,17 @@ function SankhyaPicker({
           setQuery(text.trim());
         }}
       >
-        <label htmlFor="identity-sankhya-search">
-          Usuário do Sankhya (login ou nome)
-        </label>
-        <input
+        <TextField
+          label="Usuário do Sankhya (login ou nome)"
           id="identity-sankhya-search"
           value={text}
           minLength={2}
           maxLength={60}
           onChange={(event) => setText(event.target.value)}
         />
-        <button className="identity-secondary">Buscar</button>
+        <Button type="submit" variant="secondary" loading={users.isFetching}>
+          Buscar
+        </Button>
       </form>
       {users.error && <p role="alert">{identityMessage(users.error)}</p>}
       {users.data && !users.data.items.length && (
@@ -136,13 +156,13 @@ function SankhyaPicker({
                 ? ` · já vinculado a ${user.linkedTo.displayName}`
                 : ""}
             </span>
-            <button
+            <Button
               type="button"
               disabled={busy || user.accessExpired || user.linkedTo !== null}
               onClick={() => onSelect(user)}
             >
               {actionLabel}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
@@ -154,10 +174,12 @@ function CreatePerson({
   token,
   capabilities,
   onCreated,
+  onCancel,
 }: {
   token: string;
   capabilities: { sankhyaDirectory: boolean; linkInvitations: Provider[] };
   onCreated: (personId: string, invites: Invite[]) => void;
+  onCancel: () => void;
 }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
@@ -191,13 +213,11 @@ function CreatePerson({
     },
   });
   return (
-    <section className="identity-card" aria-labelledby="identity-create-title">
-      <h2 id="identity-create-title">Nova pessoa</h2>
-      <p className="identity-hint">
-        Pessoas que entram pelo PDT Connect ou pelo Sankhya têm o perfil criado
-        no primeiro acesso. Crie aqui quem ainda não entrou ou precisa de
-        usuário e senha do IA-MNS.
-      </p>
+    <SectionCard
+      title="Nova pessoa"
+      description="Quem entra pelo PDT Connect ou Sankhya ganha um perfil no primeiro acesso. Cadastre aqui quem ainda não entrou ou precisa de acesso local."
+      className="admin-create"
+    >
       <form
         className="identity-form"
         onSubmit={(event) => {
@@ -205,53 +225,67 @@ function CreatePerson({
           create.mutate();
         }}
       >
-        <label htmlFor="identity-new-person">Nome</label>
-        <input
+        <TextField
+          label="Nome"
           id="identity-new-person"
           value={name}
           onChange={(event) => setName(event.target.value)}
           required
           maxLength={120}
         />
-        <label>
-          <input
-            type="checkbox"
-            checked={local}
-            onChange={(event) => setLocal(event.target.checked)}
-          />{" "}
-          Convite para criar usuário e senha do IA-MNS
-        </label>
-        {offered.map((provider) => (
-          <label key={provider}>
+        <fieldset className="admin-create-methods">
+          <legend>Formas de acesso</legend>
+          <label>
             <input
               type="checkbox"
-              checked={invitations.includes(provider)}
-              onChange={(event) =>
-                setInvitations((current) =>
-                  event.target.checked
-                    ? [...current, provider]
-                    : current.filter((item) => item !== provider),
-                )
-              }
+              checked={local}
+              onChange={(event) => setLocal(event.target.checked)}
             />{" "}
-            Convite para a pessoa vincular a conta do {providerName[provider]}
+            Convite para criar usuário e senha do IA-MNS
           </label>
-        ))}
+          {offered.map((provider) => (
+            <label key={provider}>
+              <input
+                type="checkbox"
+                checked={invitations.includes(provider)}
+                onChange={(event) =>
+                  setInvitations((current) =>
+                    event.target.checked
+                      ? [...current, provider]
+                      : current.filter((item) => item !== provider),
+                  )
+                }
+              />{" "}
+              Convite para a pessoa vincular a conta do {providerName[provider]}
+            </label>
+          ))}
+        </fieldset>
         {sankhyaUser && (
-          <p>
+          <p className="admin-selected-sankhya">
             Usuário do Sankhya:{" "}
             <strong>{sankhyaUser.name ?? sankhyaUser.login}</strong> (
             {sankhyaUser.login}){" "}
-            <button
+            <Button
               type="button"
-              className="identity-secondary"
+              variant="secondary"
               onClick={() => setSankhyaUser(null)}
             >
               Remover
-            </button>
+            </Button>
           </p>
         )}
-        <button disabled={create.isPending}>Criar pessoa</button>
+        <div className="admin-actions">
+          <Button type="submit" loading={create.isPending}>
+            Criar pessoa
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={create.isPending}
+            onClick={onCancel}
+          >
+            Cancelar
+          </Button>
+        </div>
         {create.error && <p role="alert">{identityMessage(create.error)}</p>}
       </form>
       {capabilities.sankhyaDirectory && !sankhyaUser && (
@@ -261,47 +295,89 @@ function CreatePerson({
           onSelect={setSankhyaUser}
         />
       )}
-    </section>
+    </SectionCard>
   );
 }
 
 function Admin({ token }: { token: string }) {
   const search = useSearch({ strict: false });
+  const navigate = useNavigate();
   const section = search.secao ?? "pessoas";
-  const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
+  const query = search.busca ?? "";
+  const cursor = search.cursor;
+  const creating = search.novo === true;
   const [invites, setInvites] = useState<Invite[]>([]);
   const persons = useQuery({
-    queryKey: ["identity-persons", token, query],
-    queryFn: ({ signal }) => listPersons(token, query, undefined, signal),
+    queryKey: ["identity-persons", token, query, cursor],
+    queryFn: ({ signal }) => listPersons(token, query, cursor, signal),
   });
+  const selected = search.pessoa ?? persons.data?.items[0]?.id ?? null;
+  const nextCursor = persons.data?.nextCursor;
+  const selectPerson = (personId: string) =>
+    void navigate({
+      to: "/admin",
+      search: {
+        ...(query ? { busca: query } : {}),
+        ...(cursor ? { cursor } : {}),
+        pessoa: personId,
+      },
+    });
   if (persons.error)
     return (
-      <main className="identity-page">
-        <h1>Administração</h1>
-        <p role="alert">
+      <div className="identity-page admin-page">
+        <PageHeader title="Administração" />
+        <p role="alert" className="admin-notice admin-notice-error">
           {isFailure(persons.error, "IDENTITY_STRONG_AUTHENTICATION_REQUIRED")
             ? "Ative a verificação em duas etapas em Minha conta e entre novamente para administrar."
             : identityMessage(persons.error)}
         </p>
         <Link to="/conta">Minha conta</Link>
-      </main>
+      </div>
     );
   const capabilities = persons.data?.capabilities ?? {
     sankhyaDirectory: false,
     linkInvitations: [],
+    restrictions: false,
   };
   return (
-    <main className="identity-page identity-wide">
-      <p>
-        <Link to="/">← Voltar para as conversas</Link>
-      </p>
-      <h1>Administração</h1>
-      <nav className="identity-tabs" aria-label="Seções da administração">
+    <div className="identity-page admin-page">
+      <PageHeader
+        title="Administração"
+        description="Gerencie as pessoas, os acessos e as preferências do IA-MNS."
+        back={
+          <Link to="/">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              aria-hidden="true"
+            >
+              <path d="m12 5-7 7 7 7M5 12h15" />
+            </svg>
+            Voltar para as conversas
+          </Link>
+        }
+        actions={
+          section === "pessoas" ? (
+            <Button
+              disabled={creating || persons.isPending}
+              onClick={() => {
+                setInvites([]);
+                void navigate({ to: "/admin", search: { novo: true } });
+              }}
+            >
+              <span aria-hidden="true">+</span>Nova pessoa
+            </Button>
+          ) : undefined
+        }
+      />
+      <nav className="admin-tabs" aria-label="Seções da administração">
         {/* The tabs share the route, so the active one follows the search. */}
         {(
           [
             ["pessoas", {}, "Pessoas"],
+            ["grupos", { secao: "grupos" }, "Grupos"],
             ["seguranca", { secao: "seguranca" }, "Autenticação e segurança"],
             ["parametros", { secao: "parametros" }, "Parâmetros"],
           ] as const
@@ -318,52 +394,119 @@ function Admin({ token }: { token: string }) {
           </Link>
         ))}
       </nav>
-      {section === "seguranca" ? (
+      {section === "grupos" ? (
+        <GroupsPanel token={token} selected={search.grupo} />
+      ) : section === "seguranca" ? (
         <SecurityPolicyPanel token={token} />
       ) : section === "parametros" ? (
         <ParametersPanel token={token} />
       ) : (
-        <div className="identity-admin">
-          <section aria-label="Pessoas">
-            <label htmlFor="identity-person-search">Buscar pessoa</label>
-            <input
+        <div className="admin-people-layout">
+          <SectionCard title="Pessoas" className="admin-directory">
+            <TextField
+              label="Buscar pessoa"
+              type="search"
+              placeholder="Buscar por nome ou usuário"
               id="identity-person-search"
               value={query}
               maxLength={120}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) =>
+                void navigate({
+                  to: "/admin",
+                  search: {
+                    ...(event.target.value
+                      ? { busca: event.target.value }
+                      : {}),
+                    ...(search.pessoa ? { pessoa: search.pessoa } : {}),
+                    ...(creating ? { novo: true } : {}),
+                  },
+                  replace: true,
+                })
+              }
             />
-            <ul className="identity-list identity-people">
+            {persons.isPending && (
+              <p role="status" className="admin-muted">
+                Carregando pessoas…
+              </p>
+            )}
+            {persons.data && (
+              <p className="admin-directory-count">
+                {persons.data.items.length}{" "}
+                {persons.data.items.length === 1
+                  ? "pessoa nesta página"
+                  : "pessoas nesta página"}
+              </p>
+            )}
+            {persons.data && !persons.data.items.length && (
+              <p className="admin-muted">Nenhuma pessoa encontrada.</p>
+            )}
+            <ul className="admin-person-list">
               {persons.data?.items.map((person) => (
                 <li key={person.id}>
-                  <button
-                    className={selected === person.id ? "is-selected" : ""}
-                    onClick={() => setSelected(person.id)}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className={
+                      !creating && selected === person.id ? "is-selected" : ""
+                    }
+                    aria-pressed={!creating && selected === person.id}
+                    onClick={() => selectPerson(person.id)}
                   >
-                    <strong>{person.displayName}</strong>
-                    <span>
-                      {[
-                        person.login,
-                        ...person.providers.map((item) => providerName[item]),
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                      {person.owner ? " · administrador" : ""}
-                      {person.status === "disabled" ? " · desativada" : ""}
+                    <Avatar name={person.displayName} />
+                    <span className="admin-person-list-copy">
+                      <strong>{person.displayName}</strong>
+                      <span>
+                        {[
+                          person.login,
+                          ...person.providers.map((item) => providerName[item]),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                        {person.owner ? " · administrador" : ""}
+                        {person.status === "disabled" ? " · desativada" : ""}
+                      </span>
                     </span>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
-            <CreatePerson
-              token={token}
-              capabilities={capabilities}
-              onCreated={(personId, created) => {
-                setSelected(personId);
-                setInvites(created);
-              }}
-            />
+            {(cursor || nextCursor) && (
+              <div className="admin-pagination">
+                {cursor && (
+                  <Button
+                    variant="ghost"
+                    onClick={() =>
+                      void navigate({
+                        to: "/admin",
+                        search: query ? { busca: query } : {},
+                      })
+                    }
+                  >
+                    Voltar ao início
+                  </Button>
+                )}
+                {nextCursor && (
+                  <Button
+                    variant="secondary"
+                    onClick={() =>
+                      void navigate({
+                        to: "/admin",
+                        search: {
+                          ...(query ? { busca: query } : {}),
+                          cursor: nextCursor,
+                        },
+                      })
+                    }
+                  >
+                    Próxima página
+                  </Button>
+                )}
+              </div>
+            )}
+          </SectionCard>
+          <div className="admin-workspace">
             {invites.length > 0 && (
-              <div className="identity-card" role="status">
+              <div className="admin-notice admin-invitations" role="status">
                 <p>
                   Envie cada convite de uso único (válido por 72 horas) à pessoa
                   por um canal seguro:
@@ -379,18 +522,36 @@ function Admin({ token }: { token: string }) {
                 </ul>
               </div>
             )}
-          </section>
-          {selected && (
-            <PersonDetail
-              token={token}
-              personId={selected}
-              onInvite={(invite) => setInvites([invite])}
-              onMerged={setSelected}
-            />
-          )}
+            {creating ? (
+              <CreatePerson
+                token={token}
+                capabilities={capabilities}
+                onCancel={() => void navigate({ to: "/admin", search: {} })}
+                onCreated={(personId, created) => {
+                  setInvites(created);
+                  void navigate({ to: "/admin", search: { pessoa: personId } });
+                }}
+              />
+            ) : selected ? (
+              <PersonDetail
+                key={selected}
+                token={token}
+                personId={selected}
+                onInvite={(invite) => setInvites([invite])}
+                onMerged={selectPerson}
+              />
+            ) : (
+              !persons.isPending && (
+                <SectionCard
+                  title="Selecione uma pessoa"
+                  description="Escolha um perfil na lista ou cadastre uma nova pessoa para gerenciar seus acessos."
+                />
+              )
+            )}
+          </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -419,10 +580,8 @@ function MergeInto({
   });
   return (
     <div className="identity-picker">
-      <label htmlFor="identity-merge-search">
-        Outro perfil da mesma pessoa
-      </label>
-      <input
+      <TextField
+        label="Outro perfil da mesma pessoa"
         id="identity-merge-search"
         value={query}
         maxLength={120}
@@ -445,15 +604,15 @@ function MergeInto({
                   .filter(Boolean)
                   .join(" · ")}
               </span>
-              <button
+              <Button
                 type="button"
-                className="identity-secondary"
+                variant="secondary"
                 onClick={() =>
                   setSource({ id: item.id, name: item.displayName })
                 }
               >
                 Selecionar
-              </button>
+              </Button>
             </li>
           ))}
       </ul>
@@ -463,12 +622,118 @@ function MergeInto({
           <strong>{source.name}</strong> passarão para{" "}
           <strong>{displayName}</strong>, e {source.name} deixará de existir.
           Use apenas quando tiver certeza de que é a mesma pessoa.{" "}
-          <button disabled={busy} onClick={() => onMerge(source.id)}>
+          <Button disabled={busy} onClick={() => onMerge(source.id)}>
             Unificar
-          </button>
+          </Button>
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * The Person's WhatsApp number: the only authorization of the WhatsApp
+ * channel. The API validates and normalizes it and enforces uniqueness;
+ * this form only collects the owner's input.
+ */
+function WhatsappNumber({
+  current,
+  active,
+  busy,
+  onSave,
+  onRemove,
+}: {
+  current: { number: string; confirmedAt: string | null } | null;
+  active: boolean;
+  busy: boolean;
+  onSave: (number: string) => void;
+  onRemove: () => void;
+}) {
+  const [number, setNumber] = useState(current?.number ?? "");
+  const [confirmRemoval, setConfirmRemoval] = useState(false);
+  return (
+    <>
+      {current ? (
+        <p>
+          Número autorizado: <strong>{current.number}</strong>
+          {current.confirmedAt
+            ? ` · primeira mensagem recebida em ${new Date(current.confirmedAt).toLocaleString("pt-BR")}`
+            : " · nenhuma mensagem recebida ainda"}
+        </p>
+      ) : (
+        <p className="identity-hint">
+          Sem número, esta pessoa não conversa com o IA-MNS pelo WhatsApp.
+        </p>
+      )}
+      {active ? (
+        <form
+          className="identity-inline"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSave(number.trim());
+          }}
+        >
+          <TextField
+            label="Número de WhatsApp com código do país"
+            id="identity-whatsapp-number"
+            type="tel"
+            inputMode="tel"
+            autoComplete="off"
+            placeholder="+55 11 91234-5678"
+            value={number}
+            maxLength={32}
+            required
+            onChange={(event) => setNumber(event.target.value)}
+          />
+          <Button type="submit" disabled={busy || !number.trim()}>
+            {current ? "Alterar número" : "Cadastrar número"}
+          </Button>
+        </form>
+      ) : (
+        current && (
+          <p className="identity-hint">
+            Pessoa desativada: o número não dá acesso ao IA-MNS.
+          </p>
+        )
+      )}
+      <p className="identity-hint">
+        O número funciona como credencial: quem usa este WhatsApp conversa com o
+        IA-MNS com as capacidades desta pessoa. Remova-o assim que a linha for
+        trocada, perdida ou devolvida.
+      </p>
+      {current &&
+        (confirmRemoval ? (
+          <p className="identity-warning">
+            O WhatsApp {current.number} deixará de acessar o IA-MNS
+            imediatamente.{" "}
+            <Button
+              disabled={busy}
+              onClick={() => {
+                setConfirmRemoval(false);
+                onRemove();
+              }}
+            >
+              Remover número
+            </Button>{" "}
+            <Button
+              variant="secondary"
+              onClick={() => setConfirmRemoval(false)}
+            >
+              Cancelar
+            </Button>
+          </p>
+        ) : (
+          <div className="identity-actions">
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => setConfirmRemoval(true)}
+            >
+              Remover número do WhatsApp
+            </Button>
+          </div>
+        ))}
+    </>
   );
 }
 
@@ -502,230 +767,312 @@ function PersonDetail({
   const linked = (provider: Provider) =>
     person.links.some((link) => link.provider === provider);
   return (
-    <section className="identity-card" aria-labelledby="identity-person-title">
-      <h2 id="identity-person-title">{person.displayName}</h2>
+    <div className="admin-detail">
+      <SectionCard
+        title={person.displayName}
+        icon={<Avatar name={person.displayName} />}
+        className="admin-person-summary"
+      >
+        <div className="admin-person-status">
+          <StatusBadge tone={person.status === "active" ? "accent" : "neutral"}>
+            {person.status === "active" ? "Ativa" : "Desativada"}
+          </StatusBadge>
+          {person.owner && <StatusBadge>Administrador principal</StatusBadge>}
+        </div>
+      </SectionCard>
       {action.error && (
-        <p role="alert">
+        <p role="alert" className="admin-notice admin-notice-error">
           {isFailure(action.error, "IDENTITY_RECENT_AUTHENTICATION_REQUIRED")
             ? "Confirme sua identidade em Minha conta (senha e código) e repita a alteração."
             : identityMessage(action.error)}
         </p>
       )}
-      <p>Situação: {person.status === "active" ? "ativa" : "desativada"}</p>
-      <h3>Capacidades</h3>
-      <ul className="identity-list">
-        {catalog.map((item) => {
-          const explicit = person.grants.includes(item.permission);
-          const effective = person.permissions.includes(item.permission);
-          return (
-            <li key={item.permission}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={explicit}
-                  disabled={action.isPending}
-                  onChange={(event) => {
-                    // React may restore this controlled input before the
-                    // asynchronous mutation runs; retain the person's choice.
-                    const granted = event.currentTarget.checked;
-                    action.mutate(() =>
-                      setGrant(token, person.id, item.permission, granted),
-                    );
-                  }}
-                />{" "}
-                {item.title} <code>{item.permission}</code> ·{" "}
-                {item.access === "read"
-                  ? "leitura"
-                  : item.access === "write"
-                    ? "escrita"
-                    : "sensível"}
-              </label>
-              <span className="identity-hint">
-                {effective ? "efetiva" : "não efetiva"}
-                {!explicit && effective && item.autoGrantProviders.length
-                  ? ` · automática por vínculo ${item.autoGrantProviders.map((provider) => providerName[provider]).join(", ")}`
-                  : ""}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="identity-actions">
-        <button
-          disabled={action.isPending}
-          onClick={() =>
-            action.mutate(() => setOwner(token, person.id, !person.owner))
-          }
-        >
-          {person.owner
-            ? "Remover administrador principal"
-            : "Tornar administrador principal"}
-        </button>
-        <button
-          className="identity-secondary"
-          disabled={action.isPending}
-          onClick={() =>
-            action.mutate(() =>
-              setPersonStatus(
-                token,
-                person.id,
-                person.status === "active" ? "disabled" : "active",
-              ),
-            )
-          }
-        >
-          {person.status === "active" ? "Desativar" : "Reativar"}
-        </button>
-        <button
-          className="identity-secondary"
-          disabled={action.isPending}
-          onClick={() =>
-            action.mutate(() => revokePersonSessions(token, person.id))
-          }
-        >
-          Encerrar sessões
-        </button>
-        {person.local && (
-          <button
-            className="identity-secondary"
-            disabled={action.isPending}
-            onClick={() =>
-              action.mutate(async () =>
-                onInvite(
-                  inviteLink(
-                    "reset",
-                    (await resetLocal(token, person.id)).resetToken,
-                  ),
-                ),
-              )
+      <div className="admin-detail-grid">
+        <div className="admin-detail-column">
+          <SectionCard
+            title="Permissões"
+            description={
+              person.owner
+                ? "Administradores principais têm acesso total, independentemente das concessões."
+                : "Concessões individuais e dos grupos se somam. Uma concessão explícita substitui a automática por vínculo da mesma permissão."
             }
           >
-            Redefinir acesso local
-          </button>
-        )}
-      </div>
-      <h3>Formas de entrada</h3>
-      <ul className="identity-list">
-        {person.local && (
-          <li>
-            Usuário IA-MNS: {person.local.login}{" "}
-            {person.local.totpEnabled ? "· duas etapas" : ""}
-          </li>
-        )}
-        {person.links.map((link) => (
-          <li key={link.id}>
-            <span>
-              {providerName[link.provider]}{" "}
-              {link.label ? `· ${link.label}` : ""}
-              {link.establishedBy === "directory"
-                ? " · associado pelo administrador"
-                : ""}
-            </span>
-            <button
-              className="identity-secondary"
-              disabled={action.isPending}
-              onClick={() =>
-                action.mutate(() => adminUnlink(token, person.id, link.id))
-              }
-            >
-              Remover vínculo
-            </button>
-          </li>
-        ))}
-      </ul>
-      {person.status === "active" && (
-        <div className="identity-actions">
-          {!person.local && (
-            <button
-              className="identity-secondary"
-              disabled={action.isPending}
-              onClick={() =>
-                action.mutate(async () =>
-                  onInvite(
-                    inviteLink(
-                      "enrollment",
-                      (await issueEnrollment(token, person.id)).enrollmentToken,
-                    ),
-                  ),
+            {person.groups.length > 0 && (
+              <p className="identity-hint">
+                Grupos:{" "}
+                {person.groups.map((group, index) => (
+                  <span key={group.id}>
+                    {index > 0 && ", "}
+                    <Link
+                      to="/admin"
+                      search={{ secao: "grupos", grupo: group.id }}
+                    >
+                      {group.name}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            )}
+            <PermissionGrants
+              token={token}
+              catalog={catalog}
+              grants={person.grants}
+              access={person.access}
+              restrictionsAvailable={capabilities.restrictions}
+              busy={action.isPending}
+              onGrant={(permission, restrictions) =>
+                action.mutate(() =>
+                  setGrant(token, person.id, permission, true, restrictions),
                 )
               }
-            >
-              Convite para usuário e senha
-            </button>
-          )}
-          {capabilities.linkInvitations
-            .filter((provider) => !linked(provider))
-            .map((provider) => (
-              <button
-                key={provider}
-                className="identity-secondary"
+              onRevoke={(permission) =>
+                action.mutate(() =>
+                  setGrant(token, person.id, permission, false),
+                )
+              }
+            />
+          </SectionCard>
+          <SectionCard
+            title="Gerenciar acesso"
+            description="Administração, situação da pessoa e sessões conectadas."
+          >
+            <div className="identity-actions">
+              <Button
+                variant="secondary"
                 disabled={action.isPending}
                 onClick={() =>
-                  action.mutate(async () =>
-                    onInvite(
-                      linkInvite(
-                        provider,
-                        (await issueLinkInvitation(token, person.id, provider))
-                          .token,
-                      ),
+                  action.mutate(() => setOwner(token, person.id, !person.owner))
+                }
+              >
+                {person.owner
+                  ? "Remover administrador principal"
+                  : "Tornar administrador principal"}
+              </Button>
+              <Button
+                variant={person.status === "active" ? "danger" : "secondary"}
+                disabled={action.isPending}
+                onClick={() =>
+                  action.mutate(() =>
+                    setPersonStatus(
+                      token,
+                      person.id,
+                      person.status === "active" ? "disabled" : "active",
                     ),
                   )
                 }
               >
-                Convite para vincular {providerName[provider]}
-              </button>
-            ))}
+                {person.status === "active" ? "Desativar" : "Reativar"}
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={action.isPending}
+                onClick={() =>
+                  action.mutate(() => revokePersonSessions(token, person.id))
+                }
+              >
+                Encerrar sessões
+              </Button>
+              {person.local && (
+                <Button
+                  variant="secondary"
+                  disabled={action.isPending}
+                  onClick={() =>
+                    action.mutate(async () =>
+                      onInvite(
+                        inviteLink(
+                          "reset",
+                          (await resetLocal(token, person.id)).resetToken,
+                        ),
+                      ),
+                    )
+                  }
+                >
+                  Redefinir acesso local
+                </Button>
+              )}
+            </div>
+          </SectionCard>
+          {person.status === "active" && (
+            <SectionCard
+              title="Unificar perfis"
+              description="Reúna os acessos e as conversas de perfis da mesma pessoa."
+            >
+              <MergeInto
+                token={token}
+                personId={person.id}
+                displayName={person.displayName}
+                busy={action.isPending}
+                onMerge={(sourcePersonId) =>
+                  action.mutate(async () => {
+                    await mergePersons(token, person.id, sourcePersonId);
+                    onMerged(person.id);
+                  })
+                }
+              />
+            </SectionCard>
+          )}
         </div>
-      )}
-      {person.status === "active" &&
-        capabilities.sankhyaDirectory &&
-        !linked("sankhya") && (
-          <>
-            <h3>Associar usuário do Sankhya</h3>
-            <SankhyaPicker
-              token={token}
-              actionLabel="Associar a esta pessoa"
+        <div className="admin-detail-column">
+          <SectionCard
+            title="Formas de entrada"
+            description="Contas que dão acesso a este perfil no IA-MNS."
+          >
+            <ul className="identity-list admin-links">
+              {person.local && (
+                <li>
+                  Usuário IA-MNS: {person.local.login}{" "}
+                  {person.local.totpEnabled ? "· duas etapas" : ""}
+                </li>
+              )}
+              {person.links.map((link) => (
+                <li key={link.id}>
+                  <span>
+                    {providerName[link.provider]}{" "}
+                    {link.label ? `· ${link.label}` : ""}
+                    {link.establishedBy === "directory"
+                      ? " · associado pelo administrador"
+                      : ""}
+                  </span>
+                  <Button
+                    variant="secondary"
+                    disabled={action.isPending}
+                    onClick={() =>
+                      action.mutate(() =>
+                        adminUnlink(token, person.id, link.id),
+                      )
+                    }
+                  >
+                    Remover vínculo
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            {person.status === "active" && (
+              <div className="identity-actions">
+                {!person.local && (
+                  <Button
+                    variant="secondary"
+                    disabled={action.isPending}
+                    onClick={() =>
+                      action.mutate(async () =>
+                        onInvite(
+                          inviteLink(
+                            "enrollment",
+                            (await issueEnrollment(token, person.id))
+                              .enrollmentToken,
+                          ),
+                        ),
+                      )
+                    }
+                  >
+                    Convite para usuário e senha
+                  </Button>
+                )}
+                {capabilities.linkInvitations
+                  .filter((provider) => !linked(provider))
+                  .map((provider) => (
+                    <Button
+                      key={provider}
+                      variant="secondary"
+                      disabled={action.isPending}
+                      onClick={() =>
+                        action.mutate(async () =>
+                          onInvite(
+                            linkInvite(
+                              provider,
+                              (
+                                await issueLinkInvitation(
+                                  token,
+                                  person.id,
+                                  provider,
+                                )
+                              ).token,
+                            ),
+                          ),
+                        )
+                      }
+                    >
+                      Convite para vincular {providerName[provider]}
+                    </Button>
+                  ))}
+              </div>
+            )}
+          </SectionCard>
+          <SectionCard
+            title="WhatsApp"
+            description="Número autorizado para conversar com o IA-MNS."
+          >
+            <WhatsappNumber
+              key={person.whatsapp?.number ?? "none"}
+              current={person.whatsapp}
+              active={person.status === "active"}
               busy={action.isPending}
-              onSelect={(user) =>
-                action.mutate(() =>
-                  linkSankhyaUser(token, person.id, user.codusu),
-                )
+              onSave={(number) =>
+                action.mutate(() => setWhatsappNumber(token, person.id, number))
+              }
+              onRemove={() =>
+                action.mutate(() => removeWhatsappNumber(token, person.id))
               }
             />
-          </>
+          </SectionCard>
+          {person.status === "active" &&
+            capabilities.sankhyaDirectory &&
+            !linked("sankhya") && (
+              <SectionCard
+                title="Associar usuário do Sankhya"
+                description="Busque e selecione um usuário no diretório do ERP."
+              >
+                <SankhyaPicker
+                  token={token}
+                  actionLabel="Associar a esta pessoa"
+                  busy={action.isPending}
+                  onSelect={(user) =>
+                    action.mutate(() =>
+                      linkSankhyaUser(token, person.id, user.codusu),
+                    )
+                  }
+                />
+              </SectionCard>
+            )}
+        </div>
+      </div>
+      <SectionCard title="Auditoria recente" className="admin-audit">
+        <ul className="identity-list identity-audit">
+          {audit.map((event, index) => (
+            <li key={index}>
+              <time dateTime={event.occurredAt}>
+                {new Date(event.occurredAt).toLocaleString("pt-BR")}
+              </time>
+              <span>
+                {auditName[event.action] ?? event.action}
+                {typeof event.details.permission === "string"
+                  ? ` (${(() => {
+                      const entry = catalog.find(
+                        (item) => item.permission === event.details.permission,
+                      );
+                      return entry
+                        ? `${entry.code} ${entry.title}${entry.source ? ` · ${entry.source.title}` : ""}`
+                        : event.details.permission;
+                    })()})`
+                  : ""}
+                {typeof event.details.restrictedValues === "number" &&
+                event.details.restrictedValues > 0
+                  ? ` com ${event.details.restrictedValues} ${event.details.restrictedValues === 1 ? "valor restrito" : "valores restritos"}`
+                  : ""}
+                {typeof event.details.provider === "string"
+                  ? ` (${providerName[event.details.provider as Provider] ?? event.details.provider})`
+                  : ""}
+                {typeof event.details.suffix === "string"
+                  ? ` (final ${event.details.suffix})`
+                  : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {!audit.length && (
+          <p className="admin-muted">Nenhuma atividade registrada.</p>
         )}
-      {person.status === "active" && (
-        <>
-          <h3>Unificar perfis</h3>
-          <MergeInto
-            token={token}
-            personId={person.id}
-            displayName={person.displayName}
-            busy={action.isPending}
-            onMerge={(sourcePersonId) =>
-              action.mutate(async () => {
-                await mergePersons(token, person.id, sourcePersonId);
-                onMerged(person.id);
-              })
-            }
-          />
-        </>
-      )}
-      <h3>Auditoria recente</h3>
-      <ul className="identity-list identity-audit">
-        {audit.map((event, index) => (
-          <li key={index}>
-            {new Date(event.occurredAt).toLocaleString("pt-BR")} ·{" "}
-            {auditName[event.action] ?? event.action}
-            {typeof event.details.permission === "string"
-              ? ` (${event.details.permission})`
-              : ""}
-            {typeof event.details.provider === "string"
-              ? ` (${providerName[event.details.provider as Provider] ?? event.details.provider})`
-              : ""}
-          </li>
-        ))}
-      </ul>
-    </section>
+      </SectionCard>
+    </div>
   );
 }

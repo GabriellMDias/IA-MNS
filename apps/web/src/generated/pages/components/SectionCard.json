@@ -1,0 +1,32 @@
+{
+  "kind": "component",
+  "name": "SectionCard",
+  "summary": "A named section with a consistent heading, optional description and decorative icon.",
+  "props": [
+    {
+      "name": "title",
+      "type": "string",
+      "meaning": "Level-two heading and accessible section name."
+    },
+    {
+      "name": "description / icon",
+      "type": "string / ReactNode (optional)",
+      "meaning": "Supporting text and an aria-hidden decorative icon."
+    },
+    {
+      "name": "native section props",
+      "type": "ComponentProps<section>",
+      "meaning": "Includes children, className and native section attributes. The heading owns aria-labelledby."
+    }
+  ],
+  "states": ["Title only", "Description and content", "Decorative icon"],
+  "accessibility": "Uses a semantic section named by a unique h2. Icons are decorative; the title must communicate meaning without them.",
+  "usage": "Group related settings below a page's h1. Parent layouts own grid placement; the card adapts to its available width.",
+  "examples": [
+    {
+      "id": "ui-section-card",
+      "label": "Settings section",
+      "description": "A synthetic settings group demonstrating the shared surface and controls."
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "kind": "component",
+  "name": "SelectField",
+  "summary": "A themed native select with an associated label, help and validation messages.",
+  "props": [
+    {
+      "name": "label",
+      "type": "string",
+      "meaning": "Visible accessible name associated with the select."
+    },
+    {
+      "name": "hint / error",
+      "type": "string (optional)",
+      "meaning": "Described-by text; error also marks the control invalid. The owning form controls announcements."
+    },
+    {
+      "name": "native select props",
+      "type": "ComponentProps<select>",
+      "meaning": "Includes options as children, value/defaultValue, disabled, id, handlers, ref and ARIA attributes. An omitted id is generated uniquely."
+    }
+  ],
+  "states": [
+    "Selected option",
+    "Disabled option or control",
+    "Help text",
+    "Invalid",
+    "Keyboard focus"
+  ],
+  "accessibility": "Retains native select keyboard behavior and disabled options. Label and help/error IDs are associated; caller-supplied aria-describedby is retained.",
+  "usage": "Use for a bounded choice. Supply native options and preserve server-owned option restrictions. Match TextField's label/help conventions.",
+  "examples": [
+    {
+      "id": "ui-select-field",
+      "label": "Native choice",
+      "description": "Synthetic options and help; the selection is not saved or sent."
+    }
+  ]
+}

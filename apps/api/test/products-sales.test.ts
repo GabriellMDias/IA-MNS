@@ -178,7 +178,14 @@ function setup(readings: Interpretation[]) {
       signal: new AbortController().signal,
       progress: () => Promise.resolve(),
       trace: noTrace,
-      permissions: new Set(["sales:read", "products:read"]),
+      permissions: new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+        "products:read",
+        "products_sankhya:read",
+        "products_vrmaster:read",
+      ]),
       ...input,
     });
     context = outcome.context;
@@ -405,17 +412,24 @@ it("requires products permission before resolution and on retained-scope use", a
     reading("reuse"),
     reading(null, { relation: "refine" }),
   ]);
-  await expect(
-    env.execute("Vendas de banana fruta em setembro.", {
-      permissions: new Set(["sales:read"]),
-    }),
-  ).rejects.toMatchObject({ code: "AGENT_ACCESS_DENIED" });
+  const salesOnly = new Set([
+    "sales:read",
+    "sales_sankhya:read",
+    "sales_vrmaster:read",
+  ]);
+  // The selection is refused with the registration permission it needs.
+  const refused = await env.execute("Vendas de banana fruta em setembro.", {
+    permissions: salesOnly,
+  });
+  expect(refused.reply.kind).toBe("unavailable");
+  expect(refused.reply.message).toContain("VRM-PRD-01");
   expect(env.vr.find).not.toHaveBeenCalled();
   expect(env.read).not.toHaveBeenCalled();
   await env.execute("Vendas desses produtos em setembro.");
-  await expect(
-    env.execute("E em setembro?", { permissions: new Set(["sales:read"]) }),
-  ).rejects.toMatchObject({ code: "AGENT_ACCESS_DENIED" });
+  const retained = await env.execute("E em setembro?", {
+    permissions: salesOnly,
+  });
+  expect(retained.reply.message).toContain("VRM-PRD-01");
   expect(env.read).toHaveBeenCalledOnce();
 });
 
@@ -426,7 +440,11 @@ it("permits literal sales with sales permission alone", async () => {
     }),
   ]);
   await env.execute("Vendas de banana em setembro.", {
-    permissions: new Set(["sales:read"]),
+    permissions: new Set([
+      "sales:read",
+      "sales_sankhya:read",
+      "sales_vrmaster:read",
+    ]),
   });
   expect(env.read).toHaveBeenCalledOnce();
   expect(env.vr.find).not.toHaveBeenCalled();

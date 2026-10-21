@@ -24,7 +24,14 @@ import { captureCandidate } from "../evals/capture.js";
 import { OperationalParameters } from "../src/parameters.js";
 import { prismaParameterStore } from "../src/parameter-store.js";
 import { parameterSetup } from "../src/modules.js";
-const actor = { id: "alice", permissions: new Set(["sales:read"]) };
+const actor = {
+  id: "alice",
+  permissions: new Set([
+    "sales:read",
+    "sales_sankhya:read",
+    "sales_vrmaster:read",
+  ]),
+};
 it("persists owned conversation organization, literal search, favorite pagination and archive context", async () => {
   await withMigratedDatabase(async (runtimeUrl) => {
     const database = createDatabase(runtimeUrl);
@@ -494,10 +501,17 @@ it("restores validated sales filters independently of social turns, emits real s
         "sankhya",
         () => "AGENT_ACCESS_DENIED",
       );
-      expect(
-        (await completed(repository, actor.id, conversation.id)).turns.at(-1)
-          ?.failureCode,
-      ).toBe("AGENT_ACCESS_DENIED");
+      // Without permission the request is answered, never executed.
+      const denied = (
+        await completed(repository, actor.id, conversation.id)
+      ).turns.at(-1)!;
+      expect(denied.failureCode).toBeNull();
+      expect(denied.reply).toMatchObject({
+        kind: "unavailable",
+        capabilityId: null,
+        result: null,
+      });
+      expect(denied.reply?.message).toContain("Você não tem permissão");
       expect(reader.read).toHaveBeenCalledTimes(3);
       const protectedModule = createAgentModule(() => [], agent).activate({
         config,
@@ -507,7 +521,14 @@ it("restores validated sales filters independently of social turns, emits real s
               authorization === "Bearer alice"
                 ? { id: "alice", scopes: new Set<string>() }
                 : authorization === "Bearer bob"
-                  ? { id: "bob", scopes: new Set(["sales:read"]) }
+                  ? {
+                      id: "bob",
+                      scopes: new Set([
+                        "sales:read",
+                        "sales_sankhya:read",
+                        "sales_vrmaster:read",
+                      ]),
+                    }
                   : null,
             ),
         },

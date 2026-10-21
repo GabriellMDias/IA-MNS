@@ -5,6 +5,11 @@ import { SalesChat } from "./application.js";
 import { loadSalesState } from "./conversation-state.js";
 import { createModelInterpreter } from "./interpreter.js";
 import { createSalesReaders } from "./readers.js";
+import {
+  salesAccessOf,
+  salesCapabilityPermission,
+  salesPermissions,
+} from "./access.js";
 export function createSalesCapability(
   config: ServerConfig,
   injected?: SalesChat,
@@ -25,7 +30,8 @@ export function createSalesCapability(
       "Qual foi o valor líquido vendido neste mês?",
       "Compare as vendas do mês passado com o mesmo período do ano anterior.",
     ],
-    permission: "sales:read",
+    permission: salesCapabilityPermission,
+    sourcePermissions: salesPermissions,
     async execute(input) {
       const state = loadSalesState(
         input.context,
@@ -40,7 +46,11 @@ export function createSalesCapability(
         input.signal,
         input.progress,
         input.trace,
-        { selection: input.source, report: input.report },
+        {
+          selection: input.source,
+          report: input.report,
+          access: salesAccessOf(input.permissions ?? new Set(), input.scopes),
+        },
       );
       return {
         reply: {

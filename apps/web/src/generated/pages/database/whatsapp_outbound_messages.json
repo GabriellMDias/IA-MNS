@@ -1,0 +1,232 @@
+{
+  "kind": "database",
+  "name": "whatsapp_outbound_messages",
+  "description": "Replies to inbound WhatsApp messages: an outbox of text parts sent through the Graph API only after the recipient is authorized again for the same Person and link version, and only within the customer service window.",
+  "owner": "whatsapp",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created when processing produces a reply; sent in part order under a lease; retried only when Meta proves the message was not accepted (rate limits, temporary unavailability); a timeout or lost response becomes unknown and is never resent. Delivery statuses from signed webhooks advance the state. The text is cleared once Meta accepts the part or it reaches a final state. Pruned with its inbound message.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Reply part identifier.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "inbound_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Inbound message this part answers.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "part",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Order of the part within the reply (1..20).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person the reply is for; checked again before sending.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "link_version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Link version the reply was produced under; a changed or removed link revokes it.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "recipient_phone",
+      "PostgreSQL type": "character varying(15)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Number to send to, exactly as the sender's message reported it.",
+      "Null meaning": "The sender reported only the WhatsApp user identifier.",
+      "Unit": "—"
+    },
+    {
+      "Column": "recipient_user_id",
+      "PostgreSQL type": "character varying(140)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "WhatsApp business-scoped user identifier used when no number was reported.",
+      "Null meaning": "A number is used.",
+      "Unit": "—"
+    },
+    {
+      "Column": "kind",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "answer (agent reply) or notice (channel message such as a command result, unsupported type or limit).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "body",
+      "PostgreSQL type": "character varying(4096)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Text of the part while it awaits sending.",
+      "Null meaning": "Accepted by Meta or final; the reply remains in the agent conversation.",
+      "Unit": "—"
+    },
+    {
+      "Column": "state",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "'pending'::character varying",
+      "Classification": "INTERNAL",
+      "Meaning": "pending, sending, accepted, sent, delivered, read, failed, unknown, revoked or expired.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "attempts",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "0",
+      "Classification": "INTERNAL",
+      "Meaning": "Send attempts started; bounded.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "not_before",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "Earliest next attempt after a retryable refusal.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "lease_until",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Expiry of the current send claim.",
+      "Null meaning": "Not claimed.",
+      "Unit": "—"
+    },
+    {
+      "Column": "provider_message_id",
+      "PostgreSQL type": "character varying(256)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Meta message id of the accepted part; matches delivery status webhooks.",
+      "Null meaning": "Not accepted by Meta.",
+      "Unit": "—"
+    },
+    {
+      "Column": "failure_code",
+      "PostgreSQL type": "character varying(40)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Allowlisted failure, refusal or Meta error code.",
+      "Null meaning": "No failure.",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When the part was created.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Last state change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "whatsapp_outbound_messages_attempts_check",
+      "Physical definition": "CHECK ((attempts >= 0))",
+      "Purpose": "Attempts are never negative."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_inbound_id_fkey",
+      "Physical definition": "FOREIGN KEY (inbound_id) REFERENCES whatsapp_inbound_messages(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Removed with the inbound message."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_kind_check",
+      "Physical definition": "CHECK (((kind)::text = ANY ((ARRAY['answer'::character varying, 'notice'::character varying])::text[])))",
+      "Purpose": "Only answer and notice parts."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_part_check",
+      "Physical definition": "CHECK (((part >= 1) AND (part <= 20)))",
+      "Purpose": "At most 20 parts per reply."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Reply part identity."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_recipient_check",
+      "Physical definition": "CHECK (((recipient_phone IS NOT NULL) OR (recipient_user_id IS NOT NULL)))",
+      "Purpose": "Every part has a recipient."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_state_check",
+      "Physical definition": "CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'sending'::character varying, 'accepted'::character varying, 'sent'::character varying, 'delivered'::character varying, 'read'::character varying, 'failed'::character varying, 'unknown'::character varying, 'revoked'::character varying, 'expired'::character varying])::text[])))",
+      "Purpose": "Only the delivery states."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_part_key",
+      "Physical definition": "CREATE UNIQUE INDEX whatsapp_outbound_messages_part_key ON public.whatsapp_outbound_messages USING btree (inbound_id, part)",
+      "Purpose": "One row per part of a reply."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_provider_key",
+      "Physical definition": "CREATE UNIQUE INDEX whatsapp_outbound_messages_provider_key ON public.whatsapp_outbound_messages USING btree (provider_message_id)",
+      "Purpose": "Status webhooks match one part."
+    },
+    {
+      "Object": "whatsapp_outbound_messages_work_idx",
+      "Physical definition": "CREATE INDEX whatsapp_outbound_messages_work_idx ON public.whatsapp_outbound_messages USING btree (state, not_before)",
+      "Purpose": "Claiming of due parts."
+    }
+  ]
+}

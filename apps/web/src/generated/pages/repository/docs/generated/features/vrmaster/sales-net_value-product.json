@@ -1,0 +1,21 @@
+{
+  "kind": "repository",
+  "source": "docs/generated/features/vrmaster/sales-net_value-product.md",
+  "title": "Pilar da Terra (VR Master): net_value / product",
+  "html": "<p><a href=\"/docs/repository/docs/generated/features/vrmaster/sales\">Sales and all filters</a> · <a href=\"/docs/repository/docs/features/README\">Feature catalog</a></p>\n<p>This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.</p>\n<h2 id=\"example-plan\">Example plan</h2>\n<pre tabindex=\"0\"><code class=\"language-json\">{\n  &quot;startDate&quot;: &quot;2026-01-01&quot;,\n  &quot;endDate&quot;: &quot;2026-01-31&quot;,\n  &quot;productSearch&quot;: null,\n  &quot;metric&quot;: &quot;net_value&quot;,\n  &quot;groupBy&quot;: &quot;product&quot;,\n  &quot;comparison&quot;: &quot;none&quot;\n}\n</code></pre>\n<h2 id=\"bound-parameters\">Bound parameters</h2>\n<p>PostgreSQL positional binds, starting at <code>$1</code>:</p>\n<pre tabindex=\"0\"><code class=\"language-json\">[\n  &quot;2026-01-01&quot;,\n  &quot;2026-01-31&quot;,\n  null,\n  null\n]\n</code></pre>\n<h2 id=\"complete-sql\">Complete SQL</h2>\n<pre tabindex=\"0\"><code class=\"language-sql\">WITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data &gt;= $1::date\n    AND venda.data &lt; ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT 'total' AS period, base.id_produto::text || ' - ' || COALESCE(NULLIF(btrim(base.produto), ''), 'sem descrição') AS product, 'BRL' AS unit,\n  COALESCE(SUM(base.valortotal::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) &gt; 0\nORDER BY 1, 2, 3\nLIMIT 501\n</code></pre>\n<h2 id=\"diagnose-a-difference\">Diagnose a difference</h2>\n<p>Match the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.</p>\n",
+  "headings": [
+    {
+      "id": "pilar-da-terra-vr-master-net_value--product",
+      "text": "Pilar da Terra (VR Master): net_value / product",
+      "level": 1
+    },
+    { "id": "example-plan", "text": "Example plan", "level": 2 },
+    { "id": "bound-parameters", "text": "Bound parameters", "level": 2 },
+    { "id": "complete-sql", "text": "Complete SQL", "level": 2 },
+    {
+      "id": "diagnose-a-difference",
+      "text": "Diagnose a difference",
+      "level": 2
+    }
+  ]
+}
