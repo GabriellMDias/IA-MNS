@@ -239,7 +239,7 @@ test("Markdown cannot execute raw HTML, unsafe URLs, or automatic image requests
     available,
     sourceBase,
   );
-  assert.doesNotMatch(rendered.html, /<script|<img/);
+  assert.doesNotMatch(rendered.html, /<script|<img/i);
   assert.match(rendered.html, /&lt;script&gt;/);
   assert.match(rendered.html, /<pre tabindex="0"><code class="language-sql">/);
   assert.match(rendered.html, /&lt;example&gt;/);
@@ -265,15 +265,16 @@ test("Markdown cannot execute raw HTML, unsafe URLs, or automatic image requests
 test("removed comments cannot join fragments into new markup or hide neighboring content", () => {
   const rendered = renderDocument(
     "docs/a.md",
-    "# Title\n\nleft<!-- hidden -->right\n\n<!<!-- removed -->-- visible -->\n\n<scrip<!-- removed -->t>alert(1)</script>\n",
+    "# Title\n\nleft<!-- hidden -->right\n\n<!<!-- removed -->-- visible -->\n\n<scrip<!-- removed -->t>alert(1)</script>\n\n<SCRIPT>alert(2)</SCRIPT>\n",
     new Set(["docs/a.md"]),
     sourceBase,
   );
   assert.match(rendered.html, /left right/);
   assert.match(rendered.html, /visible/);
-  assert.doesNotMatch(rendered.html, /hidden|removed|<!--|<script/);
+  assert.doesNotMatch(rendered.html, /hidden|removed|<!--|<script/i);
   assert.match(rendered.html, /&lt;! --/);
   assert.match(rendered.html, /&lt;scrip t&gt;/);
+  assert.match(rendered.html, /&lt;SCRIPT&gt;/);
 });
 
 test("generation is deterministic and preserves full contracts with bounded per-page output", async () => {
