@@ -1,4 +1,11 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { configReference } from "../src/config.js";
@@ -6,13 +13,19 @@ import { publicErrorRegistry } from "../src/error-registry.js";
 import { apiModules } from "../src/modules.js";
 import { generateOpenApi } from "./openapi.js";
 import { generateDatabaseReference } from "./database-reference.js";
+import { featureReferences } from "./feature-reference.js";
 import {
   assertPrismaSchemaMatchesDatabase,
   withMigratedDatabase,
 } from "./migrated-database.js";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const features = featureReferences().map((artifact) => ({
+  ...artifact,
+  path: resolve(root, artifact.path),
+}));
 const generated = [
+  ...features,
   {
     path: resolve(root, "docs/generated/api/openapi.json"),
     content: await generateOpenApi(),
@@ -63,6 +76,43 @@ const write = process.argv[2] === "--write";
 if (!write && process.argv[2] !== "--check")
   throw new Error("Expected --check or --write");
 const normalizeLineEndings = (value: string) => value.replace(/\r\n?/g, "\n");
+
+// This subtree is entirely generated. Retired variants must disappear rather
+// than remaining searchable as implemented features in the portal.
+async function featureFiles(directory: string): Promise<string[]> {
+  const stat = await lstat(directory).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+  if (!stat) return [];
+  if (stat.isSymbolicLink())
+    throw new Error(`Redirected feature reference: ${directory}`);
+  const files: string[] = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const path = resolve(directory, entry.name);
+    if (entry.isSymbolicLink())
+      throw new Error(`Redirected feature reference: ${path}`);
+    if (entry.isDirectory()) files.push(...(await featureFiles(path)));
+    else if (/\.(md|sql)$/.test(entry.name)) files.push(path);
+    else
+      throw new Error(
+        `Unexpected file in generated feature references: ${path}`,
+      );
+  }
+  return files;
+}
+for (const name of ["docs", "docs/generated"]) {
+  if ((await lstat(resolve(root, name))).isSymbolicLink())
+    throw new Error(`Redirected feature reference parent: ${name}`);
+}
+const expectedFeatures = new Set(features.map((artifact) => artifact.path));
+const obsoleteFeatures = (
+  await featureFiles(resolve(root, "docs/generated/features"))
+).filter((path) => !expectedFeatures.has(path));
+if (!write && obsoleteFeatures.length)
+  throw new Error(
+    "Retired feature references remain; run pnpm -C apps/api references:write",
+  );
 generated.push({
   path: resolve(root, "docs/generated/database/schema.md"),
   content: await withMigratedDatabase(async (_runtimeUrl, migrationUrl) => {
@@ -80,3 +130,4 @@ for (const artifact of generated) {
       throw new Error(`Generated reference drift: ${artifact.path}`);
   }
 }
+if (write) for (const path of obsoleteFeatures) await rm(path);

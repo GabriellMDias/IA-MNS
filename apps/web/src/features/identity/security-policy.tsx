@@ -8,6 +8,7 @@ import {
 } from "./api.js";
 import { identityMessage, isFailure } from "./messages.js";
 import { useIdentity } from "./session.js";
+import { Button, SectionCard, SelectField } from "../../components.js";
 
 type DurationField = Exclude<keyof SecurityPolicy, "mfaRequirement">;
 
@@ -186,187 +187,202 @@ function PolicyForm({
       ? Math.min(view.limits[field].max, draft.sessionMaxMinutes)
       : view.limits[field].max;
   return (
-    <section
-      className="identity-card identity-policy"
-      aria-labelledby="identity-policy-title"
-    >
-      <h2 id="identity-policy-title">Autenticação e segurança</h2>
-      <p className="identity-hint">
-        Defina por quanto tempo as pessoas permanecem conectadas e quando o
-        IA-MNS pede confirmação. As regras valem para quem entra pelo endereço
-        do IA-MNS; dentro do PDT Connect e do Sankhya a sessão acompanha o
-        sistema hospedeiro.
-      </p>
-      {view.production ? (
-        <p className="identity-policy-banner" role="note">
-          Ambiente de produção: administradores sempre usam a verificação em
-          duas etapas.
-        </p>
-      ) : (
-        <p className="identity-policy-banner" role="note">
-          Ambiente de desenvolvimento ou testes: é possível usar uma política
-          mais permissiva. Ao publicar em produção, revise esta página.
-        </p>
-      )}
-      {view.configured.mfaRequirement !== view.effective.mfaRequirement && (
-        <p className="identity-auth-error" role="alert">
-          A política salva dispensa o segundo fator, mas em produção ele
-          continua obrigatório para administradores.
-        </p>
-      )}
-      <form
-        className="identity-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          save.mutate();
-        }}
+    <div className="admin-policy">
+      <SectionCard
+        title="Autenticação e segurança"
+        description="Defina a duração das sessões e quando o IA-MNS pede confirmação. Estas regras valem para o acesso direto; dentro do PDT Connect e do Sankhya, a sessão acompanha o sistema hospedeiro."
+        className="identity-policy"
       >
-        {order.map((field) => {
-          const options = [
-            ...new Set([...fields[field].presets, draft[field]]),
-          ].sort((a, b) => a - b);
-          const warning = draft[field] > view.limits[field].recommendedMax;
-          return (
-            <div className="identity-policy-field" key={field}>
-              <label htmlFor={`policy-${field}`}>{fields[field].label}</label>
-              <select
-                id={`policy-${field}`}
-                value={draft[field]}
-                aria-describedby={`policy-${field}-help`}
-                onChange={(event) => set(field, Number(event.target.value))}
-              >
-                {options.map((value) => (
-                  <option
-                    key={value}
-                    value={value}
-                    disabled={
-                      value < view.limits[field].min || value > limitFor(field)
-                    }
+        {view.production ? (
+          <p className="identity-policy-banner" role="note">
+            Ambiente de produção: administradores sempre usam a verificação em
+            duas etapas.
+          </p>
+        ) : (
+          <p className="identity-policy-banner" role="note">
+            Ambiente de desenvolvimento ou testes: é possível usar uma política
+            mais permissiva. Ao publicar em produção, revise esta página.
+          </p>
+        )}
+        {view.configured.mfaRequirement !== view.effective.mfaRequirement && (
+          <p className="identity-auth-error" role="alert">
+            A política salva dispensa o segundo fator, mas em produção ele
+            continua obrigatório para administradores.
+          </p>
+        )}
+        <form
+          className="identity-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            save.mutate();
+          }}
+        >
+          <div className="admin-policy-grid">
+            {order.map((field) => {
+              const options = [
+                ...new Set([...fields[field].presets, draft[field]]),
+              ].sort((a, b) => a - b);
+              const warning = draft[field] > view.limits[field].recommendedMax;
+              return (
+                <div
+                  className="identity-policy-field admin-setting"
+                  key={field}
+                >
+                  <SelectField
+                    label={fields[field].label}
+                    hint={fields[field].help}
+                    id={`policy-${field}`}
+                    value={draft[field]}
+                    onChange={(event) => set(field, Number(event.target.value))}
                   >
-                    {fields[field].format(value)}
-                    {value === view.defaults[field] ? " (padrão)" : ""}
-                    {value > view.limits[field].recommendedMax
-                      ? " — reduz a segurança"
+                    {options.map((value) => (
+                      <option
+                        key={value}
+                        value={value}
+                        disabled={
+                          value < view.limits[field].min ||
+                          value > limitFor(field)
+                        }
+                      >
+                        {fields[field].format(value)}
+                        {value === view.defaults[field] ? " (padrão)" : ""}
+                        {value > view.limits[field].recommendedMax
+                          ? " — reduz a segurança"
+                          : ""}
+                      </option>
+                    ))}
+                  </SelectField>
+                  {warning && (
+                    <p className="identity-policy-warning">
+                      Reduz a segurança: {fields[field].risk}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+            <fieldset className="identity-policy-field admin-setting">
+              <legend>Verificação em duas etapas</legend>
+              {(["everyone", "administrators", "none"] as const).map(
+                (value) => (
+                  <label className="identity-check" key={value}>
+                    <input
+                      type="radio"
+                      name="policy-mfa"
+                      value={value}
+                      checked={draft.mfaRequirement === value}
+                      disabled={value === "none" && view.production}
+                      onChange={() => set("mfaRequirement", value)}
+                    />{" "}
+                    {requirementLabel[value]}
+                    {value === view.defaults.mfaRequirement ? " (padrão)" : ""}
+                    {value === "none"
+                      ? " — apenas desenvolvimento e testes"
                       : ""}
-                  </option>
-                ))}
-              </select>
-              <p className="identity-hint" id={`policy-${field}-help`}>
-                {fields[field].help}
+                  </label>
+                ),
+              )}
+              <p className="identity-hint">
+                Vale para quem entra com usuário e senha do IA-MNS. Quem entra
+                pelo PDT Connect ou pelo Sankhya é protegido pelo sistema de
+                origem; administradores confirmam com senha e código antes de
+                administrar.
               </p>
-              {warning && (
+              {draft.mfaRequirement === "none" && (
                 <p className="identity-policy-warning">
-                  Reduz a segurança: {fields[field].risk}
+                  Reduz a segurança: administradores poderão alterar pessoas,
+                  permissões e esta política apenas com a senha, e também
+                  poderão ter o navegador lembrado.
                 </p>
               )}
+            </fieldset>
+          </div>
+          {reduced.length > 0 && (
+            <div className="identity-policy-summary" role="status">
+              <p>
+                <strong>Esta política reduz a segurança</strong> em:{" "}
+                {reduced.map((field) => fieldLabel[field]).join(", ")}.
+              </p>
+              {needsAcknowledgement && (
+                <label className="identity-check">
+                  <input
+                    type="checkbox"
+                    checked={acknowledged}
+                    onChange={(event) => setAcknowledged(event.target.checked)}
+                  />{" "}
+                  Entendo os riscos e quero aplicar esta política
+                </label>
+              )}
             </div>
-          );
-        })}
-        <fieldset className="identity-policy-field">
-          <legend>Verificação em duas etapas</legend>
-          {(["everyone", "administrators", "none"] as const).map((value) => (
-            <label className="identity-check" key={value}>
-              <input
-                type="radio"
-                name="policy-mfa"
-                value={value}
-                checked={draft.mfaRequirement === value}
-                disabled={value === "none" && view.production}
-                onChange={() => set("mfaRequirement", value)}
-              />{" "}
-              {requirementLabel[value]}
-              {value === view.defaults.mfaRequirement ? " (padrão)" : ""}
-              {value === "none" ? " — apenas desenvolvimento e testes" : ""}
-            </label>
-          ))}
-          <p className="identity-hint">
-            Vale para quem entra com usuário e senha do IA-MNS. Quem entra pelo
-            PDT Connect ou pelo Sankhya é protegido pelo sistema de origem;
-            administradores confirmam com senha e código antes de administrar.
-          </p>
-          {draft.mfaRequirement === "none" && (
-            <p className="identity-policy-warning">
-              Reduz a segurança: administradores poderão alterar pessoas,
-              permissões e esta política apenas com a senha, e também poderão
-              ter o navegador lembrado.
+          )}
+          <div className="admin-actions">
+            <Button
+              type="submit"
+              loading={save.isPending}
+              disabled={
+                save.isPending ||
+                !changed ||
+                (needsAcknowledgement && !acknowledged)
+              }
+            >
+              Salvar política
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={save.isPending}
+              onClick={() => {
+                setDraft({ ...view.defaults });
+                setAcknowledged(false);
+                setNotice(null);
+              }}
+            >
+              Restaurar padrões recomendados
+            </Button>
+          </div>
+          {notice && (
+            <p role="status" className="admin-notice">
+              {notice}
             </p>
           )}
-        </fieldset>
-        {reduced.length > 0 && (
-          <div className="identity-policy-summary" role="status">
-            <p>
-              <strong>Esta política reduz a segurança</strong> em:{" "}
-              {reduced.map((field) => fieldLabel[field]).join(", ")}.
+          {save.error && (
+            <p role="alert" className="admin-notice admin-notice-error">
+              {isFailure(save.error, "IDENTITY_RECENT_AUTHENTICATION_REQUIRED")
+                ? "Confirme sua identidade em Minha conta (senha e código) e salve novamente."
+                : identityMessage(save.error)}
             </p>
-            {needsAcknowledgement && (
-              <label className="identity-check">
-                <input
-                  type="checkbox"
-                  checked={acknowledged}
-                  onChange={(event) => setAcknowledged(event.target.checked)}
-                />{" "}
-                Entendo os riscos e quero aplicar esta política
-              </label>
-            )}
-          </div>
-        )}
-        <div className="identity-actions">
-          <button
-            disabled={
-              save.isPending ||
-              !changed ||
-              (needsAcknowledgement && !acknowledged)
-            }
-          >
-            Salvar política
-          </button>
-          <button
-            type="button"
-            className="identity-secondary"
-            disabled={save.isPending}
-            onClick={() => {
-              setDraft({ ...view.defaults });
-              setAcknowledged(false);
-              setNotice(null);
-            }}
-          >
-            Restaurar padrões recomendados
-          </button>
-        </div>
-        {notice && <p role="status">{notice}</p>}
-        {save.error && (
-          <p role="alert">
-            {isFailure(save.error, "IDENTITY_RECENT_AUTHENTICATION_REQUIRED")
-              ? "Confirme sua identidade em Minha conta (senha e código) e salve novamente."
-              : identityMessage(save.error)}
+          )}
+        </form>
+      </SectionCard>
+      <SectionCard title="Alterações recentes" className="admin-history">
+        {!view.history.length && (
+          <p className="identity-hint">
+            Nenhuma alteração: os padrões recomendados estão em uso.
           </p>
         )}
-      </form>
-      <h3>Alterações recentes</h3>
-      {!view.history.length && (
-        <p className="identity-hint">
-          Nenhuma alteração: os padrões recomendados estão em uso.
-        </p>
-      )}
-      <ul className="identity-list identity-audit">
-        {view.history.map((entry, index) => {
-          const changes = (Object.keys(fieldLabel) as (keyof SecurityPolicy)[])
-            .filter((field) => `${field}To` in entry.details)
-            .map(
-              (field) =>
-                `${fieldLabel[field]}: ${describe(field, entry.details[`${field}From`])} → ${describe(field, entry.details[`${field}To`])}`,
+        <ul className="identity-list identity-audit">
+          {view.history.map((entry, index) => {
+            const changes = (
+              Object.keys(fieldLabel) as (keyof SecurityPolicy)[]
+            )
+              .filter((field) => `${field}To` in entry.details)
+              .map(
+                (field) =>
+                  `${fieldLabel[field]}: ${describe(field, entry.details[`${field}From`])} → ${describe(field, entry.details[`${field}To`])}`,
+              );
+            return (
+              <li key={index}>
+                <span>
+                  {new Date(entry.occurredAt).toLocaleString("pt-BR")} ·{" "}
+                  {entry.actorName ?? "Administrador"} ·{" "}
+                  {changes.length
+                    ? changes.join("; ")
+                    : "sem mudança de valores"}
+                </span>
+              </li>
             );
-          return (
-            <li key={index}>
-              <span>
-                {new Date(entry.occurredAt).toLocaleString("pt-BR")} ·{" "}
-                {entry.actorName ?? "Administrador"} ·{" "}
-                {changes.length ? changes.join("; ") : "sem mudança de valores"}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+          })}
+        </ul>
+      </SectionCard>
+    </div>
   );
 }

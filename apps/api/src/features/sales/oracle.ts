@@ -17,6 +17,7 @@ import {
   type SalesReadResult,
 } from "./reader.js";
 import type { SalesProductScope } from "./product-scope.js";
+import type { DataScope } from "../../access.js";
 
 const aggregateRowSchema = Type.Object({
   PERIOD: Type.String({ pattern: "^(?:total|\\d{4}-(?:0[1-9]|1[0-2]))$" }),
@@ -63,6 +64,7 @@ export function createOracleReader(config: ServerConfig): SalesReader {
     queries: readonly SalesQuery[],
     signal: AbortSignal,
     scope?: SalesProductScope,
+    restriction?: DataScope,
   ): Promise<SalesReadResult[]> {
     validateReadBatch(queries, "sankhya", scope);
     let connection: oracledb.Connection | undefined;
@@ -86,11 +88,11 @@ export function createOracleReader(config: ServerConfig): SalesReader {
       const fetch = async (period: SalesQuery): Promise<SalesData> => {
         signal.throwIfAborted();
         const binds = {
-          ...queryBindings(period),
+          ...queryBindings(period, restriction),
           ...(scope?.source === "sankhya" ? scope.binds : {}),
         };
         const aggregates = await connection!.execute<AggregateRow>(
-          aggregateSql(period, scope),
+          aggregateSql(period, scope, restriction),
           binds,
           {
             outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -129,7 +131,7 @@ export function createOracleReader(config: ServerConfig): SalesReader {
             ? []
             : (
                 await connection!.execute<ProductRow>(
-                  semanticMatchingProductsSql(scope),
+                  semanticMatchingProductsSql(scope, restriction),
                   binds,
                   {
                     outFormat: oracledb.OUT_FORMAT_OBJECT,
@@ -197,8 +199,8 @@ export function createOracleReader(config: ServerConfig): SalesReader {
     return result!;
   }
   return {
-    async read(query, signal, scope) {
-      return (await readMany([query], signal, scope))[0];
+    async read(query, signal, scope, restriction) {
+      return (await readMany([query], signal, scope, restriction))[0];
     },
     readMany,
     async close() {

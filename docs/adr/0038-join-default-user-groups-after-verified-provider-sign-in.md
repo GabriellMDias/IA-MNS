@@ -1,0 +1,40 @@
+# ADR-0038: Join Default User Groups after Verified Provider Sign-In
+
+**Status:** proposed
+**Date:** 2026-10-21
+**Supersedes:** [ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md) and [ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md), only their automatic permission grants by external link; [ADR-0037](0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md), only its provider-policy fallback. Identity proof, owner safeguards and ordinary group grants remain unchanged.
+
+## Context
+
+The owner requested replacing automatic permission grants with a default user group for each external system. Groups already own per-source permissions and their restrictions; a parallel automatic permission policy obscures the origin and scope of access.
+
+## Decision
+
+Owners select an existing group independently for PDT Connect and Sankhya, or no group, in **Administração → Parâmetros → Grupo de Usuário padrão por vínculo**. Identity owns these selections in `identity_provider_groups`, separately from operational parameters. Changes require recent strong owner authentication, the version read, and transactional audit.
+
+After successful provider sign-in, including first-access provisioning and direct provider callbacks, the active Person joins the selected group before the access token is issued. Repeated sign-ins are idempotent. The group supplies its ordinary grants and restrictions, united with other personal and group grants. A link alone, owner directory association, local-password login, refresh or WhatsApp message never triggers membership. Invalid proofs and disabled people acquire no membership.
+
+Membership is persistent. Clearing or changing a default and unlinking a provider do not remove memberships. Removing someone manually is effective immediately, but the next verified sign-in to the same provider rejoins the current default. Changing a default affects future sign-ins only; it does not move existing members. A selected group cannot be deleted until the owner clears or replaces its selection. Selection changes and sign-in assignments serialize on the provider row.
+
+## Rationale
+
+The existing group model provides one permission and restriction mechanism. Persistent membership makes access explainable in the group and Person screens and preserves it across sign-in methods. Automatic removal would need additional provenance and revocation semantics that the owner did not request.
+
+## Alternatives Considered
+
+- Retain a permission checklist per provider: duplicates group authorization and does not meet the requested membership behavior.
+- Treat membership as a transient projection of every stored link: changes access during unrelated logins and does not represent entry through the indicated system.
+
+## Consequences
+
+- Every automatic membership is audited once and appears as an ordinary group membership.
+- Groups grant no owner role. Personal restrictions do not override a broader group grant; owners must restrict the default group itself when needed.
+- Existing automatic permissions cease to apply. Migration `202610210001_identity_provider_groups` seeds both selections empty; owners must select groups and review their permissions. Existing explicit grants, memberships, historical parameter rows and audit are retained. `access.providerGrants` is no longer exposed or accepted by the parameter API; `IA_MNS_PROVIDER_GRANTS` is retired and ignored. No legacy permission is silently copied to an unrestricted group.
+- The permission catalog keeps an empty `autoGrantProviders` field for wire compatibility. There is no composed automatic permission policy.
+- Apply the new migration and runtime grants before starting the updated API. Startup checks reject a missing provider-group table. An older application may restore its previous link policy, so rollback requires an explicit authorization review.
+
+## References
+
+- [Identity authorization](../domains/identity.md#authorization)
+- [Operational configuration](../architecture/configuration.md#operational-parameters)
+- [Implementation plan](../project/implementation-plan.md#current-work) and [human actions](../project/human-actions.md#ph-13)

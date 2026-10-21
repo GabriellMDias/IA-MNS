@@ -1,5 +1,6 @@
 import { Type } from "typebox";
 import { errorEnvelopeSchema } from "../../errors.js";
+import { recordedAccessSchema } from "../../access.js";
 import type { ApiOperation } from "../../module.js";
 
 const object = { additionalProperties: false };
@@ -80,6 +81,7 @@ export const resultSchema = Type.Object(
         object,
       ),
     ),
+    access: Type.Optional(recordedAccessSchema),
   },
   object,
 );
@@ -102,12 +104,14 @@ const sectionSchema = Type.Object(
       Type.Literal("answered"),
       Type.Literal("unavailable"),
       Type.Literal("unsupported"),
+      Type.Literal("denied"),
     ]),
     reason: Type.Union([
       Type.Literal("provider_unavailable"),
       Type.Literal("not_configured"),
       Type.Literal("result_too_large"),
       Type.Literal("measure"),
+      Type.Literal("access_denied"),
       Type.Null(),
     ]),
     result: Type.Union([resultSchema, Type.Null()]),
@@ -189,7 +193,7 @@ export const chatOperation = {
   operationId: "askSalesQuestion",
   authentication: "bearer",
   description:
-    "Interprets a Portuguese sales question and executes a fixed read-only sales query. Context is actor-owned, in memory, expires after 30 minutes idle and is limited to 12 questions. Local development access is explicitly restricted to loopback. Requires sales:read otherwise.",
+    "Interprets a Portuguese sales question and executes a fixed read-only sales query against the Sankhya source. Context is actor-owned, in memory, expires after 30 minutes idle and is limited to 12 questions. Local development access is explicitly restricted to loopback. Requires sales_sankhya:read (SNK-VEN-01) otherwise; a restricted grant limits the figures to its data restriction.",
   schema: { body: requestSchema, response: { 200: replySchema, ...responses } },
   expectedErrors: [
     "AUTHENTICATION_REQUIRED",

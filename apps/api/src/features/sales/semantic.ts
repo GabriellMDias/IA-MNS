@@ -10,6 +10,7 @@ import { assembleResult, validateQuery, type SalesQuery } from "./domain.js";
 import { SalesFailure } from "./errors.js";
 import { scopeDescription, type SalesProductScope } from "./product-scope.js";
 import type { SalesReadResult } from "./reader.js";
+import { restrictResult, type SalesAccess } from "./access.js";
 import {
   sourcesOf,
   supportsMetric,
@@ -86,6 +87,8 @@ export async function executeSemanticSales(
     productSearch?: string | null;
     productScope?: SalesProductScope;
     report?: (error: unknown) => void;
+    /** Sources the person may read and their scopes; absent: all, unrestricted. */
+    access?: SalesAccess;
   }>,
 ): Promise<SalesAnalysis> {
   if (
@@ -111,19 +114,38 @@ export async function executeSemanticSales(
     reads: Map<SalesQuery["metric"], SalesReadResult>;
     reason: SectionReason | null;
   };
+  const allowed = (source: SalesSource) =>
+    !input.access || input.access[source] !== undefined;
+  if (!selected.some(allowed)) throw new SalesFailure("SALES_ACCESS_DENIED");
   const outcomes = await Promise.all(
     selected.map(async (source): Promise<Outcome> => {
       const supported = queries.filter((query) =>
         supportsMetric(source, query.metric),
       );
       if (!supported.length) return { source, reads: new Map(), reason: null };
+      if (!allowed(source))
+        return { source, reads: new Map(), reason: "access_denied" };
+      const scope = input.access?.[source];
+      const restriction = scope?.kind === "restricted" ? scope : undefined;
       try {
         const reader = input.readers[source];
         if (!reader || (supported.length > 1 && !reader.readMany))
           throw new SalesFailure("SALES_NOT_CONFIGURED");
         const reads = reader.readMany
-          ? await reader.readMany(supported, input.signal, input.productScope)
-          : [await reader.read(supported[0], input.signal, input.productScope)];
+          ? await reader.readMany(
+              supported,
+              input.signal,
+              input.productScope,
+              restriction,
+            )
+          : [
+              await reader.read(
+                supported[0],
+                input.signal,
+                input.productScope,
+                restriction,
+              ),
+            ];
         if (reads.length !== supported.length)
           throw new SalesFailure("SALES_PROVIDER_UNAVAILABLE");
         return {
@@ -157,14 +179,16 @@ export async function executeSemanticSales(
             reason: "measure",
             result: null,
           };
+        if (reason === "access_denied")
+          return { source, status: "denied", reason, result: null };
         const read = reads.get(query.metric);
         if (!read)
           return { source, status: "unavailable", reason, result: null };
-        const result = assembleResult(
-          query,
-          read.current,
-          read.previous,
+        const scope = input.access?.[source];
+        const result = restrictResult(
+          assembleResult(query, read.current, read.previous, source),
           source,
+          scope?.kind === "restricted" ? scope : undefined,
         );
         if (input.productScope) {
           result.productSelection = scopeDescription(input.productScope);

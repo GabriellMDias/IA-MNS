@@ -1,0 +1,237 @@
+{
+  "kind": "database",
+  "name": "whatsapp_inbound_messages",
+  "description": "WhatsApp messages from senders that matched exactly one active Person through an owner-linked number when the signature-verified webhook arrived. Unknown, unlinked or unauthorized senders are never recorded. Each row is processed once, in order per Person, after the sender is authorized again.",
+  "owner": "whatsapp",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Inserted before the webhook is acknowledged and deduplicated by the Meta message id; claimed under a lease, retried a bounded number of times, then completed, ignored (revoked, disabled channel, limits, expired window) or failed. The message text is cleared when processing ends, because the question is kept in the agent conversation. Rows older than 30 days are pruned with their replies (provisional until PH-09).",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Inbound work identifier; also the agent turn request id, so a repeated attempt replays the same turn.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "message_id",
+      "PostgreSQL type": "character varying(256)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Meta message id (wamid); the deduplication key for repeated webhook deliveries.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person the sender matched when the message arrived; processing refuses the message if the sender no longer matches this Person.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "link_version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Version of the Person's WhatsApp link when the message arrived; a changed or removed link refuses the message.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "sender_phone",
+      "PostgreSQL type": "character varying(15)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Sender number exactly as Meta reported it (digits), used only to answer the same sender.",
+      "Null meaning": "Meta reported only the WhatsApp user identifier.",
+      "Unit": "—"
+    },
+    {
+      "Column": "sender_user_id",
+      "PostgreSQL type": "character varying(140)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "WhatsApp business-scoped user identifier Meta reported.",
+      "Null meaning": "Not reported by Meta for this message.",
+      "Unit": "—"
+    },
+    {
+      "Column": "kind",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "text, or unsupported for media and other message types this version does not process.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "body",
+      "PostgreSQL type": "character varying(4096)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Text of the message while it awaits processing.",
+      "Null meaning": "Not text, or processing ended and the text was cleared.",
+      "Unit": "—"
+    },
+    {
+      "Column": "sent_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When the person sent the message, according to Meta; orders processing per Person and bounds the customer service window.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "received_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When the webhook delivered the message.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "state",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "'pending'::character varying",
+      "Classification": "INTERNAL",
+      "Meaning": "pending, processing, completed, ignored or failed.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "outcome",
+      "PostgreSQL type": "character varying(40)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Allowlisted code of how processing ended, for example answered, command, revoked, channel_disabled, rate_limited or expired.",
+      "Null meaning": "Still pending or processing.",
+      "Unit": "—"
+    },
+    {
+      "Column": "attempts",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "0",
+      "Classification": "INTERNAL",
+      "Meaning": "Processing attempts started; bounded.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "not_before",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "Earliest time the message may be claimed (backoff after a busy conversation or a failed attempt).",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "lease_until",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Expiry of the current processing claim; an expired claim is reclaimed.",
+      "Null meaning": "Not claimed.",
+      "Unit": "—"
+    },
+    {
+      "Column": "conversation_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Agent conversation that received the message as a turn.",
+      "Null meaning": "No turn was submitted (command, refusal or still pending).",
+      "Unit": "—"
+    },
+    {
+      "Column": "turn_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Agent turn created for the message.",
+      "Null meaning": "No turn was submitted.",
+      "Unit": "—"
+    },
+    {
+      "Column": "finished_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When processing ended.",
+      "Null meaning": "Still pending or processing.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "whatsapp_inbound_messages_attempts_check",
+      "Physical definition": "CHECK ((attempts >= 0))",
+      "Purpose": "Attempts are never negative."
+    },
+    {
+      "Object": "whatsapp_inbound_messages_kind_check",
+      "Physical definition": "CHECK (((kind)::text = ANY ((ARRAY['text'::character varying, 'unsupported'::character varying])::text[])))",
+      "Purpose": "Only the processed message kinds."
+    },
+    {
+      "Object": "whatsapp_inbound_messages_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Inbound work identity."
+    },
+    {
+      "Object": "whatsapp_inbound_messages_sender_check",
+      "Physical definition": "CHECK (((sender_phone IS NOT NULL) OR (sender_user_id IS NOT NULL)))",
+      "Purpose": "Every message has a sender identifier."
+    },
+    {
+      "Object": "whatsapp_inbound_messages_state_check",
+      "Physical definition": "CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'processing'::character varying, 'completed'::character varying, 'ignored'::character varying, 'failed'::character varying])::text[])))",
+      "Purpose": "Only the processing states."
+    },
+    {
+      "Object": "whatsapp_inbound_messages_message_key",
+      "Physical definition": "CREATE UNIQUE INDEX whatsapp_inbound_messages_message_key ON public.whatsapp_inbound_messages USING btree (message_id)",
+      "Purpose": "One row per Meta message: repeated webhook deliveries are ignored."
+    },
+    {
+      "Object": "whatsapp_inbound_messages_person_idx",
+      "Physical definition": "CREATE INDEX whatsapp_inbound_messages_person_idx ON public.whatsapp_inbound_messages USING btree (person_id, sent_at, received_at)",
+      "Purpose": "Per-Person ordering and usage limits."
+    },
+    {
+      "Object": "whatsapp_inbound_messages_received_idx",
+      "Physical definition": "CREATE INDEX whatsapp_inbound_messages_received_idx ON public.whatsapp_inbound_messages USING btree (received_at)",
+      "Purpose": "Daily cost ceiling and pruning."
+    },
+    {
+      "Object": "whatsapp_inbound_messages_work_idx",
+      "Physical definition": "CREATE INDEX whatsapp_inbound_messages_work_idx ON public.whatsapp_inbound_messages USING btree (state, not_before)",
+      "Purpose": "Claiming of due work."
+    }
+  ]
+}

@@ -2,7 +2,15 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConversationMaterials } from "../features/agent/materials.js";
 import "../features/agent/agent.css";
-import { ErrorNotice } from "../components.js";
+import {
+  Button,
+  ErrorNotice,
+  PageHeader,
+  SectionCard,
+  SelectField,
+  StatusBadge,
+  TextField,
+} from "../components.js";
 import { ApiFailure } from "../api-client.js";
 import { SalesAnswer, SalesResults } from "../features/sales/results.js";
 import "../features/sales/sales.css";
@@ -13,13 +21,119 @@ export function Example({ id }: { id: string }) {
   const [message, setMessage] = useState("");
   const [materialClient] = useState(() => new QueryClient());
   switch (id) {
+    case "ui-page-header":
+      return (
+        <>
+          <PageHeader
+            title="Administração"
+            description="Gerencie as preferências da equipe."
+            actions={
+              <Button
+                onClick={() =>
+                  setMessage(
+                    "Demonstration action selected; no request was made.",
+                  )
+                }
+              >
+                Nova pessoa
+              </Button>
+            }
+          />
+          {message && <p role="status">{message}</p>}
+        </>
+      );
+    case "ui-select-field":
+      return (
+        <SelectField
+          label="Duração da sessão"
+          hint="Exemplo local de uma escolha com ajuda."
+          defaultValue="12"
+        >
+          <option value="12">12 horas</option>
+          <option value="24">24 horas</option>
+          <option value="disabled" disabled>
+            Indisponível neste ambiente
+          </option>
+        </SelectField>
+      );
+    case "ui-buttons":
+      return (
+        <div className="docs-preview">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <Button
+              onClick={() =>
+                setMessage(
+                  "Demonstration action selected; no request was made.",
+                )
+              }
+            >
+              Salvar
+            </Button>
+            <Button variant="secondary">Cancelar</Button>
+            <Button variant="ghost">Ver detalhes</Button>
+            <Button variant="danger">Encerrar</Button>
+            <Button loading>Salvando</Button>
+          </div>
+          {message && <p role="status">{message}</p>}
+        </div>
+      );
+    case "ui-text-fields":
+      return (
+        <div style={{ display: "grid", gap: 20 }}>
+          <TextField
+            label="Nome"
+            defaultValue="Pessoa Exemplo"
+            hint="Como você aparece no IA-MNS."
+          />
+          <TextField
+            label="Usuário"
+            defaultValue="exemplo"
+            error="Este usuário já está em uso (exemplo)."
+          />
+        </div>
+      );
+    case "ui-section-card":
+      return (
+        <SectionCard
+          title="Perfil"
+          description="Um exemplo local dos componentes compartilhados."
+        >
+          <TextField label="Nome de exibição" defaultValue="Pessoa Exemplo" />
+        </SectionCard>
+      );
+    case "ui-status-badges":
+      return (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <StatusBadge>Não configurado</StatusBadge>
+          <StatusBadge tone="accent">Esta sessão</StatusBadge>
+        </div>
+      );
     case "agent-materials-disabled":
+    case "agent-materials-owned":
       return (
         <QueryClientProvider client={materialClient}>
           <ConversationMaterials
             token={null}
             source="sankhya"
-            attachments={[]}
+            attachments={
+              id === "agent-materials-owned"
+                ? [
+                    {
+                      id: "synthetic-file",
+                      name: "resumo-operacional-exemplo.txt",
+                      mediaType: "text/plain",
+                      purpose:
+                        "Resumir os pontos principais do relatório de exemplo.",
+                      source: "sankhya",
+                    },
+                  ]
+                : []
+            }
+            preferences={
+              id === "agent-materials-owned"
+                ? { language: "pt-BR", detail: "concise", format: "bullets" }
+                : undefined
+            }
             disabled={true}
             onCreated={async () => {}}
           />

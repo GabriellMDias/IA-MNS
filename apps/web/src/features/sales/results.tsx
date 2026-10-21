@@ -204,6 +204,9 @@ const unavailable: Readonly<Record<string, string>> = {
   result_too_large:
     "A consulta ficou muito ampla para esta fonte. Reduza o período ou especifique melhor o produto.",
   measure: "Esta medida não está disponível nesta fonte.",
+  // The answer text above names the permission code for support.
+  access_denied:
+    "Você não tem permissão para consultar as vendas desta fonte. O código da permissão necessária está na resposta; informe-o ao suporte para a liberação.",
 };
 /**
  * A sales answer with one labeled group per queried source. Each group shows

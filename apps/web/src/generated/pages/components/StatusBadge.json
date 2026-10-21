@@ -1,0 +1,27 @@
+{
+  "kind": "component",
+  "name": "StatusBadge",
+  "summary": "A compact textual label for a state or category.",
+  "props": [
+    {
+      "name": "children",
+      "type": "ReactNode",
+      "meaning": "Visible text communicating the state or category."
+    },
+    {
+      "name": "tone",
+      "type": "neutral | accent",
+      "meaning": "Defaults to neutral; accent emphasizes an enabled or current state without implying a global severity."
+    }
+  ],
+  "states": ["Neutral", "Accent", "Light and dark themes"],
+  "accessibility": "Meaning is conveyed by visible text, never color alone. This is static text, not a live region or an interactive control.",
+  "usage": "Use short text for enabled settings, current sessions and permission categories. Announce dynamic outcomes separately in the owning workflow.",
+  "examples": [
+    {
+      "id": "ui-status-badges",
+      "label": "State labels",
+      "description": "Synthetic neutral and accent states."
+    }
+  ]
+}

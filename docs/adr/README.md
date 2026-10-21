@@ -43,3 +43,6 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0033](0033-use-one-reader-and-the-existing-administrator-per-erp.md) | Use One Reader and the Existing Administrator per ERP |
 | [ADR-0034](0034-apply-verified-product-selections-to-sales-without-materializing-display-lists.md) | Apply Verified Product Selections to Sales without Materializing Display Lists |
 | [ADR-0035](0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md) | Compose Conversations over Authorized Evidence and Semantic Tools |
+| [ADR-0036](0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md) | Add WhatsApp as an Agent Channel Authorized by Owner-Linked Numbers |
+| [ADR-0037](0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md) | Grant Identified Per-Source Permissions to People and Groups with Data Restrictions |
+| [ADR-0038](0038-join-default-user-groups-after-verified-provider-sign-in.md) | Join Default User Groups after Verified Provider Sign-In |

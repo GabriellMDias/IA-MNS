@@ -115,7 +115,14 @@ function setup() {
       "Quanto vendi de banana de julho a setembro? Mostre valor e quantidade.",
     history: [],
     context: null,
-    permissions: new Set(["sales:read", "products:read"]),
+    permissions: new Set([
+      "sales:read",
+      "sales_sankhya:read",
+      "sales_vrmaster:read",
+      "products:read",
+      "products_sankhya:read",
+      "products_vrmaster:read",
+    ]),
     source: "vrmaster",
     signal: new AbortController().signal,
     progress: vi.fn(() => Promise.resolve()),
@@ -154,9 +161,12 @@ it("resolves original user conditions and shares the complete membership across 
     requiredPermissions: ["sales:read", "products:read"],
     result: { kind: "sales_analysis" },
   });
-  expect(env.capability.canRead!(outcome.reply, new Set(["sales:read"]))).toBe(
-    false,
-  );
+  expect(
+    env.capability.canRead!(
+      outcome.reply,
+      new Set(["sales:read", "sales_sankhya:read", "sales_vrmaster:read"]),
+    ),
+  ).toBe(false);
 });
 
 it("reuses an authorized same-source product lookup without another interpretation or materializing its display list", async () => {
@@ -309,13 +319,20 @@ it("retains the original product request when a pending all-source analysis resu
 
 it("requires product permission only for semantic selection, while permitting authorized unfiltered analytics", async () => {
   const env = setup();
-  const input = env.input({ permissions: new Set(["sales:read"]) });
-  await expect(
-    env.tool.execute(
-      { plan, products: { mode: "resolve", text: null } },
-      input,
-    ),
-  ).rejects.toThrow("AGENT_ACCESS_DENIED");
+  const input = env.input({
+    permissions: new Set([
+      "sales:read",
+      "sales_sankhya:read",
+      "sales_vrmaster:read",
+    ]),
+  });
+  // The selection is refused with the registration permission it needs.
+  const refused = await env.tool.execute(
+    { plan, products: { mode: "resolve", text: null } },
+    input,
+  );
+  expect(refused.reply).toMatchObject({ kind: "unavailable", result: null });
+  expect(refused.reply.message).toContain("VRM-PRD-01");
   expect(env.source.find).not.toHaveBeenCalled();
   expect(env.readMany).not.toHaveBeenCalled();
   const outcome = await env.tool.execute(

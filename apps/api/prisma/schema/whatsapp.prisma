@@ -1,0 +1,57 @@
+model WhatsappInboundMessage {
+  id             String    @id @db.Uuid
+  messageId      String    @unique(map: "whatsapp_inbound_messages_message_key") @map("message_id") @db.VarChar(256)
+  personId       String    @map("person_id") @db.Uuid
+  linkVersion    Int       @map("link_version")
+  senderPhone    String?   @map("sender_phone") @db.VarChar(15)
+  senderUserId   String?   @map("sender_user_id") @db.VarChar(140)
+  kind           String    @db.VarChar(16)
+  body           String?   @db.VarChar(4096)
+  sentAt         DateTime  @map("sent_at") @db.Timestamptz(3)
+  receivedAt     DateTime  @default(now()) @map("received_at") @db.Timestamptz(3)
+  state          String    @default("pending") @db.VarChar(16)
+  outcome        String?   @db.VarChar(40)
+  attempts       Int       @default(0)
+  notBefore      DateTime  @default(now()) @map("not_before") @db.Timestamptz(3)
+  leaseUntil     DateTime? @map("lease_until") @db.Timestamptz(3)
+  conversationId String?   @map("conversation_id") @db.Uuid
+  turnId         String?   @map("turn_id") @db.Uuid
+  finishedAt     DateTime? @map("finished_at") @db.Timestamptz(3)
+  replies        WhatsappOutboundMessage[]
+  @@index([state, notBefore], map: "whatsapp_inbound_messages_work_idx")
+  @@index([personId, sentAt, receivedAt], map: "whatsapp_inbound_messages_person_idx")
+  @@index([receivedAt], map: "whatsapp_inbound_messages_received_idx")
+  @@map("whatsapp_inbound_messages")
+}
+
+model WhatsappOutboundMessage {
+  id                String    @id @db.Uuid
+  inboundId         String    @map("inbound_id") @db.Uuid
+  inbound           WhatsappInboundMessage @relation(fields: [inboundId], references: [id], onDelete: Cascade)
+  part              Int
+  personId          String    @map("person_id") @db.Uuid
+  linkVersion       Int       @map("link_version")
+  recipientPhone    String?   @map("recipient_phone") @db.VarChar(15)
+  recipientUserId   String?   @map("recipient_user_id") @db.VarChar(140)
+  kind              String    @db.VarChar(16)
+  body              String?   @db.VarChar(4096)
+  state             String    @default("pending") @db.VarChar(16)
+  attempts          Int       @default(0)
+  notBefore         DateTime  @default(now()) @map("not_before") @db.Timestamptz(3)
+  leaseUntil        DateTime? @map("lease_until") @db.Timestamptz(3)
+  providerMessageId String?   @unique(map: "whatsapp_outbound_messages_provider_key") @map("provider_message_id") @db.VarChar(256)
+  failureCode       String?   @map("failure_code") @db.VarChar(40)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+  @@unique([inboundId, part], map: "whatsapp_outbound_messages_part_key")
+  @@index([state, notBefore], map: "whatsapp_outbound_messages_work_idx")
+  @@map("whatsapp_outbound_messages")
+}
+
+model WhatsappThread {
+  personId       String   @id @map("person_id") @db.Uuid
+  conversationId String?  @map("conversation_id") @db.Uuid
+  source         String   @default("sankhya") @db.VarChar(20)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  @@map("whatsapp_threads")
+}

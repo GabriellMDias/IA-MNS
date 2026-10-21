@@ -2,7 +2,7 @@
   "kind": "api",
   "operationId": "grantIdentityPermission",
   "summary": "",
-  "description": "Owner: grant a registered capability permission. Audited.",
+  "description": "Owner: grant a registered permission, optionally restricted, or replace the restrictions of an existing grant. Personal and group grants are united; external links alone grant nothing. Audited.",
   "security": [{ "bearerAuth": [] }],
   "components": {
     "securitySchemes": {
@@ -35,7 +35,85 @@
       "description": ""
     }
   ],
-  "request": null,
+  "request": {
+    "required": true,
+    "description": "",
+    "content": {
+      "application/json": {
+        "schema": {
+          "type": "object",
+          "required": ["restrictions"],
+          "properties": {
+            "restrictions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["dimension", "values"],
+                "properties": {
+                  "dimension": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z_]{1,30}$"
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": { "type": "string", "pattern": "^-?[0-9]{1,15}$" },
+                    "minItems": 1,
+                    "maxItems": 100
+                  }
+                },
+                "additionalProperties": false
+              },
+              "maxItems": 8,
+              "description": "Data restrictions: values of one dimension are alternatives; every listed dimension must match. Empty admits every row of the source. Values are ERP codes chosen from GET /identity/admin/restriction-values; labels are read from the source."
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "schema": {
+      "type": "object",
+      "required": ["restrictions"],
+      "properties": {
+        "restrictions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["dimension", "values"],
+            "properties": {
+              "dimension": {
+                "type": "string",
+                "pattern": "^[a-z][a-z_]{1,30}$"
+              },
+              "values": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^-?[0-9]{1,15}$" },
+                "minItems": 1,
+                "maxItems": 100
+              }
+            },
+            "additionalProperties": false
+          },
+          "maxItems": 8,
+          "description": "Data restrictions: values of one dimension are alternatives; every listed dimension must match. Empty admits every row of the source. Values are ERP codes chosen from GET /identity/admin/restriction-values; labels are read from the source."
+        }
+      },
+      "additionalProperties": false
+    },
+    "fields": [
+      { "name": "restrictions", "type": "array of object", "required": true },
+      {
+        "name": "restrictions[].dimension",
+        "type": "string (pattern ^[a-z][a-z_]{1,30}$)",
+        "required": true
+      },
+      {
+        "name": "restrictions[].values",
+        "type": "array of string (pattern ^-?[0-9]{1,15}$)",
+        "required": true
+      }
+    ]
+  },
   "responses": [
     {
       "status": "200",

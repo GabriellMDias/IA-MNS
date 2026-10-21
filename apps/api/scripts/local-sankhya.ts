@@ -139,7 +139,7 @@ process.stdout.write(
     added.length
       ? `Added ${added.join(", ")} to the ignored .env.local. Restart the API.`
       : "IA-MNS Sankhya settings already present in .env.local.",
-    `Start the web server with ORION_WEB_EMBED_ANCESTORS=${omOrigin} and open the Om at ${omOrigin}/mge.`,
+    `Start the web server with pnpm -C apps/web dev (it reuses SANKHYA_EMBED_ORIGIN from .env.local) and open the Om at ${omOrigin}/mge.`,
     "",
   ].join("\n"),
 );

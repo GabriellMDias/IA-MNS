@@ -229,11 +229,86 @@ export const identityErrors = {
     retryable: true,
     message: "A conversation is still running. Try again shortly.",
   },
+  IDENTITY_WHATSAPP_NUMBER_INVALID: {
+    status: 400,
+    category: "validation",
+    retryable: false,
+    message:
+      "Enter the WhatsApp number in international form with the country code.",
+  },
+  IDENTITY_WHATSAPP_NINTH_DIGIT_REQUIRED: {
+    status: 400,
+    category: "validation",
+    retryable: false,
+    message: "Enter the Brazilian mobile number with its ninth digit.",
+  },
+  IDENTITY_WHATSAPP_NUMBER_IN_USE: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message: "This WhatsApp number is already linked to another person.",
+  },
+  IDENTITY_WHATSAPP_NOT_LINKED: {
+    status: 404,
+    category: "not_found",
+    retryable: false,
+    message: "This person has no WhatsApp number.",
+  },
   IDENTITY_LOCAL_CREDENTIAL_REQUIRED: {
     status: 409,
     category: "conflict",
     retryable: false,
     message: "Create a local password first.",
+  },
+  IDENTITY_RESTRICTION_INVALID: {
+    status: 400,
+    category: "validation",
+    retryable: false,
+    message:
+      "The restriction uses a dimension this permission does not have or a value that does not exist in its source.",
+  },
+  IDENTITY_RESTRICTION_UNAVAILABLE: {
+    status: 503,
+    category: "availability",
+    retryable: true,
+    message: "The values of this restriction cannot be read from its source.",
+  },
+  IDENTITY_GROUP_NOT_FOUND: {
+    status: 404,
+    category: "not_found",
+    retryable: false,
+    message: "The group does not exist.",
+  },
+  IDENTITY_GROUP_NAME_INVALID: {
+    status: 400,
+    category: "validation",
+    retryable: false,
+    message: "The group name or description is invalid.",
+  },
+  IDENTITY_GROUP_NAME_TAKEN: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message: "Another group already has this name.",
+  },
+  IDENTITY_GROUP_CONFLICT: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message: "The group changed since it was read. Reload and try again.",
+  },
+  IDENTITY_PROVIDER_GROUP_CONFLICT: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message: "The provider's default group changed. Reload and try again.",
+  },
+  IDENTITY_GROUP_IN_USE: {
+    status: 409,
+    category: "conflict",
+    retryable: false,
+    message:
+      "Select another default group for the provider before deleting this group.",
   },
 } as const satisfies Record<string, ErrorDefinition>;
 

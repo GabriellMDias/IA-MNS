@@ -111,6 +111,9 @@ export function rewriteLink(href, source, available, sourceBase) {
 
 export function renderDocument(source, text, available, sourceBase) {
   const markdown = new MarkdownIt({ html: false, linkify: false });
+  const renderFence = markdown.renderer.rules.fence;
+  markdown.renderer.rules.fence = (...args) =>
+    renderFence(...args).replace("<pre>", '<pre tabindex="0">');
   const safeLink = markdown.validateLink.bind(markdown);
   markdown.validateLink = (url) => {
     if (

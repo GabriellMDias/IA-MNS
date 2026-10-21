@@ -1,4 +1,12 @@
 // Pure identity rules. No Fastify, Prisma or provider SDKs.
+import {
+  uniteScopes,
+  unrestricted,
+  restrictionLimits,
+  type AccessCondition,
+  type DataScope,
+  type PermissionInfo,
+} from "../../access.js";
 
 export type Provider = "pdt" | "sankhya";
 export const providers: readonly Provider[] = ["pdt", "sankhya"];
@@ -10,18 +18,26 @@ export type Role = "owner";
 
 /** Administrative permission carried only by owners; never grantable directly. */
 export const ADMIN_PERMISSION = "identity:admin";
+/** Identification of the administrative permission for owners and support. */
+export const ADMIN_PERMISSION_CODE = "IAM-ADM-01";
 
 /**
- * A grantable capability permission contributed by composition. `access`
+ * A grantable permission contributed by composition: its identification and
+ * restriction dimensions come from the module that owns the data. `access`
  * classifies risk: only `read` permissions may be granted automatically by
  * provider policy; `write` and `sensitive` always need an explicit owner grant.
  */
-export type PermissionDescriptor = Readonly<{
+export type PermissionDescriptor = PermissionInfo &
+  Readonly<{
+    access: "read" | "write" | "sensitive";
+    /** Providers whose active link grants this permission without manual approval. */
+    autoGrantProviders: readonly Provider[];
+  }>;
+
+/** An explicit grant of a Person or a group; no conditions means every row. */
+export type GrantRecord = Readonly<{
   permission: string;
-  title: string;
-  access: "read" | "write" | "sensitive";
-  /** Providers whose active link grants this permission without manual approval. */
-  autoGrantProviders: readonly Provider[];
+  restrictions: readonly AccessCondition[];
 }>;
 
 export type ProviderGrant = Readonly<{
@@ -30,25 +46,193 @@ export type ProviderGrant = Readonly<{
 }>;
 
 const permissionPattern = /^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$/;
+const codePattern = /^[A-Z]{2,4}-[A-Z]{2,4}-\d{2}$/;
+const dimensionPattern = /^[a-z][a-z_]{1,30}$/;
+const dimensionCodePattern = /^[A-Z]{2,4}$/;
 
 export function validateCatalog(
   catalog: readonly PermissionDescriptor[],
 ): void {
   const seen = new Set<string>();
+  const codes = new Set<string>([ADMIN_PERMISSION_CODE]);
+  const capabilities = new Set(
+    catalog.flatMap((item) => (item.capability ? [item.capability] : [])),
+  );
   for (const item of catalog) {
     if (
       !permissionPattern.test(item.permission) ||
-      item.permission === ADMIN_PERMISSION
+      item.permission === ADMIN_PERMISSION ||
+      capabilities.has(item.permission)
     )
       throw new Error(`Invalid identity permission ${item.permission}`);
     if (seen.has(item.permission))
       throw new Error(`Duplicate identity permission ${item.permission}`);
     seen.add(item.permission);
+    if (!codePattern.test(item.code) || codes.has(item.code))
+      throw new Error(`Invalid or duplicate permission code ${item.code}`);
+    codes.add(item.code);
+    if (
+      item.capability !== null &&
+      (!permissionPattern.test(item.capability) ||
+        item.capability === ADMIN_PERMISSION)
+    )
+      throw new Error(`Invalid capability permission ${item.capability}`);
+    const dimensions = new Set<string>();
+    const dimensionCodes = new Set<string>();
+    for (const dimension of item.restrictions) {
+      if (
+        !dimensionPattern.test(dimension.id) ||
+        !dimensionCodePattern.test(dimension.code) ||
+        dimensions.has(dimension.id) ||
+        dimensionCodes.has(dimension.code)
+      )
+        throw new Error(
+          `Invalid restriction ${dimension.id} of ${item.permission}`,
+        );
+      dimensions.add(dimension.id);
+      dimensionCodes.add(dimension.code);
+    }
     if (item.access !== "read" && item.autoGrantProviders.length > 0)
       throw new Error(
         `Only read permissions may be granted automatically: ${item.permission}`,
       );
   }
+}
+
+/**
+ * Normalizes the restrictions an owner submits for one grant: dimensions the
+ * permission declares, at most once each, with distinct non-empty values in a
+ * stable order. Returns null for anything else.
+ */
+export function normalizeRestrictions(
+  descriptor: PermissionDescriptor,
+  input: readonly { dimension: string; values: readonly string[] }[],
+): { dimension: string; values: string[] }[] | null {
+  const result: { dimension: string; values: string[] }[] = [];
+  for (const condition of input) {
+    if (
+      !descriptor.restrictions.some(
+        (item) => item.id === condition.dimension,
+      ) ||
+      result.some((item) => item.dimension === condition.dimension)
+    )
+      return null;
+    const values = [...new Set(condition.values.map((value) => value.trim()))];
+    if (
+      values.length === 0 ||
+      values.length > restrictionLimits.values ||
+      values.some((value) => !/^-?\d{1,15}$/.test(value))
+    )
+      return null;
+    result.push({
+      dimension: condition.dimension,
+      values: values.sort((a, b) =>
+        BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0,
+      ),
+    });
+  }
+  return result.sort(
+    (a, b) =>
+      descriptor.restrictions.findIndex((item) => item.id === a.dimension) -
+      descriptor.restrictions.findIndex((item) => item.id === b.dimension),
+  );
+}
+
+/** Where a held permission comes from, for owners and the person. */
+export type AccessOrigin =
+  | Readonly<{ kind: "owner" }>
+  | Readonly<{ kind: "grant" }>
+  | Readonly<{ kind: "group"; groupId: string }>
+  | Readonly<{ kind: "provider"; provider: Provider }>;
+
+export type EffectiveAccess = {
+  /** Token scopes: held permissions, their capability permissions and identity:admin. */
+  permissions: string[];
+  /** One scope per held catalog permission. */
+  scopes: Map<string, DataScope>;
+  origins: Map<string, AccessOrigin[]>;
+};
+
+/**
+ * Effective access is computed only from trusted server state. For each
+ * catalog permission: owners hold it without restriction; otherwise the
+ * explicit grants of the Person and of its groups are united; only when there
+ * is no explicit grant may provider policy grant it, without restriction, so
+ * an owner can narrow an automatically granted permission by granting it
+ * explicitly. A grant restricted by a dimension the permission no longer
+ * declares cannot be enforced and is ignored. Nothing from the browser or the
+ * language model counts.
+ */
+export function effectiveAccess(input: {
+  catalog: readonly PermissionDescriptor[];
+  policy: readonly ProviderGrant[];
+  grants: readonly GrantRecord[];
+  groupGrants?: readonly (GrantRecord & { groupId: string })[];
+  linkedProviders: readonly Provider[];
+  roles: readonly Role[];
+}): EffectiveAccess {
+  const owner = input.roles.includes("owner");
+  const scopes = new Map<string, DataScope>();
+  const origins = new Map<string, AccessOrigin[]>();
+  for (const item of input.catalog) {
+    const enforceable = (grant: GrantRecord) =>
+      grant.permission === item.permission &&
+      grant.restrictions.every((condition) =>
+        item.restrictions.some(
+          (dimension) => dimension.id === condition.dimension,
+        ),
+      );
+    const own = input.grants.filter(enforceable);
+    const grouped = (input.groupGrants ?? []).filter(enforceable);
+    const from: AccessOrigin[] = [
+      ...(owner ? [{ kind: "owner" as const }] : []),
+      ...(own.length ? [{ kind: "grant" as const }] : []),
+      ...grouped.map((grant) => ({
+        kind: "group" as const,
+        groupId: grant.groupId,
+      })),
+    ];
+    let scope: DataScope | null = null;
+    if (owner) scope = unrestricted;
+    else if (own.length || grouped.length)
+      scope = uniteScopes(
+        [...own, ...grouped].map((grant) =>
+          grant.restrictions.length
+            ? { kind: "restricted", rules: [grant.restrictions] }
+            : unrestricted,
+        ),
+      );
+    else {
+      const providers = input.policy
+        .filter(
+          (rule) =>
+            rule.permission === item.permission &&
+            input.linkedProviders.includes(rule.provider),
+        )
+        .map((rule) => rule.provider);
+      if (providers.length) {
+        scope = unrestricted;
+        from.push(
+          ...[...new Set(providers)].map((provider) => ({
+            kind: "provider" as const,
+            provider,
+          })),
+        );
+      }
+    }
+    if (scope) {
+      scopes.set(item.permission, scope);
+      origins.set(item.permission, from);
+    }
+  }
+  const permissions = new Set<string>();
+  for (const item of input.catalog)
+    if (scopes.has(item.permission)) {
+      permissions.add(item.permission);
+      if (item.capability) permissions.add(item.capability);
+    }
+  if (owner) permissions.add(ADMIN_PERMISSION);
+  return { permissions: [...permissions].sort(), scopes, origins };
 }
 
 /**
@@ -97,10 +281,33 @@ export function parseProviderGrants(value: string): ProviderGrant[] {
 }
 
 /**
- * Effective permissions are computed only from trusted server state: explicit
- * grants that still exist in the catalog, provider policy for active links,
- * and internal roles. Nothing from the browser or the language model counts.
+ * The conditions of a stored grant: one per restricted dimension, values in
+ * numeric order. Rows are one admitted value each.
  */
+export function grantConditions(
+  rows: readonly { dimension: string; value: string; label: string }[],
+): AccessCondition[] {
+  const byDimension = new Map<string, { value: string; label: string }[]>();
+  for (const row of rows)
+    byDimension.set(row.dimension, [
+      ...(byDimension.get(row.dimension) ?? []),
+      { value: row.value, label: row.label },
+    ]);
+  return [...byDimension.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([dimension, values]) => ({
+      dimension,
+      values: values.sort((a, b) =>
+        BigInt(a.value) < BigInt(b.value)
+          ? -1
+          : BigInt(a.value) > BigInt(b.value)
+            ? 1
+            : 0,
+      ),
+    }));
+}
+
+/** The token scopes of {@link effectiveAccess} for unrestricted grants. */
 export function effectivePermissions(input: {
   catalog: readonly PermissionDescriptor[];
   policy: readonly ProviderGrant[];
@@ -108,20 +315,31 @@ export function effectivePermissions(input: {
   linkedProviders: readonly Provider[];
   roles: readonly Role[];
 }): string[] {
-  const known = new Set(input.catalog.map((item) => item.permission));
-  const result = new Set<string>();
-  for (const grant of input.grants) if (known.has(grant)) result.add(grant);
-  for (const rule of input.policy)
-    if (
-      input.linkedProviders.includes(rule.provider) &&
-      known.has(rule.permission)
-    )
-      result.add(rule.permission);
-  if (input.roles.includes("owner")) {
-    for (const item of input.catalog) result.add(item.permission);
-    result.add(ADMIN_PERMISSION);
-  }
-  return [...result].sort();
+  return effectiveAccess({
+    ...input,
+    grants: input.grants.map((permission) => ({
+      permission,
+      restrictions: [],
+    })),
+  }).permissions;
+}
+
+/** Normalizes a group name typed by an owner; null when unusable. */
+export function normalizeGroupName(value: string): string | null {
+  const name = value.normalize("NFKC").replace(/\s+/g, " ").trim();
+  return name.length >= 2 && name.length <= 80 && !/[\p{Cc}<>]/u.test(name)
+    ? name
+    : null;
+}
+
+/** Optional group description; empty means none. Undefined when unusable. */
+export function normalizeGroupDescription(
+  value: string | null,
+): string | null | undefined {
+  if (value === null) return null;
+  const text = value.normalize("NFKC").replace(/\s+/g, " ").trim();
+  if (text.length === 0) return null;
+  return text.length <= 300 && !/[\p{Cc}<>]/u.test(text) ? text : undefined;
 }
 
 export function normalizeLogin(login: string): string | null {

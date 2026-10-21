@@ -11,6 +11,6 @@ export default defineConfig({
     // The Vite development server proxying /api to the emitted API.
     { name: "vite" },
     // The production shape: the emitted API serving the emitted web build.
-    { name: "served", testMatch: ["identity.spec.ts"] },
+    { name: "served", testMatch: ["identity.spec.ts", "features.spec.ts"] },
   ],
 });

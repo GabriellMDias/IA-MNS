@@ -34,6 +34,10 @@ export const identityCodes = new Set([
   "IDENTITY_EXTERNAL_ACCOUNT_INACTIVE",
   "IDENTITY_MERGE_NOT_ALLOWED",
   "IDENTITY_MERGE_BUSY",
+  "IDENTITY_WHATSAPP_NUMBER_INVALID",
+  "IDENTITY_WHATSAPP_NINTH_DIGIT_REQUIRED",
+  "IDENTITY_WHATSAPP_NUMBER_IN_USE",
+  "IDENTITY_WHATSAPP_NOT_LINKED",
   "IDENTITY_POLICY_INVALID",
   "IDENTITY_POLICY_NOT_ALLOWED",
   "IDENTITY_POLICY_CONFIRMATION_REQUIRED",
@@ -41,6 +45,14 @@ export const identityCodes = new Set([
   "IDENTITY_PARAMETER_INVALID",
   "IDENTITY_PARAMETER_NOT_ALLOWED",
   "IDENTITY_PARAMETER_CONFLICT",
+  "IDENTITY_RESTRICTION_INVALID",
+  "IDENTITY_RESTRICTION_UNAVAILABLE",
+  "IDENTITY_GROUP_NOT_FOUND",
+  "IDENTITY_GROUP_NAME_INVALID",
+  "IDENTITY_GROUP_NAME_TAKEN",
+  "IDENTITY_GROUP_CONFLICT",
+  "IDENTITY_GROUP_IN_USE",
+  "IDENTITY_PROVIDER_GROUP_CONFLICT",
 ]);
 const web = { "x-ia-mns-client": "web" };
 const timeout = () => AbortSignal.timeout(15_000);
@@ -65,6 +77,19 @@ export type SankhyaUsers = Json<"/identity/admin/sankhya-users", "get">;
 export type ParametersView = Json<"/identity/admin/parameters", "get">;
 export type OperationalParameter = ParametersView["parameters"][number];
 export type ParameterValue = OperationalParameter["value"];
+export type PermissionCatalog = Json<"/identity/admin/catalog", "get">;
+export type CatalogEntry = PermissionCatalog["catalog"][number];
+export type Grant = PersonDetail["person"]["grants"][number];
+export type AccessEntry = Me["person"]["access"][number];
+export type GroupList = Json<"/identity/admin/groups", "get">;
+export type GroupDetail = Json<"/identity/admin/groups/{groupId}", "get">;
+export type ProviderGroups = Json<"/identity/admin/provider-groups", "get">;
+export type RestrictionValues = Json<
+  "/identity/admin/restriction-values",
+  "get"
+>;
+/** Values of one dimension are alternatives; every dimension must match. */
+export type RestrictionInput = { dimension: string; values: string[] }[];
 export type Provider = "pdt" | "sankhya";
 export type Intent = "login" | "link" | "reauth" | "invite";
 
@@ -525,25 +550,166 @@ export async function mergePersons(
     identityCodes,
   );
 }
+/** Grants a permission (replacing its restrictions) or revokes it. */
 export async function setGrant(
   token: string,
   personId: string,
   permission: string,
   granted: boolean,
+  restrictions: RestrictionInput = [],
 ) {
-  const options = {
-    params: { path: { personId, permission } },
-    signal: timeout(),
-  };
+  const params = { path: { personId, permission } };
   return unwrap(
     granted
       ? await apiClient(token).PUT(
           "/identity/admin/persons/{personId}/grants/{permission}",
-          options,
+          { params, body: { restrictions }, signal: timeout() },
         )
       : await apiClient(token).DELETE(
           "/identity/admin/persons/{personId}/grants/{permission}",
+          { params, signal: timeout() },
+        ),
+    identityCodes,
+  );
+}
+export async function getCatalog(token: string, signal?: AbortSignal) {
+  return unwrap(
+    await apiClient(token).GET("/identity/admin/catalog", { signal }),
+    identityCodes,
+  );
+}
+export async function searchRestrictionValues(
+  token: string,
+  permission: string,
+  dimension: string,
+  query: string,
+  signal?: AbortSignal,
+) {
+  return unwrap(
+    await apiClient(token).GET("/identity/admin/restriction-values", {
+      params: {
+        query: { permission, dimension, ...(query ? { query } : {}) },
+      },
+      signal,
+    }),
+    identityCodes,
+  );
+}
+export async function listGroups(token: string, signal?: AbortSignal) {
+  return unwrap(
+    await apiClient(token).GET("/identity/admin/groups", { signal }),
+    identityCodes,
+  );
+}
+
+export async function getProviderGroups(token: string, signal?: AbortSignal) {
+  return unwrap(
+    await apiClient(token).GET("/identity/admin/provider-groups", { signal }),
+  );
+}
+
+export async function setProviderGroup(
+  token: string,
+  provider: Provider,
+  input: { groupId: string | null; version: number },
+) {
+  return unwrap(
+    await apiClient(token).PUT("/identity/admin/provider-groups/{provider}", {
+      params: { path: { provider } },
+      body: input,
+      signal: timeout(),
+    }),
+  );
+}
+export async function createGroup(
+  token: string,
+  body: { name: string; description: string | null },
+) {
+  return unwrap(
+    await apiClient(token).POST("/identity/admin/groups", {
+      body,
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+export async function getGroup(
+  token: string,
+  groupId: string,
+  signal?: AbortSignal,
+) {
+  return unwrap(
+    await apiClient(token).GET("/identity/admin/groups/{groupId}", {
+      params: { path: { groupId } },
+      signal,
+    }),
+    identityCodes,
+  );
+}
+export async function updateGroup(
+  token: string,
+  groupId: string,
+  body: { name: string; description: string | null; version: number },
+) {
+  return unwrap(
+    await apiClient(token).PATCH("/identity/admin/groups/{groupId}", {
+      params: { path: { groupId } },
+      body,
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+export async function deleteGroup(token: string, groupId: string) {
+  return unwrap(
+    await apiClient(token).DELETE("/identity/admin/groups/{groupId}", {
+      params: { path: { groupId } },
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+export async function setGroupMember(
+  token: string,
+  groupId: string,
+  personId: string,
+  member: boolean,
+) {
+  const options = {
+    params: { path: { groupId, personId } },
+    signal: timeout(),
+  };
+  return unwrap(
+    member
+      ? await apiClient(token).PUT(
+          "/identity/admin/groups/{groupId}/members/{personId}",
           options,
+        )
+      : await apiClient(token).DELETE(
+          "/identity/admin/groups/{groupId}/members/{personId}",
+          options,
+        ),
+    identityCodes,
+  );
+}
+/** Grants a permission to a group (replacing its restrictions) or revokes it. */
+export async function setGroupGrant(
+  token: string,
+  groupId: string,
+  permission: string,
+  granted: boolean,
+  restrictions: RestrictionInput = [],
+) {
+  const params = { path: { groupId, permission } };
+  return unwrap(
+    granted
+      ? await apiClient(token).PUT(
+          "/identity/admin/groups/{groupId}/grants/{permission}",
+          { params, body: { restrictions }, signal: timeout() },
+        )
+      : await apiClient(token).DELETE(
+          "/identity/admin/groups/{groupId}/grants/{permission}",
+          { params, signal: timeout() },
         ),
     identityCodes,
   );
@@ -591,6 +757,33 @@ export async function adminUnlink(
       "/identity/admin/persons/{personId}/links/{linkId}",
       {
         params: { path: { personId, linkId } },
+        signal: timeout(),
+      },
+    ),
+    identityCodes,
+  );
+}
+/** Owner: link or replace the Person's WhatsApp number (international form). */
+export async function setWhatsappNumber(
+  token: string,
+  personId: string,
+  number: string,
+) {
+  return unwrap(
+    await apiClient(token).PUT("/identity/admin/persons/{personId}/whatsapp", {
+      params: { path: { personId } },
+      body: { number },
+      signal: timeout(),
+    }),
+    identityCodes,
+  );
+}
+export async function removeWhatsappNumber(token: string, personId: string) {
+  return unwrap(
+    await apiClient(token).DELETE(
+      "/identity/admin/persons/{personId}/whatsapp",
+      {
+        params: { path: { personId } },
         signal: timeout(),
       },
     ),

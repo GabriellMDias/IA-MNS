@@ -147,6 +147,19 @@ export function Overview() {
         A map of the system, from the first request to the decisions behind it.
       </p>
       <div className="docs-hub">
+        <DocLink id="repository/docs/features/README" className="docs-hub-card">
+          <span className="docs-hub-symbol" aria-hidden="true">
+            ▦
+          </span>
+          <h2>Funcionalidades por origem</h2>
+          <p>
+            Consulte o que cada função faz, o SQL utilizado e todos os filtros
+            disponíveis.
+          </p>
+          <span className="docs-card-footer">
+            Abrir catálogo <span aria-hidden="true">→</span>
+          </span>
+        </DocLink>
         {sections.map((section) => (
           <DocLink id={section.id} key={section.id} className="docs-hub-card">
             <span className="docs-hub-symbol" aria-hidden="true">

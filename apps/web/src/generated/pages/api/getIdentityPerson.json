@@ -46,10 +46,13 @@
                   "status",
                   "owner",
                   "grants",
+                  "groups",
                   "permissions",
+                  "access",
                   "links",
                   "local",
-                  "sessions"
+                  "sessions",
+                  "whatsapp"
                 ],
                 "properties": {
                   "id": { "type": "string", "format": "uuid" },
@@ -61,10 +64,188 @@
                     ]
                   },
                   "owner": { "type": "boolean" },
-                  "grants": { "type": "array", "items": { "type": "string" } },
+                  "grants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["permission", "grantedAt", "restrictions"],
+                      "properties": {
+                        "permission": { "type": "string" },
+                        "grantedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "restrictions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["dimension", "values"],
+                            "properties": {
+                              "dimension": { "type": "string" },
+                              "values": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": ["value", "label"],
+                                  "properties": {
+                                    "value": { "type": "string" },
+                                    "label": { "type": "string" }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "description": "Empty: every row of the source."
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "groups": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["id", "name"],
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "name": { "type": "string" }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
                   "permissions": {
                     "type": "array",
                     "items": { "type": "string" }
+                  },
+                  "access": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "permission",
+                        "code",
+                        "title",
+                        "source",
+                        "dimensions",
+                        "rules",
+                        "origins"
+                      ],
+                      "properties": {
+                        "permission": { "type": "string" },
+                        "code": { "type": "string" },
+                        "title": { "type": "string" },
+                        "source": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "required": ["id", "title"],
+                              "properties": {
+                                "id": { "type": "string" },
+                                "title": { "type": "string" }
+                              },
+                              "additionalProperties": false
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "dimensions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["id", "code", "title"],
+                            "properties": {
+                              "id": { "type": "string" },
+                              "code": { "type": "string" },
+                              "title": { "type": "string" }
+                            },
+                            "additionalProperties": false
+                          },
+                          "description": "Restriction dimensions of the permission, for display."
+                        },
+                        "rules": {
+                          "anyOf": [
+                            {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": ["dimension", "values"],
+                                  "properties": {
+                                    "dimension": { "type": "string" },
+                                    "values": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "required": ["value", "label"],
+                                        "properties": {
+                                          "value": { "type": "string" },
+                                          "label": { "type": "string" }
+                                        },
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              },
+                              "description": "Rows admitted by at least one rule; every condition of a rule must match."
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "origins": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["kind", "group", "provider"],
+                            "properties": {
+                              "kind": {
+                                "anyOf": [
+                                  { "type": "string", "const": "owner" },
+                                  { "type": "string", "const": "grant" },
+                                  { "type": "string", "const": "group" },
+                                  { "type": "string", "const": "provider" }
+                                ]
+                              },
+                              "group": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "required": ["id", "name"],
+                                    "properties": {
+                                      "id": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                      },
+                                      "name": { "type": "string" }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  { "type": "null" }
+                                ]
+                              },
+                              "provider": {
+                                "anyOf": [
+                                  {
+                                    "anyOf": [
+                                      { "type": "string", "const": "pdt" },
+                                      { "type": "string", "const": "sankhya" }
+                                    ]
+                                  },
+                                  { "type": "null" }
+                                ]
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "description": "Effective catalog permissions with their identification, data scope (null rules: unrestricted) and where each comes from."
                   },
                   "links": {
                     "type": "array",
@@ -172,13 +353,57 @@
                       },
                       "additionalProperties": false
                     }
+                  },
+                  "whatsapp": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "number",
+                          "linkedAt",
+                          "updatedAt",
+                          "confirmedAt"
+                        ],
+                        "properties": {
+                          "number": {
+                            "type": "string",
+                            "description": "Linked number in international display form, for example +55 11 98765-4321."
+                          },
+                          "linkedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "confirmedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "First accepted WhatsApp message from this number; null until one arrives."
+                              },
+                              { "type": "null" }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false,
+                        "description": "The WhatsApp number that an owner linked to this Person; only owners change it."
+                      },
+                      { "type": "null" }
+                    ]
                   }
                 },
                 "additionalProperties": false
               },
               "capabilities": {
                 "type": "object",
-                "required": ["sankhyaDirectory", "linkInvitations"],
+                "required": [
+                  "sankhyaDirectory",
+                  "linkInvitations",
+                  "restrictions"
+                ],
                 "properties": {
                   "sankhyaDirectory": {
                     "type": "boolean",
@@ -193,6 +418,10 @@
                       ]
                     },
                     "description": "Providers whose sign-in can complete a link invitation."
+                  },
+                  "restrictions": {
+                    "type": "boolean",
+                    "description": "Owners can restrict grants by values read from the sources."
                   }
                 },
                 "additionalProperties": false
@@ -203,13 +432,40 @@
                   "type": "object",
                   "required": [
                     "permission",
+                    "code",
                     "title",
+                    "description",
+                    "source",
+                    "capability",
                     "access",
-                    "autoGrantProviders"
+                    "autoGrantProviders",
+                    "restrictions"
                   ],
                   "properties": {
                     "permission": { "type": "string" },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable identification given to support, for example SNK-VEN-01."
+                    },
                     "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "source": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "title"],
+                          "properties": {
+                            "id": { "type": "string" },
+                            "title": { "type": "string" }
+                          },
+                          "additionalProperties": false
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "capability": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
                     "access": {
                       "anyOf": [
                         { "type": "string", "const": "read" },
@@ -224,6 +480,30 @@
                           { "type": "string", "const": "pdt" },
                           { "type": "string", "const": "sankhya" }
                         ]
+                      }
+                    },
+                    "restrictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "code",
+                          "title",
+                          "description",
+                          "hierarchical"
+                        ],
+                        "properties": {
+                          "id": { "type": "string" },
+                          "code": { "type": "string" },
+                          "title": { "type": "string" },
+                          "description": { "type": "string" },
+                          "hierarchical": {
+                            "type": "boolean",
+                            "description": "Selecting a value also admits the values below it."
+                          }
+                        },
+                        "additionalProperties": false
                       }
                     }
                   },
@@ -273,10 +553,13 @@
               "status",
               "owner",
               "grants",
+              "groups",
               "permissions",
+              "access",
               "links",
               "local",
-              "sessions"
+              "sessions",
+              "whatsapp"
             ],
             "properties": {
               "id": { "type": "string", "format": "uuid" },
@@ -288,8 +571,180 @@
                 ]
               },
               "owner": { "type": "boolean" },
-              "grants": { "type": "array", "items": { "type": "string" } },
+              "grants": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["permission", "grantedAt", "restrictions"],
+                  "properties": {
+                    "permission": { "type": "string" },
+                    "grantedAt": { "type": "string", "format": "date-time" },
+                    "restrictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["dimension", "values"],
+                        "properties": {
+                          "dimension": { "type": "string" },
+                          "values": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": ["value", "label"],
+                              "properties": {
+                                "value": { "type": "string" },
+                                "label": { "type": "string" }
+                              },
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Empty: every row of the source."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "name"],
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "name": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              },
               "permissions": { "type": "array", "items": { "type": "string" } },
+              "access": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "permission",
+                    "code",
+                    "title",
+                    "source",
+                    "dimensions",
+                    "rules",
+                    "origins"
+                  ],
+                  "properties": {
+                    "permission": { "type": "string" },
+                    "code": { "type": "string" },
+                    "title": { "type": "string" },
+                    "source": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "title"],
+                          "properties": {
+                            "id": { "type": "string" },
+                            "title": { "type": "string" }
+                          },
+                          "additionalProperties": false
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "dimensions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["id", "code", "title"],
+                        "properties": {
+                          "id": { "type": "string" },
+                          "code": { "type": "string" },
+                          "title": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Restriction dimensions of the permission, for display."
+                    },
+                    "rules": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": ["dimension", "values"],
+                              "properties": {
+                                "dimension": { "type": "string" },
+                                "values": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": ["value", "label"],
+                                    "properties": {
+                                      "value": { "type": "string" },
+                                      "label": { "type": "string" }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "description": "Rows admitted by at least one rule; every condition of a rule must match."
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "origins": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["kind", "group", "provider"],
+                        "properties": {
+                          "kind": {
+                            "anyOf": [
+                              { "type": "string", "const": "owner" },
+                              { "type": "string", "const": "grant" },
+                              { "type": "string", "const": "group" },
+                              { "type": "string", "const": "provider" }
+                            ]
+                          },
+                          "group": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "required": ["id", "name"],
+                                "properties": {
+                                  "id": { "type": "string", "format": "uuid" },
+                                  "name": { "type": "string" }
+                                },
+                                "additionalProperties": false
+                              },
+                              { "type": "null" }
+                            ]
+                          },
+                          "provider": {
+                            "anyOf": [
+                              {
+                                "anyOf": [
+                                  { "type": "string", "const": "pdt" },
+                                  { "type": "string", "const": "sankhya" }
+                                ]
+                              },
+                              { "type": "null" }
+                            ]
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "description": "Effective catalog permissions with their identification, data scope (null rules: unrestricted) and where each comes from."
+              },
               "links": {
                 "type": "array",
                 "items": {
@@ -387,13 +842,47 @@
                   },
                   "additionalProperties": false
                 }
+              },
+              "whatsapp": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "number",
+                      "linkedAt",
+                      "updatedAt",
+                      "confirmedAt"
+                    ],
+                    "properties": {
+                      "number": {
+                        "type": "string",
+                        "description": "Linked number in international display form, for example +55 11 98765-4321."
+                      },
+                      "linkedAt": { "type": "string", "format": "date-time" },
+                      "updatedAt": { "type": "string", "format": "date-time" },
+                      "confirmedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "First accepted WhatsApp message from this number; null until one arrives."
+                          },
+                          { "type": "null" }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "description": "The WhatsApp number that an owner linked to this Person; only owners change it."
+                  },
+                  { "type": "null" }
+                ]
               }
             },
             "additionalProperties": false
           },
           "capabilities": {
             "type": "object",
-            "required": ["sankhyaDirectory", "linkInvitations"],
+            "required": ["sankhyaDirectory", "linkInvitations", "restrictions"],
             "properties": {
               "sankhyaDirectory": {
                 "type": "boolean",
@@ -408,6 +897,10 @@
                   ]
                 },
                 "description": "Providers whose sign-in can complete a link invitation."
+              },
+              "restrictions": {
+                "type": "boolean",
+                "description": "Owners can restrict grants by values read from the sources."
               }
             },
             "additionalProperties": false
@@ -418,13 +911,40 @@
               "type": "object",
               "required": [
                 "permission",
+                "code",
                 "title",
+                "description",
+                "source",
+                "capability",
                 "access",
-                "autoGrantProviders"
+                "autoGrantProviders",
+                "restrictions"
               ],
               "properties": {
                 "permission": { "type": "string" },
+                "code": {
+                  "type": "string",
+                  "description": "Stable identification given to support, for example SNK-VEN-01."
+                },
                 "title": { "type": "string" },
+                "description": { "type": "string" },
+                "source": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": ["id", "title"],
+                      "properties": {
+                        "id": { "type": "string" },
+                        "title": { "type": "string" }
+                      },
+                      "additionalProperties": false
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "capability": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
                 "access": {
                   "anyOf": [
                     { "type": "string", "const": "read" },
@@ -439,6 +959,30 @@
                       { "type": "string", "const": "pdt" },
                       { "type": "string", "const": "sankhya" }
                     ]
+                  }
+                },
+                "restrictions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "code",
+                      "title",
+                      "description",
+                      "hierarchical"
+                    ],
+                    "properties": {
+                      "id": { "type": "string" },
+                      "code": { "type": "string" },
+                      "title": { "type": "string" },
+                      "description": { "type": "string" },
+                      "hierarchical": {
+                        "type": "boolean",
+                        "description": "Selecting a value also admits the values below it."
+                      }
+                    },
+                    "additionalProperties": false
                   }
                 }
               },
@@ -486,12 +1030,120 @@
         { "name": "person.owner", "type": "boolean", "required": true },
         {
           "name": "person.grants",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.grants[].permission",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.grants[].grantedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "person.grants[].restrictions",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.grants[].restrictions[].dimension",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.grants[].restrictions[].values",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.grants[].restrictions[].values[].value",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.grants[].restrictions[].values[].label",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.groups",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.groups[].id",
+          "type": "string (uuid)",
+          "required": true
+        },
+        { "name": "person.groups[].name", "type": "string", "required": true },
+        {
+          "name": "person.permissions",
           "type": "array of string",
           "required": true
         },
         {
-          "name": "person.permissions",
-          "type": "array of string",
+          "name": "person.access",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.access[].permission",
+          "type": "string",
+          "required": true
+        },
+        { "name": "person.access[].code", "type": "string", "required": true },
+        { "name": "person.access[].title", "type": "string", "required": true },
+        {
+          "name": "person.access[].source",
+          "type": "object | null",
+          "required": true
+        },
+        {
+          "name": "person.access[].dimensions",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.access[].dimensions[].id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.access[].dimensions[].code",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.access[].dimensions[].title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "person.access[].rules",
+          "type": "array of array of object | null",
+          "required": true
+        },
+        {
+          "name": "person.access[].origins",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "person.access[].origins[].kind",
+          "type": "\"owner\" | \"grant\" | \"group\" | \"provider\"",
+          "required": true
+        },
+        {
+          "name": "person.access[].origins[].group",
+          "type": "object | null",
+          "required": true
+        },
+        {
+          "name": "person.access[].origins[].provider",
+          "type": "\"pdt\" | \"sankhya\" | null",
           "required": true
         },
         { "name": "person.links", "type": "array of object", "required": true },
@@ -571,6 +1223,11 @@
           "type": "boolean",
           "required": true
         },
+        {
+          "name": "person.whatsapp",
+          "type": "object | null",
+          "required": true
+        },
         { "name": "capabilities", "type": "object", "required": true },
         {
           "name": "capabilities.sankhyaDirectory",
@@ -582,9 +1239,26 @@
           "type": "array of \"pdt\" | \"sankhya\"",
           "required": true
         },
+        {
+          "name": "capabilities.restrictions",
+          "type": "boolean",
+          "required": true
+        },
         { "name": "catalog", "type": "array of object", "required": true },
         { "name": "catalog[].permission", "type": "string", "required": true },
+        { "name": "catalog[].code", "type": "string", "required": true },
         { "name": "catalog[].title", "type": "string", "required": true },
+        { "name": "catalog[].description", "type": "string", "required": true },
+        {
+          "name": "catalog[].source",
+          "type": "object | null",
+          "required": true
+        },
+        {
+          "name": "catalog[].capability",
+          "type": "string | null",
+          "required": true
+        },
         {
           "name": "catalog[].access",
           "type": "\"read\" | \"write\" | \"sensitive\"",
@@ -593,6 +1267,36 @@
         {
           "name": "catalog[].autoGrantProviders",
           "type": "array of \"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].code",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].description",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].hierarchical",
+          "type": "boolean",
           "required": true
         },
         { "name": "audit", "type": "array of object", "required": true },

@@ -235,12 +235,14 @@ test("Markdown cannot execute raw HTML, unsafe URLs, or automatic image requests
   const available = new Set(["docs/a.md"]);
   const rendered = renderDocument(
     "docs/a.md",
-    "# Title\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\n![Diagram](https://example.test/tracker.png)\n",
+    "# Title\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>\n\n![Diagram](https://example.test/tracker.png)\n\n```sql\nSELECT '<example>'\n```\n",
     available,
     sourceBase,
   );
   assert.doesNotMatch(rendered.html, /<script|<img/);
   assert.match(rendered.html, /&lt;script&gt;/);
+  assert.match(rendered.html, /<pre tabindex="0"><code class="language-sql">/);
+  assert.match(rendered.html, /&lt;example&gt;/);
   assert.match(rendered.html, /<a href="https:\/\/example.test\/tracker.png"/);
   for (const url of [
     "javascript:alert(1)",

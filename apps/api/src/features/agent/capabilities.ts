@@ -1,6 +1,7 @@
 import type { TraceRecorder } from "../../ai/trace.js";
 import type { TSchema } from "typebox";
-import type { SourceSelection } from "../sales/sources.js";
+import type { DataScope, PermissionInfo } from "../../access.js";
+import type { SalesSource, SourceSelection } from "../sales/sources.js";
 export type ProgressStage =
   | "thinking"
   | "interpreting_sales"
@@ -36,6 +37,11 @@ export type CapabilityInput = {
   /** Trusted, actor-owned contexts; a dependency still requires its permission. */
   contexts?: Readonly<Record<string, unknown>>;
   permissions?: ReadonlySet<string>;
+  /**
+   * Data scope of each held permission, computed by identity for this turn;
+   * absent in development access, where held permissions are unrestricted.
+   */
+  scopes?: ReadonlyMap<string, DataScope>;
   signal: AbortSignal;
   progress: (stage: ProgressStage) => Promise<void>;
   trace: TraceRecorder;
@@ -44,7 +50,12 @@ export type CapabilityInput = {
   /** Observes a failure the reply reports instead of failing the turn. */
   report?: (error: unknown) => void;
 };
-export type AgentActor = { id: string; permissions: ReadonlySet<string> };
+export type AgentActor = {
+  id: string;
+  permissions: ReadonlySet<string>;
+  /** Data scopes of held permissions; absent means unrestricted (development). */
+  scopes?: ReadonlyMap<string, DataScope>;
+};
 export type AgentExchange = {
   id?: string;
   sequence?: number;
@@ -89,7 +100,16 @@ export interface AgentCapability {
   readonly title: string;
   readonly description: string;
   readonly examples: readonly string[];
+  /** Capability permission, held with the permission of any of its sources. */
   readonly permission: string;
+  /**
+   * The identified permission of each source the capability reads. The
+   * capability is usable with a selection when one of its sources is held;
+   * a denial lists the missing ones.
+   */
+  readonly sourcePermissions?: Readonly<
+    Partial<Record<SalesSource, PermissionInfo>>
+  >;
   readonly tools?: readonly AgentTool[];
   /** False keeps tool-planned capabilities readable but out of legacy routing. */
   readonly legacyRouting?: boolean;

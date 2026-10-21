@@ -16,6 +16,8 @@ model IdentityPerson {
   tickets            IdentityTicket[]
   trustedDevices     IdentityTrustedDevice[]
   policyUpdates      IdentitySecurityPolicy[]
+  whatsappLink       IdentityWhatsappLink?
+  groupMemberships   IdentityGroupMember[]
   @@index([displayName, id], map: "identity_persons_display_name_idx")
   @@map("identity_persons")
 }
@@ -103,8 +105,83 @@ model IdentityCapabilityGrant {
   permission String   @db.VarChar(80)
   grantedBy  String?  @map("granted_by") @db.Uuid
   grantedAt  DateTime @default(now()) @map("granted_at") @db.Timestamptz(3)
+  restrictions IdentityGrantRestriction[]
   @@id([personId, permission], map: "identity_capability_grants_pkey")
   @@map("identity_capability_grants")
+}
+
+// One admitted value of one restricted dimension of a Person's grant (ADR-0037).
+model IdentityGrantRestriction {
+  personId   String @map("person_id") @db.Uuid
+  permission String @db.VarChar(80)
+  dimension  String @db.VarChar(32)
+  value      String @db.VarChar(40)
+  label      String @db.VarChar(200)
+  grant      IdentityCapabilityGrant @relation(fields: [personId, permission], references: [personId, permission], onDelete: Cascade, map: "identity_grant_restrictions_grant_fkey")
+  @@id([personId, permission, dimension, value], map: "identity_grant_restrictions_pkey")
+  @@map("identity_grant_restrictions")
+}
+
+// Owner-managed groups of Persons whose grants every member holds (ADR-0037).
+model IdentityGroup {
+  id          String   @id @db.Uuid
+  name        String   @db.VarChar(80)
+  nameKey     String   @unique(map: "identity_groups_name_key") @map("name_key") @db.VarChar(80)
+  description String?  @db.VarChar(300)
+  version     Int      @default(1)
+  createdBy   String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedBy   String   @map("updated_by") @db.Uuid
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  members     IdentityGroupMember[]
+  grants      IdentityGroupGrant[]
+  providerDefaults IdentityProviderGroup[]
+  @@map("identity_groups")
+}
+
+// An owner selects a normal group to join after verified provider sign-in.
+model IdentityProviderGroup {
+  provider  String @id @db.VarChar(16)
+  groupId   String? @map("group_id") @db.Uuid
+  group     IdentityGroup? @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  version   Int @default(0)
+  updatedBy String? @map("updated_by") @db.Uuid
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  @@map("identity_provider_groups")
+}
+
+model IdentityGroupMember {
+  groupId  String   @map("group_id") @db.Uuid
+  group    IdentityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  personId String   @map("person_id") @db.Uuid
+  person   IdentityPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  addedBy  String   @map("added_by") @db.Uuid
+  addedAt  DateTime @default(now()) @map("added_at") @db.Timestamptz(3)
+  @@id([groupId, personId], map: "identity_group_members_pkey")
+  @@index([personId], map: "identity_group_members_person_idx")
+  @@map("identity_group_members")
+}
+
+model IdentityGroupGrant {
+  groupId    String   @map("group_id") @db.Uuid
+  group      IdentityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  permission String   @db.VarChar(80)
+  grantedBy  String   @map("granted_by") @db.Uuid
+  grantedAt  DateTime @default(now()) @map("granted_at") @db.Timestamptz(3)
+  restrictions IdentityGroupGrantRestriction[]
+  @@id([groupId, permission], map: "identity_group_grants_pkey")
+  @@map("identity_group_grants")
+}
+
+model IdentityGroupGrantRestriction {
+  groupId    String @map("group_id") @db.Uuid
+  permission String @db.VarChar(80)
+  dimension  String @db.VarChar(32)
+  value      String @db.VarChar(40)
+  label      String @db.VarChar(200)
+  grant      IdentityGroupGrant @relation(fields: [groupId, permission], references: [groupId, permission], onDelete: Cascade, map: "identity_group_grant_restrictions_grant_fkey")
+  @@id([groupId, permission, dimension, value], map: "identity_group_grant_restrictions_pkey")
+  @@map("identity_group_grant_restrictions")
 }
 
 model IdentityTicket {
@@ -164,4 +241,19 @@ model IdentityTrustedDevice {
   revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
   @@index([personId], map: "identity_trusted_devices_person_idx")
   @@map("identity_trusted_devices")
+}
+
+model IdentityWhatsappLink {
+  personId          String    @id @map("person_id") @db.Uuid
+  person            IdentityPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  phoneNumber       String    @unique(map: "identity_whatsapp_links_phone_key") @map("phone_number") @db.VarChar(15)
+  legacyIdentifier  String?   @unique(map: "identity_whatsapp_links_legacy_key") @map("legacy_identifier") @db.VarChar(15)
+  platformUserId    String?   @unique(map: "identity_whatsapp_links_platform_user_key") @map("platform_user_id") @db.VarChar(140)
+  version           Int       @default(1)
+  linkedBy          String    @map("linked_by") @db.Uuid
+  linkedAt          DateTime  @default(now()) @map("linked_at") @db.Timestamptz(3)
+  updatedBy         String    @map("updated_by") @db.Uuid
+  updatedAt         DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
+  confirmedAt       DateTime? @map("confirmed_at") @db.Timestamptz(3)
+  @@map("identity_whatsapp_links")
 }

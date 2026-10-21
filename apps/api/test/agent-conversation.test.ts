@@ -93,7 +93,14 @@ function input(overrides: Partial<AgentTurnInput> = {}): AgentTurnInput {
   return {
     actor: {
       id: "alice",
-      permissions: new Set(["sales:read", "products:read"]),
+      permissions: new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+        "products:read",
+        "products_sankhya:read",
+        "products_vrmaster:read",
+      ]),
     },
     message: "Resuma isso em texto contínuo.",
     history: [
@@ -150,7 +157,13 @@ const total = (id: string) => `{{${id}_s0_sankhya_total_0_value}}`;
 
 it("keeps tool-planned evidence readable during rollback without dispatching it through legacy routing", async () => {
   const cap = { ...capability(), legacyRouting: false };
-  expect(canReadReply(answer, new Set(["sales:read"]), [cap])).toBe(true);
+  expect(
+    canReadReply(
+      answer,
+      new Set(["sales:read", "sales_sankhya:read", "sales_vrmaster:read"]),
+      [cap],
+    ),
+  ).toBe(true);
   const route = vi.fn(() =>
     Promise.resolve({ intent: "capability" as const, capabilityId: "sales" }),
   );
@@ -187,14 +200,22 @@ it("rewrites persisted exact evidence with no new business read and preserves de
   expect(cap.execute).not.toHaveBeenCalled();
   expect(outcome.reply.message).toContain("R$ 12.345,67");
   expect(outcome.reply.displayResult).toBe(false);
-  expect(outcome.reply.requiredPermissions).toEqual(["sales:read"]);
+  // The capability permission and the permission of the source read.
+  expect(outcome.reply.requiredPermissions).toEqual([
+    "sales:read",
+    "sales_sankhya:read",
+  ]);
   expect(outcome.reply.evidenceSnapshots).toHaveLength(1);
   expect(Value.Check(agentReplySchema, outcome.reply)).toBe(true);
   expect(canReadReply(outcome.reply, new Set(), [cap])).toBe(false);
   expect(
     projectReplyEvidence({
       reply: outcome.reply,
-      permissions: new Set(["sales:read"]),
+      permissions: new Set([
+        "sales:read",
+        "sales_sankhya:read",
+        "sales_vrmaster:read",
+      ]),
       capabilities: [cap],
       source: "sankhya",
       evidenceId: "rewrite",
@@ -216,9 +237,13 @@ it("supports direct general conversation and preserves a pending selection throu
   );
   expect(outcome.reply.kind).toBe("conversation");
   expect(outcome.contexts).toEqual(contexts);
-  expect(canReadReply(outcome.reply, new Set(["sales:read"]), [cap])).toBe(
-    true,
-  );
+  expect(
+    canReadReply(
+      outcome.reply,
+      new Set(["sales:read", "sales_sankhya:read", "sales_vrmaster:read"]),
+      [cap],
+    ),
+  ).toBe(true);
   expect(cap.execute).not.toHaveBeenCalled();
 });
 
@@ -263,10 +288,15 @@ it("propagates every transmitted evidence dependency even when the final respons
   expect(outcome.reply.requiredPermissions).toEqual([
     "products:read",
     "sales:read",
+    "sales_sankhya:read",
   ]);
-  expect(canReadReply(outcome.reply, new Set(["sales:read"]), [cap])).toBe(
-    false,
-  );
+  expect(
+    canReadReply(
+      outcome.reply,
+      new Set(["sales:read", "sales_sankhya:read", "sales_vrmaster:read"]),
+      [cap],
+    ),
+  ).toBe(false);
 });
 
 it("executes only registered tools with server source and original message and repairs prose without another read", async () => {

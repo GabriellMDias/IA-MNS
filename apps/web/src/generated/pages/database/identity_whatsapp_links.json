@@ -1,0 +1,157 @@
+{
+  "kind": "database",
+  "name": "identity_whatsapp_links",
+  "description": "The WhatsApp number that an owner linked to a Person: the only authorization of the WhatsApp channel. An external identity attribute of an existing Person, never a sign-in method; it grants no permission by itself.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created, changed and removed only by owners through administration with recent strong authentication, each change audited in identity_audit_events in the same transaction. A change or removal revokes the channel at once for every message not yet answered. Moved to the surviving Person on consolidation when that Person has none, otherwise removed. Removed with the Person.",
+  "columns": [
+    {
+      "Column": "person_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Person that this number identifies on WhatsApp; one number per Person.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "phone_number",
+      "PostgreSQL type": "character varying(15)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "E.164 digits of the number without the plus sign, as validated and normalized on entry.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "legacy_identifier",
+      "PostgreSQL type": "character varying(15)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Deterministic legacy WhatsApp identifier of a Brazilian mobile (the number without its ninth digit), under which WhatsApp may report the same account; part of the uniqueness rule.",
+      "Null meaning": "The number has no legacy form (not a Brazilian mobile, or a subscriber range where the legacy form would be ambiguous).",
+      "Unit": "—"
+    },
+    {
+      "Column": "platform_user_id",
+      "PostgreSQL type": "character varying(140)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "WhatsApp business-scoped user identifier (BSUID) that Meta reported together with this exact number in a signature-verified message; later messages that omit the number match it, and a different identifier together with the number is refused as a conflict.",
+      "Null meaning": "No verified message from this number has been received since the number was linked or changed.",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Incremented by every change of the number; queued channel work records it and is refused when it no longer matches.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "linked_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner (identity_persons.id) who first linked a number; historical attribution without a foreign key, the audit trail is authoritative.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "linked_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When a number was first linked to the Person.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner (identity_persons.id) who made the last change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When the number was last set.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "confirmed_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "When a verified message from the current number was first accepted.",
+      "Null meaning": "No message from the current number has been accepted yet.",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_whatsapp_links_legacy_check",
+      "Physical definition": "CHECK (((legacy_identifier IS NULL) OR (((legacy_identifier)::text ~ '^55[1-9]{2}[6-9][0-9]{7}$'::text) AND ((legacy_identifier)::text <> (phone_number)::text))))",
+      "Purpose": "Only the legacy form of a Brazilian mobile, different from the number itself."
+    },
+    {
+      "Object": "identity_whatsapp_links_person_id_fkey",
+      "Physical definition": "FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Removed with the Person."
+    },
+    {
+      "Object": "identity_whatsapp_links_phone_check",
+      "Physical definition": "CHECK (((phone_number)::text ~ '^[1-9][0-9]{7,14}$'::text))",
+      "Purpose": "E.164 digits only (8 to 15, no leading zero)."
+    },
+    {
+      "Object": "identity_whatsapp_links_pkey",
+      "Physical definition": "PRIMARY KEY (person_id)",
+      "Purpose": "One WhatsApp number per Person."
+    },
+    {
+      "Object": "identity_whatsapp_links_platform_user_check",
+      "Physical definition": "CHECK (((platform_user_id IS NULL) OR ((platform_user_id)::text ~ '^[A-Z]{2}\\.(ENT\\.)?[A-Za-z0-9]{1,128}$'::text)))",
+      "Purpose": "Only the business-scoped user identifier format."
+    },
+    {
+      "Object": "identity_whatsapp_links_version_check",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    },
+    {
+      "Object": "identity_whatsapp_links_legacy_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_whatsapp_links_legacy_key ON public.identity_whatsapp_links USING btree (legacy_identifier)",
+      "Purpose": "A legacy Brazilian identifier identifies at most one Person."
+    },
+    {
+      "Object": "identity_whatsapp_links_phone_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_whatsapp_links_phone_key ON public.identity_whatsapp_links USING btree (phone_number)",
+      "Purpose": "A number identifies at most one Person."
+    },
+    {
+      "Object": "identity_whatsapp_links_platform_user_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_whatsapp_links_platform_user_key ON public.identity_whatsapp_links USING btree (platform_user_id)",
+      "Purpose": "A WhatsApp user identifier identifies at most one Person."
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import type { AiTraceLevel } from "../../ai/trace.js";
 import type { ConversationModel } from "../../ai/conversation.js";
 import { runConversationTurn } from "./conversation.js";
 import { canReadReply } from "./evidence.js";
+import { deniedReply, usableCapability } from "./access.js";
 import type {
   AgentCapability,
   AgentReply,
@@ -16,6 +17,7 @@ import {
 import { AgentRepository } from "./prisma-repository.js";
 import type { SourceSelection } from "../sales/sources.js";
 import { AgentFailure } from "./errors.js";
+import type { TurnView } from "./contracts.js";
 import {
   TurnTrace,
   type TurnOutcome,
@@ -112,7 +114,8 @@ export async function runAgentTurn(
   const { actor, history, signal, trace } = input;
   const permitted = capabilities.filter(
     (item) =>
-      actor.permissions.has(item.permission) && item.legacyRouting !== false,
+      usableCapability(item, actor.permissions, input.source) &&
+      item.legacyRouting !== false,
   );
   const saved = agentContext(input.contexts._agent, permitted);
   trace.content("agent", { contextBefore: input.contexts._agent ?? null });
@@ -164,14 +167,22 @@ export async function runAgentTurn(
   if (!capability) throw new AgentFailure("AGENT_PROVIDER_UNAVAILABLE");
   if (capability.legacyRouting === false)
     throw new AgentFailure("AGENT_PROVIDER_UNAVAILABLE");
-  if (!actor.permissions.has(capability.permission))
-    throw new AgentFailure("AGENT_ACCESS_DENIED");
+  // A request the person may not make here is answered with the identified
+  // permissions it needs, never executed.
+  if (!usableCapability(capability, actor.permissions, input.source)) {
+    trace.note("agent", { accessDenied: capability.id });
+    return {
+      reply: deniedReply(capability, actor.permissions, input.source),
+      contexts,
+    };
+  }
   const outcome = await capability.execute({
     message: input.message,
     history,
     context: contexts[capability.id] ?? null,
     contexts: input.contexts,
     permissions: actor.permissions,
+    ...(actor.scopes ? { scopes: actor.scopes } : {}),
     signal,
     progress: input.progress,
     trace,
@@ -253,7 +264,10 @@ export class CorporateAgent {
     }
     if (!claimed.fresh) {
       const reply = claimed.turn.reply;
-      if (reply && !canReadReply(reply, actor.permissions, this.capabilities))
+      if (
+        reply &&
+        !canReadReply(reply, actor.permissions, this.capabilities, actor.scopes)
+      )
         throw new AgentFailure("AGENT_ACCESS_DENIED");
       return claimed.turn;
     }
@@ -272,6 +286,53 @@ export class CorporateAgent {
     });
     this.running.set(claimed.turn.id, { controller, task });
     return claimed.turn;
+  }
+  /**
+   * Submits a turn for another channel and waits for its outcome. The request
+   * id makes a repeated submission (for example after a restart) return the
+   * same turn: a turn this process runs is awaited, one started elsewhere is
+   * re-read until its lease resolves. Returns the turn as persisted.
+   */
+  async ask(
+    actor: AgentActor,
+    conversationId: string,
+    requestId: string,
+    question: string,
+    source: SourceSelection,
+    reportFailure: ReportFailure,
+    signal: AbortSignal,
+    observe?: ObserveTrace,
+  ): Promise<TurnView> {
+    const submitted = await this.submit(
+      actor,
+      conversationId,
+      requestId,
+      question,
+      source,
+      reportFailure,
+      observe,
+    );
+    const deadline = Date.now() + 180_000;
+    for (;;) {
+      const local = this.running.get(submitted.id);
+      if (local)
+        await Promise.race([
+          local.task,
+          new Promise((resolve) => {
+            signal.addEventListener("abort", resolve, { once: true });
+          }),
+        ]);
+      signal.throwIfAborted();
+      const turn = await this.repository.turn(
+        actor.id,
+        conversationId,
+        submitted.id,
+      );
+      // A turn still running past the deadline is returned as it is; the
+      // caller treats it as an unfinished answer.
+      if (turn.state !== "running" || Date.now() > deadline) return turn;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   }
   private async execute(
     actor: AgentActor,
@@ -315,7 +376,12 @@ export class CorporateAgent {
         .filter(
           (item) =>
             item.reply !== null &&
-            canReadReply(item.reply, actor.permissions, this.capabilities),
+            canReadReply(
+              item.reply,
+              actor.permissions,
+              this.capabilities,
+              actor.scopes,
+            ),
         )
         .map((item) => ({ ...item, reply: item.reply! }));
       const contexts =
@@ -345,7 +411,12 @@ export class CorporateAgent {
             .filter(
               (turn) =>
                 turn.reply !== null &&
-                canReadReply(turn.reply, actor.permissions, this.capabilities),
+                canReadReply(
+                  turn.reply,
+                  actor.permissions,
+                  this.capabilities,
+                  actor.scopes,
+                ),
             )
             .map((turn) => ({ ...turn, reply: turn.reply! }));
         },

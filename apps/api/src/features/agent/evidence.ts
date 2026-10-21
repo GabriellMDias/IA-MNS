@@ -1,6 +1,13 @@
 import { Value } from "typebox/value";
 import type { Static } from "typebox";
 import { safeModelText } from "../../ai/transmission-text.js";
+import {
+  scopeCovers,
+  type DataScope,
+  type RecordedAccess,
+} from "../../access.js";
+import { salesPermission } from "../sales/access.js";
+import { productSourcePermission } from "../products/capability.js";
 import type { AgentCapability, AgentReply } from "./capabilities.js";
 import { salesAnswerSchema, salesAnalysisSchema } from "../sales/contracts.js";
 import {
@@ -163,15 +170,42 @@ function resultPermissions(result: unknown): string[] {
   if (Value.Check(salesAnswerSchema, result))
     return [
       "sales:read",
-      ...(result.sections.some((section) => section.result?.productSelection)
-        ? ["products:read"]
-        : []),
+      // Each source's figures need that source's permission; a denied or
+      // failed section carries no figures.
+      ...result.sections.flatMap((section) =>
+        section.result ? [salesPermission(section.source)] : [],
+      ),
+      ...result.sections.flatMap((section) =>
+        section.result?.productSelection
+          ? ["products:read", productSourcePermission(section.source)]
+          : [],
+      ),
     ];
   if (
     Value.Check(productAnswerSchema, result) ||
     Value.Check(productOptionsSchema, result)
   )
-    return ["products:read"];
+    return ["products:read", productSourcePermission(result.source)];
+  return [];
+}
+
+/** The data restriction each source's figures were computed under. */
+function resultAccess(
+  result: unknown,
+): { permission: string; recorded: RecordedAccess | null }[] {
+  if (Value.Check(salesAnalysisSchema, result))
+    return result.panels.flatMap(resultAccess);
+  if (Value.Check(salesAnswerSchema, result))
+    return result.sections.flatMap((section) =>
+      section.result
+        ? [
+            {
+              permission: salesPermission(section.source),
+              recorded: section.result.access ?? null,
+            },
+          ]
+        : [],
+    );
   return [];
 }
 
@@ -180,6 +214,8 @@ export function canReadReply(
   reply: AgentReply,
   permissions: ReadonlySet<string>,
   capabilities: readonly AgentCapability[],
+  /** Current scopes of held permissions; absent means unrestricted. */
+  scopes?: ReadonlyMap<string, DataScope>,
 ): boolean {
   if (
     reply.requiredPermissions !== undefined &&
@@ -195,6 +231,16 @@ export function canReadReply(
     !resultPermissions(reply.result).every((permission) =>
       permissions.has(permission),
     )
+  )
+    return false;
+  // Figures computed under a broader scope than the reader holds now (or
+  // before restrictions existed) are not shown or reused.
+  if (
+    scopes &&
+    !resultAccess(reply.result).every(({ permission, recorded }) => {
+      const scope = scopes.get(permission);
+      return scope !== undefined && scopeCovers(scope, recorded);
+    })
   )
     return false;
   if (reply.capabilityId !== null) {
@@ -217,6 +263,7 @@ export function canReadReply(
           { kind: "answer", message: "", suggestions: [], ...item },
           permissions,
           capabilities,
+          scopes,
         ),
       ))
   );
@@ -237,6 +284,7 @@ function displayDecimal(value: string, unit: string): string {
 export function projectReplyEvidence(input: {
   reply: AgentReply;
   permissions: ReadonlySet<string>;
+  scopes?: ReadonlyMap<string, DataScope>;
   capabilities: readonly AgentCapability[];
   source: SourceSelection;
   evidenceId: string;
@@ -263,7 +311,14 @@ export function projectReplyEvidence(input: {
     facts: {},
     audit,
   });
-  if (!canReadReply(input.reply, input.permissions, input.capabilities))
+  if (
+    !canReadReply(
+      input.reply,
+      input.permissions,
+      input.capabilities,
+      input.scopes,
+    )
+  )
     return withheld("access_denied");
   if (!/^[A-Za-z][A-Za-z0-9_]{0,39}$/u.test(input.evidenceId))
     return withheld("unknown_payload");

@@ -1,0 +1,127 @@
+{
+  "kind": "database",
+  "name": "identity_groups",
+  "description": "Owner-managed groups of Persons (ADR-0037). Every member holds the group's grants, united with its own grants.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Created, renamed and deleted by owners with recent strong authentication; deleting a group removes its memberships and grants. Audited.",
+  "columns": [
+    {
+      "Column": "id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Immutable group UUID.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "name",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Display name chosen by an owner, for example Comercial Matriz.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "name_key",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Case-insensitive normalized name (NFKC, lower case) that makes names unique; written by the application.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "description",
+      "PostgreSQL type": "character varying(300)",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Optional owner description of who belongs to the group.",
+      "Null meaning": "No description.",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "1",
+      "Classification": "INTERNAL",
+      "Meaning": "Incremented by every change of name or description; updates apply only to the version the owner saw.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner (identity_persons.id) who created the group; attribution without a foreign key, the audit trail is authoritative.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "created_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock creation instant.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner (identity_persons.id) who made the last change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock instant of the last change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_groups_description_check",
+      "Physical definition": "CHECK (((description IS NULL) OR (length(btrim((description)::text)) > 0)))",
+      "Purpose": "A description is never blank."
+    },
+    {
+      "Object": "identity_groups_name_check",
+      "Physical definition": "CHECK (((length(btrim((name)::text)) >= 2) AND (length(btrim((name)::text)) <= 80)))",
+      "Purpose": "Names have 2 to 80 visible characters."
+    },
+    {
+      "Object": "identity_groups_pkey",
+      "Physical definition": "PRIMARY KEY (id)",
+      "Purpose": "Group identity."
+    },
+    {
+      "Object": "identity_groups_version_check",
+      "Physical definition": "CHECK ((version >= 1))",
+      "Purpose": "Versions start at 1."
+    },
+    {
+      "Object": "identity_groups_name_key",
+      "Physical definition": "CREATE UNIQUE INDEX identity_groups_name_key ON public.identity_groups USING btree (name_key)",
+      "Purpose": "Group names are unique regardless of case."
+    }
+  ]
+}

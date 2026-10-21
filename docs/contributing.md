@@ -56,6 +56,7 @@ A fact should have one canonical source wherever practical. Small navigational s
 | Configuration | Canonical schema and metadata under [configuration](architecture/configuration.md): name, type, description, required/default, classification, secret status, and validation |
 | Public errors | API-owned [`errorRegistry`](../apps/api/src/errors.ts) under [error contract](api/error-contract.md), with a [generated reference](generated/api/errors.md) |
 | Components | Web component source and [owned examples/metadata](../apps/web/src/components.docs.json), with generated [AI-readable reference](generated/components/web.md) and [human-facing portal](architecture/living-documentation.md) |
+| Product functions and ERP SQL | [Feature catalog](features/README.md) routes to domain owners; [feature-reference.ts](../apps/api/scripts/feature-reference.ts) derives SQL, bindings and filter references from production compilers/catalogs through the API reference workflow |
 
 Files marked as generated must not be edited independently. Update their canonical source and regenerate using repository tooling. Generated output must not become a source of truth or be patched to hide stale generation. Reviewed SQL migrations have the distinct authorship and release rules in [migration policy](database/migrations.md); this does not authorize editing generated SDKs or references.
 

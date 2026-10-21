@@ -1,3 +1,4 @@
+import type { RecordedAccess } from "../../access.js";
 import { Decimal } from "decimal.js";
 import { SalesFailure } from "./errors.js";
 import { sourceCatalog, type SalesSource } from "./sources.js";
@@ -38,6 +39,8 @@ export type SalesResult = {
   comparison: { startDate: string; endDate: string; rows: SalesRow[] } | null;
   warnings: string[];
   productSelection?: SalesProductSelection;
+  /** The data restriction the figures were computed under; absent when none. */
+  access?: RecordedAccess;
 };
 
 export function businessToday(now = new Date()): string {

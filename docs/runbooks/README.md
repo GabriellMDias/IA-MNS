@@ -8,6 +8,7 @@ This directory contains the [authoring policy](authoring.md), [template](templat
 | [Production release update and rollback](production-release-update-and-rollback.md) | Installing a newer release or returning to an earlier one |
 | [Production backup and restore](production-backup-and-restore.md) | Taking, verifying or restoring database backups |
 | [Production secret rotation](production-secret-rotation.md) | Replacing a credential or key |
+| [WhatsApp channel activation, revocation and rollback](whatsapp-channel.md) | Turning the WhatsApp channel on with the dedicated number, revoking a number, or turning the channel off |
 
 The files these procedures run are described in [`infra/production`](../../infra/production/README.md). Add index entries only for real procedures when the corresponding runtime and operational tooling exist.
 

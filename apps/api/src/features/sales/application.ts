@@ -25,6 +25,13 @@ import type { Interpretation } from "./interpretation.js";
 import type { Advance } from "./conversation-state.js";
 import { SalesFailure } from "./errors.js";
 import {
+  deniedSalesMessage,
+  deniedSourceText,
+  restrictResult,
+  type SalesAccess,
+} from "./access.js";
+import type { DataScope } from "../../access.js";
+import {
   defaultSelection,
   selectionNotice,
   sourceCatalog,
@@ -56,10 +63,14 @@ const measureNames: Readonly<Record<SalesQuery["metric"], string>> = {
 
 /** Why a source has no result; failures never become a partial figure. */
 export type SectionReason =
-  "provider_unavailable" | "not_configured" | "result_too_large" | "measure";
+  | "provider_unavailable"
+  | "not_configured"
+  | "result_too_large"
+  | "measure"
+  | "access_denied";
 export type SourceSection = {
   source: SalesSource;
-  status: "answered" | "unavailable" | "unsupported";
+  status: "answered" | "unavailable" | "unsupported" | "denied";
   reason: SectionReason | null;
   result: SalesResult | null;
 };
@@ -79,11 +90,21 @@ export type SalesTurn = {
   reply: Omit<SalesReply, "result"> & { answer: SalesAnswer | null };
   state: SalesConversationState;
 };
-export type SalesActor = Readonly<{ id: string; canReadSales: boolean }>;
+export type SalesActor = Readonly<{
+  id: string;
+  canReadSales: boolean;
+  /** Scope of the Sankhya permission; absent means unrestricted. */
+  restriction?: DataScope;
+}>;
 /** The configured adapters; an absent source is reported as not configured. */
 export type SourceReaders = Readonly<Partial<Record<SalesSource, SalesReader>>>;
 export type ExecuteOptions = Readonly<{
   selection?: SourceSelection;
+  /**
+   * The sources the person may read and their scopes. A selected source the
+   * person may not read is answered as denied, with its permission code.
+   */
+  access?: SalesAccess;
   /** Observes a source failure that the answer reports instead of failing. */
   report?: (error: unknown) => void;
   /** Composition supplies this port; legacy literal sales never invoke it. */
@@ -108,7 +129,10 @@ function sectionText(section: SourceSection, metric: SalesQuery["metric"]) {
   const label = sourceCatalog[section.source].label;
   if (section.result)
     return `${label}: ${answerFor(section.result, section.source)}`;
-  const reasons: Readonly<Record<SectionReason, string>> = {
+  if (section.status === "denied") return deniedSourceText(section.source);
+  const reasons: Readonly<
+    Record<Exclude<SectionReason, "access_denied">, string>
+  > = {
     provider_unavailable:
       "não consegui consultar esta fonte agora. Tente novamente em instantes.",
     not_configured: "esta fonte ainda não está configurada no IA-MNS.",
@@ -116,7 +140,7 @@ function sectionText(section: SourceSection, metric: SalesQuery["metric"]) {
       "a consulta ficou muito ampla para esta fonte. Reduza o período ou especifique melhor o produto.",
     measure: `${measureNames[metric]} não está disponível nesta fonte.`,
   };
-  return `${label}: ${reasons[section.reason ?? "provider_unavailable"]}`;
+  return `${label}: ${reasons[section.reason === null || section.reason === "access_denied" ? "provider_unavailable" : section.reason]}`;
 }
 const failureReasons: Readonly<
   Partial<Record<SalesFailure["code"], SectionReason>>
@@ -162,6 +186,12 @@ export class SalesChat {
         session.id,
         session.state,
         signal,
+        undefined,
+        undefined,
+        {
+          selection: "sankhya",
+          access: { sankhya: actor.restriction ?? { kind: "all" } },
+        },
       );
       this.conversations.release(session, turn.state);
       const { answer, ...reply } = turn.reply;
@@ -176,25 +206,33 @@ export class SalesChat {
     query: SalesQuery,
     signal: AbortSignal,
     scope?: SalesProductScope,
+    restriction?: DataScope,
   ): Promise<SalesResult> {
     const reader = this.readers[source];
     if (!reader) throw new SalesFailure("SALES_NOT_CONFIGURED");
     if (scope && scope.source !== source)
       throw new SalesFailure("SALES_QUERY_INVALID");
-    const data = scope
-      ? await reader.read(query, signal, scope)
-      : await reader.read(query, signal);
+    const limited =
+      restriction?.kind === "restricted" ? restriction : undefined;
+    const data =
+      scope || limited
+        ? await reader.read(query, signal, scope, limited)
+        : await reader.read(query, signal);
     const result = assembleResult(query, data.current, data.previous, source);
-    return scope
-      ? {
-          ...result,
-          productSelection: scopeDescription(scope),
-          warnings: [
-            "A seleção usa o cadastro atual, aplicado igualmente aos dois períodos; não reconstrói classificações ou responsáveis históricos.",
-            ...result.warnings,
-          ],
-        }
-      : result;
+    return restrictResult(
+      scope
+        ? {
+            ...result,
+            productSelection: scopeDescription(scope),
+            warnings: [
+              "A seleção usa o cadastro atual, aplicado igualmente aos dois períodos; não reconstrói classificações ou responsáveis históricos.",
+              ...result.warnings,
+            ],
+          }
+        : result,
+      source,
+      limited,
+    );
   }
   /**
    * Interprets one message against the structured conversation state, then
@@ -216,6 +254,29 @@ export class SalesChat {
     options: ExecuteOptions = {},
   ): Promise<SalesTurn> {
     const selection = options.selection ?? defaultSelection;
+    const access = options.access;
+    const allowed = (source: SalesSource) =>
+      !access || access[source] !== undefined;
+    // Nothing selected may be read: answer with the missing permissions
+    // before interpreting, so no ERP or model call is spent on the request.
+    if (!sourcesOf(selection).some(allowed)) {
+      const text = deniedSalesMessage(sourcesOf(selection));
+      trace.note("sales", { selection, accessDenied: true });
+      return {
+        reply: {
+          conversationId,
+          kind: "unsupported",
+          message: text,
+          answer: null,
+          suggestions: [],
+        },
+        state: recordExchange(state, {
+          user: message,
+          reply: "unsupported",
+          text,
+        }),
+      };
+    }
     await progress("interpreting_sales");
     const today = businessToday(this.now());
     trace.note("sales", { interpreter: salesInterpreterVersion, selection });
@@ -321,12 +382,12 @@ export class SalesChat {
     )
       throw new SalesFailure("SALES_QUERY_INVALID");
     const selected = sourcesOf(selection);
-    const queried = selected.filter((source) =>
-      supportsMetric(source, query.metric),
+    const queried = selected.filter(
+      (source) => supportsMetric(source, query.metric) && allowed(source),
     );
     // A measure no selected source has stays unsupported; the plan is kept so
     // a refinement such as another measure can continue from it.
-    if (queried.length === 0)
+    if (!selected.some((source) => supportsMetric(source, query.metric)))
       return finish(
         "unsupported",
         `${sourceCatalog[selected[0]].label}: ${measureNames[query.metric]} não está disponível nesta fonte. Posso consultar ${sourceCatalog[selected[0]].measures.map((metric) => measureNames[metric]).join(" ou ")}.`,
@@ -334,11 +395,20 @@ export class SalesChat {
       );
     await progress("querying_sales");
     const settled = await Promise.allSettled(
-      queried.map((source) => this.readSource(source, query, signal, scope)),
+      queried.map((source) =>
+        this.readSource(source, query, signal, scope, access?.[source]),
+      ),
     );
     signal.throwIfAborted();
     const sections: SourceSection[] = selected.map((source) => {
       const index = queried.indexOf(source);
+      if (index < 0 && supportsMetric(source, query.metric))
+        return {
+          source,
+          status: "denied",
+          reason: "access_denied",
+          result: null,
+        };
       if (index < 0)
         return {
           source,
@@ -364,12 +434,22 @@ export class SalesChat {
       options.report?.(outcome.reason);
       return { source, status: "unavailable", reason, result: null };
     });
-    if (!sections.some((section) => section.status === "answered"))
-      throw (
-        settled.find(
-          (item) => item.status === "rejected",
-        ) as PromiseRejectedResult
-      ).reason;
+    if (!sections.some((section) => section.status === "answered")) {
+      const rejected = settled.find(
+        (item): item is PromiseRejectedResult => item.status === "rejected",
+      );
+      if (rejected) throw rejected.reason;
+      // Only denied or unsupported sources remain.
+      return finish(
+        "unsupported",
+        deniedSalesMessage(
+          sections
+            .filter((section) => section.status === "denied")
+            .map((section) => section.source),
+        ),
+        step.state,
+      );
+    }
     await progress("organizing");
     const next = recordExchange(step.state, {
       user: message,

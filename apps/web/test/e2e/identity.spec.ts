@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Frame } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 import {
   createHash,
   createHmac,
@@ -451,6 +452,8 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   page,
   browser,
 }) => {
+  // Covers account and all three administration sections at desktop/mobile widths.
+  test.setTimeout(60_000);
   // Product screens require a signed-in person on the direct surface.
   await page.goto(`${web}/`);
   await expect(page).toHaveURL(`${web}/entrar`);
@@ -506,8 +509,72 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   ).toBeVisible();
   await noCredentialStorage(page);
 
+  // Account settings use the available width, preserve writes and reflow on mobile.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const profile = page.getByRole("region", { name: "Perfil", exact: true });
+  const security = page.getByRole("region", { name: "Acesso e segurança" });
+  const links = page.getByRole("region", { name: "Sistemas vinculados" });
+  const profileBounds = (await profile.boundingBox())!;
+  const securityBounds = (await security.boundingBox())!;
+  const linksBounds = (await links.boundingBox())!;
+  expect(profileBounds.width).toBeGreaterThan(1250);
+  expect(linksBounds.x).toBeGreaterThan(
+    securityBounds.x + securityBounds.width,
+  );
+  expect(Math.abs(linksBounds.y - securityBounds.y)).toBeLessThan(2);
+  await page.getByLabel("Nome", { exact: true }).fill("Pessoa do PDT revisada");
+  await page.getByRole("button", { name: "Salvar nome" }).click();
+  await expect(
+    profile.getByRole("heading", { name: "Pessoa do PDT revisada" }),
+  ).toBeVisible();
+  await page.getByLabel("Nome", { exact: true }).fill("Pessoa do PDT");
+  await page.getByRole("button", { name: "Salvar nome" }).click();
+  await expect(
+    profile.getByRole("heading", { name: "Pessoa do PDT", exact: true }),
+  ).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({
+    path: "../../test-results/identity-account-desktop.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileSecurity = (await security.boundingBox())!;
+  const mobileLinks = (await links.boundingBox())!;
+  expect(mobileLinks.y).toBeGreaterThan(
+    mobileSecurity.y + mobileSecurity.height,
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Sair desta sessão" }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "../../test-results/identity-account-mobile.png",
+    fullPage: true,
+  });
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  // Exercise the same theme tokens without changing the saved user preference.
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "dark";
+  });
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({
+    path: "../../test-results/identity-account-mobile-dark.png",
+    fullPage: true,
+  });
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "light";
+  });
+  await page.setViewportSize({ width: 1280, height: 720 });
+
   const other = await browser.newContext();
   const admin = await other.newPage();
+  // Theme switches apply at once, so contrast checks never sample the
+  // background transition of a button between two themes.
+  await admin.emulateMedia({ reducedMotion: "reduce" });
   await admin.goto(`${web}/entrar`);
   await admin.getByLabel("Usuário").fill("admin");
   await admin.getByLabel("Senha").fill("senha errada para teste");
@@ -522,38 +589,201 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   await expect(admin.getByLabel("Sua mensagem")).toBeVisible();
   await admin.getByRole("button", { name: /, menu da conta$/ }).click();
   await admin.getByRole("menuitem", { name: "Administração" }).click();
+  await admin.setViewportSize({ width: 1440, height: 1000 });
   await admin.getByRole("button", { name: /Pessoa do PDT/ }).click();
+  const selectedPersonUrl = admin.url();
+  expect(new URL(selectedPersonUrl).searchParams.get("pessoa")).toBeTruthy();
+  const directory = admin.getByRole("region", { name: "Pessoas", exact: true });
+  const personSummary = admin.getByRole("region", {
+    name: "Pessoa do PDT",
+    exact: true,
+  });
+  await expect(personSummary).toBeVisible();
+  const directoryBounds = (await directory.boundingBox())!;
+  const summaryBounds = (await personSummary.boundingBox())!;
+  expect(summaryBounds.x).toBeGreaterThan(
+    directoryBounds.x + directoryBounds.width,
+  );
+  expect(summaryBounds.x + summaryBounds.width).toBeGreaterThan(1350);
+  const permissionsCard = admin.getByRole("region", {
+    name: "Permissões",
+    exact: true,
+  });
+  const entryCard = admin.getByRole("region", {
+    name: "Formas de entrada",
+    exact: true,
+  });
+  const whatsappCard = admin.getByRole("region", {
+    name: "WhatsApp",
+    exact: true,
+  });
+  expect((await whatsappCard.boundingBox())!.x).toBe(
+    (await entryCard.boundingBox())!.x,
+  );
+  expect((await entryCard.boundingBox())!.x).toBeGreaterThan(
+    (await permissionsCard.boundingBox())!.x,
+  );
+  expect((await new AxeBuilder({ page: admin }).analyze()).violations).toEqual(
+    [],
+  );
+  await admin.screenshot({
+    path: "../../test-results/identity-admin-desktop.png",
+    fullPage: true,
+  });
+  // Search and selection survive reload; empty results remain explicit.
+  await admin.getByLabel("Buscar pessoa").fill("Pessoa do PDT");
+  await expect(admin).toHaveURL(/busca=Pessoa/);
+  await admin.reload();
+  await expect(admin.getByLabel("Buscar pessoa")).toHaveValue("Pessoa do PDT");
+  await expect(personSummary).toBeVisible();
+  expect(new URL(admin.url()).searchParams.get("pessoa")).toBe(
+    new URL(selectedPersonUrl).searchParams.get("pessoa"),
+  );
+  await admin.getByLabel("Buscar pessoa").fill("No synthetic match");
+  await expect(admin.getByText("Nenhuma pessoa encontrada.")).toBeVisible();
+  await admin.getByLabel("Buscar pessoa").fill("");
+  await admin.setViewportSize({ width: 390, height: 844 });
+  expect((await personSummary.boundingBox())!.y).toBeGreaterThan(
+    (await directory.boundingBox())!.y +
+      (await directory.boundingBox())!.height,
+  );
+  expect(
+    await admin.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  expect((await new AxeBuilder({ page: admin }).analyze()).violations).toEqual(
+    [],
+  );
+  await admin.screenshot({
+    path: "../../test-results/identity-admin-mobile.png",
+    fullPage: true,
+  });
+  await admin.evaluate(() => {
+    document.documentElement.dataset.theme = "dark";
+  });
+  expect((await new AxeBuilder({ page: admin }).analyze()).violations).toEqual(
+    [],
+  );
+  await admin.screenshot({
+    path: "../../test-results/identity-admin-mobile-dark.png",
+    fullPage: true,
+  });
+  await admin.evaluate(() => {
+    document.documentElement.dataset.theme = "light";
+  });
+  await admin.setViewportSize({ width: 1440, height: 1000 });
+  // Permissions are listed by source, each with the code support uses.
   await expect(
-    admin.getByText("Consultas de vendas (Sankhya e VR Master)"),
+    permissionsCard.getByRole("heading", { name: "MNS (Sankhya)" }),
   ).toBeVisible();
   await expect(
-    admin
-      .getByRole("listitem")
-      .filter({ hasText: "Consultas de vendas (Sankhya e VR Master)" })
-      .getByText("não efetiva"),
+    permissionsCard.getByRole("heading", {
+      name: "Pilar da Terra (VR Master)",
+    }),
+  ).toBeVisible();
+  const permission = (code: string) =>
+    permissionsCard.getByRole("listitem").filter({ hasText: code });
+  await expect(
+    permission("SNK-VEN-01").getByText("Não efetiva para esta pessoa."),
   ).toBeVisible();
   // Product lookup is grantable but no provider grants it automatically.
+  const productPermission = permission("VRM-PRD-01");
+  await expect(productPermission.getByText("Não concedida")).toBeVisible();
+  await productPermission.getByRole("button", { name: "Conceder" }).click();
   await expect(
-    admin.getByText("Consulta de produtos (VR Master e Sankhya)"),
+    productPermission.getByText("Concedida", { exact: true }),
   ).toBeVisible();
-  const productPermission = admin
-    .getByRole("listitem")
-    .filter({ hasText: "Consulta de produtos (VR Master e Sankhya)" });
-  await expect(productPermission.getByText("não efetiva")).toBeVisible();
-  // This server-owned controlled checkbox settles after the grant response.
-  await productPermission.getByRole("checkbox").click();
-  await expect(productPermission.getByRole("checkbox")).toBeChecked();
   await expect(
-    productPermission.getByText("efetiva", { exact: true }),
+    productPermission.getByText(/Efetiva por concessão individual/),
   ).toBeVisible();
   await admin.reload();
   await admin.getByRole("button", { name: /Pessoa do PDT/ }).click();
-  await expect(productPermission.getByRole("checkbox")).toBeChecked();
-  await productPermission.getByRole("checkbox").click();
-  await expect(productPermission.getByRole("checkbox")).not.toBeChecked();
-  await expect(productPermission.getByText("não efetiva")).toBeVisible();
+  await expect(
+    productPermission.getByText("Concedida", { exact: true }),
+  ).toBeVisible();
+  await productPermission.getByRole("button", { name: "Revogar" }).click();
+  await expect(productPermission.getByText("Não concedida")).toBeVisible();
+  // ---- groups grant the same permissions to several people ----
+  await admin.getByRole("link", { name: "Grupos" }).click();
+  await expect(admin.getByText(/Nenhum grupo ainda/)).toBeVisible();
+  await admin.getByLabel("Nome do novo grupo").fill("Comercial Pilar");
+  await admin.getByRole("button", { name: "Criar grupo" }).click();
+  const groupPermissions = admin.getByRole("region", {
+    name: "Permissões do grupo",
+  });
+  await expect(groupPermissions).toBeVisible();
+  const groupSales = groupPermissions
+    .getByRole("listitem")
+    .filter({ hasText: "VRM-VEN-01" });
+  await groupSales
+    .getByRole("button", { name: "Conceder com restrições" })
+    .click();
+  // Without an ERP in this stack, values cannot be read: only unrestricted.
+  await expect(
+    groupSales.getByText(/não podem ser lidos da origem/),
+  ).toBeVisible();
+  await groupSales
+    .getByRole("button", { name: "Salvar sem restrição" })
+    .click();
+  await expect(
+    groupSales.getByText("Sem restrição: todos os dados da fonte"),
+  ).toBeVisible();
+  await admin.getByLabel("Adicionar pessoa ao grupo").fill("Pessoa do PDT");
+  await admin
+    .getByRole("region", { name: "Pessoas do grupo" })
+    .getByRole("button", { name: "Adicionar" })
+    .click();
+  await expect(
+    admin
+      .getByRole("region", { name: "Pessoas do grupo" })
+      .getByRole("button", { name: "Remover do grupo" }),
+  ).toBeVisible();
+  expect((await new AxeBuilder({ page: admin }).analyze()).violations).toEqual(
+    [],
+  );
+  await admin.screenshot({
+    path: "../../test-results/identity-admin-groups.png",
+    fullPage: true,
+  });
+  await admin.goto(selectedPersonUrl);
+  await expect(
+    permission("VRM-VEN-01").getByText(/Efetiva por grupo Comercial Pilar/),
+  ).toBeVisible();
+  await expect(
+    permissionsCard.getByRole("link", { name: "Comercial Pilar" }),
+  ).toBeVisible();
+  // Only the owner links a WhatsApp number; the API validates and normalizes it.
+  const whatsappField = admin.getByLabel(
+    "Número de WhatsApp com código do país",
+  );
+  await whatsappField.fill("+55 11 8765-4321");
+  await admin.getByRole("button", { name: "Cadastrar número" }).click();
+  await expect(
+    admin.getByText(
+      "Informe o celular com o nono dígito, por exemplo +55 11 91234-5678.",
+    ),
+  ).toBeVisible();
+  await whatsappField.fill("+55 (11) 98765-4321");
+  await admin.getByRole("button", { name: "Cadastrar número" }).click();
+  await expect(admin.getByText("Número autorizado:")).toContainText(
+    "+55 11 98765-4321 · nenhuma mensagem recebida ainda",
+  );
+  await admin
+    .getByRole("button", { name: "Remover número do WhatsApp" })
+    .click();
+  await admin
+    .getByRole("button", { name: "Remover número", exact: true })
+    .click();
+  await expect(
+    admin.getByText(
+      "Sem número, esta pessoa não conversa com o IA-MNS pelo WhatsApp.",
+    ),
+  ).toBeVisible();
+  await expect(admin.getByText(/WhatsApp removido/)).toBeVisible();
   // Only the owner creates people, optionally with a local invitation and
   // proof-based link invitations; each invitation is a one-time link.
+  await admin.getByRole("button", { name: "Nova pessoa", exact: true }).click();
   await admin.getByLabel("Nome", { exact: true }).fill("Pessoa Convidada");
   await admin
     .getByLabel("Convite para a pessoa vincular a conta do PDT Connect")
@@ -576,6 +806,32 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   await expect(
     admin.getByRole("heading", { name: "Autenticação e segurança" }),
   ).toBeVisible();
+  const sessionDuration = admin.getByLabel("Duração máxima de uma sessão");
+  const idleDuration = admin.getByLabel("Encerrar a sessão após inatividade");
+  expect((await idleDuration.boundingBox())!.x).toBeGreaterThan(
+    (await sessionDuration.boundingBox())!.x,
+  );
+  expect((await new AxeBuilder({ page: admin }).analyze()).violations).toEqual(
+    [],
+  );
+  await admin.screenshot({
+    path: "../../test-results/identity-admin-security-desktop.png",
+    fullPage: true,
+  });
+  await admin.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await admin.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  expect((await new AxeBuilder({ page: admin }).analyze()).violations).toEqual(
+    [],
+  );
+  await admin.screenshot({
+    path: "../../test-results/identity-admin-security-mobile.png",
+    fullPage: true,
+  });
+  await admin.setViewportSize({ width: 1440, height: 1000 });
   await expect(admin.getByLabel("Duração máxima de uma sessão")).toHaveValue(
     "720",
   );
@@ -625,10 +881,31 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
     "metadata",
   );
   await expect(
-    admin.getByRole("checkbox", {
-      name: "Sankhya: Consultas de vendas (Sankhya e VR Master)",
-    }),
-  ).toBeChecked();
+    admin.getByRole("heading", { name: "Grupo de Usuário padrão por vínculo" }),
+  ).toBeVisible();
+  const sankhyaGroup = admin.getByLabel("Grupo padrão — Sankhya");
+  const pdtGroup = admin.getByLabel("Grupo padrão — PDT Connect");
+  await expect(sankhyaGroup).toHaveValue("");
+  await expect(pdtGroup).toHaveValue("");
+  const selectedGroup = await sankhyaGroup
+    .locator("option")
+    .filter({ hasText: "Comercial Pilar" })
+    .getAttribute("value");
+  if (!selectedGroup) throw new Error("The default group option is missing");
+  await sankhyaGroup.selectOption(selectedGroup);
+  await admin.getByRole("button", { name: "Salvar grupo — Sankhya" }).click();
+  await expect(
+    admin.getByText("Grupo padrão salvo. Vale no próximo login pelo sistema."),
+  ).toBeVisible();
+  await expect(pdtGroup).toHaveValue("");
+  await admin.reload();
+  await expect(sankhyaGroup).toHaveValue(selectedGroup);
+  await sankhyaGroup.selectOption("");
+  await admin.getByRole("button", { name: "Salvar grupo — Sankhya" }).click();
+  await expect(sankhyaGroup).toHaveValue("");
+  await expect(
+    admin.getByRole("button", { name: "Salvar grupo — Sankhya" }),
+  ).toBeDisabled();
   const model = admin.getByLabel("Modelo de IA");
   const modelCard = admin.locator("form", { has: model });
   await expect(model).toHaveValue("gpt-6.1-sol");
@@ -654,6 +931,22 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   ).toBe(true);
   await admin.screenshot({
     path: "../../test-results/identity-parameters-mobile.png",
+    fullPage: true,
+  });
+  expect((await new AxeBuilder({ page: admin }).analyze()).violations).toEqual(
+    [],
+  );
+  await admin.setViewportSize({ width: 1440, height: 1000 });
+  const modelBounds = (await modelCard.boundingBox())!;
+  const traceBounds = (await admin
+    .locator("form", { has: admin.getByLabel("Registro de diagnóstico da IA") })
+    .boundingBox())!;
+  expect(traceBounds.x).toBeGreaterThan(modelBounds.x + modelBounds.width);
+  expect((await new AxeBuilder({ page: admin }).analyze()).violations).toEqual(
+    [],
+  );
+  await admin.screenshot({
+    path: "../../test-results/identity-admin-parameters-desktop.png",
     fullPage: true,
   });
   // A new request still shows the saved value.

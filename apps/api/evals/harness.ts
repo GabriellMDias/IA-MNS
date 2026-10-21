@@ -68,7 +68,14 @@ export type TurnObservation = {
 const config = parseServerConfig({ ORION_ENV: "test" });
 const actor = {
   id: "evaluation",
-  permissions: new Set(["sales:read", productPermission]),
+  permissions: new Set([
+    "sales:read",
+    "sales_sankhya:read",
+    "sales_vrmaster:read",
+    productPermission,
+    "products_sankhya:read",
+    "products_vrmaster:read",
+  ]),
 };
 
 /**

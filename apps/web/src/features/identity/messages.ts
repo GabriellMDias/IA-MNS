@@ -62,6 +62,27 @@ const messages: Record<string, string> = {
     "Outro administrador alterou este parâmetro. Os valores foram atualizados; revise e salve novamente.",
   IDENTITY_MERGE_BUSY:
     "Há uma conversa em andamento. Aguarde a resposta e tente novamente.",
+  IDENTITY_WHATSAPP_NUMBER_INVALID:
+    "Informe o número com o código do país, por exemplo +55 11 91234-5678.",
+  IDENTITY_WHATSAPP_NINTH_DIGIT_REQUIRED:
+    "Informe o celular com o nono dígito, por exemplo +55 11 91234-5678.",
+  IDENTITY_WHATSAPP_NUMBER_IN_USE:
+    "Este número de WhatsApp já está cadastrado para outra pessoa.",
+  IDENTITY_WHATSAPP_NOT_LINKED: "Esta pessoa não tem número de WhatsApp.",
+  IDENTITY_RESTRICTION_INVALID:
+    "Algum valor da restrição não existe mais na origem ou não se aplica a esta permissão. Busque os valores novamente.",
+  IDENTITY_RESTRICTION_UNAVAILABLE:
+    "Não foi possível ler os valores desta restrição na origem agora. Tente novamente em instantes.",
+  IDENTITY_GROUP_NOT_FOUND: "Este grupo não existe mais.",
+  IDENTITY_GROUP_NAME_INVALID:
+    "Informe um nome de 2 a 80 caracteres e uma descrição de até 300.",
+  IDENTITY_GROUP_NAME_TAKEN: "Já existe um grupo com este nome.",
+  IDENTITY_GROUP_CONFLICT:
+    "Outro administrador alterou este grupo. Os dados foram atualizados; revise e salve novamente.",
+  IDENTITY_GROUP_IN_USE:
+    "Este grupo é padrão de um sistema. Troque ou remova essa escolha em Parâmetros antes de excluir o grupo.",
+  IDENTITY_PROVIDER_GROUP_CONFLICT:
+    "Outro administrador alterou o grupo padrão. A escolha atual foi carregada; revise e salve novamente.",
   RATE_LIMITED: "Muitas tentativas. Aguarde um minuto.",
   AUTHENTICATION_REQUIRED: "Entre para continuar.",
 };

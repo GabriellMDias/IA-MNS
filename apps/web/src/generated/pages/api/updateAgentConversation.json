@@ -82,12 +82,26 @@
         "application/json": {
           "schema": {
             "type": "object",
-            "required": ["id", "title", "pinned", "archived", "updatedAt"],
+            "required": [
+              "id",
+              "title",
+              "pinned",
+              "archived",
+              "channel",
+              "updatedAt"
+            ],
             "properties": {
               "id": { "type": "string", "format": "uuid" },
               "title": { "type": "string" },
               "pinned": { "type": "boolean" },
               "archived": { "type": "boolean" },
+              "channel": {
+                "anyOf": [
+                  { "type": "string", "const": "web" },
+                  { "type": "string", "const": "whatsapp" }
+                ],
+                "description": "Where the conversation started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. The same owner, permissions and history apply on every channel."
+              },
               "updatedAt": { "type": "string", "format": "date-time" }
             },
             "additionalProperties": false
@@ -96,12 +110,26 @@
       },
       "schema": {
         "type": "object",
-        "required": ["id", "title", "pinned", "archived", "updatedAt"],
+        "required": [
+          "id",
+          "title",
+          "pinned",
+          "archived",
+          "channel",
+          "updatedAt"
+        ],
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "title": { "type": "string" },
           "pinned": { "type": "boolean" },
           "archived": { "type": "boolean" },
+          "channel": {
+            "anyOf": [
+              { "type": "string", "const": "web" },
+              { "type": "string", "const": "whatsapp" }
+            ],
+            "description": "Where the conversation started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. The same owner, permissions and history apply on every channel."
+          },
           "updatedAt": { "type": "string", "format": "date-time" }
         },
         "additionalProperties": false
@@ -111,6 +139,11 @@
         { "name": "title", "type": "string", "required": true },
         { "name": "pinned", "type": "boolean", "required": true },
         { "name": "archived", "type": "boolean", "required": true },
+        {
+          "name": "channel",
+          "type": "\"web\" | \"whatsapp\"",
+          "required": true
+        },
         { "name": "updatedAt", "type": "string (date-time)", "required": true }
       ]
     },

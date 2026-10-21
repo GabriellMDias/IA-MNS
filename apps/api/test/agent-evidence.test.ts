@@ -20,7 +20,14 @@ const capabilities: AgentCapability[] = ["sales", "products"].map((id) => ({
   execute: () => Promise.reject(new Error("Not executed")),
   close: () => Promise.resolve(),
 }));
-const permissions = new Set(["sales:read", "products:read"]);
+const permissions = new Set([
+  "sales:read",
+  "sales_sankhya:read",
+  "sales_vrmaster:read",
+  "products:read",
+  "products_sankhya:read",
+  "products_vrmaster:read",
+]);
 function answer(): AgentReply {
   return {
     kind: "answer",
@@ -92,7 +99,10 @@ describe("controlled business evidence transmission", () => {
       "R$ 12.345.678.901.234.567.890,12",
     );
     expect(result.facts.e0_s0_sankhya_start).toBe("01/07/2026");
-    expect(result.evidence.requiredPermissions).toEqual(["sales:read"]);
+    expect(result.evidence.requiredPermissions).toEqual([
+      "sales:read",
+      "sales_sankhya:read",
+    ]);
     expect(JSON.stringify(result)).not.toContain("confidential prose");
     expect(JSON.stringify(result.audit)).not.toContain("maçã");
     expect(result.audit.byteCount).toBe(
@@ -107,9 +117,13 @@ describe("controlled business evidence transmission", () => {
     });
     const reply = answer();
     reply.requiredPermissions = ["products:read"];
-    expect(canReadReply(reply, new Set(["sales:read"]), capabilities)).toBe(
-      false,
-    );
+    expect(
+      canReadReply(
+        reply,
+        new Set(["sales:read", "sales_sankhya:read", "sales_vrmaster:read"]),
+        capabilities,
+      ),
+    ).toBe(false);
     delete reply.requiredPermissions;
     const data = reply.result as {
       sections: { result: { productSelection?: unknown } }[];
@@ -120,7 +134,13 @@ describe("controlled business evidence transmission", () => {
       description: "buyer personal name",
     };
     expect(
-      project(reply, { permissions: new Set(["sales:read"]) }),
+      project(reply, {
+        permissions: new Set([
+          "sales:read",
+          "sales_sankhya:read",
+          "sales_vrmaster:read",
+        ]),
+      }),
     ).toMatchObject({ reason: "access_denied" });
     expect(JSON.stringify(project(reply))).not.toContain("buyer personal name");
   });
@@ -277,9 +297,13 @@ describe("controlled business evidence transmission", () => {
     if (result.status !== "projected") throw new Error("Expected projection");
     expect(result.evidence.sections).toHaveLength(2);
     expect(Object.keys(result.facts)).toContain("e0_s1_sankhya_total_0_value");
-    expect(canReadReply(reply, new Set(["sales:read"]), capabilities)).toBe(
-      false,
-    );
+    expect(
+      canReadReply(
+        reply,
+        new Set(["sales:read", "sales_sankhya:read", "sales_vrmaster:read"]),
+        capabilities,
+      ),
+    ).toBe(false);
   });
 });
 

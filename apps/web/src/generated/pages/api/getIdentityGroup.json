@@ -1,0 +1,997 @@
+{
+  "kind": "api",
+  "operationId": "getIdentityGroup",
+  "summary": "",
+  "description": "Owner: a group's members, grants with their restrictions, and the grantable catalog.",
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "method": "GET",
+  "path": "/identity/admin/groups/{groupId}",
+  "tags": ["Identity"],
+  "authentication": "Bearer access token",
+  "parameters": [
+    {
+      "name": "groupId",
+      "in": "path",
+      "required": true,
+      "schema": { "type": "string", "format": "uuid" },
+      "type": "string (uuid)",
+      "description": ""
+    }
+  ],
+  "request": null,
+  "responses": [
+    {
+      "status": "200",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["group", "catalog", "restrictionsAvailable"],
+            "properties": {
+              "group": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "description",
+                  "version",
+                  "createdAt",
+                  "updatedAt",
+                  "members",
+                  "grants"
+                ],
+                "properties": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "name": { "type": "string" },
+                  "description": {
+                    "anyOf": [{ "type": "string" }, { "type": "null" }]
+                  },
+                  "version": { "type": "integer", "minimum": 1 },
+                  "createdAt": { "type": "string", "format": "date-time" },
+                  "updatedAt": { "type": "string", "format": "date-time" },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "personId",
+                        "displayName",
+                        "status",
+                        "addedAt"
+                      ],
+                      "properties": {
+                        "personId": { "type": "string", "format": "uuid" },
+                        "displayName": { "type": "string" },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "const": "active" },
+                            { "type": "string", "const": "disabled" }
+                          ]
+                        },
+                        "addedAt": { "type": "string", "format": "date-time" }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "grants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["permission", "grantedAt", "restrictions"],
+                      "properties": {
+                        "permission": { "type": "string" },
+                        "grantedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "restrictions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["dimension", "values"],
+                            "properties": {
+                              "dimension": { "type": "string" },
+                              "values": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": ["value", "label"],
+                                  "properties": {
+                                    "value": { "type": "string" },
+                                    "label": { "type": "string" }
+                                  },
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "description": "Empty: every row of the source."
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "catalog": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "permission",
+                    "code",
+                    "title",
+                    "description",
+                    "source",
+                    "capability",
+                    "access",
+                    "autoGrantProviders",
+                    "restrictions"
+                  ],
+                  "properties": {
+                    "permission": { "type": "string" },
+                    "code": {
+                      "type": "string",
+                      "description": "Stable identification given to support, for example SNK-VEN-01."
+                    },
+                    "title": { "type": "string" },
+                    "description": { "type": "string" },
+                    "source": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": ["id", "title"],
+                          "properties": {
+                            "id": { "type": "string" },
+                            "title": { "type": "string" }
+                          },
+                          "additionalProperties": false
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "capability": {
+                      "anyOf": [{ "type": "string" }, { "type": "null" }]
+                    },
+                    "access": {
+                      "anyOf": [
+                        { "type": "string", "const": "read" },
+                        { "type": "string", "const": "write" },
+                        { "type": "string", "const": "sensitive" }
+                      ]
+                    },
+                    "autoGrantProviders": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          { "type": "string", "const": "pdt" },
+                          { "type": "string", "const": "sankhya" }
+                        ]
+                      }
+                    },
+                    "restrictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "code",
+                          "title",
+                          "description",
+                          "hierarchical"
+                        ],
+                        "properties": {
+                          "id": { "type": "string" },
+                          "code": { "type": "string" },
+                          "title": { "type": "string" },
+                          "description": { "type": "string" },
+                          "hierarchical": {
+                            "type": "boolean",
+                            "description": "Selecting a value also admits the values below it."
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "restrictionsAvailable": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["group", "catalog", "restrictionsAvailable"],
+        "properties": {
+          "group": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "description",
+              "version",
+              "createdAt",
+              "updatedAt",
+              "members",
+              "grants"
+            ],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" },
+              "description": {
+                "anyOf": [{ "type": "string" }, { "type": "null" }]
+              },
+              "version": { "type": "integer", "minimum": 1 },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" },
+              "members": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["personId", "displayName", "status", "addedAt"],
+                  "properties": {
+                    "personId": { "type": "string", "format": "uuid" },
+                    "displayName": { "type": "string" },
+                    "status": {
+                      "anyOf": [
+                        { "type": "string", "const": "active" },
+                        { "type": "string", "const": "disabled" }
+                      ]
+                    },
+                    "addedAt": { "type": "string", "format": "date-time" }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "grants": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["permission", "grantedAt", "restrictions"],
+                  "properties": {
+                    "permission": { "type": "string" },
+                    "grantedAt": { "type": "string", "format": "date-time" },
+                    "restrictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["dimension", "values"],
+                        "properties": {
+                          "dimension": { "type": "string" },
+                          "values": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": ["value", "label"],
+                              "properties": {
+                                "value": { "type": "string" },
+                                "label": { "type": "string" }
+                              },
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "description": "Empty: every row of the source."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "catalog": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "permission",
+                "code",
+                "title",
+                "description",
+                "source",
+                "capability",
+                "access",
+                "autoGrantProviders",
+                "restrictions"
+              ],
+              "properties": {
+                "permission": { "type": "string" },
+                "code": {
+                  "type": "string",
+                  "description": "Stable identification given to support, for example SNK-VEN-01."
+                },
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "source": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": ["id", "title"],
+                      "properties": {
+                        "id": { "type": "string" },
+                        "title": { "type": "string" }
+                      },
+                      "additionalProperties": false
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "capability": {
+                  "anyOf": [{ "type": "string" }, { "type": "null" }]
+                },
+                "access": {
+                  "anyOf": [
+                    { "type": "string", "const": "read" },
+                    { "type": "string", "const": "write" },
+                    { "type": "string", "const": "sensitive" }
+                  ]
+                },
+                "autoGrantProviders": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      { "type": "string", "const": "pdt" },
+                      { "type": "string", "const": "sankhya" }
+                    ]
+                  }
+                },
+                "restrictions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "code",
+                      "title",
+                      "description",
+                      "hierarchical"
+                    ],
+                    "properties": {
+                      "id": { "type": "string" },
+                      "code": { "type": "string" },
+                      "title": { "type": "string" },
+                      "description": { "type": "string" },
+                      "hierarchical": {
+                        "type": "boolean",
+                        "description": "Selecting a value also admits the values below it."
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "restrictionsAvailable": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "group", "type": "object", "required": true },
+        { "name": "group.id", "type": "string (uuid)", "required": true },
+        { "name": "group.name", "type": "string", "required": true },
+        {
+          "name": "group.description",
+          "type": "string | null",
+          "required": true
+        },
+        {
+          "name": "group.version",
+          "type": "integer (minimum 1)",
+          "required": true
+        },
+        {
+          "name": "group.createdAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "group.updatedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "group.members",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "group.members[].personId",
+          "type": "string (uuid)",
+          "required": true
+        },
+        {
+          "name": "group.members[].displayName",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "group.members[].status",
+          "type": "\"active\" | \"disabled\"",
+          "required": true
+        },
+        {
+          "name": "group.members[].addedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        { "name": "group.grants", "type": "array of object", "required": true },
+        {
+          "name": "group.grants[].permission",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "group.grants[].grantedAt",
+          "type": "string (date-time)",
+          "required": true
+        },
+        {
+          "name": "group.grants[].restrictions",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "group.grants[].restrictions[].dimension",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "group.grants[].restrictions[].values",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "group.grants[].restrictions[].values[].value",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "group.grants[].restrictions[].values[].label",
+          "type": "string",
+          "required": true
+        },
+        { "name": "catalog", "type": "array of object", "required": true },
+        { "name": "catalog[].permission", "type": "string", "required": true },
+        { "name": "catalog[].code", "type": "string", "required": true },
+        { "name": "catalog[].title", "type": "string", "required": true },
+        { "name": "catalog[].description", "type": "string", "required": true },
+        {
+          "name": "catalog[].source",
+          "type": "object | null",
+          "required": true
+        },
+        {
+          "name": "catalog[].capability",
+          "type": "string | null",
+          "required": true
+        },
+        {
+          "name": "catalog[].access",
+          "type": "\"read\" | \"write\" | \"sensitive\"",
+          "required": true
+        },
+        {
+          "name": "catalog[].autoGrantProviders",
+          "type": "array of \"pdt\" | \"sankhya\"",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions",
+          "type": "array of object",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].id",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].code",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].title",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].description",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "catalog[].restrictions[].hierarchical",
+          "type": "boolean",
+          "required": true
+        },
+        { "name": "restrictionsAvailable", "type": "boolean", "required": true }
+      ]
+    },
+    {
+      "status": "400",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "401",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "403",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "404",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "409",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "429",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "500",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    },
+    {
+      "status": "503",
+      "description": "Response",
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "required": ["error"],
+            "properties": {
+              "error": {
+                "type": "object",
+                "required": ["code", "message", "requestId"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+                  "message": { "type": "string" },
+                  "requestId": { "type": "string" },
+                  "traceId": { "type": "string" },
+                  "errorId": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "schema": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "traceId": { "type": "string" },
+              "errorId": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "fields": [
+        { "name": "error", "type": "object", "required": true },
+        {
+          "name": "error.code",
+          "type": "string (pattern ^[A-Z][A-Z0-9_]*$)",
+          "required": true
+        },
+        { "name": "error.message", "type": "string", "required": true },
+        { "name": "error.requestId", "type": "string", "required": true },
+        { "name": "error.traceId", "type": "string", "required": false },
+        { "name": "error.errorId", "type": "string", "required": false }
+      ]
+    }
+  ]
+}

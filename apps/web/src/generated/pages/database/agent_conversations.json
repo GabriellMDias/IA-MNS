@@ -125,9 +125,24 @@
       "Meaning": "Hidden from active history without deleting turns or context. Restore before accepting new turns.",
       "Null meaning": "—",
       "Unit": "—"
+    },
+    {
+      "Column": "channel",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "'web'::character varying",
+      "Classification": "INTERNAL",
+      "Meaning": "Channel through which the conversation was started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. Metadata only; the same owner, permissions and history apply on every channel.",
+      "Null meaning": "—",
+      "Unit": "—"
     }
   ],
   "constraints": [
+    {
+      "Object": "agent_conversations_channel_check",
+      "Physical definition": "CHECK (((channel)::text = ANY ((ARRAY['web'::character varying, 'whatsapp'::character varying])::text[])))",
+      "Purpose": "Only the implemented channels."
+    },
     {
       "Object": "agent_conversations_contexts_check",
       "Physical definition": "CHECK ((jsonb_typeof(contexts) = 'object'::text))",

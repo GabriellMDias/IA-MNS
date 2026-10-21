@@ -1,119 +1,1010 @@
 [
   {
-    "id": "repository/docs/visual-identity",
-    "title": "IA-MNS Visual Identity",
+    "id": "repository/docs/generated/features/sankhya/sales-weight-product",
+    "title": "MNS (Sankhya): weight / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH ELIGIBLE_CONTROLS AS (\n  SELECT DISTINCT ITE.CONTROLE\n  FROM TGFCAB CAB\n  JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA\n  JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD\n  WHERE CAB.DTNEG >= TO_DATE(:startDate, 'YYYY-MM-DD')\n    AND CAB.DTNEG < TO_DATE(:endDate, 'YYYY-MM-DD') + 1\n    AND CAB.STATUSNOTA = 'L'\n    AND PRO.USOPROD IN ('M','R')\n    AND PRO.CODGRUPOPROD NOT IN (85007003)\n    AND CAB.CODTIPOPER NOT IN (1002,915,9599,905,575,930,568,515,450,460,1006,1008)\n    AND (:productSearch IS NULL OR REGEXP_LIKE(\n  REGEXP_REPLACE(TRANSLATE(UPPER(PRO.DESCRPROD), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ', 'AAAAAEEEEIIIIOOOOOUUUUC'), '[[:space:]]+', ' '),\n  :productPattern))\n)\n, VENDAS AS (SELECT DISTINCT\n         CAB.NUNOTA,\n         ORIO.NUNOTAORIG AS \"NR_UNI_ORIG\",\n         CAB.CODTIPVENDA TIPNEG,\n\t    (CASE WHEN TOP.BONIFICACAO = 'S' AND CAB.TIPMOV = 'V' THEN 'B' ELSE CAB.TIPMOV END) TIPMOV,\n         /*NVL(DEST.NUNOTA,CAB.NUNOTA) AS \"NR_UNI_DEST\",*/\n         CAB.NUMNOTA AS \"NR_NOTA\",\n         CAB2.NUMNOTA AS \"NR_NOTA_ORIGEM\",\n         (CASE\n             WHEN CAB.TIPMOV = 'P'\n             THEN\n                'PEDIDO'\n             ELSE\n                (CASE WHEN CAB.TIPMOV = 'V' AND TOP.BONIFICACAO <> 'S' THEN 'VENDA' \n\t\t\tWHEN CAB.TIPMOV = 'V' AND TOP.BONIFICACAO = 'S' THEN 'VENDA BONIFICADA'\n\t\t\tELSE 'DEVOLUCAO' END)\n          END)\n            AS \"TIPO_MOV\",\n         (CASE\n             WHEN DEST.NUNOTA IS NULL AND CAB.TIPMOV = 'P' THEN 'NÃO FATURADO'\n             ELSE 'FATURADO'\n          END)\n            AS \"STATUS\",\n         (CASE WHEN CAB.STATUSNOTA = 'L' THEN 'SIM' ELSE 'NÃO' END)\n            AS CONFIRMADO,\n         (CASE\n             WHEN DEST.NUNOTA IS NULL AND CAB.TIPMOV = 'P' THEN 'RED'\n             ELSE 'BLUE'\n          END)\n            AS FGCOLOR,\n         CAB.CODEMP AS \"CODEMP\",\n         EMP.RAZAOSOCIAL,\n         ITE.AD_CODPROJ AS \"CODSETOR\",\n         PRJ.IDENTIFICACAO AS \"SETOR\",\n         CAB.DTNEG AS \"DTNEG\",\n         CAB.CODPARC AS \"CODPARC\",\n         PAR.NOMEPARC AS \"PARCEIRO\",\n         CAB.DTMOV AS \"DT_MOV\",\n         CAB.DTFATUR DT_FATURAMENTO,\n         CAB.CODVEND || '-' || VEN.APELIDO AS \"VENDEDOR\",\n         ITE.VLRUNIT * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"VLRUNIT\",\n           (ITE.VLRTOT - ITE.VLRDESC)\n         * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"VLRBRUTO\",\n         CASE\n            WHEN NVL(AJI.AD_VLRUNITFIN, 0) != 0 THEN \n                NVL(AJI.AD_VLRUNITFIN, 0)\n            ELSE\n                NVL (ITE.AD_PRECOAJUSTADO, 0) \n         END AS \"VLRUNITAJUSTADO\",\n         CASE\n            WHEN NVL(AJI.AD_VLRTOTFIN, 0) != 0 THEN\n                NVL (AJI.AD_VLRTOTFIN, 0)\n            ELSE\n                NVL (ITE.AD_TOTALAJUSTADO, 0)\n         END AS \"TOTALAJUSTADO\",\n           NVL (ITE.AD_VLRTOTALBONIFI, 0)\n         * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"BONIFICACAO\",\n           (  (CASE\n                  WHEN NVL(AJI.AD_VLRTOTFIN, 0) != 0 THEN AJI.AD_VLRTOTFIN\n                  WHEN NVL(ITE.AD_TOTALAJUSTADO, 0) != 0 THEN ITE.AD_TOTALAJUSTADO\n                  ELSE (ITE.VLRTOT - ITE.VLRDESC)\n               END)\n            - NVL (ITE.AD_VLRTOTALBONIFI, 0))\n         * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"VLRLIQUIDO\",\n         ITE.QTDNEG * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"QTDNEG\",\n         PRO.PESOLIQ AS \"PESOPROD\",\n           (ITE.QTDNEG * PRO.PESOLIQ)\n         * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"PESOTOTAL\",\n         ITE.CODPROD AS \"CODPROD\",\n         PRO.DESCRPROD AS \"PRODUTO\",\n         PRO.CODGRUPOPROD AS \"GRUPO\",\n         GRU.DESCRGRUPOPROD AS \"GRUPOPROD\",\n         GRUP.DESCRGRUPOPROD AS \"GRUPOPAI\",\n         ITE.CONTROLE AS \"CONTROLE\",\n         ITE.CODVOL AS \"VOLUME\",\n         CAB.CODTIPOPER || ' - ' || TOP.DESCROPER AS \"OPERACAO\",\n         DEV.DESCMOTIVO AS MOTIVODEV,\n\t\t(CASE WHEN ITE.AD_DESTPROD = 'D' THEN 'DESCARTE'\n               WHEN ITE.AD_DESTPROD = 'V' THEN 'REVENDA'\n               WHEN ITE.AD_DESTPROD = 'R' THEN 'RETORNO'\n               WHEN ITE.AD_DESTPROD = 'N' THEN 'NÃO SE APLICA' END) AS DEST_PROD,\n         CAST (\n              CAST (NVL (ITE.QTDNEG, 0) AS DECIMAL (38, 9))\n            - CAST (NVL (ITE.QTDENTREGUE, 0) AS DECIMAL (38, 9)) AS FLOAT)\n            AS \"QTDPENDENTE\",\n         CAB.ORDEMCARGA,\n         (CASE WHEN CAB.TIPMOV = 'D' THEN 0 ELSE NVL (ITE.AD_VLRFRETEITEM, 0) END) AS FRETE_UNT,\n         (CASE WHEN CAB.TIPMOV = 'D' THEN 0 ELSE NVL (ITE.AD_VLREMBALAGEM, 0) END) AS EMBALAGEM,\n            LOT.NOMEPARC,\n            LOT.COMPRADOR,\n            LOT.PROJETOCOM\n    FROM TGFCAB CAB\n         JOIN TGFTOP TOP\n            ON (CAB.CODTIPOPER = TOP.CODTIPOPER AND CAB.DHTIPOPER = TOP.DHALTER)\n         JOIN TGFVEN VEN ON (VEN.CODVEND = CAB.CODVEND)\n         JOIN TGFITE ITE ON (ITE.NUNOTA = CAB.NUNOTA)\n         JOIN TGFPAR PAR ON (PAR.CODPARC = CAB.CODPARC)\n         JOIN TGFPRO PRO ON (PRO.CODPROD = ITE.CODPROD)\n         JOIN TGFGRU GRU ON (GRU.CODGRUPOPROD = PRO.CODGRUPOPROD)\n         JOIN TGFGRU GRUP ON (GRUP.CODGRUPOPROD = GRU.CODGRUPAI)\n         JOIN TSIEMP EMP ON (EMP.CODEMP = CAB.CODEMP)\n         LEFT JOIN TCSPRJ PRJ ON (PRJ.CODPROJ = ITE.AD_CODPROJ)\n         LEFT JOIN TGFVAR DEST\n            ON (    DEST.NUNOTAORIG = ITE.NUNOTA\n                AND DEST.SEQUENCIAORIG = ITE.SEQUENCIA)\n         LEFT JOIN TGFVAR ORIO\n            ON (ORIO.NUNOTA = ITE.NUNOTA AND ORIO.SEQUENCIA = ITE.SEQUENCIA)\n         LEFT JOIN TGFCAB CAB2\n            ON (    ORIO.NUNOTAORIG = CAB2.NUNOTA\n                AND ORIO.SEQUENCIA = ITE.SEQUENCIA)\n         LEFT JOIN AD_MOTIVODEV DEV ON (DEV.CODMOTIVO = ITE.AD_CODMOTIVO)\n         LEFT JOIN\n         (  SELECT LOT.CONTROLE,\n                   LOT.NOMEPARC,\n                   MAX (LOT.CODCOMP) AS CODCOMP,\n                   LOT.PROJETOCOM,\n                   LOT.COMPRADOR\n              FROM (SELECT LOT.CONTROLE,\n                           PAR.NOMEPARC,\n                           LOT.CODVEND AS CODCOMP,\n                           PRJ.IDENTIFICACAO AS PROJETOCOM,\n                           COM.APELIDO AS COMPRADOR\n                      FROM AD_RESULTADO_LOTE LOT\n                           JOIN TGFCAB CAB ON TO_CHAR (CAB.NUNOTA) = LOT.CONTROLE\n                           JOIN TGFPAR PAR ON (PAR.CODPARC = CAB.CODPARC AND LOT.CODPARC = CAB.CODPARC)\n                           JOIN TCSPRJ PRJ ON PRJ.CODPROJ = CAB.CODPROJ\n                           JOIN TGFVEN COM ON CAB.CODVEND = COM.CODVEND\n                     WHERE EXISTS (SELECT 1 FROM ELIGIBLE_CONTROLS EC WHERE EC.CONTROLE = LOT.CONTROLE)) LOT\n          GROUP BY LOT.CONTROLE,\n                   LOT.NOMEPARC,\n                   LOT.PROJETOCOM,\n                   LOT.COMPRADOR) LOT\n            ON (LOT.CONTROLE = ITE.CONTROLE)\n        LEFT JOIN TGFVAR AJV ON (AJV.NUNOTAORIG = CAB.NUNOTA AND AJV.SEQUENCIA = ITE.SEQUENCIA)\n        LEFT JOIN TGFCAB AJC ON (AJC.NUNOTA = AJV.NUNOTA AND AJC.CODTIPOPER IN (450, 460))\n        LEFT JOIN TGFITE AJI ON (AJI.NUNOTA = AJC.NUNOTA AND AJI.SEQUENCIA = ITE.SEQUENCIA)\n   WHERE     CAB.DTNEG >= TO_DATE(:startDate, 'YYYY-MM-DD')\n         AND CAB.DTNEG < TO_DATE(:endDate, 'YYYY-MM-DD') + 1\n         AND PRO.USOPROD IN ('M','R')\n         AND CAB.CODTIPOPER NOT IN (1002,\n                                    915,\n                                    9599,\n                                    905,\n                                    575,930,568,515,450,460, 1006, 1008)\n         AND (CAB.STATUSNOTA = 'L')\n\t\tAND PRO.CODGRUPOPROD NOT IN (85007003)\n\n         AND (:productSearch IS NULL OR REGEXP_LIKE(\n  REGEXP_REPLACE(TRANSLATE(UPPER(PRO.DESCRPROD), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ', 'AAAAAEEEEIIIIOOOOOUUUUC'), '[[:space:]]+', ' '),\n  :productPattern))\n\t\t--AND ORIO.NUNOTAORIG <> 1301858\n\n)\n\n, FILTERED AS (\n  SELECT * FROM VENDAS\n  WHERE TIPMOV = 'V'\n)\n    SELECT 'total' AS PERIOD, TO_CHAR(CODPROD) || ' - ' || PRODUTO AS PRODUCT, 'PESOLIQ' AS UNIT,\n      TO_CHAR(NVL(SUM(PESOTOTAL), 0), 'FM99999999999999999999999999999999999990D000000000', 'NLS_NUMERIC_CHARACTERS=''.,''') AS VALUE,\n      COUNT(CASE WHEN PESOPROD IS NULL OR PESOPROD <= 0 THEN 1 END) AS MISSING_WEIGHT\n    FROM FILTERED GROUP BY 'total', TO_CHAR(CODPROD) || ' - ' || PRODUTO, 'PESOLIQ'\n    HAVING COUNT(*) > 0\n    ORDER BY PERIOD, PRODUCT, UNIT FETCH FIRST 501 ROWS ONLY\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales-weight-product",
+    "title": "MNS (Sankhya): weight / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales-weight-total",
+    "title": "MNS (Sankhya): weight / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "MNS (Sankhya): weight / total",
+    "anchor": "mns-sankhya-weight--total",
+    "text": "MNS (Sankhya): weight / total\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales-weight-total",
+    "title": "MNS (Sankhya): weight / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"weight\",\n  \"groupBy\": \"total\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales-weight-total",
+    "title": "MNS (Sankhya): weight / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nNamed Oracle binds:\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"productPattern\": null\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales-weight-total",
+    "title": "MNS (Sankhya): weight / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH ELIGIBLE_CONTROLS AS (\n  SELECT DISTINCT ITE.CONTROLE\n  FROM TGFCAB CAB\n  JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA\n  JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD\n  WHERE CAB.DTNEG >= TO_DATE(:startDate, 'YYYY-MM-DD')\n    AND CAB.DTNEG < TO_DATE(:endDate, 'YYYY-MM-DD') + 1\n    AND CAB.STATUSNOTA = 'L'\n    AND PRO.USOPROD IN ('M','R')\n    AND PRO.CODGRUPOPROD NOT IN (85007003)\n    AND CAB.CODTIPOPER NOT IN (1002,915,9599,905,575,930,568,515,450,460,1006,1008)\n    AND (:productSearch IS NULL OR REGEXP_LIKE(\n  REGEXP_REPLACE(TRANSLATE(UPPER(PRO.DESCRPROD), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ', 'AAAAAEEEEIIIIOOOOOUUUUC'), '[[:space:]]+', ' '),\n  :productPattern))\n)\n, VENDAS AS (SELECT DISTINCT\n         CAB.NUNOTA,\n         ORIO.NUNOTAORIG AS \"NR_UNI_ORIG\",\n         CAB.CODTIPVENDA TIPNEG,\n\t    (CASE WHEN TOP.BONIFICACAO = 'S' AND CAB.TIPMOV = 'V' THEN 'B' ELSE CAB.TIPMOV END) TIPMOV,\n         /*NVL(DEST.NUNOTA,CAB.NUNOTA) AS \"NR_UNI_DEST\",*/\n         CAB.NUMNOTA AS \"NR_NOTA\",\n         CAB2.NUMNOTA AS \"NR_NOTA_ORIGEM\",\n         (CASE\n             WHEN CAB.TIPMOV = 'P'\n             THEN\n                'PEDIDO'\n             ELSE\n                (CASE WHEN CAB.TIPMOV = 'V' AND TOP.BONIFICACAO <> 'S' THEN 'VENDA' \n\t\t\tWHEN CAB.TIPMOV = 'V' AND TOP.BONIFICACAO = 'S' THEN 'VENDA BONIFICADA'\n\t\t\tELSE 'DEVOLUCAO' END)\n          END)\n            AS \"TIPO_MOV\",\n         (CASE\n             WHEN DEST.NUNOTA IS NULL AND CAB.TIPMOV = 'P' THEN 'NÃO FATURADO'\n             ELSE 'FATURADO'\n          END)\n            AS \"STATUS\",\n         (CASE WHEN CAB.STATUSNOTA = 'L' THEN 'SIM' ELSE 'NÃO' END)\n            AS CONFIRMADO,\n         (CASE\n             WHEN DEST.NUNOTA IS NULL AND CAB.TIPMOV = 'P' THEN 'RED'\n             ELSE 'BLUE'\n          END)\n            AS FGCOLOR,\n         CAB.CODEMP AS \"CODEMP\",\n         EMP.RAZAOSOCIAL,\n         ITE.AD_CODPROJ AS \"CODSETOR\",\n         PRJ.IDENTIFICACAO AS \"SETOR\",\n         CAB.DTNEG AS \"DTNEG\",\n         CAB.CODPARC AS \"CODPARC\",\n         PAR.NOMEPARC AS \"PARCEIRO\",\n         CAB.DTMOV AS \"DT_MOV\",\n         CAB.DTFATUR DT_FATURAMENTO,\n         CAB.CODVEND || '-' || VEN.APELIDO AS \"VENDEDOR\",\n         ITE.VLRUNIT * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"VLRUNIT\",\n           (ITE.VLRTOT - ITE.VLRDESC)\n         * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"VLRBRUTO\",\n         CASE\n            WHEN NVL(AJI.AD_VLRUNITFIN, 0) != 0 THEN \n                NVL(AJI.AD_VLRUNITFIN, 0)\n            ELSE\n                NVL (ITE.AD_PRECOAJUSTADO, 0) \n         END AS \"VLRUNITAJUSTADO\",\n         CASE\n            WHEN NVL(AJI.AD_VLRTOTFIN, 0) != 0 THEN\n                NVL (AJI.AD_VLRTOTFIN, 0)\n            ELSE\n                NVL (ITE.AD_TOTALAJUSTADO, 0)\n         END AS \"TOTALAJUSTADO\",\n           NVL (ITE.AD_VLRTOTALBONIFI, 0)\n         * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"BONIFICACAO\",\n           (  (CASE\n                  WHEN NVL(AJI.AD_VLRTOTFIN, 0) != 0 THEN AJI.AD_VLRTOTFIN\n                  WHEN NVL(ITE.AD_TOTALAJUSTADO, 0) != 0 THEN ITE.AD_TOTALAJUSTADO\n                  ELSE (ITE.VLRTOT - ITE.VLRDESC)\n               END)\n            - NVL (ITE.AD_VLRTOTALBONIFI, 0))\n         * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"VLRLIQUIDO\",\n         ITE.QTDNEG * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"QTDNEG\",\n         PRO.PESOLIQ AS \"PESOPROD\",\n           (ITE.QTDNEG * PRO.PESOLIQ)\n         * (CASE WHEN CAB.TIPMOV = 'D' THEN -1 ELSE 1 END)\n            AS \"PESOTOTAL\",\n         ITE.CODPROD AS \"CODPROD\",\n         PRO.DESCRPROD AS \"PRODUTO\",\n         PRO.CODGRUPOPROD AS \"GRUPO\",\n         GRU.DESCRGRUPOPROD AS \"GRUPOPROD\",\n         GRUP.DESCRGRUPOPROD AS \"GRUPOPAI\",\n         ITE.CONTROLE AS \"CONTROLE\",\n         ITE.CODVOL AS \"VOLUME\",\n         CAB.CODTIPOPER || ' - ' || TOP.DESCROPER AS \"OPERACAO\",\n         DEV.DESCMOTIVO AS MOTIVODEV,\n\t\t(CASE WHEN ITE.AD_DESTPROD = 'D' THEN 'DESCARTE'\n               WHEN ITE.AD_DESTPROD = 'V' THEN 'REVENDA'\n               WHEN ITE.AD_DESTPROD = 'R' THEN 'RETORNO'\n               WHEN ITE.AD_DESTPROD = 'N' THEN 'NÃO SE APLICA' END) AS DEST_PROD,\n         CAST (\n              CAST (NVL (ITE.QTDNEG, 0) AS DECIMAL (38, 9))\n            - CAST (NVL (ITE.QTDENTREGUE, 0) AS DECIMAL (38, 9)) AS FLOAT)\n            AS \"QTDPENDENTE\",\n         CAB.ORDEMCARGA,\n         (CASE WHEN CAB.TIPMOV = 'D' THEN 0 ELSE NVL (ITE.AD_VLRFRETEITEM, 0) END) AS FRETE_UNT,\n         (CASE WHEN CAB.TIPMOV = 'D' THEN 0 ELSE NVL (ITE.AD_VLREMBALAGEM, 0) END) AS EMBALAGEM,\n            LOT.NOMEPARC,\n            LOT.COMPRADOR,\n            LOT.PROJETOCOM\n    FROM TGFCAB CAB\n         JOIN TGFTOP TOP\n            ON (CAB.CODTIPOPER = TOP.CODTIPOPER AND CAB.DHTIPOPER = TOP.DHALTER)\n         JOIN TGFVEN VEN ON (VEN.CODVEND = CAB.CODVEND)\n         JOIN TGFITE ITE ON (ITE.NUNOTA = CAB.NUNOTA)\n         JOIN TGFPAR PAR ON (PAR.CODPARC = CAB.CODPARC)\n         JOIN TGFPRO PRO ON (PRO.CODPROD = ITE.CODPROD)\n         JOIN TGFGRU GRU ON (GRU.CODGRUPOPROD = PRO.CODGRUPOPROD)\n         JOIN TGFGRU GRUP ON (GRUP.CODGRUPOPROD = GRU.CODGRUPAI)\n         JOIN TSIEMP EMP ON (EMP.CODEMP = CAB.CODEMP)\n         LEFT JOIN TCSPRJ PRJ ON (PRJ.CODPROJ = ITE.AD_CODPROJ)\n         LEFT JOIN TGFVAR DEST\n            ON (    DEST.NUNOTAORIG = ITE.NUNOTA\n                AND DEST.SEQUENCIAORIG = ITE.SEQUENCIA)\n         LEFT JOIN TGFVAR ORIO\n            ON (ORIO.NUNOTA = ITE.NUNOTA AND ORIO.SEQUENCIA = ITE.SEQUENCIA)\n         LEFT JOIN TGFCAB CAB2\n            ON (    ORIO.NUNOTAORIG = CAB2.NUNOTA\n                AND ORIO.SEQUENCIA = ITE.SEQUENCIA)\n         LEFT JOIN AD_MOTIVODEV DEV ON (DEV.CODMOTIVO = ITE.AD_CODMOTIVO)\n         LEFT JOIN\n         (  SELECT LOT.CONTROLE,\n                   LOT.NOMEPARC,\n                   MAX (LOT.CODCOMP) AS CODCOMP,\n                   LOT.PROJETOCOM,\n                   LOT.COMPRADOR\n              FROM (SELECT LOT.CONTROLE,\n                           PAR.NOMEPARC,\n                           LOT.CODVEND AS CODCOMP,\n                           PRJ.IDENTIFICACAO AS PROJETOCOM,\n                           COM.APELIDO AS COMPRADOR\n                      FROM AD_RESULTADO_LOTE LOT\n                           JOIN TGFCAB CAB ON TO_CHAR (CAB.NUNOTA) = LOT.CONTROLE\n                           JOIN TGFPAR PAR ON (PAR.CODPARC = CAB.CODPARC AND LOT.CODPARC = CAB.CODPARC)\n                           JOIN TCSPRJ PRJ ON PRJ.CODPROJ = CAB.CODPROJ\n                           JOIN TGFVEN COM ON CAB.CODVEND = COM.CODVEND\n                     WHERE EXISTS (SELECT 1 FROM ELIGIBLE_CONTROLS EC WHERE EC.CONTROLE = LOT.CONTROLE)) LOT\n          GROUP BY LOT.CONTROLE,\n                   LOT.NOMEPARC,\n                   LOT.PROJETOCOM,\n                   LOT.COMPRADOR) LOT\n            ON (LOT.CONTROLE = ITE.CONTROLE)\n        LEFT JOIN TGFVAR AJV ON (AJV.NUNOTAORIG = CAB.NUNOTA AND AJV.SEQUENCIA = ITE.SEQUENCIA)\n        LEFT JOIN TGFCAB AJC ON (AJC.NUNOTA = AJV.NUNOTA AND AJC.CODTIPOPER IN (450, 460))\n        LEFT JOIN TGFITE AJI ON (AJI.NUNOTA = AJC.NUNOTA AND AJI.SEQUENCIA = ITE.SEQUENCIA)\n   WHERE     CAB.DTNEG >= TO_DATE(:startDate, 'YYYY-MM-DD')\n         AND CAB.DTNEG < TO_DATE(:endDate, 'YYYY-MM-DD') + 1\n         AND PRO.USOPROD IN ('M','R')\n         AND CAB.CODTIPOPER NOT IN (1002,\n                                    915,\n                                    9599,\n                                    905,\n                                    575,930,568,515,450,460, 1006, 1008)\n         AND (CAB.STATUSNOTA = 'L')\n\t\tAND PRO.CODGRUPOPROD NOT IN (85007003)\n\n         AND (:productSearch IS NULL OR REGEXP_LIKE(\n  REGEXP_REPLACE(TRANSLATE(UPPER(PRO.DESCRPROD), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ', 'AAAAAEEEEIIIIOOOOOUUUUC'), '[[:space:]]+', ' '),\n  :productPattern))\n\t\t--AND ORIO.NUNOTAORIG <> 1301858\n\n)\n\n, FILTERED AS (\n  SELECT * FROM VENDAS\n  WHERE TIPMOV = 'V'\n)\n    SELECT 'total' AS PERIOD, CAST(NULL AS VARCHAR2(4000)) AS PRODUCT, 'PESOLIQ' AS UNIT,\n      TO_CHAR(NVL(SUM(PESOTOTAL), 0), 'FM99999999999999999999999999999999999990D000000000', 'NLS_NUMERIC_CHARACTERS=''.,''') AS VALUE,\n      COUNT(CASE WHEN PESOPROD IS NULL OR PESOPROD <= 0 THEN 1 END) AS MISSING_WEIGHT\n    FROM FILTERED GROUP BY 'total', CAST(NULL AS VARCHAR2(4000)), 'PESOLIQ'\n    HAVING COUNT(*) > 0\n    ORDER BY PERIOD, PRODUCT, UNIT FETCH FIRST 501 ROWS ONLY\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales-weight-total",
+    "title": "MNS (Sankhya): weight / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "MNS (Sankhya): sales",
+    "anchor": "mns-sankhya-sales",
+    "text": "MNS (Sankhya): sales\n[Feature catalog](../../../features/README.md) · [Product filters](products.md) · [Sales behavior](../../../domains/sales-chat.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "What it does",
+    "anchor": "what-it-does",
+    "text": "What it does\nVendas confirmadas, sem devoluções e sem vendas bonificadas; data de negociação (DTNEG).\nQuantidades separadas por unidade do ERP; unidades diferentes não são somadas.\nPeso calculado por QTDNEG × PESOLIQ, na unidade cadastrada no ERP.\nHá produtos sem PESOLIQ positivo; o peso pode estar incompleto.\nPermission: `SNK-VEN-01` (`sales_sankhya:read`). Availability depends on the configured Runtime reader and the person's effective permission.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Request options",
+    "anchor": "request-options",
+    "text": "Request options\nOption\nAccepted values / behavior\nSource\nExplicit selector: Sankhya, VR Master or Tudo. Tudo keeps separate results; it does not merge ERP rows or product IDs.\nDates\nInclusive startDate/endDate; valid dates from 2000-01-01, at most 366 days, no future dates (America/Sao_Paulo). SQL uses an exclusive next-day upper bound.\nRelative periods\nCurrent or previous day/month/year; last N days or completed months (includeCurrent controls the current block); calendar month with optional year; calendar year; explicit range. Started periods are clamped to today.\nMeasure\n`net_value` (Valor líquido vendido); `quantity` (Quantidade vendida); `weight` (Peso vendido).\nGrouping\n`total`, `month`, `product`, `month_product`. Quantities always retain their unit/packaging partition.\nComparison\n`none`, `previous_year`, `previous_period`. previous_period means the preceding equal number of days; previous_year clamps leap day.\nLiteral product\nproductSearch = null for all products, or a trimmed phrase of 2–80 characters. Whole words, case/accent insensitive; regex metacharacters are escaped. This is not a product ID or arbitrary SQL filter.\nSemantic products\nResolve or reuse a verified selection from the same ERP; AND between criteria, include/exclude, hierarchy descendants. Requires the source's product permission too. See Product filters.\nMultiple measures\nThe analytical tool accepts 1–3 distinct supported measures, sharing dates, grouping, product selection and comparison. It uses the same SQL compilers.\nDefault measure: net_value; grouping: total; comparison: none. The period must be supplied or clarified. A completed analysis is limited to 500 aggregate rows; the SQL fetches 501 to detect overflow. The matching-product preview fetches 101 to detect a list above 100; it never limits the semantic membership used for totals.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL by measure and grouping",
+    "anchor": "complete-sql-by-measure-and-grouping",
+    "text": "Complete SQL by measure and grouping\nOpen a combination to inspect, copy or download its complete SQL and parameter example. Fixed joins, DISTINCT and business exclusions remain visible in every statement.\nMeasure\nGrouping\nStatement\n`net_value`\n`total`\n[View SQL](sales-net_value-total.md)\n`net_value`\n`month`\n[View SQL](sales-net_value-month.md)\n`net_value`\n`product`\n[View SQL](sales-net_value-product.md)\n`net_value`\n`month_product`\n[View SQL](sales-net_value-month_product.md)\n`quantity`\n`total`\n[View SQL](sales-quantity-total.md)\n`quantity`\n`month`\n[View SQL](sales-quantity-month.md)\n`quantity`\n`product`\n[View SQL](sales-quantity-product.md)\n`quantity`\n`month_product`\n[View SQL](sales-quantity-month_product.md)\n`weight`\n`total`\n[View SQL](sales-weight-total.md)\n`weight`\n`month`\n[View SQL](sales-weight-month.md)\n`weight`\n`product`\n[View SQL](sales-weight-product.md)\n`weight`\n`month_product`\n[View SQL](sales-weight-month_product.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Literal product bindings",
+    "anchor": "literal-product-bindings",
+    "text": "Literal product bindings\nSynthetic phrase example. The compiler supplies both the normalized phrase and its escaped whole-word pattern; use these values together rather than writing your own regex.\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": \"ARROZ\",\n  \"productPattern\": \"(^|[^[:alnum:]])ARROZ([^[:alnum:]]|$)\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Comparison bindings",
+    "anchor": "comparison-bindings",
+    "text": "Comparison bindings\nThe reader runs the same compiled statement for the current interval and, when requested, the interval below. Product membership and access restrictions apply to both.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "previous_year",
+    "anchor": "previous_year",
+    "text": "previous_year\n{\n  \"startDate\": \"2025-01-01\",\n  \"endDate\": \"2025-01-31\",\n  \"productSearch\": null,\n  \"productPattern\": null\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "previous_period",
+    "anchor": "previous_period",
+    "text": "previous_period\n{\n  \"startDate\": \"2025-12-01\",\n  \"endDate\": \"2025-12-31\",\n  \"productSearch\": null,\n  \"productPattern\": null\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Effective access restrictions",
+    "anchor": "effective-access-restrictions",
+    "text": "Effective access restrictions\nThese are owner-assigned permission conditions, not additional freely selectable chat filters. Conditions within one rule are ANDed; alternative grant rules are ORed. An unrestricted grant admits every row. The examples below use fictional ID 1 and show isolated predicates; the runtime injects them into the reference before aggregation and binds their values. Sankhya applies the same predicate to eligible lot controls and final sales; VR Master applies it in base. The final VR Master parameter offset follows any semantic product binds, so it can be greater than 4.\nSankhya result-center selection additionally depends on [PH-36](../../../project/human-actions.md#ph-36). Read [access semantics](../../../domains/sales-chat.md#access-and-restrictions) before interpreting a restricted total.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "EMP: Empresa",
+    "anchor": "emp-empresa",
+    "text": "EMP: Empresa\nEmpresa da nota (CODEMP).\nHierarchy descendants: not applicable.\n((CAB.CODEMP IN (:acc_0_0_0)))\n\n{\n  \"acc_0_0_0\": 1\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "PRJ: Projeto (setor)",
+    "anchor": "prj-projeto-setor",
+    "text": "PRJ: Projeto (setor)\nProjeto informado no item vendido (AD_CODPROJ), apresentado como setor na referência de vendas; inclui os subprojetos. O projeto 0 reúne os itens sem projeto.\nHierarchy descendants: included.\n((NVL(ITE.AD_CODPROJ, 0) IN (SELECT RP.CODPROJ FROM TCSPRJ RP START WITH RP.CODPROJ IN (:acc_0_0_0) CONNECT BY NOCYCLE PRIOR RP.CODPROJ = RP.CODPROJPAI)))\n\n{\n  \"acc_0_0_0\": 1\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "VEN: Vendedor",
+    "anchor": "ven-vendedor",
+    "text": "VEN: Vendedor\nVendedor da nota (CODVEND). O código 0 reúne as vendas sem vendedor.\nHierarchy descendants: not applicable.\n((CAB.CODVEND IN (:acc_0_0_0)))\n\n{\n  \"acc_0_0_0\": 1\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "GRP: Grupo de produto",
+    "anchor": "grp-grupo-de-produto",
+    "text": "GRP: Grupo de produto\nGrupo do produto vendido (CODGRUPOPROD); inclui os subgrupos.\nHierarchy descendants: included.\n((PRO.CODGRUPOPROD IN (SELECT RG.CODGRUPOPROD FROM TGFGRU RG START WITH RG.CODGRUPOPROD IN (:acc_0_0_0) CONNECT BY NOCYCLE PRIOR RG.CODGRUPOPROD = RG.CODGRUPAI)))\n\n{\n  \"acc_0_0_0\": 1\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "CR: Centro de resultado",
+    "anchor": "cr-centro-de-resultado",
+    "text": "CR: Centro de resultado\nCentro de resultado da nota (CODCENCUS); inclui os centros abaixo dele.\nHierarchy descendants: included.\n((CAB.CODCENCUS IN (SELECT RC.CODCENCUS FROM TSICUS RC START WITH RC.CODCENCUS IN (:acc_0_0_0) CONNECT BY NOCYCLE PRIOR RC.CODCENCUS = RC.CODCENCUSPAI)))\n\n{\n  \"acc_0_0_0\": 1\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Semantic product membership",
+    "anchor": "semantic-product-membership",
+    "text": "Semantic product membership\nThe product resolver compiles a complete key subquery from the enabled catalog filters. Sales adds PRO.CODPROD IN (subquery) in both Sankhya selections, or produto.id IN (subquery) in VR Master's base. This selects all eligible products, not only the visible preview. It uses current registration membership for both time periods. It cannot reconstruct historical buyer or category responsibility. Literal product search and a semantic selection cannot be combined in one read.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/sankhya/sales",
+    "title": "MNS (Sankhya): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Canonical implementation",
+    "anchor": "canonical-implementation",
+    "text": "Canonical implementation\n[SQL compiler](../../../../apps/api/src/features/sales/query.ts)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): product lookup and filters",
+    "anchor": "pilar-da-terra-vr-master-product-lookup-and-filters",
+    "text": "Pilar da Terra (VR Master): product lookup and filters\n[Feature catalog](../../../features/README.md) · [Sales](sales.md) · [Semantic resolution](../../../architecture/semantic-product-resolution.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "What it does",
+    "anchor": "what-it-does",
+    "text": "What it does\nFinds unique registered products through verified catalog relationships, explains the interpretation and returns a bounded preview plus a complete count. The same selection can constrain sales from this ERP. It does not query stock, prices, costs or margins. Choosing Tudo asks for one ERP for product resolution; catalogs and identifiers stay separate.\nCatalog version: `vrmaster-products/2026-10-11.2`. Metadata verified on 2026-10-11; these are reviewed catalog facts, not a live database availability check.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "All catalog filters",
+    "anchor": "all-catalog-filters",
+    "text": "All catalog filters\nOnly enabled dimensions can execute. Each criterion supports include/exclude; criteria combine with AND, values within a criterion with OR. Hierarchies include descendants; ambiguous names require a choice. Values are discovered at request time rather than copied into documentation. Pending or unavailable dimensions below are visible for diagnosis and cannot be activated by wording a prompt differently.\nID\nName\nKind\nStatus\nMeaning\nInterpretation / blocker\n`category`\nclassificação mercadológica\nhierarchy\nenabled\nClassificação mercadológica do produto em até 5 níveis (seções como hortifrúti, registrado como FLV neste cadastro, ou mercearia, depois grupos, subgrupos, marcas e tamanhos). Use para tipos ou categorias de produto (por exemplo fruta, iogurte, cerveja, banana) e para marcas quando o cadastro as classifica.\nProdutos classificados nos níveis do mercadológico escolhidos, incluindo os níveis abaixo deles.\n`cost_center`\ncentro de custo\nentity\nenabled\nCentro de custo ao qual a seção (nível 1 do mercadológico) do produto está vinculada. Não há centro de custo no próprio produto.\nO centro de custo não é cadastrado no produto: considera-se o centro de custo vinculado à seção (nível 1 do mercadológico) de cada produto.\n`buyer`\ncomprador\nentity\nenabled\nComprador responsável pelo produto no cadastro atual do produto (não o comprador registrado em vendas antigas).\nComprador responsável indicado no cadastro atual de cada produto.\n`description`\ndescrição\ntext\nenabled\nFrase literal escrita na descrição do produto, quando a pessoa pede produtos cuja descrição contém um texto.\nProdutos cuja descrição contém a frase, sem diferenciar acentos e maiúsculas, como palavras inteiras.\n`weighable`\npesável\nflag\nenabled\nIndicador \"pesável\" do cadastro do produto, como o ERP o registra. Não significa ser vendido por quilo: muitos produtos vendidos em embalagem KG não são marcados como pesáveis.\nIndicador \"pesável\" do cadastro do produto. Não equivale a ser vendido por quilo (embalagem KG).\n`store_status`\nsituação nas lojas\nstatus\npending_validation\nProduto ativo em pelo menos uma loja.\nProduto com cadastro ativo em pelo menos uma loja (produtocomplemento). Blocker: PH-27 grants verified; PJ-36 must validate the path before exposing this dimension.\n`packaging`\nembalagem de venda\nentity\npending_validation\nUnidade de venda do produto (unidade, quilo, caixa...).\nTipo de embalagem de venda do cadastro do produto. Blocker: PH-27 grants verified; PJ-36 must validate the path before exposing this dimension.\n`family`\nfamília de preço\nentity\npending_validation\nFamília do produto usada pelo ERP para preços e ofertas.\nFamília de preços indicada no cadastro do produto. Blocker: PH-27 grants verified; PJ-36 must validate the path before exposing this dimension.\n`manufacturer`\nfabricante\nentity\npending_validation\nFabricante do produto.\nParceiro indicado como fornecedor fabricante no cadastro. Blocker: The 'fornecedor fabricante' column holds distributors and a placeholder; the owner must define what manufacturer means before use.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Value options",
+    "anchor": "value-options",
+    "text": "Value options\nEntity and hierarchy choices come from the selected ERP at request time. The static dictionary domains and flag encodings below come from the reviewed catalog. Up to eight resolved criteria can be combined. A description criterion is a literal phrase; it is not free-form SQL or a regular expression supplied by the caller.\nFilter\nValue options\n`category`\nResolved ERP records/nodes; ambiguous values require clarification\n`cost_center`\nResolved ERP records/nodes; ambiguous values require clarification\n`buyer`\nResolved ERP records/nodes; ambiguous values require clarification\n`description`\nLiteral description phrase\n`weighable`\ninclude/exclude; stored true value = true\n`store_status`\nResolved ERP records/nodes; ambiguous values require clarification\n`packaging`\nResolved ERP records/nodes; ambiguous values require clarification\n`family`\nResolved ERP records/nodes; ambiguous values require clarification\n`manufacturer`\nResolved ERP records/nodes; ambiguous values require clarification\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Filter SQL mappings",
+    "anchor": "filter-sql-mappings",
+    "text": "Filter SQL mappings\nThese are the reviewed paths used by the adapters. The model supplies a typed selection; the adapter chooses identifiers and binds values. The paths below are catalog relationship IDs, in traversal order; root attributes need no join. Oracle's logical erp schema resolves through the Runtime reader's private synonyms.\nEntity\nTable\nKey\nLabel\n`product`\n`public.produto`\nid\ndescricaocompleta\n`classification_node`\n`public.mercadologico`\nid\ndescricao\n`cost_center`\n`public.centrocusto`\nid\ndescricao\n`buyer`\n`public.comprador`\nid\nnome\n`supplier_company`\n`public.fornecedor`\nid\nnomefantasia\n`sale`\n`public.venda`\nid\nnone\n`packaging_type`\n`public.tipoembalagem`\nid\ndescricaocompleta\n`product_family`\n`public.familiaproduto`\nid\ndescricao\n`barcode`\n`public.produtoautomacao`\nid\nnone\n`store_registration`\n`public.produtocomplemento`\nid\nnone\n`supplier_link`\n`public.produtofornecedor`\nid\nnone\n`brand`\n`public.marca`\nid\ndescricao\n`merchandise_type`\n`public.tipomercadoria`\nid\ndescricao\nFilter\nPath\nEntity / columns\n`category`\n`product_classification`\nclassification_node / descricao\n`cost_center`\n`product_section` → `section_cost_center`\ncost_center / descricao\n`buyer`\n`product_buyer`\nbuyer / nome\n`description`\nroot\nproduct / descricaocompleta\n`weighable`\nroot\nproduct / pesavel\n`store_status`\n`product_store_registrations`\nstore_registration\n`packaging`\n`product_packaging`\npackaging_type / descricaocompleta\n`family`\n`product_family_link`\nproduct_family / descricao\n`manufacturer`\n`product_supplier_company`\nsupplier_company / nomefantasia / razaosocial\nRelationship\nJoin\nStatus\nMeaning\n`product_classification`\nproduct.mercadologico1 = classification_node.mercadologico1 AND product.mercadologico2 = classification_node.mercadologico2 AND product.mercadologico3 = classification_node.mercadologico3 AND product.mercadologico4 = classification_node.mercadologico4 AND product.mercadologico5 = classification_node.mercadologico5\nverified\nThe product's deepest classification node; its ancestors are the nodes whose leading codes it shares.\n`product_section`\nproduct.mercadologico1 = classification_node.mercadologico1\nvalidated\nThe product's level-1 classification node (its top-level section).\n`section_cost_center`\nclassification_node.id_centrocusto = cost_center.id\nverified\nCost center assigned to a classification node. Only level-1 nodes carry it, so a product's cost center is the one of its section.\n`product_buyer`\nproduct.id_comprador = buyer.id\nverified\nThe buyer currently responsible for the product in its registration.\n`sale_buyer`\nsale.id_comprador = buyer.id\nvalidated\nThe product's buyer recorded on each sale when it happened (a snapshot), not the product's current buyer.\n`product_supplier_company`\nproduct.id_fornecedorfabricante = supplier_company.id\nverified\nBusiness partner in the column named 'fornecedor fabricante'. The data does not support reading it as the manufacturer.\n`product_packaging`\nproduct.id_tipoembalagem = packaging_type.id\nverified\nThe product's sales unit (UN, KG, CX...).\n`product_family_link`\nproduct.id_familiaproduto = product_family.id\nverified\nThe family the product belongs to, when any.\n`product_barcodes`\nproduct.id = barcode.id_produto\nverified\nThe product's barcodes.\n`product_store_registrations`\nproduct.id = store_registration.id_produto\nverified\nThe product's registration in each store, with its active or excluded status.\n`product_supplier_links`\nproduct.id = supplier_link.id_produto\nverified\nSuppliers the product is bought from.\n`product_brand`\nproduct.id_marca = brand.id\nrejected\nDeclared brand column that is not used: brands appear in descriptions and often as classification nodes.\n`product_merchandise_type`\nproduct.id_tipomercadoria = merchandise_type.id\nrejected\nFiscal merchandise nature, not a business classification: almost every product shares one value.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example lookup SQL",
+    "anchor": "example-lookup-sql",
+    "text": "Example lookup SQL\nSynthetic description-only selection; 30 visible products. The count covers the complete membership. Other criteria change the bound predicates through the catalog paths above; there is no single fixed SQL statement containing all possible filter combinations.\n{\n  \"criteria\": [\n    {\n      \"kind\": \"text\",\n      \"dimension\": \"description\",\n      \"mode\": \"include\",\n      \"text\": \"arroz\",\n      \"phrase\": \"arroz\"\n    }\n  ]\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Count",
+    "anchor": "count",
+    "text": "Count\nSELECT count(*)::int AS count\nFROM \"public\".\"produto\" p\nWHERE (regexp_replace(upper(translate(p.\"descricaocompleta\", 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')), '[[:space:]]+', ' ', 'g') ~ $1::text) IS TRUE\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Preview",
+    "anchor": "preview",
+    "text": "Preview\nSELECT p.\"id\"::text AS code, COALESCE(NULLIF(btrim(p.\"descricaocompleta\"), ''), 'sem descrição') AS description, COALESCE((SELECT string_agg(btrim(h.\"descricao\"), ' › ' ORDER BY h.\"nivel\") FROM \"public\".\"mercadologico\" h WHERE h.\"mercadologico1\" = p.\"mercadologico1\" AND (h.\"nivel\" < 2 OR h.\"mercadologico2\" = p.\"mercadologico2\") AND (h.\"nivel\" < 3 OR h.\"mercadologico3\" = p.\"mercadologico3\") AND (h.\"nivel\" < 4 OR h.\"mercadologico4\" = p.\"mercadologico4\") AND (h.\"nivel\" < 5 OR h.\"mercadologico5\" = p.\"mercadologico5\")), '') AS classification\nFROM \"public\".\"produto\" p\nWHERE (regexp_replace(upper(translate(p.\"descricaocompleta\", 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')), '[[:space:]]+', ' ', 'g') ~ $1::text) IS TRUE\nORDER BY p.\"descricaocompleta\", p.\"id\"\nLIMIT 31\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\n[\n  \"(^|[^[:alnum:]])arroz([^[:alnum:]]|$)\"\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/products",
+    "title": "Pilar da Terra (VR Master): product lookup and filters",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Canonical implementation",
+    "anchor": "canonical-implementation",
+    "text": "Canonical implementation\n[Catalog](../../../../apps/api/src/features/products/vrmaster/catalog.ts) · [SQL compiler](../../../../apps/api/src/features/products/postgres.ts) · [VR Master semantics](../../../domains/product-lookup.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month_product",
+    "title": "Pilar da Terra (VR Master): net_value / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): net_value / month_product",
+    "anchor": "pilar-da-terra-vr-master-net_value--month_product",
+    "text": "Pilar da Terra (VR Master): net_value / month_product\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month_product",
+    "title": "Pilar da Terra (VR Master): net_value / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"net_value\",\n  \"groupBy\": \"month_product\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month_product",
+    "title": "Pilar da Terra (VR Master): net_value / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nPostgreSQL positional binds, starting at `$1`:\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month_product",
+    "title": "Pilar da Terra (VR Master): net_value / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data >= $1::date\n    AND venda.data < ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT to_char(base.data, 'YYYY-MM') AS period, base.id_produto::text || ' - ' || COALESCE(NULLIF(btrim(base.produto), ''), 'sem descrição') AS product, 'BRL' AS unit,\n  COALESCE(SUM(base.valortotal::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) > 0\nORDER BY 1, 2, 3\nLIMIT 501\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month_product",
+    "title": "Pilar da Terra (VR Master): net_value / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month",
+    "title": "Pilar da Terra (VR Master): net_value / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): net_value / month",
+    "anchor": "pilar-da-terra-vr-master-net_value--month",
+    "text": "Pilar da Terra (VR Master): net_value / month\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month",
+    "title": "Pilar da Terra (VR Master): net_value / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"net_value\",\n  \"groupBy\": \"month\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month",
+    "title": "Pilar da Terra (VR Master): net_value / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nPostgreSQL positional binds, starting at `$1`:\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month",
+    "title": "Pilar da Terra (VR Master): net_value / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data >= $1::date\n    AND venda.data < ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT to_char(base.data, 'YYYY-MM') AS period, NULL::text AS product, 'BRL' AS unit,\n  COALESCE(SUM(base.valortotal::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) > 0\nORDER BY 1, 2, 3\nLIMIT 501\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-month",
+    "title": "Pilar da Terra (VR Master): net_value / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-product",
+    "title": "Pilar da Terra (VR Master): net_value / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): net_value / product",
+    "anchor": "pilar-da-terra-vr-master-net_value--product",
+    "text": "Pilar da Terra (VR Master): net_value / product\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-product",
+    "title": "Pilar da Terra (VR Master): net_value / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"net_value\",\n  \"groupBy\": \"product\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-product",
+    "title": "Pilar da Terra (VR Master): net_value / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nPostgreSQL positional binds, starting at `$1`:\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-product",
+    "title": "Pilar da Terra (VR Master): net_value / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data >= $1::date\n    AND venda.data < ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT 'total' AS period, base.id_produto::text || ' - ' || COALESCE(NULLIF(btrim(base.produto), ''), 'sem descrição') AS product, 'BRL' AS unit,\n  COALESCE(SUM(base.valortotal::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) > 0\nORDER BY 1, 2, 3\nLIMIT 501\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-product",
+    "title": "Pilar da Terra (VR Master): net_value / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-total",
+    "title": "Pilar da Terra (VR Master): net_value / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): net_value / total",
+    "anchor": "pilar-da-terra-vr-master-net_value--total",
+    "text": "Pilar da Terra (VR Master): net_value / total\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-total",
+    "title": "Pilar da Terra (VR Master): net_value / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"net_value\",\n  \"groupBy\": \"total\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-total",
+    "title": "Pilar da Terra (VR Master): net_value / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nPostgreSQL positional binds, starting at `$1`:\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-total",
+    "title": "Pilar da Terra (VR Master): net_value / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data >= $1::date\n    AND venda.data < ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT 'total' AS period, NULL::text AS product, 'BRL' AS unit,\n  COALESCE(SUM(base.valortotal::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) > 0\nORDER BY 1, 2, 3\nLIMIT 501\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-net_value-total",
+    "title": "Pilar da Terra (VR Master): net_value / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month_product",
+    "title": "Pilar da Terra (VR Master): quantity / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): quantity / month_product",
+    "anchor": "pilar-da-terra-vr-master-quantity--month_product",
+    "text": "Pilar da Terra (VR Master): quantity / month_product\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month_product",
+    "title": "Pilar da Terra (VR Master): quantity / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"quantity\",\n  \"groupBy\": \"month_product\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month_product",
+    "title": "Pilar da Terra (VR Master): quantity / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nPostgreSQL positional binds, starting at `$1`:\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month_product",
+    "title": "Pilar da Terra (VR Master): quantity / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data >= $1::date\n    AND venda.data < ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT to_char(base.data, 'YYYY-MM') AS period, base.id_produto::text || ' - ' || COALESCE(NULLIF(btrim(base.produto), ''), 'sem descrição') AS product, COALESCE('EMBALAGEM:' || base.id_tipoembalagem::text, 'UNSPECIFIED') AS unit,\n  COALESCE(SUM(base.quantidade::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) > 0\nORDER BY 1, 2, 3\nLIMIT 501\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month_product",
+    "title": "Pilar da Terra (VR Master): quantity / month_product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month",
+    "title": "Pilar da Terra (VR Master): quantity / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): quantity / month",
+    "anchor": "pilar-da-terra-vr-master-quantity--month",
+    "text": "Pilar da Terra (VR Master): quantity / month\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month",
+    "title": "Pilar da Terra (VR Master): quantity / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"quantity\",\n  \"groupBy\": \"month\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month",
+    "title": "Pilar da Terra (VR Master): quantity / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nPostgreSQL positional binds, starting at `$1`:\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month",
+    "title": "Pilar da Terra (VR Master): quantity / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data >= $1::date\n    AND venda.data < ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT to_char(base.data, 'YYYY-MM') AS period, NULL::text AS product, COALESCE('EMBALAGEM:' || base.id_tipoembalagem::text, 'UNSPECIFIED') AS unit,\n  COALESCE(SUM(base.quantidade::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) > 0\nORDER BY 1, 2, 3\nLIMIT 501\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-month",
+    "title": "Pilar da Terra (VR Master): quantity / month",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-product",
+    "title": "Pilar da Terra (VR Master): quantity / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): quantity / product",
+    "anchor": "pilar-da-terra-vr-master-quantity--product",
+    "text": "Pilar da Terra (VR Master): quantity / product\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-product",
+    "title": "Pilar da Terra (VR Master): quantity / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"quantity\",\n  \"groupBy\": \"product\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-product",
+    "title": "Pilar da Terra (VR Master): quantity / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nPostgreSQL positional binds, starting at `$1`:\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-product",
+    "title": "Pilar da Terra (VR Master): quantity / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data >= $1::date\n    AND venda.data < ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT 'total' AS period, base.id_produto::text || ' - ' || COALESCE(NULLIF(btrim(base.produto), ''), 'sem descrição') AS product, COALESCE('EMBALAGEM:' || base.id_tipoembalagem::text, 'UNSPECIFIED') AS unit,\n  COALESCE(SUM(base.quantidade::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) > 0\nORDER BY 1, 2, 3\nLIMIT 501\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-product",
+    "title": "Pilar da Terra (VR Master): quantity / product",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-total",
+    "title": "Pilar da Terra (VR Master): quantity / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): quantity / total",
+    "anchor": "pilar-da-terra-vr-master-quantity--total",
+    "text": "Pilar da Terra (VR Master): quantity / total\n[Sales and all filters](sales.md) · [Feature catalog](../../../features/README.md)\nThis is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL download and copy action. Bind the parameters before running it in your database client; the portal only reads static documentation.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-total",
+    "title": "Pilar da Terra (VR Master): quantity / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Example plan",
+    "anchor": "example-plan",
+    "text": "Example plan\n{\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-01-31\",\n  \"productSearch\": null,\n  \"metric\": \"quantity\",\n  \"groupBy\": \"total\",\n  \"comparison\": \"none\"\n}\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-total",
+    "title": "Pilar da Terra (VR Master): quantity / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Bound parameters",
+    "anchor": "bound-parameters",
+    "text": "Bound parameters\nPostgreSQL positional binds, starting at `$1`:\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-total",
+    "title": "Pilar da Terra (VR Master): quantity / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL",
+    "anchor": "complete-sql",
+    "text": "Complete SQL\nWITH base AS (\n  SELECT venda.id,\n    venda.id_produto,\n    produto.descricaocompleta AS produto,\n    venda.data,\n    venda.quantidade,\n    venda.id_loja,\n    produto.id_tipoembalagem,\n    venda.valortotal\n  FROM public.venda\n  INNER JOIN public.produto ON venda.id_produto = produto.id\n  INNER JOIN public.loja ON loja.id = venda.id_loja\n  INNER JOIN public.fornecedor fl ON fl.id = loja.id_fornecedor\n  INNER JOIN public.produtoaliquota pa ON pa.id_produto = venda.id_produto AND pa.id_estado = fl.id_estado\n  INNER JOIN public.aliquota a ON a.id = pa.id_aliquotaconsumidor\n  INNER JOIN public.mercadologico m ON m.mercadologico1 = produto.mercadologico1 AND m.nivel = 1\n  LEFT JOIN public.centrocusto cc ON cc.id = m.id_centrocusto\n  LEFT JOIN public.comprador ON comprador.id = venda.id_comprador\n  WHERE venda.data >= $1::date\n    AND venda.data < ($2::date + INTERVAL '1 day')\n    AND ($3::text IS NULL OR regexp_replace(\n      upper(translate(produto.descricaocompleta, 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇáàâãäéèêëíìîïóòôõöúùûüç', 'AAAAAEEEEIIIIOOOOOUUUUCaaaaaeeeeiiiiooooouuuuc')),\n      '[[:space:]]+', ' ', 'g') ~ $4::text)\n)\nSELECT 'total' AS period, NULL::text AS product, COALESCE('EMBALAGEM:' || base.id_tipoembalagem::text, 'UNSPECIFIED') AS unit,\n  COALESCE(SUM(base.quantidade::numeric), 0)::text AS value\nFROM base\nGROUP BY 1, 2, 3\nHAVING COUNT(*) > 0\nORDER BY 1, 2, 3\nLIMIT 501\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-total",
+    "title": "Pilar da Terra (VR Master): quantity / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): sales",
+    "anchor": "pilar-da-terra-vr-master-sales",
+    "text": "Pilar da Terra (VR Master): sales\n[Feature catalog](../../../features/README.md) · [Product filters](products.md) · [Sales behavior](../../../domains/sales-chat.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "What it does",
+    "anchor": "what-it-does",
+    "text": "What it does\nVendas registradas no VR Master (tabela venda, todas as lojas), pela data da venda; valor = soma de valortotal.\nQuantidades separadas pelo tipo de embalagem do produto; tipos diferentes não são somados.\nPermission: `VRM-VEN-01` (`sales_vrmaster:read`). Availability depends on the configured Runtime reader and the person's effective permission.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Request options",
+    "anchor": "request-options",
+    "text": "Request options\nOption\nAccepted values / behavior\nSource\nExplicit selector: Sankhya, VR Master or Tudo. Tudo keeps separate results; it does not merge ERP rows or product IDs.\nDates\nInclusive startDate/endDate; valid dates from 2000-01-01, at most 366 days, no future dates (America/Sao_Paulo). SQL uses an exclusive next-day upper bound.\nRelative periods\nCurrent or previous day/month/year; last N days or completed months (includeCurrent controls the current block); calendar month with optional year; calendar year; explicit range. Started periods are clamped to today.\nMeasure\n`net_value` (Valor total vendido); `quantity` (Quantidade vendida).\nGrouping\n`total`, `month`, `product`, `month_product`. Quantities always retain their unit/packaging partition.\nComparison\n`none`, `previous_year`, `previous_period`. previous_period means the preceding equal number of days; previous_year clamps leap day.\nLiteral product\nproductSearch = null for all products, or a trimmed phrase of 2–80 characters. Whole words, case/accent insensitive; regex metacharacters are escaped. This is not a product ID or arbitrary SQL filter.\nSemantic products\nResolve or reuse a verified selection from the same ERP; AND between criteria, include/exclude, hierarchy descendants. Requires the source's product permission too. See Product filters.\nMultiple measures\nThe analytical tool accepts 1–3 distinct supported measures, sharing dates, grouping, product selection and comparison. It uses the same SQL compilers.\nDefault measure: net_value; grouping: total; comparison: none. The period must be supplied or clarified. A completed analysis is limited to 500 aggregate rows; the SQL fetches 501 to detect overflow. The matching-product preview fetches 101 to detect a list above 100; it never limits the semantic membership used for totals.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL by measure and grouping",
+    "anchor": "complete-sql-by-measure-and-grouping",
+    "text": "Complete SQL by measure and grouping\nOpen a combination to inspect, copy or download its complete SQL and parameter example. Fixed joins, DISTINCT and business exclusions remain visible in every statement.\nMeasure\nGrouping\nStatement\n`net_value`\n`total`\n[View SQL](sales-net_value-total.md)\n`net_value`\n`month`\n[View SQL](sales-net_value-month.md)\n`net_value`\n`product`\n[View SQL](sales-net_value-product.md)\n`net_value`\n`month_product`\n[View SQL](sales-net_value-month_product.md)\n`quantity`\n`total`\n[View SQL](sales-quantity-total.md)\n`quantity`\n`month`\n[View SQL](sales-quantity-month.md)\n`quantity`\n`product`\n[View SQL](sales-quantity-product.md)\n`quantity`\n`month_product`\n[View SQL](sales-quantity-month_product.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Literal product bindings",
+    "anchor": "literal-product-bindings",
+    "text": "Literal product bindings\nSynthetic phrase example. The compiler supplies both the normalized phrase and its escaped whole-word pattern; use these values together rather than writing your own regex.\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  \"ARROZ\",\n  \"(^|[^[:alnum:]])ARROZ([^[:alnum:]]|$)\"\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Comparison bindings",
+    "anchor": "comparison-bindings",
+    "text": "Comparison bindings\nThe reader runs the same compiled statement for the current interval and, when requested, the interval below. Product membership and access restrictions apply to both.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "previous_year",
+    "anchor": "previous_year",
+    "text": "previous_year\n[\n  \"2025-01-01\",\n  \"2025-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "previous_period",
+    "anchor": "previous_period",
+    "text": "previous_period\n[\n  \"2025-12-01\",\n  \"2025-12-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Effective access restrictions",
+    "anchor": "effective-access-restrictions",
+    "text": "Effective access restrictions\nThese are owner-assigned permission conditions, not additional freely selectable chat filters. Conditions within one rule are ANDed; alternative grant rules are ORed. An unrestricted grant admits every row. The examples below use fictional ID 1 and show isolated predicates; the runtime injects them into the reference before aggregation and binds their values. Sankhya applies the same predicate to eligible lot controls and final sales; VR Master applies it in base. The final VR Master parameter offset follows any semantic product binds, so it can be greater than 4.\nSankhya result-center selection additionally depends on [PH-36](../../../project/human-actions.md#ph-36). Read [access semantics](../../../domains/sales-chat.md#access-and-restrictions) before interpreting a restricted total.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "LOJ: Loja",
+    "anchor": "loj-loja",
+    "text": "LOJ: Loja\nLoja da venda (id_loja).\nHierarchy descendants: not applicable.\n((venda.id_loja = ANY($5::int[])))\n\n[\n  [\n    1\n  ]\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "COM: Comprador",
+    "anchor": "com-comprador",
+    "text": "COM: Comprador\nComprador registrado na venda (id_comprador), como o PDT Connect usa nos indicadores de compradores; não é o comprador atual do cadastro.\nHierarchy descendants: not applicable.\n((venda.id_comprador = ANY($5::int[])))\n\n[\n  [\n    1\n  ]\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "CC: Centro de custo",
+    "anchor": "cc-centro-de-custo",
+    "text": "CC: Centro de custo\nCentro de custo da seção (nível 1 do mercadológico) do produto vendido; inclui os centros abaixo dele. Produtos de seções sem centro de custo ficam fora.\nHierarchy descendants: included.\n((m.id_centrocusto IN (SELECT rd.id FROM public.centrocusto rd JOIN public.centrocusto rs ON rs.id = ANY($5::int[]) WHERE rd.centrocusto1 = rs.centrocusto1 AND (rs.nivel < 2 OR rd.centrocusto2 = rs.centrocusto2) AND (rs.nivel < 3 OR rd.centrocusto3 = rs.centrocusto3))))\n\n[\n  [\n    1\n  ]\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "MER: Mercadológico",
+    "anchor": "mer-mercadológico",
+    "text": "MER: Mercadológico\nClassificação mercadológica do produto vendido, em qualquer nível (seção, grupo, subgrupo...); inclui os níveis abaixo dela.\nHierarchy descendants: included.\n((EXISTS (SELECT 1 FROM public.mercadologico rm WHERE rm.id = ANY($5::int[]) AND rm.mercadologico1 = produto.mercadologico1 AND (rm.nivel < 2 OR rm.mercadologico2 = produto.mercadologico2) AND (rm.nivel < 3 OR rm.mercadologico3 = produto.mercadologico3) AND (rm.nivel < 4 OR rm.mercadologico4 = produto.mercadologico4) AND (rm.nivel < 5 OR rm.mercadologico5 = produto.mercadologico5))))\n\n[\n  [\n    1\n  ]\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Semantic product membership",
+    "anchor": "semantic-product-membership",
+    "text": "Semantic product membership\nThe product resolver compiles a complete key subquery from the enabled catalog filters. Sales adds PRO.CODPROD IN (subquery) in both Sankhya selections, or produto.id IN (subquery) in VR Master's base. This selects all eligible products, not only the visible preview. It uses current registration membership for both time periods. It cannot reconstruct historical buyer or category responsibility. Literal product search and a semantic selection cannot be combined in one read.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Canonical implementation",
+    "anchor": "canonical-implementation",
+    "text": "Canonical implementation\n[SQL compiler](../../../../apps/api/src/features/sales/vrmaster-query.ts)\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Logos",
-    "anchor": "logos",
-    "text": "Logos\nAll files are SVG in [`apps/web/src/assets`](../apps/web/src/assets/brand-mark.svg) except the derived touch icon.\n![IA-MNS horizontal lockup](../apps/web/src/assets/brand-lockup.svg)\nFile\nUse\nMinimum size\n[`brand-mark.svg`](../apps/web/src/assets/brand-mark.svg)\nSymbol: \"IA\" in a white speech bubble on an MNS blue tile, with the red wedge as the bubble's tail. App icon, sidebar, chat welcome, loading screen, documentation header and navigation, source of the touch icon.\n28 px\n[`brand-favicon.svg`](../apps/web/src/assets/brand-favicon.svg)\nSmall-size symbol: the same bubble and wedge without letters, drawn on a 32-unit grid. Browser favicon and the 20-pixel label on assistant replies.\n16 px, up to 24 px\n[`brand-lockup.svg`](../apps/web/src/assets/brand-lockup.svg)\nHorizontal lockup: symbol and the drawn `IA-MNS` wordmark in MNS blue, whose \"N\" keeps the red lower counter of the MNS logo. Light backgrounds; sign-in screen in the light theme.\n24 px high\n[`brand-lockup-reverse.svg`](../apps/web/src/assets/brand-lockup-reverse.svg)\nThe same lockup with a white wordmark. MNS blue or dark backgrounds; sign-in screen in the dark theme.\n24 px high\n[`brand-touch-icon.png`](../apps/web/src/assets/brand-touch-icon.png)\n180×180 raster of `brand-mark.svg` on MNS blue for Apple home screens. Derived; never edited by hand.\n—\nBelow 28 pixels the letters inside the symbol stop being legible, which is why the favicon variant exists. The lockups embed the symbol's drawing; keep them in step with `brand-mark.svg`.\n"
+    "heading": "Start and Upgrade a Project from Orion",
+    "anchor": "start-and-upgrade-a-project-from-orion",
+    "text": "Start and Upgrade a Project from Orion\n[Repository README](../README.md) · [Development setup](setup.md) · [Validation](validation.md) · [Foundation versioning](versioning.md) · [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) · [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nThis is the practical reference for turning a revision of Orion into a new, independent project and for keeping that project's foundation current: what to decide and provide, how to run the initialization, what the new repository contains, what to do next, and how provenance and foundation upgrades work. [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) records the ancestry and provenance decision; [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) records the clean-baseline contract. The commands exist in every Orion checkout; the canonical Orion repository itself is never initialized as a project.\n"
   },
   {
-    "id": "repository/docs/visual-identity",
-    "title": "IA-MNS Visual Identity",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Construction",
-    "anchor": "construction",
-    "text": "Construction\n**Tile**: square with a 28/128 corner radius and a subtle diagonal gradient (`#3349A0` to `#25387A`) that recalls the light sweep of the MNS background.\n**Bubble and wedge**: the tail is a right triangle with a vertical left edge and a diagonal hypotenuse, the MNS wedge turned to point down. It sits behind the bubble so only the part outside it shows.\n**Wordmark**: heavy grotesque letters drawn as paths (cap height 56 units, stems about 15 units), so the logo renders the same everywhere without a font dependency. Only the \"N\" carries red.\n"
+    "heading": "Model",
+    "anchor": "model",
+    "text": "Model\nThe canonical `GabriellMDias/Orion` repository is the upstream development foundation. A derived project is an independent Git repository with its own `origin`, branches, pull requests, CI history, human actions, product decisions, and releases. It starts from a clean clone of Orion and keeps Orion's commit history, so Git can compute what changed upstream and merge it later, but its first commit removes Orion's own reference implementation and development history and gives the repository the project's identity.\nConcern\nMechanism\nIdentity and provenance\n[`.orion/project.json`](../.orion/project.json), validated by `pnpm orion:check`\nClean-baseline contract\n[`.orion/derivation.json`](../.orion/derivation.json): foundation-only paths, project-owned files and their templates, and the foundation workspace package scope\nImmutable starting point\n`foundation.initializedFromCommit`: the published Orion commit the project was initialized from; never changes\nCurrent foundation\n`foundation.baselineCommit`: the newest Orion commit integrated and validated through a reviewed merge\nCanonical upstream\nLocal remote `orion-upstream`: fetch-only (its push URL is disabled), fetches no tags, and is tracked by no local branch\nProduct repository\nRecorded as `repository.url`; each clone's `origin` is that repository or a fork or mirror of it, never the foundation ([remote rules](#remote-rules))\nIn the Orion repository the manifest has `\"kind\": \"foundation\"` and only describes Orion. A derived project's manifest (schema version 2) has `\"kind\": \"project\"` and additionally records its npm `packageScope` and its foundation ancestry. The Living Documentation Portal links source files to the manifest's repository.\nA derived project inherits [Apache-2.0-licensed Orion source](../LICENSE). The project remains responsible for licensing its independently created product code and for applicable obligations of inherited and third-party material; Orion's license does not choose the project's overall license.\n"
   },
   {
-    "id": "repository/docs/visual-identity",
-    "title": "IA-MNS Visual Identity",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Usage rules",
-    "anchor": "usage-rules",
-    "text": "Usage rules\nKeep clear space of at least a quarter of the symbol's height around every logo.\nDo not recolor, outline, rotate, stretch, add shadows to, or redraw the marks; do not typeset the wordmark in another font.\nUse `brand-lockup.svg` only on light backgrounds and `brand-lockup-reverse.svg` only on MNS blue or dark ones. The symbol carries its own blue tile and works on both.\nWhere a screen shows a logo next to live text that names the product, the image is decorative (`alt=\"\"`). A lockup that stands alone has `alt=\"IA-MNS\"`.\nArtwork made for one theme uses the global `theme-light-only` and `theme-dark-only` classes so only the matching variant is displayed and exposed to assistive technology.\n"
+    "heading": "Before you start",
+    "anchor": "before-you-start",
+    "text": "Before you start\n"
   },
   {
-    "id": "repository/docs/visual-identity",
-    "title": "IA-MNS Visual Identity",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Interface palette",
-    "anchor": "interface-palette",
-    "text": "Interface palette\nThe web application reads colors only from the custom properties in [`styles.css`](../apps/web/src/styles.css); feature styles must use these tokens rather than literal colors. The light theme is white and cool gray with MNS blue as the accent. The dark theme is a deep navy derived from MNS blue, with a light periwinkle accent and dark text on it, because MNS blue itself is too dark to carry text or focus on a dark surface.\nToken\nLight\nDark\nRole\n`--canvas`\n`#F4F6FA`\n`#0B1020`\nPage background behind cards.\n`--surface`\n`#FFFFFF`\n`#111830`\nMain surfaces: chat, cards, dialogs.\n`--surface-muted`\n`#EEF1F7`\n`#172039`\nSidebar, user message bubbles, table headers.\n`--input`\n`#FFFFFF`\n`#1B2543`\nText fields and the composer.\n`--ink`\n`#172140`\n`#E8EBF5`\nPrimary text.\n`--muted`\n`#4D5775`\n`#A9B2CC`\nSecondary text, placeholders.\n`--border`\n`#DADFEA`\n`#2A3454`\nDividers and card outlines.\n`--border-strong`\n`#8A94AE`\n`#66729A`\nField and button outlines (at least 3:1 against surfaces).\n`--accent`\n`#2B3E84`\n`#9FB2F4`\nPrimary buttons, send button, avatars, chart bars, active tabs.\n`--accent-hover`\n`#22326A`\n`#BCCBF8`\nHover state of accent buttons.\n`--on-accent`\n`#FFFFFF`\n`#0F1733`\nText and icons on the accent.\n`--selected`\n`#E2E8F5`\n`#222D50`\nHover and selected rows.\n`--link`\n`#2A4BB0`\n`#A9BCF8`\nLinks and eyebrows.\n`--focus`\n`#3557C2`\n`#A9BCF8`\nFocus outlines.\n`--header`\n`#22326A`\n`#0E1530`\nDocumentation header.\n`--on-header` / `--on-header-muted`\n`#FFFFFF` / `#C3CDEB`\n`#FFFFFF` / `#B9C3E2`\nText on the documentation header.\n`--shadow`\n8% navy\n35% black\nCard and menu shadows.\n`--error-ink` / `--error-bg` / `--error-border`\n`#9B1C24` / `#FDEFEF` / `#EDB5B8`\n`#FFB3B6` / `#3A1823` / `#8E3A47`\nErrors and warnings that need attention.\nEvery text pair above meets WCAG 2.2 AA (4.5:1) in both themes; the lowest is `--muted` on `--selected`, at 5.8:1 in the light theme. Keep that margin when changing a value, and recheck the automated accessibility journeys in [validation](validation.md).\n"
+    "heading": "What you decide and provide",
+    "anchor": "what-you-decide-and-provide",
+    "text": "What you decide and provide\nOnly the first two inputs are required. Product decisions such as scope, license, identity provider, deployment, and branding are not needed to initialize; the new project's plan and human actions track them afterward.\nInput\nOption\nHow the project uses it\nRules\nProject name\n`--name`, required\nManifest `name`, README and documentation titles, browser title, web shell, portal, OpenAPI title (`<name> API`), plan, human actions, and the initialization commit message\n1–80 letters, digits, spaces, dots, underscores, or hyphens, starting with a letter or digit; accented letters are allowed\nProduct repository\n`--repository`, required\nRecorded, normalized, as `repository.url`; configured as `origin`\nHTTPS, SSH, or scp-like URL of the repository the project will publish to; it need not exist yet. It must not embed credentials, use a non-default SSH port (supply its HTTPS URL instead), or identify Orion ([repository identities](#remote-rules))\nPackage scope\n`--package-scope`, optional\nWorkspace packages `@<scope>/api`, `@<scope>/web`, and `@<scope>/sdk`, the root package `<scope>`, and the telemetry service name `<scope>-api`\nDefaults to the name in lowercase, without accents, with other characters replaced by hyphens (`Pedido Fácil` → `@pedido-facil`). Otherwise `@` and 1–50 lowercase letters, digits, or hyphens, starting with a letter or digit, and not the foundation scope `@orion`\nOrion revision\noptional\nBecomes `foundation.initializedFromCommit` and the first `foundation.baselineCommit`\nDefaults to the latest commit on Orion's `main`. Any commit on `main` that contains `.orion/derivation.json` may be chosen; [stable tags](versioning.md) name released points. A revision from before the clean-baseline contract runs its own older initialization and produces that revision's layout instead\n"
   },
   {
-    "id": "repository/docs/visual-identity",
-    "title": "IA-MNS Visual Identity",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Typography",
-    "anchor": "typography",
-    "text": "Typography\nInterface text uses `Inter, ui-sans-serif, system-ui, sans-serif`; no web font is downloaded, so the operating system's interface font usually renders. Where the product name appears as live text next to the symbol, it is set at weight 800 to echo the heavy wordmark. The drawn wordmark in the lockups is artwork, not text.\n"
+    "heading": "Prerequisites",
+    "anchor": "prerequisites",
+    "text": "Prerequisites\nGit with `user.name` and `user.email` configured, Node.js 24.13.0, and pnpm 11.25.0.\nA running Testcontainers-compatible container runtime: initialization regenerates the database reference from a migrated PostgreSQL.\nPlaywright Chromium for the browser tests in `pnpm validate` ([setup](setup.md#prepare-a-clean-checkout)).\nA fresh, full clone of Orion that contains no other work. Shallow clones cannot preserve Orion's ancestry.\nPermission to create the product repository before publishing. Initialization never contacts the product repository: it creates no repositories and pushes nothing.\n"
   },
   {
-    "id": "repository/docs/visual-identity",
-    "title": "IA-MNS Visual Identity",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Changing the identity",
-    "anchor": "changing-the-identity",
-    "text": "Changing the identity\nEdit the SVG sources in `apps/web/src/assets`, keeping the lockups in step with the symbol.\nRegenerate the touch icon as described in the [web guide](../apps/web/README.md#identity).\nChange interface colors only through the tokens in `styles.css`, verify contrast in both themes, and review desktop and mobile screens in light and dark.\nUpdate this document in the same change.\n"
+    "heading": "Start a new project",
+    "anchor": "start-a-new-project",
+    "text": "Start a new project\nClone Orion and install its dependencies. To start from an older published Orion revision, run `git reset --hard <commit>` on `main` before initializing.\ngit clone https://github.com/GabriellMDias/Orion.git acme-ledger\ncd acme-ledger\npnpm install --frozen-lockfile\n\nRun a dry run. It checks every precondition and lists the actions without changing anything.\npnpm orion:init-project --name \"Acme Ledger\" --repository git@github.com:acme/acme-ledger.git\n\nInitialize. Add `--package-scope @acme` to choose a scope other than the default.\npnpm orion:init-project --name \"Acme Ledger\" --repository git@github.com:acme/acme-ledger.git --apply\n\nVerify the result. `pnpm orion:status` shows the identity, package scope, and recorded Orion commits; the last commit is `Initialize Acme Ledger from Orion <commit>` on top of Orion's history.\npnpm orion:status\ngit log --oneline -2\npnpm validate\n\nCreate an empty repository at the URL you supplied, without a generated README, license, or ignore file (project human action PH-01), and publish:\ngit push -u origin main\n\nInitialization refuses, without changing anything, when:\nthe checkout is not the repository root, is shallow, or has uncommitted or untracked changes (ignored files such as `node_modules/` and `.env.local` are allowed);\nthe manifest already describes a project, `docs/project/` exists, or an `orion-upstream` remote exists;\n`main` is not checked out, any configured `origin` URL does not identify the canonical Orion repository, or `HEAD` has commits that are not on `origin/main`;\nthe project name is invalid, the package scope is not a valid npm scope or equals the foundation scope, the repository URL embeds credentials, uses a non-default SSH port (see [repository identities](#remote-rules)), or identifies the Orion repository;\nthe derivation contract is invalid or a template is missing;\nthe migration release registry records durable releases, which would describe another deployment;\nGit has no committer identity.\nWith `--apply`, it:\nwrites the project manifest;\nremoves every foundation-only path;\nrenders the project-owned files with the project name, repository, package scope, date, and Orion baseline;\nrenames the workspace package scope in package manifests, `pnpm-lock.yaml`, and source, and names the root package after the scope (authored Markdown and ADRs are not rewritten);\nregenerates workspace links, the Prisma client, API and database references, SDK types, and portal data;\ncommits `Initialize <name> from Orion <commit>` on top of Orion's history, renames `origin` to the protected `orion-upstream`, and adds the project repository as `origin`.\nIt never creates remote repositories or pushes. If a step before the commit fails, it restores the clean checkout; run `pnpm install --frozen-lockfile` before retrying.\n"
   },
   {
-    "id": "repository/infra/production/README",
-    "title": "Production Deployment",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Production Deployment",
-    "anchor": "production-deployment",
-    "text": "Production Deployment\nIA-MNS production runs on one Ubuntu host with Docker Compose, operated by `ia-mns-deploy` ([ADR-0031](../../docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)). Procedures live in the [runbooks](../../docs/runbooks/README.md); this directory holds what they run. Host addresses, domain names and credentials never belong here: they live in `/etc/ia-mns` on the host.\nPath\nPurpose\n[`Dockerfile`](Dockerfile)\n`runtime` and `migrate` images from one build of a release commit; Oracle Instant Client 19.32 verified by Oracle's published SHA-256\n[`compose.yaml`](compose.yaml), [`compose.tls.yaml`](compose.tls.yaml)\n`api`, `postgres` (private network, external volume) and the one-shot `migrate`; the TLS overlay mounts `/etc/ia-mns/tls`\n[`bin/ia-mns-deploy`](bin/ia-mns-deploy)\ninstall, configuration checks, secret generation, database setup, deploy, rollback, backups, restore, status\n[`postgres/pg_hba.conf`](postgres/pg_hba.conf)\nclient authentication written into the data directory by `setup`\n[`examples/`](examples/runtime.env.example)\nthe five `/etc/ia-mns/*.env` files with placeholders only\n[`systemd/`](systemd/ia-mns-backup.timer)\ndaily backup and weekly restore verification\n[`rehearsal/run.sh`](rehearsal/run.sh)\ndisposable end-to-end rehearsal of the real tool and Compose file, run in CI\nQuick reference, as root on the host:\nia-mns-deploy help\nia-mns-deploy status\nia-mns-deploy deploy ia-mns-vX.Y.Z\nia-mns-deploy rollback\nia-mns-deploy backup && ia-mns-deploy verify-restore\nia-mns-deploy logs api --tail 200\n\nThe rehearsal needs a Linux Docker host and root:\nsudo infra/production/rehearsal/run.sh --source \"$PWD\" --ref HEAD\n\nOn Windows or macOS, run it inside the runner image with the Docker socket mounted:\ndocker build -t ia-mns-rehearsal-runner -f infra/production/rehearsal/runner.Dockerfile infra/production/rehearsal\ngit bundle create rehearsal.bundle HEAD\ndocker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v \"$PWD/rehearsal.bundle:/rehearsal.bundle:ro\" \\\n  --add-host host.docker.internal:host-gateway ia-mns-rehearsal-runner bash -c \\\n  'git clone -q /rehearsal.bundle /src && /src/infra/production/rehearsal/run.sh --source /src --ref HEAD --smoke-host host.docker.internal'\n\n"
+    "heading": "What carries over, what is removed, and what is adapted",
+    "anchor": "what-carries-over-what-is-removed-and-what-is-adapted",
+    "text": "What carries over, what is removed, and what is adapted\nOutcome\nContent\nPreserved from the foundation\nArchitecture, principles, policies, accepted ADRs, setup and validation guides, runbook guidance, and this guide; the validation gate, agent instructions, CI workflow, and Renovate configuration; the API runtime (configuration, telemetry, health, error registry, module contract, PostgreSQL client, optional JWT verification); the web shell and Living Documentation Portal; the SDK package; the derivation tooling and contract; Orion's full Git history\nRemoved as foundation-only\nOrion's Approval Request reference implementation: its API feature, Prisma models, migration, metadata, runtime grants, smoke, tests, web module, browser tests and journeys, and domain documentation. Orion's own implementation plan, human actions, and acceptance and release history\nAdapted or created for the project\nThe manifest (`kind: project`, name, package scope, provenance); `README.md`; the API and web composition files, which compose no modules; a neutral brand mark and touch icon; the project's plan and human actions in `docs/project/`; workspace package names, the lockfile, and imports; generated OpenAPI, SDK types, configuration, error, and database references, and portal data; the remotes `origin` and `orion-upstream`\nKept as the foundation's technical namespace\n`ORION_*` configuration names, `orion_*` token claims and database role names, the `Orion required gate` check name, the `.orion/` directory, the `orion:*` commands, and the `orion-upstream` remote. Renaming them would touch shared files throughout the repository and conflict on every upgrade; the check name is also referenced by branch protection. Accepted ADRs keep their original wording\nThe [content ownership](#content-ownership) contract defines these categories precisely and how each behaves during upgrades.\n"
   },
   {
-    "id": "repository/packages/sdk/AGENTS",
-    "title": "SDK-local Instructions",
-    "group": "Agent instructions",
-    "kind": "repository",
-    "heading": "SDK-local Instructions",
-    "anchor": "sdk-local-instructions",
-    "text": "SDK-local Instructions\nUse [the package guide](README.md) for ownership and generation. Global repository instructions still apply.\n`src/index.ts` is the public surface. Keep the SDK a thin generated-contract consumer; never import API implementation, persistence, or backend business authorization.\nGenerate `src/generated/api-types.ts` from committed OpenAPI after changing the API's executable contracts. Follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md); never hand-edit generated types or duplicate wire schemas here.\nThe host supplies bearer tokens through `createApiClient`; do not add token storage, provider-specific identity, or authorization rules.\nPreserve structured errors and safe unknown-code fallback. Consider actual consumer compatibility when changing the client surface or generator; this private workspace package has no independent publication promise.\nRun `pnpm -C packages/sdk typecheck` and root `pnpm references:check`, then root `pnpm validate` before substantial-work handoff.\n"
-  },
-  {
-    "id": "repository/packages/sdk/README",
-    "title": "API SDK",
-    "group": "Workspace guides",
-    "kind": "repository",
-    "heading": "API SDK",
-    "anchor": "api-sdk",
-    "text": "API SDK\n[API modules](../../apps/api/README.md#modules) · [Generated OpenAPI](../../docs/generated/api/openapi.json) · [API policy](../../docs/api/principles.md) · [Web consumer](../../apps/web/README.md)\nThis private workspace package (`packages/sdk`) is the client boundary for the API. [`src/index.ts`](src/index.ts) exports `createApiClient(baseUrl, getAccessToken)`, `ApiClient`, and generated `paths` types. The host provides credentials through the callback; the SDK adds the bearer header without issuing, refreshing, persisting, or logging tokens. It contains no business authorization, persistence, or provider-specific identity model.\nThe API owns executable TypeBox schemas and stable operation IDs. Generated OpenAPI feeds `openapi-typescript`, which produces [`src/generated/api-types.ts`](src/generated/api-types.ts); `openapi-fetch` supplies the thin typed runtime. Never edit generated types or import server implementation models. Compile-time typing does not automatically revalidate successful responses at runtime.\nFrom the repository root, follow the [artifact workflow](../../docs/architecture/backend-execution-and-generated-artifacts.md): regenerate API OpenAPI first, run `pnpm -C packages/sdk generate`, and regenerate affected portal data. `pnpm references:check` verifies API/database/SDK freshness without editing tracked files. Run `pnpm -C packages/sdk typecheck` and the full `pnpm validate` gate for the client and web consumer.\nThis package has no independently published compatibility promise. A real independently released consumer activates [API compatibility policy](../../docs/api/versioning.md) and a human action to identify its supported baseline; SDK package versions and server contract versions are distinct. Current-source drift checks do not validate a historical released consumer.\n"
-  },
-  {
-    "id": "repository/README",
-    "title": "IA-MNS",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "IA-MNS",
-    "anchor": "ia-mns",
-    "text": "IA-MNS\nIA-MNS is MNS's corporate AI agent, built on the [Orion](https://github.com/GabriellMDias/Orion) engineering foundation. It provides a Portuguese conversation workspace with persistent history. The conversational assistant can explain, summarize and rewrite authorized evidence, or plan validated read-only analysis through registered tools; it never presents planned capabilities as available. Two business domains are implemented: sales consultation over MNS (Sankhya) and Pilar da Terra (VRMaster), as chosen in a source selector beside the message box, where the two sources are always shown separately and never summed; and product lookup, which identifies matching products through verified ERP-specific dimensions in VR Master and Sankhya ([Sankhya scope and credential requirements](docs/domains/sankhya-product-lookup.md)). [Corporate agent](docs/domains/corporate-agent.md) owns the product direction; [sales semantics](docs/domains/sales-chat.md) and [product lookup](docs/domains/product-lookup.md) retain the business guarantees.\nThe default [conversational mode](docs/architecture/conversational-autonomy.md) composes reviewed sales metrics and month/product dimensions through the existing Semantic Product Resolver, supports bounded operational text/image attachments and explicit presentation preferences, and applies [controlled business-data transmission](docs/security/ai-data-processing.md). The server retains authority over permissions, ERP scope, calculations and execution; no free SQL or ERP write tool is exposed.\n"
+    "heading": "A newly derived project",
+    "anchor": "a-newly-derived-project",
+    "text": "A newly derived project\nImmediately after initialization the repository contains:\nArea\nState\nIdentity\n`README.md`, `<title>`, the web shell, the portal, the OpenAPI title (`<name> API`), and the telemetry service name (from `@<scope>/api`) use the project name; workspace packages are `@<scope>/api`, `@<scope>/web`, and `@<scope>/sdk`; the brand mark is a neutral placeholder\nAPI\nThe shared runtime with health endpoints, configuration, telemetry, error registry, module contract, PostgreSQL client, and optional JWT verification; `apps/api/src/modules.ts` composes no modules\nDatabase\nThe Prisma schema folder with only shared configuration, no migrations, no metadata or grants, an empty release registry, and a generated database reference stating that no application tables exist\nWeb\nThe shell, home page, and Living Documentation Portal; `apps/web/src/modules.tsx` mounts no module routes\nDocumentation\nShared architecture, policies, ADRs, setup, validation, runbook guidance, this guide, and the project's README, plan (PJ-01 to PJ-05), and human actions (PH-01 to PH-06); no Orion plan, human actions, acceptance report, or reference-feature documentation\nTooling and CI\nUnchanged validation gate, agent instructions, CI workflow, Renovate configuration, and derivation commands\nProvenance\nOrion's full history plus the initialization commit; `foundation.initializedFromCommit` and `foundation.baselineCommit` both name the Orion commit; `orion-upstream` fetch-only; `origin` the project repository\nWorktree\nClean; nothing is pushed until you publish\n`pnpm validate` passes in this state, including the shell and portal browser journeys.\n"
   },
   {
-    "id": "repository/README",
-    "title": "IA-MNS",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Current state",
-    "anchor": "current-state",
-    "text": "Current state\nERP access follows the owner-approved [two-user topology](docs/security/erp-database-access.md): one runtime reader and the existing administrator also used for read-only Discovery. Administrative credentials are delivered separately from runtime; The current reader grants are [verified](docs/project/runtime-access-verification.md); PH-08 retains business confirmations and PH-30 tracks inherited VRMaster PUBLIC DDL privileges.\nThis repository was initialized on 2026-10-01 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. It retains the foundation's architecture, policies, tooling, CI, generated references, and [Living Documentation Portal](apps/web/README.md#living-documentation-portal). It composes the corporate agent and sales modules, PostgreSQL conversation persistence, grounded social responses, actual execution progress, and light/dark themes. Existing deterministic sales results and read-only Oracle access remain in place; a second read-only source reads Pilar da Terra sales from VRMaster PostgreSQL with the owner's reference SQL ([ADR-0027](docs/adr/0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)), validated on synthetic PostgreSQL while its reconciliation against the real VRMaster awaits the owner. Product lookup resolves Portuguese requests through machine-readable VR Master and Sankhya semantic catalogs, discovered read-only and verified against live metadata before use: the model chooses among catalog dimensions and real classification candidates, while the application resolves records, compiles parameterized read-only SQL and explains each relationship used ([ADR-0032](docs/adr/0032-resolve-product-selections-through-a-verified-semantic-catalog.md), [semantic product resolution](docs/architecture/semantic-product-resolution.md)); per-store status and a few other dimensions await column grants and owner confirmations. Sales interpretation keeps structured conversation state, so answers to clarification questions complete the pending request; curated multi-turn evaluation cases gate every change, and live-model evaluation, trace capture and synthetic scenarios are opt-in tools ([AI interpretation](docs/architecture/ai-interpretation.md), [AI evaluation](docs/architecture/ai-evaluation.md)). [Local setup](docs/setup.md#corporate-agent-and-local-postgresql) provisions Docker PostgreSQL and starts the application. Live OpenAI/Oracle interpretation and original-SQL reconciliation passed on 2026-10-01 using the existing owner-authorized key; [verification](docs/project/live-sales-verification.md) records the earlier provider repair. IA-MNS has its own identity ([identity](docs/domains/identity.md)): one Person per individual, reachable through an IA-MNS account (password and authenticator app), PDT Connect or Sankhya, with the same conversations and permissions whether opened directly or embedded in PDT Connect or the Sankhya Om. People who use PDT Connect or Sankhya get their profile automatically at first access; there is no public account creation, and owners create and associate everyone else. Owners also administer the operational parameters (AI model, AI trace level and automatic grants by provider link) in **Administração → Parâmetros**, which take effect without a restart; secrets and bootstrap configuration stay in the environment ([ADR-0028](docs/adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)). Integration work follows the order direct access, Sankhya, then PDT Connect. IA-MNS reaches the Om through a thin Sankhya add-on in [`apps/sankhya-addon`](apps/sankhya-addon/README.md) that hosts the same frontend and proves the signed-in Sankhya user ([ADR-0026](docs/adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)); in the Sankhya development Om, a signed-in Om user already opens IA-MNS from the Om menu without another sign-in and is provisioned automatically at first access. Production publication still awaits review, key custody and the Om security hardening (production refuses Sankhya sign-in until approved). PDT Connect hosts IA-MNS the same way through an IA-MNS screen in the PDT Connect repository, validated with a local PDT; its HTTPS homologation is pending. For production, the emitted API serves the web build at one origin with the API under `/api`, trusts only enumerated reverse proxies, can listen with internal TLS, and ships compiled operational commands for the owner bootstrap, identity keys, configuration checks and database deployment ([ADR-0029](docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)); releases will be `ia-mns-vX.Y.Z` tags ([ADR-0030](docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)). Production runs on one Ubuntu host with Docker Compose through the `ia-mns-deploy` tool in [`infra/production`](infra/production/README.md) ([ADR-0031](docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)): verified release tags, a private PostgreSQL with separate administrator, migration and runtime roles, pre-deployment and daily backups with restore verification, and rollback only when proven safe; CI rehearses the complete installation with synthetic configuration. Nothing has been installed on the production host yet ([PH-26](docs/project/human-actions.md#ph-26)). The dedicated Oracle reader access is now verified; unit confirmation, inherited PostgreSQL PUBLIC privilege review, production deployment and shared-deployment lifecycle remain owner actions. Application capabilities perform no ERP business writes; separately authorized provisioning tools manage the reviewed Runtime grants. The repository is published at https://github.com/GabriellMDias/IA-MNS. Its `main` branch requires pull requests and the `Orion required gate` check, Renovate is enabled, and the applicable GitHub security controls are on.\nThe [corporate agent verification](docs/project/corporate-agent-verification.md) records current real-provider, persistence and gate evidence. The [project plan](docs/project/implementation-plan.md) and [project human actions](docs/project/human-actions.md) own this repository's current work and external prerequisites. The [project manifest](.orion/project.json) records the project identity, the immutable initialization commit, and the Orion baseline currently integrated. [Project derivation](docs/project-derivation.md) explains how to inspect provenance and adopt newer Orion revisions through reviewed merges.\n"
+    "heading": "Next steps after creation",
+    "anchor": "next-steps-after-creation",
+    "text": "Next steps after creation\nThe project's [README](../README.md) routes to its plan and human actions, which track these steps with stable IDs.\n**Publish and validate (PH-01, PJ-01).** Push `main` to the new repository and confirm that `pnpm validate` passes locally and that the repository's CI runs.\n**Protect the repository (PH-02 to PH-04).** Require pull requests and the `Orion required gate` check on `main`, keep merge commits available for foundation upgrades, enable Renovate, and enable the applicable GitHub security controls. Settings verified for Orion do not apply to the new repository.\n**Onboard contributors.** Each clone needs `pnpm install --frozen-lockfile` and the local configuration from [setup](setup.md). Run `pnpm orion:upstream` and `git fetch orion-upstream` in any clone that will inspect or perform foundation upgrades; clones receive no `orion-upstream` remote automatically.\n**Define the product (PH-05, PJ-02).** Record the product scope, actors, first capabilities, data classification, and acceptance criteria, then replace the README introduction and current state.\n**Build the first module (PJ-03).** Add its schema, reviewed migration, contract, SDK use, web workflow, tests, and documentation as described for [API modules](../apps/api/README.md#modules) and [web modules](../apps/web/README.md#modules), and compose it in `apps/api/src/modules.ts` and `apps/web/src/modules.tsx`. [Orion's reference implementation](#orions-reference-implementation) shows a complete module.\n**Replace the placeholder identity (PJ-04).** Replace the brand mark and regenerate the touch icon as described under [web identity](../apps/web/README.md#identity).\n**Decide the product license (PH-06)** before distribution requires it.\n**Add conditional work when it becomes real (PJ-05).** An identity provider, durable releases, or a deployment environment become new tasks and human actions in the project's own files.\nKeep the project's plan and human actions current as work proceeds; `AGENTS.md` routes contributors and agents to them through the README's Current state.\n"
   },
   {
-    "id": "repository/README",
-    "title": "IA-MNS",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "Start here",
-    "anchor": "start-here",
-    "text": "Start here\nTask\nEntry point\nFind the policy for a change\n[Documentation task index](docs/README.md)\nUnderstand contributor and agent obligations\n[Global instructions](AGENTS.md), [contributing workflow](docs/contributing.md), [agent tool compatibility](docs/architecture/agent-instructions.md)\nUnderstand architecture and code placement\n[Principles](docs/architecture/principles.md), [repository structure](docs/architecture/repository-structure.md)\nAdd a product capability\n[API modules](apps/api/README.md#modules), [web modules](apps/web/README.md#modules), [Orion's reference implementation](docs/project-derivation.md#orions-reference-implementation)\nFind a selected technology or its rationale\n[Technology map](docs/architecture/technology-decisions.md), [ADR index](docs/adr/README.md)\nDetermine available verification\n[Validation](docs/validation.md)\nReproduce the local workflow\n[Development setup](docs/setup.md)\nExplore local guides, architecture, API routes, data, and components\n[Portal setup](docs/setup.md#living-documentation-portal), [living documentation architecture](docs/architecture/living-documentation.md), [AI-readable references](docs/README.md#apis-and-data)\nFind outstanding work or required owner decisions\nThe plan and human actions linked from [Current state](#current-state)\nInspect provenance or adopt a newer Orion revision\n[Project derivation](docs/project-derivation.md)\nCreate an operational procedure\n[Runbooks](docs/runbooks/README.md)\nAccepted architecture and implemented capability are different states. Consult the [technology map](docs/architecture/technology-decisions.md) for selected directions and deliberately deferred choices, and [validation availability](docs/validation.md) for current checks. With Node.js 24.13.0 and pnpm 11.25.0, follow the canonical [development setup](docs/setup.md) for installation, local environment loading, execution, and the full gate.\nDirectory trees in architecture documents describe intended responsibilities, not proof that those directories exist. The physical repository takes precedence over illustrations. English is the canonical repository language; product localization is separate.\n"
+    "heading": "Content ownership",
+    "anchor": "content-ownership",
+    "text": "Content ownership\n[`.orion/derivation.json`](../.orion/derivation.json) divides Orion's content into three categories. `pnpm orion:check` enforces the boundaries in both Orion and projects.\nCategory\nContents\nIn Orion\nIn a new project\nUpgrade behavior\nShared foundation\nArchitecture, policies, ADRs, tooling, CI, the API runtime and module contract, the web shell and portal, generated-reference machinery, and `.orion/derivation.json`\nPresent; must not import, link to, name, or describe foundation-only content\nIdentical to Orion except for package-scope renames\nNormal three-way merges; product changes to the same lines need review\nFoundation-only\nOrion's reference implementation and Orion's own implementation plan, human actions, and acceptance history\nPresent\nAbsent\nReintroduced or conflicting paths are removed with `pnpm orion:prune`\nProject-owned\n`README.md`, `apps/api/src/modules.ts`, `apps/web/src/modules.tsx`, the brand mark and touch icon, `docs/project/implementation-plan.md`, `docs/project/human-actions.md`\nOrion's own versions, composing its reference implementation\nRendered from [templates](../.orion/derivation.json) at initialization; then owned by the project\nKeep the project's version when Orion changes them; port relevant upstream facts deliberately\nGenerated\nOpenAPI, SDK types, configuration/error/database references, portal data\nDerived from Orion's sources\nRegenerated from the project's sources at initialization\nResolve source conflicts, then regenerate; never hand-merge\n`AGENTS.md` routes implementation work to the plan and human actions linked from the README's Current state; in a project that is `docs/project/`. Orion's completed human actions verified settings for the Orion repository only; initialization creates pending project actions for the new repository's equivalents.\n"
   },
   {
-    "id": "repository/README",
-    "title": "IA-MNS",
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
     "group": "Project guides",
     "kind": "repository",
-    "heading": "License",
-    "anchor": "license",
-    "text": "License\nIA-MNS is licensed under the [Apache License 2.0](LICENSE), which covers both the project's own work and the material inherited from Orion. [ADR-0021](docs/adr/0021-license-ia-mns-under-apache-2-0.md) records the decision. The repository is public. Never commit credentials, local configuration, or confidential business data.\n"
+    "heading": "Orion's reference implementation",
+    "anchor": "orions-reference-implementation",
+    "text": "Orion's reference implementation\nThe Orion repository composes a complete Approval Request module that demonstrates the architecture from database to browser and is exercised by Orion's validation gate. It is foundation-only: initialization removes it, and no project-owned or shared file refers to it. To study it while building a module, read it in Orion at the commit recorded as the project's baseline, for example in a separate Orion clone or with `git show <baseline>:<path>` after `git fetch orion-upstream`. The paths it occupies are listed in [`.orion/derivation.json`](../.orion/derivation.json). Copy patterns, not the feature: a product module belongs under its own name and is composed in the project's `modules.ts` and `modules.tsx`.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Provenance and foundation upgrades",
+    "anchor": "provenance-and-foundation-upgrades",
+    "text": "Provenance and foundation upgrades\nProvenance is what makes upgrades possible. Initialization records the Orion commit in both `foundation.initializedFromCommit`, which never changes, and `foundation.baselineCommit`. Because the project keeps Orion's history, Git can compute what changed upstream since the baseline and merge it with a normal three-way merge. Each upgrade merges a newer Orion commit with its history and then records it as the new baseline; `pnpm orion:check` verifies that the baseline is an ancestor of `HEAD`, and `pnpm orion:status` compares it with a fetched `orion-upstream`. The derivation contract travels with every upgrade, and `pnpm orion:prune` reapplies it, so the project stays free of foundation-only content and keeps its own package scope. [Stable semantic tags](versioning.md) make released foundation points easier to identify: a project may be described as derived from a tagged Orion release when its initialization commit matches that tag, while the manifest continues to record the exact commit SHA.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Inspect provenance",
+    "anchor": "inspect-provenance",
+    "text": "Inspect provenance\npnpm orion:status\n\nIt prints the project identity and package scope, the initialization and recorded baseline commits, whether `orion-upstream` is configured and fetch-only, and, after `git fetch orion-upstream`, how many upstream commits follow the baseline and whether integrated commits are not yet recorded. It does not fetch or change anything.\n`pnpm orion:check` runs in `pnpm validate`.\nIn Orion, it validates the manifest and derivation contract, requires every foundation-only path and template to exist, and rejects shared tracked files that link to, import, name, or mention foundation-only content. Derivation tooling, ADRs, this guide, and generated output are exempt.\nIn a project, it validates the manifest and contract, requires the project plan and human actions and the root package name of the recorded scope, rejects any foundation-only path and any remaining reference to the foundation package scope in code or configuration, requires both recorded commits to exist with the initialization commit an ancestor of the baseline and the baseline an ancestor of `HEAD`, and applies the [remote rules](#remote-rules). It needs full history; CI already uses `fetch-depth: 0`.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Remote rules",
+    "anchor": "remote-rules",
+    "text": "Remote rules\nGit remotes are local configuration, so other clones of the project do not receive `orion-upstream`. Configure it in any clone with:\npnpm orion:upstream\ngit fetch orion-upstream\n\nRemote\nRule\nEnforced by\n`origin`\nMust not identify the Orion foundation through its fetch or push URL, so product work never has the foundation as its normal push target. It need not equal the project's `repository.url`: contributors may work through a fork or mirror.\n`pnpm orion:upstream` refuses; `pnpm orion:check` fails\n`orion-upstream`, when present\nIts fetch URL must identify the foundation repository recorded in the manifest.\n`pnpm orion:upstream` refuses; `pnpm orion:check` fails\n`orion-upstream`, when present\nIts only push URL must be the disabled `orion-upstream-is-fetch-only`.\n`pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream`\n`orion-upstream`, when absent\nValid; a normal clone has no foundation remote until a developer configures it.\n—\nLocal branches\nNo local branch may track `orion-upstream`; an argument-free `git pull` would otherwise merge foundation changes outside a reviewed upgrade.\n`pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream`\n`pnpm orion:upstream` adds `orion-upstream` from the manifest when absent, replaces every push URL of it with the disabled one, disables its tags, and removes upstream tracking of it from every local branch. It is safe to rerun.\nRepository identities compare as normalized HTTPS URLs, so HTTPS, SSH, and scp-like forms of the same repository match. Host names are case-insensitive, but repository path case is significant because self-hosted servers may treat `acme/Ledger` and `acme/ledger` as different repositories: accepting a URL as a given repository, as for `orion-upstream` or the `origin` checked before initialization, requires the exact path. Refusing a URL because it could reach the foundation, as for `origin` or a new project's repository, ignores path case, because hosts such as GitHub resolve differently cased paths to the same repository. An explicit non-default HTTPS port is part of the identity: `https://git.example.com:8443/acme/ledger` differs from `https://git.example.com/acme/ledger`, while `:443` is the same endpoint as no port. A non-default SSH port only selects the SSH transport and does not identify the HTTPS endpoint, so such a URL is refused as a project repository and never matches the foundation; supply the repository's HTTPS URL instead.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Upgrade to a newer Orion revision",
+    "anchor": "upgrade-to-a-newer-orion-revision",
+    "text": "Upgrade to a newer Orion revision\nAn upgrade is a normal reviewable engineering change on a branch. Nothing is applied automatically, and semantic conflicts are resolved by people or agents under review. Tags help humans choose a known release point but do not change this workflow. Ordinary conflicts in project-modified shared files do not by themselves indicate a MAJOR Orion release.\nRun `git fetch orion-upstream` and `pnpm orion:status`. Review upstream changes with `git log --oneline <baseline>..orion-upstream/main` and `git diff <baseline> orion-upstream/main`, including ADRs, policies, migrations, tooling, and `.orion/derivation.json`.\nChoose the candidate commit; it must be on `orion-upstream/main`. Create a branch, for example `git switch -c orion-upgrade/<short-commit>`, and run `git merge --no-ff <commit>`.\nResolve conflicts in `.orion/project.json`, `.orion/derivation.json`, the release registry, and `package.json` first if they prevent the command from loading. Run `pnpm orion:prune` while other merge conflicts remain. It deletes foundation-only paths the merge changed or added (resolving their modify/delete conflicts), renames foundation package-scope references in resolved shared files, and stages those changes. It leaves unresolved shared files and project-owned files untouched, reports the unresolved paths, and refuses to delete a recorded durable migration or follow linked paths outside the checkout. Resolve and stage reported conflicts, then rerun it.\nResolve remaining conflicts according to [content ownership](#content-ownership): keep the project's version of project-owned files and merge shared files. Never hand-merge generated output: run the generators from step 5, then stage their results (for example `git add -A apps/web/src/generated docs/generated packages/sdk/src/generated`), which resolves conflicts in generated files, including ones the project's output no longer contains. Rerun `pnpm orion:prune` until it reports no unresolved files. Review semantic interactions with product code even where Git reports no conflict.\nRun `pnpm install --frozen-lockfile`, `pnpm db:generate`, `pnpm -C apps/api references:write`, `pnpm -C packages/sdk generate`, `pnpm docs:references:write`, and `pnpm validate`. Commit the merge.\nRun `pnpm orion:record-baseline <commit>`. It refuses unless the worktree is clean and `orion-upstream` exists and satisfies the [remote rules](#remote-rules). It then fetches `main` from that verified foundation, so refs fetched earlier from another repository cannot vouch for the commit. Finally it requires the commit to be on `orion-upstream/main`, descend from the recorded baseline, and already be an ancestor of `HEAD`. Commit the manifest change, rerun `pnpm validate`, and open the pull request against the project's `main`.\nMerge the pull request with a merge commit. Squash or rebase merges discard Orion's commit identities, and `pnpm orion:check` then fails because the recorded baseline is not an ancestor of `HEAD`. The project repository must therefore keep merge commits enabled (project human action PH-02). This applies only to Orion upgrade pull requests.\nIf the project's default branch requires pull requests, as PH-02 establishes, the merge and baseline update reach `main` together through that pull request. Record the upgrade and any project-specific follow-up in the project plan.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Migrate a project from schema version 1",
+    "anchor": "migrate-a-project-from-schema-version-1",
+    "text": "Migrate a project from schema version 1\nProjects initialized before the clean-baseline contract have a schema version 1 manifest with `referenceImplementations`, Orion's plan, human actions, and acceptance report, and usually the Approval Request implementation and `@orion/*` packages. After merging an Orion revision that contains this contract, `pnpm orion:check` refuses the old manifest. Migrate in the upgrade branch:\nIf the project adopted Approval Request as product behavior, move its code, schema, metadata, grants, and tests out of the foundation-only paths first (for example to `src/features/<product-module>/` and matching paths under the module's own name). Preserve every released migration at its original path and remove that path from the project's `foundationOnly` list in `.orion/derivation.json`; never rename or delete it. Verify uncertain release status under [migration policy](database/migrations.md) before classifying a migration as removable. Only genuinely unreleased reference migrations may be removed or renamed. `orion:prune` refuses removal of recorded durable migrations.\nEdit `.orion/project.json`: set `schemaVersion` to `2`, remove `referenceImplementations`, and add `\"packageScope\": \"@<scope>\"`.\nRun `pnpm orion:prune` to remove foundation-only paths and rename package-scope references.\nReplace the project-owned files that still carry Orion's content: render `README.md`, `apps/api/src/modules.ts`, `apps/web/src/modules.tsx`, and the brand assets from the [templates](../.orion/derivation.json) (substituting each `{{PLACEHOLDER}}`), keeping existing project-specific text. Keep `docs/project/`; remove its references to Orion's plan, human actions, acceptance report, and reference implementation, and port the maintenance rules from the plan and human-action templates.\nRegenerate as in [upgrade step 5](#upgrade-to-a-newer-orion-revision), run `pnpm validate`, and continue with baseline recording.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contributing improvements back to Orion",
+    "anchor": "contributing-improvements-back-to-orion",
+    "text": "Contributing improvements back to Orion\nProduct work never goes to `orion-upstream`; its push URL is disabled. To improve the foundation itself, make the change in a separate clone of Orion and submit it there under Orion's own review, then adopt it in projects through the upgrade workflow. Do not move product code, requirements, or history into Orion. In Orion, keep new shared content independent of foundation-only content; extend `.orion/derivation.json` when adding foundation-only or project-owned files.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Limits",
+    "anchor": "limits",
+    "text": "Limits\nProvenance proves which Orion commits are ancestors of the project; it does not prove that the project still follows every inherited policy. Validation and review remain the enforcement.\n`pnpm orion:check` can verify that the recorded baseline is integrated, but only `pnpm orion:status` with a fetched upstream can report newer integrated commits that were not yet recorded.\nUpgrades that change foundation-only or project-owned files conflict in projects; projects that diverge heavily from shared files should expect more conflicts there.\nThe isolation check matches links, imports, path names, and listed terms; it cannot judge whether shared prose implicitly assumes the reference implementation. Review remains necessary.\nThe immutable Git commit remains the exact foundation revision and provenance identity. [Foundation versioning](versioning.md) assigns human-readable tags only to deliberate stable release points; commits between tags remain usable by SHA.\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "anchor": "proposal-conversational-autonomy-with-controlled-business-tools",
+    "text": "Proposal: Conversational Autonomy with Controlled Business Tools\n**Status:** historical proposal; implementation authorized by the owner on 2026-10-12 and tracked in PJ-42–46.\n**Date:** 2026-10-12.\n**Scope:** original repository analysis and proposed evolution of IA-MNS. The diagnosis and proposed targets below describe the baseline at the analysis date. Current behavior is owned by [conversational autonomy](../architecture/conversational-autonomy.md), [ADR-0035](../adr/0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md) and the [implementation plan](implementation-plan.md#conversational-autonomy-implementation).\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Owner-authorized revision",
+    "anchor": "owner-authorized-revision",
+    "text": "Owner-authorized revision\nThe subsequent implementation request authorized all phases and delegated technical decisions without phase-by-phase approval. The owner also explicitly approved necessary real business data in OpenAI requests and reuse of the existing API key for synthetic evaluations. The former opaque-only/privacy-decision gate below is historical and does not block ordinary in-scope analysis. [AI data processing](../security/ai-data-processing.md) now defines allowed categories, minimization, metadata traceability, `store:false`, category-specific personal-data gates and the unverified account/legal prerequisites. No new ERP writes, grants or production deployment were authorized. The phased proposal is implemented incrementally with bounded text/CSV and PNG/JPEG attachment support; arbitrary document formats, full spreadsheet calculation and global autonomous business-rule learning are outside its validated scope.\n[Documentation index](../README.md) · [Current implementation plan](implementation-plan.md) · [Human actions](human-actions.md) · [Current AI architecture](../architecture/ai-interpretation.md)\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Recommendation",
+    "anchor": "recommendation",
+    "text": "Recommendation\nEvolve IA-MNS into a conversational assistant that can reason over authorized context, write its own responses, and choose among controlled business tools. Keep data access, authorization, business definitions, query compilation, arithmetic, and execution limits in the application. The model should decide how to help within those boundaries, including when no new database query is necessary.\nThis addresses a broad class of requests: summarize, explain, rewrite, translate, compare available facts, adjust presentation, continue an analysis, and combine supported operations. Each phrasing should not require a new intent, conditional branch, prompt exception, or business capability. New data sources, metrics, business meanings, and side effects still require explicit integration and validation.\nThe immediate recommendation is a general conversation and evidence layer over the existing capabilities, followed by a bounded tool-calling loop. Retain the existing Responses API integration, PostgreSQL history, semantic product catalogs, and reviewed ERP adapters. Do not start by replacing the stack, adding multiple agents, fine-tuning, or exposing a SQL console.\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "What the repository shows",
+    "anchor": "what-the-repository-shows",
+    "text": "What the repository shows\nThis analysis inspected the actual working tree, including substantial pre-existing uncommitted sales/product work, on top of `885cf58`. That commit alone does not identify everything analyzed. The reported conversation was not replayed against the live model; no stored private conversation, ERP data, credentials, or operational model setting was read. The diagnosis below is supported by executable code and current policy, not a claim about the exact model output in that turn.\nFinding\nEvidence\nEffect\nThe router can choose a registered capability or a small social/unavailable intent. It is expressly forbidden to produce answers or public prose.\n[`routeSchema` and `createAgentPlanner`](../../apps/api/src/features/agent/planner.ts)\nA legitimate writing request has no general conversational execution path.\nBusiness answers in router history are replaced by an answer-delivered marker.\n[`runAgentTurn`](../../apps/api/src/features/agent/application.ts)\nThe model cannot read the figures or explanation behind “summarize this.”\nSales interpretation sees filters, active/pending plans, and filter-only descriptions of answers. It cannot emit figures or public text.\n[`interpreterState`, `interpreterInstructions`, `interpreterMessages`](../../apps/api/src/features/sales/interpreter.ts); [`recordExchange` use](../../apps/api/src/features/sales/application.ts)\nSales context supports query refinement, not discussion of the returned evidence.\nThe exact reported refusal is a fixed sales message.\n`unsupportedMessage` in [`sales/application.ts`](../../apps/api/src/features/sales/application.ts)\nThe reported wording is consistent with the sales unsupported branch. The route/interpretation for the specific incident remains unverified.\nEach model request forces exactly one named strict function call, then consumes only its validated arguments.\n[`StructuredModel`](../../apps/api/src/ai/model.ts), [`createOpenAiModel`](../../apps/api/src/ai/openai.ts)\nThere is no general response-generation or iterative tool-result conversation in this adapter.\nDurable turns already contain reply snapshots; execution loads up to 12 completed turns.\n[`AgentRepository`](../../apps/api/src/features/agent/prisma-repository.ts), [`storedReplySchema`](../../apps/api/src/features/agent/contracts.ts)\nThe information is not necessarily lost. The missing piece is authorized, purpose-specific model context. Older references need bounded retrieval beyond that window.\nProduct choices and sales scope already have structured, ERP-specific state and complete-membership execution.\n[`products/sales.ts`](../../apps/api/src/features/products/sales.ts), [semantic sales integration](../architecture/semantic-product-resolution.md#sales-integration)\nPreserve and reuse this work; do not reconstruct a product selection from a displayed list or prose.\nThe chat sends text and a source selection and renders structured results with a text message.\n[`agent/contracts.ts`](../../apps/api/src/features/agent/contracts.ts), [`agent/page.tsx`](../../apps/web/src/features/agent/page.tsx), [`ModelMessage`](../../apps/api/src/ai/model.ts)\nFile/image ingestion and evidence-aware prose need actual contracts and UI support; choosing a multimodal model alone does not implement them.\nThe source inspection explains the failure class: IA-MNS currently uses the model as an interpreter for a restricted query workflow. It does not expose the broader conversational abilities needed to discuss an answer. Changing only the model or adding a synonym for “resumo” would leave these architectural restrictions in place.\nThese restrictions were deliberate. [ADR-0018](../adr/0018-bound-natural-language-sales-to-a-read-only-query-capability.md), [ADR-0019](../adr/0019-compose-a-corporate-agent-with-durable-conversations.md), and [ADR-0024](../adr/0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md) retain application-authored responses, deterministic financial results, and figure-free model context. A future implementation must explicitly extend or partially supersede the affected decisions rather than silently contradict them.\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "What “use ChatGPT's capabilities” means here",
+    "anchor": "what-use-chatgpts-capabilities-means-here",
+    "text": "What “use ChatGPT's capabilities” means here\nThe requested behavior is feasible using the API: a model can receive conversation context, call application functions, and produce an answer after seeing the tool results. Responses also supports file and image inputs, subject to model and input-type support. IA-MNS must implement the surrounding context, tools, permissions, persistence, and presentation; an API model setting does not import the ChatGPT application's complete product behavior. See the official [conversation-state](https://developers.openai.com/api/docs/guides/conversation-state), [function-calling](https://developers.openai.com/api/docs/guides/function-calling), [file-input](https://developers.openai.com/api/docs/guides/file-inputs), and [vision](https://developers.openai.com/api/docs/guides/images-vision) documentation.\nThe goal is broad conversational competence over controlled resources. The agent may explain concepts from general knowledge, clearly distinguish that from company facts, and transform user-provided material. Claims about MNS or its operations require authorized evidence. If the required evidence or tool is absent, it should describe the specific gap and any useful supported next step.\nThis reduces configuration of language and workflows. It cannot eliminate the need to define what “sales,” “net value,” “active product,” or a source-specific unit means. Neither a schema nor a powerful model can reliably infer all business rules, undocumented join cardinalities, or organizational permissions.\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Proposed division of responsibility",
+    "anchor": "proposed-division-of-responsibility",
+    "text": "Proposed division of responsibility\nConcern\nModel autonomy\nServer authority\nConversation\nUnderstand intent, references, tone, language, desired format, and level of detail.\nSelect authorized history and protect conversation ownership.\nPlanning\nAnswer directly, inspect evidence, request a supported analysis, or ask a meaningful clarification.\nAdmit only registered tools, valid arguments, permitted scopes, and bounded work.\nProduct interpretation\nUse reviewed semantic descriptions and actual candidates; reuse an explicit prior choice.\nValidate catalog version, ERP, grounding, ambiguity, and complete selection membership.\nAnalysis\nChoose useful supported comparisons and decompositions for the user's objective.\nEnforce metric meaning, source selection, date limits, unit compatibility, and exact calculations.\nResponse\nWrite natural prose, explain supported findings, propose hypotheses, and adapt presentation.\nBind factual claims to evidence, render canonical values, and reject unsafe or unverifiable outputs.\nLearning\nAdapt within the conversation and propose reusable preferences or new semantic candidates.\nControl persistence, scope, review, revocation, and promotion into business knowledge.\nExternal actions\nExplain or prepare a proposed action when supported.\nNo ERP writes or outbound delivery tools in the initial design. Future side effects need their own authorization and delivery contract.\nAutonomy applies to completing the current user request. It does not imply background monitoring, scheduled jobs, self-modification, permission changes, or unattended external writes.\n"
   }
 ]

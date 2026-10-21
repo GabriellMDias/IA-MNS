@@ -68,6 +68,8 @@ The catalog still grows with entry count; search and static asset volume grow wi
 
 ## Change and verification workflow
 
+The [feature catalog](../features/README.md) is linked from the overview and section navigation. It groups implemented product functions by data source or channel and routes to their owning domain documentation. `apps/api/scripts/feature-reference.ts` generates the sales SQL variants, parameter examples and product-filter references from the production compilers/catalogs through the existing API reference workflow. The web serves the generated `.sql` files as static assets with explicit copy/download actions. They contain placeholders and synthetic examples only; reading, copying or downloading them never opens an ERP connection. This inventory is not an installation-specific availability check or a capture of a person's executed query.
+
 1. Edit the owning Markdown, contract, schema, or component metadata. Regenerate upstream API/database/SDK references when their sources change.
 2. Run `pnpm docs:references:write`, including after ordinary authored documentation changes. Review generated differences, links, sensitive content, and obsolete output removal.
 3. Run `pnpm docs:references:test`, `pnpm docs:check`, `pnpm docs:references:check`, relevant unit/browser checks, and the full `pnpm validate` gate. Generator tests protect publication boundaries; browser tests cover routes, search, exploration, synthetic previews, and automated accessibility checks plus keyboard/mobile behavior.

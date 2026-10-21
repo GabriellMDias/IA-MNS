@@ -15,6 +15,7 @@
     "identity:local": "pnpm -C apps/api identity:local",
     "sankhya:local": "pnpm -C apps/api sankhya:local",
     "pdt:local": "pnpm -C apps/api pdt:local",
+    "whatsapp:local": "pnpm -C apps/api whatsapp:local",
     "identity:bootstrap": "pnpm -C apps/api identity:bootstrap",
     "identity:keys": "pnpm -C apps/api identity:keys",
     "dev:lan": "pnpm -C apps/api dev:lan",

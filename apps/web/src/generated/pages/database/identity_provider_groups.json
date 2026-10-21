@@ -1,0 +1,87 @@
+{
+  "kind": "database",
+  "name": "identity_provider_groups",
+  "description": "Owner-selected default group for each external sign-in provider; no implicit permission policy.",
+  "owner": "identity",
+  "classification": "INTERNAL",
+  "lifecycle": "Two fixed rows seeded by migration. Owners update with recent strong authentication and optimistic version checks. Verified provider sign-in adds normal, audited membership; changing the selection does not remove existing memberships. A selected group cannot be deleted.",
+  "columns": [
+    {
+      "Column": "provider",
+      "PostgreSQL type": "character varying(16)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "External sign-in provider: pdt or sankhya.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "group_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Existing normal group joined after successful provider sign-in.",
+      "Null meaning": "No automatic membership for this provider.",
+      "Unit": "—"
+    },
+    {
+      "Column": "version",
+      "PostgreSQL type": "integer",
+      "Nullable": "no",
+      "Default": "0",
+      "Classification": "INTERNAL",
+      "Meaning": "Optimistic concurrency version incremented on every selection change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "yes",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner who selected the group; historical identity_persons identifier without a foreign key, retained through consolidation.",
+      "Null meaning": "The selection has never been changed by an owner.",
+      "Unit": "—"
+    },
+    {
+      "Column": "updated_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "INTERNAL",
+      "Meaning": "When the selection was last changed, or initially seeded.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_provider_groups_actor_check",
+      "Physical definition": "CHECK (((group_id IS NULL) OR (updated_by IS NOT NULL)))",
+      "Purpose": "A selected group must have an attributable selecting owner."
+    },
+    {
+      "Object": "identity_provider_groups_group_id_fkey",
+      "Physical definition": "FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE RESTRICT",
+      "Purpose": "An owner must clear or replace a default before deleting its group."
+    },
+    {
+      "Object": "identity_provider_groups_pkey",
+      "Physical definition": "PRIMARY KEY (provider)",
+      "Purpose": "One selection per sign-in provider."
+    },
+    {
+      "Object": "identity_provider_groups_provider_check",
+      "Physical definition": "CHECK (((provider)::text = ANY ((ARRAY['pdt'::character varying, 'sankhya'::character varying])::text[])))",
+      "Purpose": "Only the two supported external sign-in providers."
+    },
+    {
+      "Object": "identity_provider_groups_version_check",
+      "Physical definition": "CHECK ((version >= 0))",
+      "Purpose": "Nonnegative optimistic version."
+    }
+  ]
+}

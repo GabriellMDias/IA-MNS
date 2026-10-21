@@ -208,7 +208,8 @@
                                         {
                                           "type": "string",
                                           "const": "unsupported"
-                                        }
+                                        },
+                                        { "type": "string", "const": "denied" }
                                       ]
                                     },
                                     "reason": {
@@ -228,6 +229,10 @@
                                         {
                                           "type": "string",
                                           "const": "measure"
+                                        },
+                                        {
+                                          "type": "string",
+                                          "const": "access_denied"
                                         },
                                         { "type": "null" }
                                       ]
@@ -483,6 +488,48 @@
                                                 }
                                               },
                                               "additionalProperties": false
+                                            },
+                                            "access": {
+                                              "type": "object",
+                                              "required": ["rules"],
+                                              "properties": {
+                                                "rules": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "required": [
+                                                        "dimension",
+                                                        "values"
+                                                      ],
+                                                      "properties": {
+                                                        "dimension": {
+                                                          "type": "string",
+                                                          "pattern": "^[a-z][a-z_]{1,30}$"
+                                                        },
+                                                        "values": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "string",
+                                                            "minLength": 1,
+                                                            "maxLength": 40
+                                                          },
+                                                          "minItems": 1,
+                                                          "maxItems": 100
+                                                        }
+                                                      },
+                                                      "additionalProperties": false
+                                                    },
+                                                    "minItems": 1,
+                                                    "maxItems": 12
+                                                  },
+                                                  "minItems": 1,
+                                                  "maxItems": 64
+                                                }
+                                              },
+                                              "additionalProperties": false,
+                                              "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                                             }
                                           },
                                           "additionalProperties": false
@@ -563,6 +610,10 @@
                                               {
                                                 "type": "string",
                                                 "const": "unsupported"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "denied"
                                               }
                                             ]
                                           },
@@ -583,6 +634,10 @@
                                               {
                                                 "type": "string",
                                                 "const": "measure"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "access_denied"
                                               },
                                               { "type": "null" }
                                             ]
@@ -860,6 +915,48 @@
                                                       }
                                                     },
                                                     "additionalProperties": false
+                                                  },
+                                                  "access": {
+                                                    "type": "object",
+                                                    "required": ["rules"],
+                                                    "properties": {
+                                                      "rules": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "required": [
+                                                              "dimension",
+                                                              "values"
+                                                            ],
+                                                            "properties": {
+                                                              "dimension": {
+                                                                "type": "string",
+                                                                "pattern": "^[a-z][a-z_]{1,30}$"
+                                                              },
+                                                              "values": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "string",
+                                                                  "minLength": 1,
+                                                                  "maxLength": 40
+                                                                },
+                                                                "minItems": 1,
+                                                                "maxItems": 100
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          },
+                                                          "minItems": 1,
+                                                          "maxItems": 12
+                                                        },
+                                                        "minItems": 1,
+                                                        "maxItems": 64
+                                                      }
+                                                    },
+                                                    "additionalProperties": false,
+                                                    "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                                                   }
                                                 },
                                                 "additionalProperties": false
@@ -1171,6 +1268,10 @@
                                               {
                                                 "type": "string",
                                                 "const": "unsupported"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "denied"
                                               }
                                             ]
                                           },
@@ -1191,6 +1292,10 @@
                                               {
                                                 "type": "string",
                                                 "const": "measure"
+                                              },
+                                              {
+                                                "type": "string",
+                                                "const": "access_denied"
                                               },
                                               { "type": "null" }
                                             ]
@@ -1468,6 +1573,48 @@
                                                       }
                                                     },
                                                     "additionalProperties": false
+                                                  },
+                                                  "access": {
+                                                    "type": "object",
+                                                    "required": ["rules"],
+                                                    "properties": {
+                                                      "rules": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "required": [
+                                                              "dimension",
+                                                              "values"
+                                                            ],
+                                                            "properties": {
+                                                              "dimension": {
+                                                                "type": "string",
+                                                                "pattern": "^[a-z][a-z_]{1,30}$"
+                                                              },
+                                                              "values": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "string",
+                                                                  "minLength": 1,
+                                                                  "maxLength": 40
+                                                                },
+                                                                "minItems": 1,
+                                                                "maxItems": 100
+                                                              }
+                                                            },
+                                                            "additionalProperties": false
+                                                          },
+                                                          "minItems": 1,
+                                                          "maxItems": 12
+                                                        },
+                                                        "minItems": 1,
+                                                        "maxItems": 64
+                                                      }
+                                                    },
+                                                    "additionalProperties": false,
+                                                    "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                                                   }
                                                 },
                                                 "additionalProperties": false
@@ -1551,6 +1698,10 @@
                                                     {
                                                       "type": "string",
                                                       "const": "unsupported"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "denied"
                                                     }
                                                   ]
                                                 },
@@ -1571,6 +1722,10 @@
                                                     {
                                                       "type": "string",
                                                       "const": "measure"
+                                                    },
+                                                    {
+                                                      "type": "string",
+                                                      "const": "access_denied"
                                                     },
                                                     { "type": "null" }
                                                   ]
@@ -1858,6 +2013,48 @@
                                                             }
                                                           },
                                                           "additionalProperties": false
+                                                        },
+                                                        "access": {
+                                                          "type": "object",
+                                                          "required": ["rules"],
+                                                          "properties": {
+                                                            "rules": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                  "type": "object",
+                                                                  "required": [
+                                                                    "dimension",
+                                                                    "values"
+                                                                  ],
+                                                                  "properties": {
+                                                                    "dimension": {
+                                                                      "type": "string",
+                                                                      "pattern": "^[a-z][a-z_]{1,30}$"
+                                                                    },
+                                                                    "values": {
+                                                                      "type": "array",
+                                                                      "items": {
+                                                                        "type": "string",
+                                                                        "minLength": 1,
+                                                                        "maxLength": 40
+                                                                      },
+                                                                      "minItems": 1,
+                                                                      "maxItems": 100
+                                                                    }
+                                                                  },
+                                                                  "additionalProperties": false
+                                                                },
+                                                                "minItems": 1,
+                                                                "maxItems": 12
+                                                              },
+                                                              "minItems": 1,
+                                                              "maxItems": 64
+                                                            }
+                                                          },
+                                                          "additionalProperties": false,
+                                                          "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                                                         }
                                                       },
                                                       "additionalProperties": false
@@ -2236,7 +2433,11 @@
                                       "type": "string",
                                       "const": "unavailable"
                                     },
-                                    { "type": "string", "const": "unsupported" }
+                                    {
+                                      "type": "string",
+                                      "const": "unsupported"
+                                    },
+                                    { "type": "string", "const": "denied" }
                                   ]
                                 },
                                 "reason": {
@@ -2254,6 +2455,10 @@
                                       "const": "result_too_large"
                                     },
                                     { "type": "string", "const": "measure" },
+                                    {
+                                      "type": "string",
+                                      "const": "access_denied"
+                                    },
                                     { "type": "null" }
                                   ]
                                 },
@@ -2497,6 +2702,48 @@
                                             }
                                           },
                                           "additionalProperties": false
+                                        },
+                                        "access": {
+                                          "type": "object",
+                                          "required": ["rules"],
+                                          "properties": {
+                                            "rules": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "dimension",
+                                                    "values"
+                                                  ],
+                                                  "properties": {
+                                                    "dimension": {
+                                                      "type": "string",
+                                                      "pattern": "^[a-z][a-z_]{1,30}$"
+                                                    },
+                                                    "values": {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "type": "string",
+                                                        "minLength": 1,
+                                                        "maxLength": 40
+                                                      },
+                                                      "minItems": 1,
+                                                      "maxItems": 100
+                                                    }
+                                                  },
+                                                  "additionalProperties": false
+                                                },
+                                                "minItems": 1,
+                                                "maxItems": 12
+                                              },
+                                              "minItems": 1,
+                                              "maxItems": 64
+                                            }
+                                          },
+                                          "additionalProperties": false,
+                                          "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                                         }
                                       },
                                       "additionalProperties": false
@@ -2571,6 +2818,10 @@
                                           {
                                             "type": "string",
                                             "const": "unsupported"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "denied"
                                           }
                                         ]
                                       },
@@ -2591,6 +2842,10 @@
                                           {
                                             "type": "string",
                                             "const": "measure"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "access_denied"
                                           },
                                           { "type": "null" }
                                         ]
@@ -2860,6 +3115,48 @@
                                                   }
                                                 },
                                                 "additionalProperties": false
+                                              },
+                                              "access": {
+                                                "type": "object",
+                                                "required": ["rules"],
+                                                "properties": {
+                                                  "rules": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                          "dimension",
+                                                          "values"
+                                                        ],
+                                                        "properties": {
+                                                          "dimension": {
+                                                            "type": "string",
+                                                            "pattern": "^[a-z][a-z_]{1,30}$"
+                                                          },
+                                                          "values": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "string",
+                                                              "minLength": 1,
+                                                              "maxLength": 40
+                                                            },
+                                                            "minItems": 1,
+                                                            "maxItems": 100
+                                                          }
+                                                        },
+                                                        "additionalProperties": false
+                                                      },
+                                                      "minItems": 1,
+                                                      "maxItems": 12
+                                                    },
+                                                    "minItems": 1,
+                                                    "maxItems": 64
+                                                  }
+                                                },
+                                                "additionalProperties": false,
+                                                "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                                               }
                                             },
                                             "additionalProperties": false
@@ -3144,6 +3441,10 @@
                                           {
                                             "type": "string",
                                             "const": "unsupported"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "denied"
                                           }
                                         ]
                                       },
@@ -3164,6 +3465,10 @@
                                           {
                                             "type": "string",
                                             "const": "measure"
+                                          },
+                                          {
+                                            "type": "string",
+                                            "const": "access_denied"
                                           },
                                           { "type": "null" }
                                         ]
@@ -3433,6 +3738,48 @@
                                                   }
                                                 },
                                                 "additionalProperties": false
+                                              },
+                                              "access": {
+                                                "type": "object",
+                                                "required": ["rules"],
+                                                "properties": {
+                                                  "rules": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                          "dimension",
+                                                          "values"
+                                                        ],
+                                                        "properties": {
+                                                          "dimension": {
+                                                            "type": "string",
+                                                            "pattern": "^[a-z][a-z_]{1,30}$"
+                                                          },
+                                                          "values": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "string",
+                                                              "minLength": 1,
+                                                              "maxLength": 40
+                                                            },
+                                                            "minItems": 1,
+                                                            "maxItems": 100
+                                                          }
+                                                        },
+                                                        "additionalProperties": false
+                                                      },
+                                                      "minItems": 1,
+                                                      "maxItems": 12
+                                                    },
+                                                    "minItems": 1,
+                                                    "maxItems": 64
+                                                  }
+                                                },
+                                                "additionalProperties": false,
+                                                "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                                               }
                                             },
                                             "additionalProperties": false
@@ -3513,6 +3860,10 @@
                                                 {
                                                   "type": "string",
                                                   "const": "unsupported"
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "const": "denied"
                                                 }
                                               ]
                                             },
@@ -3533,6 +3884,10 @@
                                                 {
                                                   "type": "string",
                                                   "const": "measure"
+                                                },
+                                                {
+                                                  "type": "string",
+                                                  "const": "access_denied"
                                                 },
                                                 { "type": "null" }
                                               ]
@@ -3812,6 +4167,48 @@
                                                         }
                                                       },
                                                       "additionalProperties": false
+                                                    },
+                                                    "access": {
+                                                      "type": "object",
+                                                      "required": ["rules"],
+                                                      "properties": {
+                                                        "rules": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "object",
+                                                              "required": [
+                                                                "dimension",
+                                                                "values"
+                                                              ],
+                                                              "properties": {
+                                                                "dimension": {
+                                                                  "type": "string",
+                                                                  "pattern": "^[a-z][a-z_]{1,30}$"
+                                                                },
+                                                                "values": {
+                                                                  "type": "array",
+                                                                  "items": {
+                                                                    "type": "string",
+                                                                    "minLength": 1,
+                                                                    "maxLength": 40
+                                                                  },
+                                                                  "minItems": 1,
+                                                                  "maxItems": 100
+                                                                }
+                                                              },
+                                                              "additionalProperties": false
+                                                            },
+                                                            "minItems": 1,
+                                                            "maxItems": 12
+                                                          },
+                                                          "minItems": 1,
+                                                          "maxItems": 64
+                                                        }
+                                                      },
+                                                      "additionalProperties": false,
+                                                      "description": "Data restriction this result was computed under; absent when it covers every row of its source."
                                                     }
                                                   },
                                                   "additionalProperties": false

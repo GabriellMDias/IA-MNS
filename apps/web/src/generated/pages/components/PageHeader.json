@@ -1,0 +1,32 @@
+{
+  "kind": "component",
+  "name": "PageHeader",
+  "summary": "A page title and description with optional back navigation and primary actions.",
+  "props": [
+    {
+      "name": "title / description",
+      "type": "string / string (optional)",
+      "meaning": "The page h1 and concise supporting text."
+    },
+    {
+      "name": "back / actions",
+      "type": "ReactNode (optional)",
+      "meaning": "Caller-owned navigation and action controls. No routing or mutation is performed by this component."
+    }
+  ],
+  "states": [
+    "Title and description",
+    "Back navigation",
+    "Primary action",
+    "Stacked mobile layout"
+  ],
+  "accessibility": "Provides the page's h1. The caller supplies real links and buttons with accessible names; actions stay in reading order when the layout stacks.",
+  "usage": "Use once below the application shell. Keep routing in the caller and provide Button controls for actions. Back navigation appears above the title.",
+  "examples": [
+    {
+      "id": "ui-page-header",
+      "label": "Settings page header",
+      "description": "A synthetic page heading with a local demonstration action."
+    }
+  ]
+}

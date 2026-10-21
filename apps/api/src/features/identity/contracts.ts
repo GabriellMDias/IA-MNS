@@ -122,20 +122,110 @@ const sessionSchema = Type.Object(
   },
   object,
 );
+const sourceSchema = nullable(
+  Type.Object({ id: Type.String(), title: Type.String() }, object),
+);
 const catalogSchema = Type.Array(
   Type.Object(
     {
       permission: Type.String(),
+      code: Type.String({
+        description:
+          "Stable identification given to support, for example SNK-VEN-01.",
+      }),
       title: Type.String(),
+      description: Type.String(),
+      source: sourceSchema,
+      capability: nullable(Type.String()),
       access: Type.Union([
         Type.Literal("read"),
         Type.Literal("write"),
         Type.Literal("sensitive"),
       ]),
       autoGrantProviders: Type.Array(provider),
+      restrictions: Type.Array(
+        Type.Object(
+          {
+            id: Type.String(),
+            code: Type.String(),
+            title: Type.String(),
+            description: Type.String(),
+            hierarchical: Type.Boolean({
+              description: "Selecting a value also admits the values below it.",
+            }),
+          },
+          object,
+        ),
+      ),
     },
     object,
   ),
+);
+const conditionSchema = Type.Object(
+  {
+    dimension: Type.String(),
+    values: Type.Array(
+      Type.Object({ value: Type.String(), label: Type.String() }, object),
+    ),
+  },
+  object,
+);
+const grantSchema = Type.Object(
+  {
+    permission: Type.String(),
+    grantedAt: Type.String({ format: "date-time" }),
+    restrictions: Type.Array(conditionSchema, {
+      description: "Empty: every row of the source.",
+    }),
+  },
+  object,
+);
+const accessSchema = Type.Array(
+  Type.Object(
+    {
+      permission: Type.String(),
+      code: Type.String(),
+      title: Type.String(),
+      source: sourceSchema,
+      dimensions: Type.Array(
+        Type.Object(
+          { id: Type.String(), code: Type.String(), title: Type.String() },
+          object,
+        ),
+        {
+          description: "Restriction dimensions of the permission, for display.",
+        },
+      ),
+      rules: nullable(
+        Type.Array(Type.Array(conditionSchema), {
+          description:
+            "Rows admitted by at least one rule; every condition of a rule must match.",
+        }),
+      ),
+      origins: Type.Array(
+        Type.Object(
+          {
+            kind: Type.Union([
+              Type.Literal("owner"),
+              Type.Literal("grant"),
+              Type.Literal("group"),
+              Type.Literal("provider"),
+            ]),
+            group: nullable(
+              Type.Object({ id: uuid, name: Type.String() }, object),
+            ),
+            provider: nullable(provider),
+          },
+          object,
+        ),
+      ),
+    },
+    object,
+  ),
+  {
+    description:
+      "Effective catalog permissions with their identification, data scope (null rules: unrestricted) and where each comes from.",
+  },
 );
 const personSchema = Type.Object(
   {
@@ -143,8 +233,10 @@ const personSchema = Type.Object(
     displayName: Type.String(),
     status: Type.Union([Type.Literal("active"), Type.Literal("disabled")]),
     owner: Type.Boolean(),
-    grants: Type.Array(Type.String()),
+    grants: Type.Array(grantSchema),
+    groups: Type.Array(Type.Object({ id: uuid, name: Type.String() }, object)),
     permissions: Type.Array(Type.String()),
+    access: accessSchema,
     links: Type.Array(linkSchema),
     local: nullable(
       Type.Object(
@@ -157,6 +249,30 @@ const personSchema = Type.Object(
       ),
     ),
     sessions: Type.Array(sessionSchema),
+    whatsapp: nullable(
+      Type.Object(
+        {
+          number: Type.String({
+            description:
+              "Linked number in international display form, for example +55 11 98765-4321.",
+          }),
+          linkedAt: Type.String({ format: "date-time" }),
+          updatedAt: Type.String({ format: "date-time" }),
+          confirmedAt: nullable(
+            Type.String({
+              format: "date-time",
+              description:
+                "First accepted WhatsApp message from this number; null until one arrives.",
+            }),
+          ),
+        },
+        {
+          ...object,
+          description:
+            "The WhatsApp number that an owner linked to this Person; only owners change it.",
+        },
+      ),
+    ),
   },
   object,
 );
@@ -751,6 +867,299 @@ export const revokeSessionOperation = operation(
   },
   true,
 );
+const groupParams = Type.Object({ groupId: uuid }, object);
+export const adminProviderGroupsOperation = operation(
+  "GET",
+  "/identity/admin/provider-groups",
+  "getIdentityProviderGroups",
+  "Owner: the default group selected for each external sign-in provider. Verified sign-in joins the group before issuing a token. No selection means no automatic membership.",
+  {
+    response: {
+      200: Type.Object(
+        {
+          items: Type.Array(
+            Type.Object(
+              {
+                provider,
+                groupId: nullable(uuid),
+                version: Type.Integer({ minimum: 0 }),
+              },
+              object,
+            ),
+            { minItems: 2, maxItems: 2 },
+          ),
+        },
+        object,
+      ),
+      ...errors,
+    },
+  },
+  true,
+);
+export const adminUpdateProviderGroupOperation = operation(
+  "PUT",
+  "/identity/admin/provider-groups/:provider",
+  "setIdentityProviderGroup",
+  "Owner with recent strong authentication: select an existing default group or clear the selection, conditionally on the version read. Existing memberships remain; future verified provider sign-ins join the selected group. The selection and audit commit together.",
+  {
+    params: Type.Object({ provider }, object),
+    body: Type.Object(
+      {
+        groupId: nullable(uuid),
+        version: Type.Integer({ minimum: 0, maximum: 2147483646 }),
+      },
+      object,
+    ),
+    response: { 200: ok, ...errors },
+  },
+  true,
+);
+const restrictionInput = Type.Array(
+  Type.Object(
+    {
+      dimension: Type.String({ pattern: "^[a-z][a-z_]{1,30}$" }),
+      values: Type.Array(Type.String({ pattern: "^-?[0-9]{1,15}$" }), {
+        minItems: 1,
+        maxItems: 100,
+      }),
+    },
+    object,
+  ),
+  {
+    maxItems: 8,
+    description:
+      "Data restrictions: values of one dimension are alternatives; every listed dimension must match. Empty admits every row of the source. Values are ERP codes chosen from GET /identity/admin/restriction-values; labels are read from the source.",
+  },
+);
+const grantBody = Type.Object({ restrictions: restrictionInput }, object);
+const groupFields = {
+  name: Type.String({ minLength: 2, maxLength: 80 }),
+  description: nullable(Type.String({ maxLength: 300 })),
+};
+export const adminCatalogOperation = operation(
+  "GET",
+  "/identity/admin/catalog",
+  "getIdentityPermissionCatalog",
+  "Owner: the grantable permissions grouped by source, with their identification codes, restriction dimensions. The legacy automatic-grant field is empty; provider sign-in joins owner-selected groups.",
+  {
+    response: {
+      200: Type.Object(
+        {
+          catalog: catalogSchema,
+          restrictionsAvailable: Type.Boolean({
+            description:
+              "Restriction values can be read from the sources; without it, only unrestricted grants can be saved.",
+          }),
+        },
+        object,
+      ),
+      ...errors,
+    },
+  },
+  true,
+);
+export const adminRestrictionValuesOperation = operation(
+  "GET",
+  "/identity/admin/restriction-values",
+  "searchIdentityRestrictionValues",
+  "Owner: real values of one restriction dimension of a permission, read-only from its source; at most 30, by code or name. Labels may be personal names (sellers, buyers).",
+  {
+    querystring: Type.Object(
+      {
+        permission: Type.String({ maxLength: 80 }),
+        dimension: Type.String({ maxLength: 32 }),
+        query: Type.Optional(Type.String({ maxLength: 60 })),
+      },
+      object,
+    ),
+    response: {
+      200: Type.Object(
+        {
+          items: Type.Array(
+            Type.Object(
+              {
+                value: Type.String(),
+                label: Type.String(),
+                detail: nullable(Type.String()),
+              },
+              object,
+            ),
+            { maxItems: 30 },
+          ),
+        },
+        object,
+      ),
+      ...errors,
+    },
+  },
+  true,
+);
+export const adminGroupsOperation = operation(
+  "GET",
+  "/identity/admin/groups",
+  "listIdentityGroups",
+  "Owner: every group with its member count and granted permissions.",
+  {
+    response: {
+      200: Type.Object(
+        {
+          items: Type.Array(
+            Type.Object(
+              {
+                id: uuid,
+                name: Type.String(),
+                description: nullable(Type.String()),
+                version: Type.Integer({ minimum: 1 }),
+                members: Type.Integer({ minimum: 0 }),
+                permissions: Type.Array(Type.String()),
+              },
+              object,
+            ),
+            { maxItems: 200 },
+          ),
+        },
+        object,
+      ),
+      ...errors,
+    },
+  },
+  true,
+);
+export const adminCreateGroupOperation = operation(
+  "POST",
+  "/identity/admin/groups",
+  "createIdentityGroup",
+  "Owner: create a group of Persons whose grants every member holds. Names are unique regardless of case. Audited.",
+  {
+    body: Type.Object(groupFields, object),
+    response: {
+      201: Type.Object({ groupId: uuid }, object),
+      ...errors,
+    },
+  },
+  true,
+);
+const groupSchema = Type.Object(
+  {
+    id: uuid,
+    name: Type.String(),
+    description: nullable(Type.String()),
+    version: Type.Integer({ minimum: 1 }),
+    createdAt: Type.String({ format: "date-time" }),
+    updatedAt: Type.String({ format: "date-time" }),
+    members: Type.Array(
+      Type.Object(
+        {
+          personId: uuid,
+          displayName: Type.String(),
+          status: Type.Union([
+            Type.Literal("active"),
+            Type.Literal("disabled"),
+          ]),
+          addedAt: Type.String({ format: "date-time" }),
+        },
+        object,
+      ),
+    ),
+    grants: Type.Array(grantSchema),
+  },
+  object,
+);
+export const adminGroupOperation = operation(
+  "GET",
+  "/identity/admin/groups/:groupId",
+  "getIdentityGroup",
+  "Owner: a group's members, grants with their restrictions, and the grantable catalog.",
+  {
+    params: groupParams,
+    response: {
+      200: Type.Object(
+        {
+          group: groupSchema,
+          catalog: catalogSchema,
+          restrictionsAvailable: Type.Boolean(),
+        },
+        object,
+      ),
+      ...errors,
+    },
+  },
+  true,
+);
+export const adminUpdateGroupOperation = operation(
+  "PATCH",
+  "/identity/admin/groups/:groupId",
+  "updateIdentityGroup",
+  "Owner: rename or redescribe the version of the group that was read. Audited.",
+  {
+    params: groupParams,
+    body: Type.Object(
+      { ...groupFields, version: Type.Integer({ minimum: 1 }) },
+      object,
+    ),
+    response: { 200: ok, ...errors },
+  },
+  true,
+);
+export const adminDeleteGroupOperation = operation(
+  "DELETE",
+  "/identity/admin/groups/:groupId",
+  "deleteIdentityGroup",
+  "Owner: delete a group; its members lose the group's grants at their next access token and next agent turn. Audited.",
+  { params: groupParams, response: { 200: ok, ...errors } },
+  true,
+);
+export const adminAddGroupMemberOperation = operation(
+  "PUT",
+  "/identity/admin/groups/:groupId/members/:personId",
+  "addIdentityGroupMember",
+  "Owner: add an active Person to a group. Idempotent. Audited.",
+  {
+    params: Type.Object({ groupId: uuid, personId: uuid }, object),
+    response: { 200: ok, ...errors },
+  },
+  true,
+);
+export const adminRemoveGroupMemberOperation = operation(
+  "DELETE",
+  "/identity/admin/groups/:groupId/members/:personId",
+  "removeIdentityGroupMember",
+  "Owner: remove a Person from a group. Audited.",
+  {
+    params: Type.Object({ groupId: uuid, personId: uuid }, object),
+    response: { 200: ok, ...errors },
+  },
+  true,
+);
+export const adminGroupGrantOperation = operation(
+  "PUT",
+  "/identity/admin/groups/:groupId/grants/:permission",
+  "grantIdentityGroupPermission",
+  "Owner: grant a registered permission to a group, optionally restricted, or replace the restrictions of its grant. Audited.",
+  {
+    params: Type.Object(
+      { groupId: uuid, permission: Type.String({ maxLength: 80 }) },
+      object,
+    ),
+    body: grantBody,
+    response: { 200: ok, ...errors },
+  },
+  true,
+);
+export const adminRevokeGroupGrantOperation = operation(
+  "DELETE",
+  "/identity/admin/groups/:groupId/grants/:permission",
+  "revokeIdentityGroupPermission",
+  "Owner: revoke a group's grant. Audited.",
+  {
+    params: Type.Object(
+      { groupId: uuid, permission: Type.String({ maxLength: 80 }) },
+      object,
+    ),
+    response: { 200: ok, ...errors },
+  },
+  true,
+);
 const personParams = Type.Object({ personId: uuid }, object);
 const adminCapabilities = Type.Object(
   {
@@ -760,6 +1169,10 @@ const adminCapabilities = Type.Object(
     }),
     linkInvitations: Type.Array(provider, {
       description: "Providers whose sign-in can complete a link invitation.",
+    }),
+    restrictions: Type.Boolean({
+      description:
+        "Owners can restrict grants by values read from the sources.",
     }),
   },
   object,
@@ -1111,10 +1524,15 @@ export const adminParametersOperation = operation(
             Type.Object(
               {
                 key: Type.Union(parameterKeys.map((key) => Type.Literal(key))),
-                group: Type.Union([Type.Literal("ai"), Type.Literal("access")]),
+                group: Type.Union([
+                  Type.Literal("ai"),
+                  Type.Literal("access"),
+                  Type.Literal("channels"),
+                ]),
                 effect: Type.Union([
                   Type.Literal("next_turn"),
                   Type.Literal("next_access_token"),
+                  Type.Literal("next_message"),
                 ]),
                 control: parameterControl,
                 value: parameterValue,
@@ -1169,12 +1587,13 @@ export const adminGrantOperation = operation(
   "PUT",
   "/identity/admin/persons/:personId/grants/:permission",
   "grantIdentityPermission",
-  "Owner: grant a registered capability permission. Audited.",
+  "Owner: grant a registered permission, optionally restricted, or replace the restrictions of an existing grant. Personal and group grants are united; external links alone grant nothing. Audited.",
   {
     params: Type.Object(
       { personId: uuid, permission: Type.String({ maxLength: 80 }) },
       object,
     ),
+    body: grantBody,
     response: { 200: ok, ...errors },
   },
   true,
@@ -1235,6 +1654,29 @@ export const adminUnlinkOperation = operation(
     params: Type.Object({ personId: uuid, linkId: uuid }, object),
     response: { 200: ok, ...errors },
   },
+  true,
+);
+export const adminSetWhatsappOperation = operation(
+  "PUT",
+  "/identity/admin/persons/:personId/whatsapp",
+  "setIdentityPersonWhatsapp",
+  "Owner: link or replace an active Person's WhatsApp number, the only authorization of the WhatsApp channel. International form with country code; Brazilian mobiles need the ninth digit. A number belongs to at most one Person. A change revokes the previous number at once. Audited.",
+  {
+    params: personParams,
+    body: Type.Object(
+      { number: Type.String({ minLength: 1, maxLength: 32 }) },
+      object,
+    ),
+    response: { 200: ok, ...errors },
+  },
+  true,
+);
+export const adminRemoveWhatsappOperation = operation(
+  "DELETE",
+  "/identity/admin/persons/:personId/whatsapp",
+  "removeIdentityPersonWhatsapp",
+  "Owner: remove a Person's WhatsApp number; the channel stops answering it at once, including messages already being processed. Audited.",
+  { params: personParams, response: { 200: ok, ...errors } },
   true,
 );
 export const adminResetOperation = operation(
@@ -1311,10 +1753,25 @@ export const identityOperations: readonly ApiOperation[] = [
   adminUpdateParameterOperation,
   adminGrantOperation,
   adminRevokeGrantOperation,
+  adminCatalogOperation,
+  adminRestrictionValuesOperation,
+  adminGroupsOperation,
+  adminProviderGroupsOperation,
+  adminUpdateProviderGroupOperation,
+  adminCreateGroupOperation,
+  adminGroupOperation,
+  adminUpdateGroupOperation,
+  adminDeleteGroupOperation,
+  adminAddGroupMemberOperation,
+  adminRemoveGroupMemberOperation,
+  adminGroupGrantOperation,
+  adminRevokeGroupGrantOperation,
   adminOwnerOperation,
   adminRemoveOwnerOperation,
   adminStatusOperation,
   adminUnlinkOperation,
+  adminSetWhatsappOperation,
+  adminRemoveWhatsappOperation,
   adminResetOperation,
   adminRevokeSessionsOperation,
 ];

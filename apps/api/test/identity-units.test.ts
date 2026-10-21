@@ -49,14 +49,24 @@ import { identityServiceFor } from "../src/features/identity/module.js";
 import { operationalParameters } from "../src/modules.js";
 import type { Database } from "../src/database.js";
 
+/** Descriptor fields these tests do not exercise. */
+const described = (code: string) => ({
+  code,
+  description: "Test permission.",
+  source: null,
+  capability: null,
+  restrictions: [],
+});
 const catalog: PermissionDescriptor[] = [
   {
+    ...described("TST-VEN-01"),
     permission: "sales:read",
     title: "Sales",
     access: "read",
     autoGrantProviders: ["sankhya"],
   },
   {
+    ...described("TST-ORD-01"),
     permission: "orders:write",
     title: "Orders",
     access: "write",
@@ -160,6 +170,7 @@ describe("identity policy", () => {
     expect(() =>
       validateCatalog([
         {
+          ...described("TST-ORD-01"),
           permission: "orders:write",
           title: "x",
           access: "write",
@@ -170,6 +181,7 @@ describe("identity policy", () => {
     expect(() =>
       validateCatalog([
         {
+          ...described("TST-ADM-01"),
           permission: "identity:admin",
           title: "x",
           access: "read",

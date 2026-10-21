@@ -4,6 +4,8 @@ Choose the route relevant to the change, then use the policy's headings and sour
 
 ## Find the smallest useful context
 
+To inspect available product functions by origin, start with the [feature catalog](features/README.md). Sales entries include the complete generated SQL, bound parameters, analytical options, product filters and permission restrictions for each ERP.
+
 1. Read the root and applicable nested `AGENTS.md`, then select the task route below. Read related policies only when the change crosses their boundaries.
 2. Follow the owner to its canonical source and relevant tests. For a complete implemented example, see [Orion's reference implementation](project-derivation.md#orions-reference-implementation). For commands, use [setup](setup.md) and [validation](validation.md).
 3. Consult the [technology map](architecture/technology-decisions.md) and governing ADR for an architectural choice or rationale. Accepted ADRs preserve decision-time context; their future-tense examples are not current command inventories.
@@ -21,6 +23,8 @@ Choose the route relevant to the change, then use the policy's headings and sour
 | Identify products through verified ERP-specific filters; change a semantic catalog, relationship or adapter | [Product lookup](domains/product-lookup.md), [Sankhya dictionary and filters](domains/sankhya-product-lookup.md), [semantic product resolution](architecture/semantic-product-resolution.md), [ADR-0032](adr/0032-resolve-product-selections-through-a-verified-semantic-catalog.md) |
 | Evaluate AI behavior, add regression cases, compare prompts or models, generate or simulate scenarios | [AI evaluation](architecture/ai-evaluation.md) |
 | Sign-in, Persons, external links (PDT Connect, Sankhya), embedded surfaces, permissions and administration | [Identity](domains/identity.md), [ADR-0022](adr/0022-own-the-ia-mns-identity-with-verified-external-links.md), [ADR-0023](adr/0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) |
+| Permission codes, groups, per-source permissions and data restrictions (companies, stores, buyers…) | [Authorization](domains/identity.md#authorization), [sales access and restrictions](domains/sales-chat.md#access-and-restrictions), [ADR-0037](adr/0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md) |
+| WhatsApp channel: owner-linked numbers, Meta webhook, delivery, activation and rollback | [WhatsApp channel](domains/whatsapp-channel.md), [ADR-0036](adr/0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md), [runbook](runbooks/whatsapp-channel.md) |
 | Change the Sankhya Om add-on that hosts IA-MNS inside the Om                                               | [Sankhya add-on guide](../apps/sankhya-addon/README.md), [add-on instructions](../apps/sankhya-addon/AGENTS.md), [application boundaries](architecture/application-boundaries.md#sankhya-om-add-on), [ADR-0026](adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md) |
 | Execute or track implementation work | The implementation plan linked from the README's [Current state](../README.md#current-state) |
 | Start a new project from Orion, check its provenance, or upgrade its Orion baseline | [Start and upgrade a project from Orion](project-derivation.md) |

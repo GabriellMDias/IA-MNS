@@ -401,7 +401,11 @@ export async function runConversationEvaluation(
         const outcome = await runConversationTurn(measured, capabilities, {
           actor: {
             id: "synthetic-evaluation-actor",
-            permissions: new Set(item.permission ? ["sales:read"] : []),
+            permissions: new Set(
+              item.permission
+                ? ["sales:read", "sales_sankhya:read", "sales_vrmaster:read"]
+                : [],
+            ),
           },
           message: turn.message,
           contexts,

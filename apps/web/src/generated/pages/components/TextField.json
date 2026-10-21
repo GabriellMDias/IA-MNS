@@ -1,0 +1,38 @@
+{
+  "kind": "component",
+  "name": "TextField",
+  "summary": "A labeled text-like input with associated help and validation messages.",
+  "props": [
+    {
+      "name": "label",
+      "type": "string",
+      "meaning": "Visible accessible name, associated with the native input."
+    },
+    {
+      "name": "hint / error",
+      "type": "string (optional)",
+      "meaning": "Described-by text; error also marks the input invalid. The owning form controls error announcements."
+    },
+    {
+      "name": "native input props",
+      "type": "ComponentProps<input>",
+      "meaning": "Includes type, value/defaultValue, autocomplete, required, id, handlers, ref and ARIA attributes. An omitted id is generated uniquely."
+    }
+  ],
+  "states": [
+    "Empty or filled",
+    "Help text",
+    "Invalid",
+    "Disabled",
+    "Keyboard focus"
+  ],
+  "accessibility": "Label and help/error IDs remain associated across renders. Caller-supplied aria-describedby is retained. Uses native input and validation semantics.",
+  "usage": "Use for text-like inputs, including password and one-time codes. Supply appropriate autocomplete and validation attributes. Keep credentials in temporary form state only.",
+  "examples": [
+    {
+      "id": "ui-text-fields",
+      "label": "Labels, help and errors",
+      "description": "Synthetic profile fields with no persistence or network request."
+    }
+  ]
+}

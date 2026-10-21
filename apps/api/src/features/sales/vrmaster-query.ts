@@ -60,6 +60,7 @@ const productLabel =
 export function vrmasterAggregateSql(
   query: SalesQuery,
   products?: SalesProductScope,
+  restriction?: string,
 ): string {
   if (query.metric === "weight")
     throw new Error("VRMaster has no reviewed weight measure");
@@ -80,7 +81,7 @@ export function vrmasterAggregateSql(
     query.metric === "net_value"
       ? "base.valortotal::numeric"
       : "base.quantidade::numeric";
-  return `${vrmasterCte(products)}
+  return `${vrmasterCte(products, restriction)}
 SELECT ${period} AS period, ${product} AS product, ${unit} AS unit,
   COALESCE(SUM(${measure}), 0)::text AS value
 FROM base
@@ -97,22 +98,37 @@ FROM base
 ORDER BY 1
 LIMIT 101`;
 
-function vrmasterCte(products?: SalesProductScope): string {
-  if (!products) return vrmasterSalesCte;
-  if (products.source !== "vrmaster")
+/**
+ * The reference with the product membership and the compiled data restriction
+ * (`restriction`, a predicate over venda, produto and m from
+ * `vrmasterRestriction`). Filtering rows keeps every reference join.
+ */
+function vrmasterCte(
+  products?: SalesProductScope,
+  restriction?: string,
+): string {
+  if (!products && !restriction) return vrmasterSalesCte;
+  if (products && products.source !== "vrmaster")
     throw new Error("Product source mismatch");
   if (vrmasterSalesCte.split("WHERE venda.data").length !== 2)
     throw new Error("Sales reference product boundary changed");
   return vrmasterSalesCte.replace(
     "WHERE venda.data",
-    `WHERE produto.id IN (${products.keysSql}) AND venda.data`,
+    `WHERE ${[
+      ...(products ? [`produto.id IN (${products.keysSql})`] : []),
+      ...(restriction ? [restriction] : []),
+    ].join(" AND ")} AND venda.data`,
   );
 }
 
 export function vrmasterMatchingProductsSql(
   products?: SalesProductScope,
+  restriction?: string,
 ): string {
-  return products
-    ? vrmasterProductsSql.replace(vrmasterSalesCte, vrmasterCte(products))
+  return products || restriction
+    ? vrmasterProductsSql.replace(
+        vrmasterSalesCte,
+        vrmasterCte(products, restriction),
+      )
     : vrmasterProductsSql;
 }

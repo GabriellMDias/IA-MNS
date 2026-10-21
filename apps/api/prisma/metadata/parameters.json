@@ -4,7 +4,7 @@
       "owner": "runtime (operational parameters)",
       "classification": "INTERNAL",
       "description": "Values that owners saved for the operational parameters declared by the runtime catalog in apps/api/src/parameters.ts (ADR-0028). The catalog owns each parameter's type, domain, installation default and effect; a missing row or a null value means the installation default applies. Secrets and bootstrap settings are never stored here.",
-      "lifecycle": "At most one row per catalog key, written only by owners through administration with strong recent authentication; a reset stores null instead of deleting. Every change is recorded in identity_audit_events with previous and new values.",
+      "lifecycle": "At most one row per catalog key, written only by owners through administration with strong recent authentication; a reset stores null instead of deleting. Every change is recorded in identity_audit_events with previous and new values. Retired access.providerGrants rows remain as historical evidence and are ignored by the runtime catalog; provider default groups have separate identity-owned storage.",
       "columns": {
         "key": {
           "description": "Catalog key of the parameter, such as ai.model.",
@@ -32,7 +32,7 @@
         "operational_parameters_pkey": "One saved value per parameter.",
         "operational_parameters_key_check": "Only parameters declared by the catalog.",
         "operational_parameters_version_check": "Versions start at 1.",
-        "operational_parameters_value_check": "Each known key holds only its catalog type and domain (model identifier pattern, trace level, list of at most 32 strings)."
+        "operational_parameters_value_check": "Each known key holds only its catalog type and domain (model identifier pattern, trace level, list of at most 32 strings, channel switch)."
       }
     }
   }

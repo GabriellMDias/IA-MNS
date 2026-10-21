@@ -50,6 +50,38 @@ export type SessionRecord = {
   revokedAt: Date | null;
 };
 
+/** One admitted value of one restricted dimension of a grant. */
+export type RestrictionRow = {
+  dimension: string;
+  value: string;
+  label: string;
+};
+const restrictionFields = {
+  dimension: true,
+  value: true,
+  label: true,
+} as const;
+
+export type GroupDetail = {
+  id: string;
+  name: string;
+  description: string | null;
+  version: number;
+  createdAt: Date;
+  updatedAt: Date;
+  members: {
+    personId: string;
+    displayName: string;
+    status: "active" | "disabled";
+    addedAt: Date;
+  }[];
+  grants: {
+    permission: string;
+    grantedAt: Date;
+    restrictions: RestrictionRow[];
+  }[];
+};
+
 export type PersonSnapshot = {
   id: string;
   displayName: string;
@@ -57,7 +89,17 @@ export type PersonSnapshot = {
   mergedInto: string | null;
   createdAt: Date;
   roles: Role[];
-  grants: { permission: string; grantedAt: Date }[];
+  grants: {
+    permission: string;
+    grantedAt: Date;
+    restrictions: RestrictionRow[];
+  }[];
+  /** Groups the Person belongs to, with the grants every member holds. */
+  groups: {
+    id: string;
+    name: string;
+    grants: { permission: string; restrictions: RestrictionRow[] }[];
+  }[];
   links: {
     id: string;
     provider: Provider;
@@ -75,7 +117,30 @@ export type PersonSnapshot = {
     recoveryCodesRemaining: number;
     lockedUntil: Date | null;
   } | null;
+  whatsapp: WhatsappLink | null;
 };
+
+/** The owner-linked WhatsApp number of a Person. */
+export type WhatsappLink = {
+  personId: string;
+  phoneNumber: string;
+  legacyIdentifier: string | null;
+  platformUserId: string | null;
+  version: number;
+  linkedAt: Date;
+  updatedAt: Date;
+  confirmedAt: Date | null;
+};
+const whatsappFields = {
+  personId: true,
+  phoneNumber: true,
+  legacyIdentifier: true,
+  platformUserId: true,
+  version: true,
+  linkedAt: true,
+  updatedAt: true,
+  confirmedAt: true,
+} as const;
 
 /** Moves another module's Person-owned data inside the consolidation transaction. */
 export type OwnershipTransfer = (
@@ -104,6 +169,51 @@ const isUnique = (error: unknown) =>
   error.code === "P2002";
 
 class MergeBusy extends Error {}
+
+/**
+ * The restrictions of one grant after consolidating two grants of the same
+ * permission. An unrestricted grant admits everything. Two restricted grants
+ * are united exactly only when they restrict the same dimensions and differ in
+ * at most one of them; otherwise the surviving Person's grant is kept, which
+ * may admit less than both did together but never more. Returns the surviving
+ * rows unchanged (same array) when nothing changes.
+ */
+export function mergedRestrictions(
+  target: RestrictionRow[],
+  source: readonly RestrictionRow[],
+): RestrictionRow[] {
+  if (target.length === 0) return target;
+  if (source.length === 0) return [];
+  const byDimension = (rows: readonly RestrictionRow[]) => {
+    const map = new Map<string, Set<string>>();
+    for (const row of rows)
+      map.set(
+        row.dimension,
+        (map.get(row.dimension) ?? new Set()).add(row.value),
+      );
+    return map;
+  };
+  const a = byDimension(target);
+  const b = byDimension(source);
+  if (a.size !== b.size || [...a.keys()].some((key) => !b.has(key)))
+    return target;
+  const differing = [...a.keys()].filter((key) => {
+    const left = a.get(key)!;
+    const right = b.get(key)!;
+    return (
+      left.size !== right.size || [...left].some((value) => !right.has(value))
+    );
+  });
+  if (differing.length === 0) return target;
+  if (differing.length > 1) return target;
+  const dimension = differing[0];
+  return [
+    ...target,
+    ...source.filter(
+      (row) => row.dimension === dimension && !a.get(dimension)!.has(row.value),
+    ),
+  ];
+}
 
 export class IdentityRepository {
   private readonly database: Database;
@@ -316,13 +426,34 @@ export class IdentityRepository {
       include: {
         roles: { select: { role: true } },
         grants: {
-          select: { permission: true, grantedAt: true },
+          select: {
+            permission: true,
+            grantedAt: true,
+            restrictions: { select: restrictionFields },
+          },
           orderBy: { permission: "asc" },
+        },
+        groupMemberships: {
+          select: {
+            group: {
+              select: {
+                id: true,
+                name: true,
+                grants: {
+                  select: {
+                    permission: true,
+                    restrictions: { select: restrictionFields },
+                  },
+                },
+              },
+            },
+          },
         },
         externalIdentities: { orderBy: { linkedAt: "asc" } },
         localCredential: {
           select: { login: true, totpEnabledAt: true, lockedUntil: true },
         },
+        whatsappLink: { select: whatsappFields },
       },
     });
     if (!person) return null;
@@ -339,6 +470,9 @@ export class IdentityRepository {
       createdAt: person.createdAt,
       roles: person.roles.map((item) => item.role as Role),
       grants: person.grants,
+      groups: person.groupMemberships
+        .map((item) => item.group)
+        .sort((a, b) => a.name.localeCompare(b.name, "pt-BR")),
       links: person.externalIdentities.map((link) => ({
         id: link.id,
         provider: link.provider as Provider,
@@ -358,6 +492,7 @@ export class IdentityRepository {
             lockedUntil: person.localCredential.lockedUntil,
           }
         : null,
+      whatsapp: person.whatsappLink,
     };
   }
 
@@ -900,14 +1035,23 @@ export class IdentityRepository {
           where: { id: input.sourceId },
           include: {
             roles: true,
-            grants: true,
+            grants: {
+              include: { restrictions: { select: restrictionFields } },
+            },
+            groupMemberships: { select: { groupId: true, addedBy: true } },
             externalIdentities: true,
             localCredential: true,
           },
         });
         const target = await tx.identityPerson.findUniqueOrThrow({
           where: { id: input.targetId },
-          include: { externalIdentities: true, localCredential: true },
+          include: {
+            externalIdentities: true,
+            localCredential: true,
+            grants: {
+              include: { restrictions: { select: restrictionFields } },
+            },
+          },
         });
         if (source.roles.some((role) => role.role === "owner"))
           return { result: "owner" };
@@ -915,6 +1059,7 @@ export class IdentityRepository {
           input.absorbableBy &&
           (source.localCredential !== null ||
             source.grants.length > 0 ||
+            source.groupMemberships.length > 0 ||
             source.externalIdentities.length !== 1 ||
             source.externalIdentities[0].id !== input.absorbableBy.linkId)
         )
@@ -948,18 +1093,67 @@ export class IdentityRepository {
             where: { personId: input.sourceId },
           });
         }
-        if (source.grants.length)
-          await tx.identityCapabilityGrant.createMany({
-            data: source.grants.map((grant) => ({
-              personId: input.targetId,
-              permission: grant.permission,
-              grantedBy: grant.grantedBy,
-            })),
-            skipDuplicates: true,
-          });
+        // Grants are united without ever widening a restricted grant beyond
+        // what either Person held; see mergedRestrictions.
+        for (const grant of source.grants) {
+          const existing = target.grants.find(
+            (item) => item.permission === grant.permission,
+          );
+          const rows = existing
+            ? mergedRestrictions(existing.restrictions, grant.restrictions)
+            : grant.restrictions;
+          if (existing && rows === existing.restrictions) continue;
+          if (existing)
+            await tx.identityGrantRestriction.deleteMany({
+              where: { personId: input.targetId, permission: grant.permission },
+            });
+          else
+            await tx.identityCapabilityGrant.create({
+              data: {
+                personId: input.targetId,
+                permission: grant.permission,
+                grantedBy: grant.grantedBy,
+                grantedAt: grant.grantedAt,
+              },
+            });
+          if (rows.length)
+            await tx.identityGrantRestriction.createMany({
+              data: rows.map((row) => ({
+                personId: input.targetId,
+                permission: grant.permission,
+                ...row,
+              })),
+            });
+        }
         await tx.identityCapabilityGrant.deleteMany({
           where: { personId: input.sourceId },
         });
+        if (source.groupMemberships.length)
+          await tx.identityGroupMember.createMany({
+            data: source.groupMemberships.map((member) => ({
+              groupId: member.groupId,
+              personId: input.targetId,
+              addedBy: member.addedBy,
+            })),
+            skipDuplicates: true,
+          });
+        await tx.identityGroupMember.deleteMany({
+          where: { personId: input.sourceId },
+        });
+        // One number per Person: the surviving Person keeps its own number;
+        // otherwise the source's number moves as a new version, so channel
+        // work queued for the absorbed Person is refused.
+        if (
+          await tx.identityWhatsappLink.findUnique({
+            where: { personId: input.targetId },
+            select: { personId: true },
+          })
+        )
+          await tx.identityWhatsappLink.deleteMany({
+            where: { personId: input.sourceId },
+          });
+        else
+          await tx.$executeRaw`UPDATE identity_whatsapp_links SET person_id = ${input.targetId}::uuid, version = version + 1 WHERE person_id = ${input.sourceId}::uuid`;
         await tx.identitySession.updateMany({
           where: { personId: input.sourceId, revokedAt: null },
           data: {
@@ -986,6 +1180,594 @@ export class IdentityRepository {
         if (error instanceof MergeBusy) return { result: "busy" };
         throw error;
       });
+  }
+
+  // ---------- Restricted grants and groups ----------
+  /**
+   * Grants a permission to a Person, or replaces the restrictions of an
+   * existing grant, with its audit event in the same transaction. No
+   * restriction rows means every row of the source.
+   */
+  async setGrant(input: {
+    personId: string;
+    permission: string;
+    restrictions: readonly RestrictionRow[];
+    actor: string;
+    audit: (created: boolean, tx: Prisma.TransactionClient) => Promise<void>;
+  }): Promise<"created" | "updated"> {
+    return this.database.$transaction(async (tx) => {
+      const existing = await tx.identityCapabilityGrant.findUnique({
+        where: {
+          personId_permission: {
+            personId: input.personId,
+            permission: input.permission,
+          },
+        },
+        select: { personId: true },
+      });
+      if (existing) {
+        await tx.identityGrantRestriction.deleteMany({
+          where: { personId: input.personId, permission: input.permission },
+        });
+        await tx.identityCapabilityGrant.update({
+          where: {
+            personId_permission: {
+              personId: input.personId,
+              permission: input.permission,
+            },
+          },
+          data: { grantedBy: input.actor, grantedAt: new Date() },
+        });
+      } else
+        await tx.identityCapabilityGrant.create({
+          data: {
+            personId: input.personId,
+            permission: input.permission,
+            grantedBy: input.actor,
+          },
+        });
+      if (input.restrictions.length)
+        await tx.identityGrantRestriction.createMany({
+          data: input.restrictions.map((row) => ({
+            personId: input.personId,
+            permission: input.permission,
+            ...row,
+          })),
+        });
+      await input.audit(!existing, tx);
+      return existing ? "updated" : "created";
+    });
+  }
+
+  async providerGroups() {
+    return this.database.identityProviderGroup.findMany({
+      orderBy: { provider: "asc" },
+      select: { provider: true, groupId: true, version: true },
+    });
+  }
+
+  async setProviderGroup(input: {
+    provider: Provider;
+    groupId: string | null;
+    version: number;
+    actor: string;
+    now: Date;
+  }): Promise<"saved" | "conflict" | "not_found"> {
+    return this.database.$transaction(async (tx) => {
+      // Serialize selection changes with assignments made during sign-in.
+      await tx.$queryRaw`SELECT provider FROM identity_provider_groups WHERE provider = ${input.provider} FOR UPDATE`;
+      const current = await tx.identityProviderGroup.findUniqueOrThrow({
+        where: { provider: input.provider },
+      });
+      if (current.version !== input.version) return "conflict";
+      if (input.groupId) {
+        const groups = await tx.$queryRaw<
+          { id: string }[]
+        >`SELECT id FROM identity_groups WHERE id = ${input.groupId}::uuid FOR KEY SHARE`;
+        if (!groups.length) return "not_found";
+      }
+      await tx.identityProviderGroup.update({
+        where: { provider: input.provider },
+        data: {
+          groupId: input.groupId,
+          version: { increment: 1 },
+          updatedBy: input.actor,
+          updatedAt: input.now,
+        },
+      });
+      await this.audit(
+        "provider_group.updated",
+        input.actor,
+        null,
+        {
+          provider: input.provider,
+          from: current.groupId,
+          to: input.groupId,
+          version: current.version + 1,
+        },
+        tx,
+      );
+      return "saved";
+    });
+  }
+
+  /** Only called after provider proof; no assignment on local login or refresh. */
+  async joinProviderGroup(personId: string, provider: Provider) {
+    await this.database.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT provider FROM identity_provider_groups WHERE provider = ${provider} FOR SHARE`;
+      const selection = await tx.identityProviderGroup.findUniqueOrThrow({
+        where: { provider },
+      });
+      if (!selection.groupId || !selection.updatedBy) return;
+      await tx.$queryRaw`SELECT id FROM identity_persons WHERE id = ${personId}::uuid FOR UPDATE`;
+      const person = await tx.identityPerson.findUnique({
+        where: { id: personId },
+        select: { status: true },
+      });
+      if (person?.status !== "active") return;
+      const linked = await tx.identityExternalIdentity.count({
+        where: { personId, provider },
+      });
+      if (!linked) return;
+      const created = await tx.identityGroupMember.createMany({
+        data: [
+          {
+            groupId: selection.groupId,
+            personId,
+            addedBy: selection.updatedBy,
+          },
+        ],
+        skipDuplicates: true,
+      });
+      if (created.count)
+        await this.audit(
+          "group.member_added",
+          null,
+          personId,
+          {
+            group: selection.groupId,
+            provider,
+            automatic: true,
+          },
+          tx,
+        );
+    });
+  }
+
+  async listGroups() {
+    const rows = await this.database.identityGroup.findMany({
+      orderBy: [{ nameKey: "asc" }],
+      take: 201,
+      include: {
+        _count: { select: { members: true } },
+        grants: {
+          select: { permission: true },
+          orderBy: { permission: "asc" },
+        },
+      },
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      version: row.version,
+      members: row._count.members,
+      permissions: row.grants.map((grant) => grant.permission),
+    }));
+  }
+
+  async group(groupId: string): Promise<GroupDetail | null> {
+    const row = await this.database.identityGroup.findUnique({
+      where: { id: groupId },
+      include: {
+        members: {
+          include: {
+            person: { select: { id: true, displayName: true, status: true } },
+          },
+        },
+        grants: {
+          orderBy: { permission: "asc" },
+          include: { restrictions: { select: restrictionFields } },
+        },
+      },
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      version: row.version,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      members: row.members
+        .filter((member) => member.person.status !== "merged")
+        .map((member) => ({
+          personId: member.person.id,
+          displayName: member.person.displayName,
+          status: member.person.status as "active" | "disabled",
+          addedAt: member.addedAt,
+        }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR")),
+      grants: row.grants.map((grant) => ({
+        permission: grant.permission,
+        grantedAt: grant.grantedAt,
+        restrictions: grant.restrictions,
+      })),
+    };
+  }
+
+  /** Creates a group with its audit event; `name_taken` when the name exists. */
+  async createGroup(input: {
+    name: string;
+    nameKey: string;
+    description: string | null;
+    actor: string;
+    audit: (groupId: string, tx: Prisma.TransactionClient) => Promise<void>;
+  }): Promise<{ result: "created"; id: string } | { result: "name_taken" }> {
+    const id = randomUUID();
+    try {
+      await this.database.$transaction(async (tx) => {
+        await tx.identityGroup.create({
+          data: {
+            id,
+            name: input.name,
+            nameKey: input.nameKey,
+            description: input.description,
+            createdBy: input.actor,
+            updatedBy: input.actor,
+          },
+        });
+        await input.audit(id, tx);
+      });
+      return { result: "created", id };
+    } catch (error) {
+      if (isUnique(error)) return { result: "name_taken" };
+      throw error;
+    }
+  }
+
+  /** Renames or redescribes the version the owner saw. */
+  async updateGroup(input: {
+    groupId: string;
+    expectedVersion: number;
+    name: string;
+    nameKey: string;
+    description: string | null;
+    actor: string;
+    audit: (tx: Prisma.TransactionClient) => Promise<void>;
+  }): Promise<"updated" | "not_found" | "conflict" | "name_taken"> {
+    try {
+      return await this.database.$transaction(async (tx) => {
+        const updated = await tx.identityGroup.updateMany({
+          where: { id: input.groupId, version: input.expectedVersion },
+          data: {
+            name: input.name,
+            nameKey: input.nameKey,
+            description: input.description,
+            version: { increment: 1 },
+            updatedBy: input.actor,
+            updatedAt: new Date(),
+          },
+        });
+        if (updated.count === 0)
+          return (await tx.identityGroup.count({
+            where: { id: input.groupId },
+          }))
+            ? "conflict"
+            : "not_found";
+        await input.audit(tx);
+        return "updated";
+      });
+    } catch (error) {
+      if (isUnique(error)) return "name_taken";
+      throw error;
+    }
+  }
+
+  async deleteGroup(
+    groupId: string,
+    audit: (
+      removed: { members: number; grants: number },
+      tx: Prisma.TransactionClient,
+    ) => Promise<void>,
+  ): Promise<"deleted" | "not_found" | "in_use"> {
+    return this.database
+      .$transaction(async (tx) => {
+        // Keep the same lock order as selection/sign-in before deleting a group.
+        await tx.$queryRaw`SELECT provider FROM identity_provider_groups ORDER BY provider FOR UPDATE`;
+        const group = await tx.identityGroup.findUnique({
+          where: { id: groupId },
+          include: { _count: { select: { members: true, grants: true } } },
+        });
+        if (!group) return "not_found";
+        if (await tx.identityProviderGroup.count({ where: { groupId } }))
+          return "in_use" as const;
+        await tx.identityGroup.delete({ where: { id: groupId } });
+        await audit(
+          { members: group._count.members, grants: group._count.grants },
+          tx,
+        );
+        return "deleted";
+      })
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2003"
+        )
+          return "in_use" as const;
+        throw error;
+      });
+  }
+
+  /** Adds an active Person to a group; idempotent. */
+  async addGroupMember(input: {
+    groupId: string;
+    personId: string;
+    actor: string;
+    audit: (tx: Prisma.TransactionClient) => Promise<void>;
+  }): Promise<"added" | "exists" | "not_found" | "inactive"> {
+    return this.database.$transaction(async (tx) => {
+      const [group, person] = await Promise.all([
+        tx.identityGroup.findUnique({
+          where: { id: input.groupId },
+          select: { id: true },
+        }),
+        tx.identityPerson.findUnique({
+          where: { id: input.personId },
+          select: { status: true },
+        }),
+      ]);
+      if (!group || !person || person.status === "merged") return "not_found";
+      if (person.status !== "active") return "inactive";
+      const created = await tx.identityGroupMember.createMany({
+        data: [
+          {
+            groupId: input.groupId,
+            personId: input.personId,
+            addedBy: input.actor,
+          },
+        ],
+        skipDuplicates: true,
+      });
+      if (created.count === 0) return "exists";
+      await input.audit(tx);
+      return "added";
+    });
+  }
+
+  async removeGroupMember(input: {
+    groupId: string;
+    personId: string;
+    audit: (tx: Prisma.TransactionClient) => Promise<void>;
+  }): Promise<"removed" | "not_found"> {
+    return this.database.$transaction(async (tx) => {
+      const removed = await tx.identityGroupMember.deleteMany({
+        where: { groupId: input.groupId, personId: input.personId },
+      });
+      if (removed.count === 0) return "not_found";
+      await input.audit(tx);
+      return "removed";
+    });
+  }
+
+  /** Grants a permission to a group or replaces its restrictions. */
+  async setGroupGrant(input: {
+    groupId: string;
+    permission: string;
+    restrictions: readonly RestrictionRow[];
+    actor: string;
+    audit: (created: boolean, tx: Prisma.TransactionClient) => Promise<void>;
+  }): Promise<"created" | "updated" | "not_found"> {
+    return this.database.$transaction(async (tx) => {
+      if (!(await tx.identityGroup.count({ where: { id: input.groupId } })))
+        return "not_found";
+      const key = {
+        groupId_permission: {
+          groupId: input.groupId,
+          permission: input.permission,
+        },
+      };
+      const existing = await tx.identityGroupGrant.findUnique({
+        where: key,
+        select: { groupId: true },
+      });
+      if (existing) {
+        await tx.identityGroupGrantRestriction.deleteMany({
+          where: { groupId: input.groupId, permission: input.permission },
+        });
+        await tx.identityGroupGrant.update({
+          where: key,
+          data: { grantedBy: input.actor, grantedAt: new Date() },
+        });
+      } else
+        await tx.identityGroupGrant.create({
+          data: {
+            groupId: input.groupId,
+            permission: input.permission,
+            grantedBy: input.actor,
+          },
+        });
+      if (input.restrictions.length)
+        await tx.identityGroupGrantRestriction.createMany({
+          data: input.restrictions.map((row) => ({
+            groupId: input.groupId,
+            permission: input.permission,
+            ...row,
+          })),
+        });
+      await input.audit(!existing, tx);
+      return existing ? "updated" : "created";
+    });
+  }
+
+  async removeGroupGrant(input: {
+    groupId: string;
+    permission: string;
+    audit: (tx: Prisma.TransactionClient) => Promise<void>;
+  }): Promise<"removed" | "not_found"> {
+    return this.database.$transaction(async (tx) => {
+      const removed = await tx.identityGroupGrant.deleteMany({
+        where: { groupId: input.groupId, permission: input.permission },
+      });
+      if (removed.count === 0) return "not_found";
+      await input.audit(tx);
+      return "removed";
+    });
+  }
+
+  // ---------- WhatsApp numbers ----------
+  /**
+   * Links or replaces an active Person's WhatsApp number and records the
+   * audit event in the same transaction. A change starts a new version and
+   * forgets the learned WhatsApp user identifier, so nothing verified for the
+   * previous number carries over. `conflict`: the number, or its legacy form,
+   * belongs to another Person.
+   */
+  async setWhatsappLink(input: {
+    personId: string;
+    phoneNumber: string;
+    legacyIdentifier: string | null;
+    actor: string;
+    now: Date;
+    audit: (
+      action: "whatsapp.linked" | "whatsapp.changed",
+      transaction: unknown,
+    ) => Promise<void>;
+  }): Promise<"not_found" | "conflict" | "unchanged" | "saved"> {
+    const keys = [input.phoneNumber, input.legacyIdentifier].filter(
+      (item): item is string => item !== null,
+    );
+    try {
+      return await this.database.$transaction(async (tx) => {
+        const locked = await tx.$queryRaw<{ status: string }[]>`
+          SELECT status FROM identity_persons WHERE id = ${input.personId}::uuid FOR UPDATE`;
+        if (locked[0]?.status !== "active") return "not_found" as const;
+        const taken = await tx.identityWhatsappLink.findFirst({
+          where: {
+            personId: { not: input.personId },
+            OR: [
+              { phoneNumber: { in: keys } },
+              { legacyIdentifier: { in: keys } },
+            ],
+          },
+          select: { personId: true },
+        });
+        if (taken) return "conflict" as const;
+        const current = await tx.identityWhatsappLink.findUnique({
+          where: { personId: input.personId },
+        });
+        if (current?.phoneNumber === input.phoneNumber)
+          return "unchanged" as const;
+        if (current)
+          await tx.identityWhatsappLink.update({
+            where: { personId: input.personId },
+            data: {
+              phoneNumber: input.phoneNumber,
+              legacyIdentifier: input.legacyIdentifier,
+              platformUserId: null,
+              confirmedAt: null,
+              version: { increment: 1 },
+              updatedBy: input.actor,
+              updatedAt: input.now,
+            },
+          });
+        else
+          await tx.identityWhatsappLink.create({
+            data: {
+              personId: input.personId,
+              phoneNumber: input.phoneNumber,
+              legacyIdentifier: input.legacyIdentifier,
+              linkedBy: input.actor,
+              linkedAt: input.now,
+              updatedBy: input.actor,
+              updatedAt: input.now,
+            },
+          });
+        await input.audit(current ? "whatsapp.changed" : "whatsapp.linked", tx);
+        return "saved" as const;
+      });
+    } catch (error) {
+      // Another owner linked the same number concurrently.
+      if (isUnique(error)) return "conflict";
+      throw error;
+    }
+  }
+
+  /** Removes a Person's WhatsApp number with its audit event, atomically. */
+  async removeWhatsappLink(
+    personId: string,
+    audit: (transaction: unknown) => Promise<void>,
+  ): Promise<"removed" | "not_found"> {
+    return this.database.$transaction(async (tx) => {
+      const removed = await tx.identityWhatsappLink.deleteMany({
+        where: { personId },
+      });
+      if (!removed.count) return "not_found" as const;
+      await audit(tx);
+      return "removed" as const;
+    });
+  }
+
+  /**
+   * Links a WhatsApp sender may match: by the reported number (exactly, or as
+   * a legacy Brazilian identifier) and by the reported WhatsApp user
+   * identifier. Read only; the service decides.
+   */
+  async whatsappCandidates(sender: {
+    phone: string | null;
+    userId: string | null;
+  }): Promise<{ byPhone: WhatsappLink[]; byUser: WhatsappLink[] }> {
+    const [byPhone, byUser] = await Promise.all([
+      sender.phone
+        ? this.database.identityWhatsappLink.findMany({
+            where: {
+              OR: [
+                { phoneNumber: sender.phone },
+                { legacyIdentifier: sender.phone },
+              ],
+            },
+            select: whatsappFields,
+          })
+        : Promise.resolve([]),
+      sender.userId
+        ? this.database.identityWhatsappLink.findMany({
+            where: { platformUserId: sender.userId },
+            select: whatsappFields,
+          })
+        : Promise.resolve([]),
+    ]);
+    return { byPhone, byUser };
+  }
+
+  /**
+   * Records the first accepted message of this exact link version and, when
+   * Meta reported it with the number, the WhatsApp user identifier.
+   * Conditional: a link changed meanwhile, or an identifier already recorded,
+   * is left untouched.
+   */
+  async confirmWhatsappLink(
+    personId: string,
+    version: number,
+    userId: string | null,
+    now: Date,
+  ): Promise<boolean> {
+    try {
+      const updated = await this.database.identityWhatsappLink.updateMany({
+        where: {
+          personId,
+          version,
+          ...(userId ? { platformUserId: null } : { confirmedAt: null }),
+        },
+        data: {
+          ...(userId ? { platformUserId: userId } : {}),
+          confirmedAt: now,
+        },
+      });
+      return updated.count === 1;
+    } catch (error) {
+      if (isUnique(error)) return false;
+      throw error;
+    }
   }
 
   // ---------- Authentication policy ----------

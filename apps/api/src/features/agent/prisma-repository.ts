@@ -72,24 +72,63 @@ const summary = (item: {
   updatedAt: Date;
   pinned: boolean;
   archived: boolean;
+  channel: string;
 }) => ({
   id: item.id,
   title: item.title,
   pinned: item.pinned,
   archived: item.archived,
+  channel:
+    item.channel === "whatsapp" ? ("whatsapp" as const) : ("web" as const),
   updatedAt: item.updatedAt.toISOString(),
 });
+export type AgentChannel = "web" | "whatsapp";
 export class AgentRepository {
   private readonly database: Database;
   constructor(database: Database) {
     this.database = database;
   }
-  async create(owner: string) {
+  async create(owner: string, channel: AgentChannel = "web") {
     return summary(
       await this.database.agentConversation.create({
-        data: { id: randomUUID(), owner, title: "Nova conversa" },
+        data: { id: randomUUID(), owner, title: "Nova conversa", channel },
       }),
     );
+  }
+  /**
+   * The owner's conversation that a channel message continues: `preferred`
+   * while it still belongs to the owner, accepts turns and had activity at or
+   * after `activeSince`; otherwise a new conversation of that channel.
+   */
+  async channelConversation(
+    owner: string,
+    channel: AgentChannel,
+    preferred: string | null,
+    activeSince: Date,
+  ): Promise<{ id: string; created: boolean }> {
+    if (preferred) {
+      const current = await this.database.agentConversation.findFirst({
+        where: {
+          id: preferred,
+          owner,
+          archived: false,
+          updatedAt: { gte: activeSince },
+        },
+        select: { id: true },
+      });
+      if (current) return { id: current.id, created: false };
+    }
+    return { id: (await this.create(owner, channel)).id, created: true };
+  }
+  /** One owned turn, with a stale lease already resolved as interrupted. */
+  async turn(owner: string, id: string, turnId: string) {
+    return this.locked(owner, id, async (tx) => {
+      const row = await tx.agentTurn.findFirst({
+        where: { id: turnId, conversationId: id },
+      });
+      if (!row) throw new AgentFailure("AGENT_CONVERSATION_NOT_FOUND");
+      return view(row);
+    });
   }
   async list(
     owner: string,

@@ -55,6 +55,10 @@
         "archived": {
           "description": "Hidden from active history without deleting turns or context. Restore before accepting new turns.",
           "classification": "CONFIDENTIAL"
+        },
+        "channel": {
+          "description": "Channel through which the conversation was started: web (direct, PDT Connect or Sankhya surfaces) or whatsapp. Metadata only; the same owner, permissions and history apply on every channel.",
+          "classification": "INTERNAL"
         }
       },
       "objects": {
@@ -64,7 +68,8 @@
         "agent_conversations_contexts_check": "Capability context must be a JSON object.",
         "agent_conversations_owner_check": "Ownership is required.",
         "agent_conversations_owner_updated_idx": "Bounded owner-scoped keyset history listing.",
-        "agent_conversations_history_idx": "Owner-scoped active/archive and favorite-first keyset listing."
+        "agent_conversations_history_idx": "Owner-scoped active/archive and favorite-first keyset listing.",
+        "agent_conversations_channel_check": "Only the implemented channels."
       }
     },
     "agent_turns": {

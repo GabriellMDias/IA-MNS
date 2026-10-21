@@ -12,7 +12,7 @@ Only net value, quantity, weight (Sankhya only), totals, monthly breakdown, prod
 
 ## Semantic product selections
 
-The normal conversational sales path can now use the same verified resolver as product lookup. A user must hold both `sales:read` and `products:read`; existing administration grants them, without new automatic grants or authentication changes. Select one ERP in **Fonte**. Qualified product concepts and catalog conditions are resolved before sales, using the existing grounding, relationships, hierarchy expansion and ambiguity choices. Simple literal phrases retain their existing behavior; explicit description requests stay literal. Unavailable conditions do not become description guesses or overall totals. Unsupported sales/customer/seller/store/price/stock requests remain unsupported as a whole.
+The normal conversational sales path can now use the same verified resolver as product lookup. A user must hold the sales permission and the product permission of the selected source (for example VRM-VEN-01 and VRM-PRD-01); without the product permission the answer names the missing code. Select one ERP in **Fonte**. Qualified product concepts and catalog conditions are resolved before sales, using the existing grounding, relationships, hierarchy expansion and ambiguity choices. Simple literal phrases retain their existing behavior; explicit description requests stay literal. Unavailable conditions do not become description guesses or overall totals. Unsupported sales/customer/seller/store/price/stock requests remain unsupported as a whole.
 
 | Conversational scenario | Expected behavior |
 | --- | --- |
@@ -82,9 +82,31 @@ All tool output is checked at the provider boundary and then validated by the ap
 
 Current and comparison queries of one source share one read-only transaction and snapshot: Oracle `SET TRANSACTION READ ONLY`, PostgreSQL `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY`, always rolled back. Decimal strings are converted to 50-digit decimal arithmetic for totals and percentage changes. Monthly results fill missing months with zero for known units. A zero comparison base has an undefined percentage, not infinity. Prior-year leap days clamp to February 28. The previous-period comparison uses an equal number of days, rather than assuming whole months. Replies, tables, and suggestions are built from validated results; sales numbers are not authored by the model.
 
+## Access and restrictions
+
+Each source has its own permission ([ADR-0037](../adr/0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md), [identity](identity.md#authorization)): **SNK-VEN-01** (`sales_sankhya:read`) for MNS (Sankhya) and **VRM-VEN-01** (`sales_vrmaster:read`) for Pilar da Terra (VR Master). A selected source the person may not read is never queried. With **Tudo**, it appears as a denied section beside the readable source, naming its permission code; when no selected source may be read, the answer lists the missing codes before any interpretation or ERP read.
+
+A grant may be restricted. The sales module enforces each dimension inside the reviewed reference query, as a bound predicate on the same aliases in both selections of the Sankhya reference (eligible lot controls and sale rows) and in the VR Master base selection. Filtering admits rows; it does not change joins, cardinality or the DISTINCT projection, so admitted rows count exactly as in the unrestricted reference.
+
+| Source | Dimension (code) | Predicate |
+| --- | --- | --- |
+| Sankhya | Empresa (EMP) | `CAB.CODEMP` |
+| Sankhya | Projeto/setor (PRJ) | `NVL(ITE.AD_CODPROJ, 0)` in the selected `TCSPRJ` projects and their subprojects (`CODPROJPAI`); project 0 holds items without project |
+| Sankhya | Vendedor (VEN) | `CAB.CODVEND`; 0 holds sales without seller |
+| Sankhya | Grupo de produto (GRP) | `PRO.CODGRUPOPROD` in the selected `TGFGRU` groups and their subgroups (`CODGRUPAI`) |
+| Sankhya | Centro de resultado (CR) | `CAB.CODCENCUS` in the selected `TSICUS` centers and those below (`CODCENCUSPAI`); needs the PH-36 grant |
+| VR Master | Loja (LOJ) | `venda.id_loja` |
+| VR Master | Comprador (COM) | `venda.id_comprador`, the buyer recorded on the sale, as PDT Connect's buyer indicators use it |
+| VR Master | Centro de custo (CC) | the level-1 section's `m.id_centrocusto` in the selected cost centers and those below (prefix codes); sections without cost center are excluded |
+| VR Master | Mercadológico (MER) | the product's classification codes under the selected node of any level |
+
+The item project (`AD_CODPROJ`, labeled *setor* by the reference) differs from the note project (`CAB.CODPROJ`) on most items; restrictions use the item project the reference reports. Other dimensions found during discovery (partner, operation type, financial nature, lot buyer) are not offered: they either duplicate a seller restriction, carry no business meaning for consultation, or have no verified relationship to sale rows.
+
+Every restricted result records its value-only scope and starts its warnings with "Resultado limitado ao seu acesso (code): …. Não é o total da fonte." History and evidence are shown and reused only while the reader's current scope covers that recorded scope; figures computed before a restriction existed are treated as unrestricted. A semantic product selection that names VR Master buyers outside the person's buyer restriction is refused with the permission and the values to release; other selections run with the restriction applied.
+
 ## Identity, privacy, and context
 
-Sales execution requires sales:read under Orion's verified bearer principal, or explicit local access. The [agent](corporate-agent.md#persistent-conversations-and-context) owns durable conversation identity, concurrency, context and history. Sales context stores structured conversation state (last executed plan and query, unanswered request, bounded exchanges with application-authored replies); ERP result rows are not model context. The context does not depend on the source. The legacy `/sales/chat` endpoint always uses Sankhya. Failed turns preserve prior filters. The legacy sales endpoints keep their original 30-minute/12-question in-memory semantics for compatibility, while the product exclusively uses durable agent endpoints.
+Sales execution requires the source's sales permission, with its current data restriction computed by identity ([access and restrictions](#access-and-restrictions)), under Orion's verified bearer principal, or explicit local access. The [agent](corporate-agent.md#persistent-conversations-and-context) owns durable conversation identity, concurrency, context and history. Sales context stores structured conversation state (last executed plan and query, unanswered request, bounded exchanges with application-authored replies); ERP result rows are not model context. The context does not depend on the source. The legacy `/sales/chat` endpoint always uses Sankhya. Failed turns preserve prior filters. The legacy sales endpoints keep their original 30-minute/12-question in-memory semantics for compatibility, while the product exclusively uses durable agent endpoints.
 
 The explicit `IA_MNS_LOCAL_ACCESS=true` mode is for a single developer on loopback only. Configuration rejects it in production or on a public listener; requests also require a loopback client/host, a local browser origin, and the custom client header, and reject cross-site fetches. It grants the local developer the sales-read capability. Do not expose the development Vite proxy or tunnel it; local mode is not a shared environment authentication system. Production requires configured providers and a trusted verifier at startup. A concrete issuer/login remains conditional under PJ-05.
 

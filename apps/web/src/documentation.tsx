@@ -164,7 +164,10 @@ export function DocumentationPage() {
       <a className="docs-skip" href={`#${titleId}`}>
         Skip to documentation
       </a>
-      <aside className={`docs-rail ${mobileOpen ? "is-open" : ""}`}>
+      <aside
+        className={`docs-rail ${mobileOpen ? "is-open" : ""}`}
+        aria-label="Documentation navigation"
+      >
         <div className="docs-rail-brand">
           <img
             className="docs-brand-symbol"
@@ -196,6 +199,12 @@ export function DocumentationPage() {
             onClick={() => setMobileOpen(false)}
           >
             <DocLink current={!id}>Overview</DocLink>
+            <DocLink
+              id="repository/docs/features/README"
+              current={id === "repository/docs/features/README"}
+            >
+              Funcionalidades por origem
+            </DocLink>
             <p className="docs-nav-label">Reference</p>
             {sections.slice(0, 3).map((s) => (
               <DocLink id={s.id} key={s.id} current={id === s.id}>
@@ -372,7 +381,7 @@ export function DocumentationPage() {
             </footer>
           </article>
           {outline.length > 0 && (
-            <aside className="docs-outline">
+            <aside className="docs-outline" aria-label="Page outline">
               <p className="docs-nav-label">On this page</p>
               <nav aria-label="On this page">
                 {outline.map((h) => (

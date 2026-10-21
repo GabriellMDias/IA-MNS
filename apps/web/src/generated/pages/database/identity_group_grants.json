@@ -1,0 +1,67 @@
+{
+  "kind": "database",
+  "name": "identity_group_grants",
+  "description": "Permissions an owner granted to a group, optionally narrowed by identity_group_grant_restrictions; every member holds them.",
+  "owner": "identity",
+  "classification": "CONFIDENTIAL",
+  "lifecycle": "Granted, restricted and revoked by owners with recent strong authentication; removed with the group. Audited.",
+  "columns": [
+    {
+      "Column": "group_id",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "INTERNAL",
+      "Meaning": "Group.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "permission",
+      "PostgreSQL type": "character varying(80)",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Registered source permission such as sales_vrmaster:read; validated against the composed catalog.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "granted_by",
+      "PostgreSQL type": "uuid",
+      "Nullable": "no",
+      "Default": "—",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Owner (identity_persons.id) who granted it or last changed its restrictions.",
+      "Null meaning": "—",
+      "Unit": "—"
+    },
+    {
+      "Column": "granted_at",
+      "PostgreSQL type": "timestamp(3) with time zone",
+      "Nullable": "no",
+      "Default": "CURRENT_TIMESTAMP",
+      "Classification": "CONFIDENTIAL",
+      "Meaning": "Database-clock instant of the grant or of its last restriction change.",
+      "Null meaning": "—",
+      "Unit": "—"
+    }
+  ],
+  "constraints": [
+    {
+      "Object": "identity_group_grants_group_id_fkey",
+      "Physical definition": "FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "Purpose": "Removed with the group."
+    },
+    {
+      "Object": "identity_group_grants_permission_check",
+      "Physical definition": "CHECK (((permission)::text ~ '^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$'::text))",
+      "Purpose": "Permission naming convention."
+    },
+    {
+      "Object": "identity_group_grants_pkey",
+      "Physical definition": "PRIMARY KEY (group_id, permission)",
+      "Purpose": "A permission is granted once per group."
+    }
+  ]
+}

@@ -4,15 +4,26 @@ import type {
   AgentCapability,
   CapabilityInput,
 } from "../agent/capabilities.js";
-import { AgentFailure } from "../agent/errors.js";
 import type { SalesChat } from "../sales/application.js";
 import {
   emptySalesState,
   loadSalesState,
   salesStateSchema,
 } from "../sales/conversation-state.js";
-import { productPermission, scopedProductState } from "./capability.js";
+import {
+  deniedProductSelection,
+  productPermission,
+  productSourcePermission,
+  scopedProductState,
+} from "./capability.js";
+import {
+  deniedScopeMessage,
+  outsideScope,
+  salesAccessOf,
+  type SalesAccess,
+} from "../sales/access.js";
 import type { ProductResolver, ProductTurn } from "./resolver.js";
+import type { ProductSelection } from "./selection.js";
 import { emptyProductState, productStateSchema } from "./state.js";
 
 const object = { additionalProperties: false };
@@ -53,6 +64,43 @@ const contextSchema = Type.Object(
 );
 type Context = Static<typeof contextSchema>;
 type Scoped = Static<typeof scopedSchema>;
+
+/**
+ * Catalog dimensions whose records are the records of a sales restriction
+ * dimension of the same source: VR Master product buyers are comprador rows,
+ * the same rows the sales restriction by buyer admits. Hierarchical
+ * dimensions are not compared here; the restricted sales SQL still applies.
+ */
+const restrictedCriteria: Readonly<
+  Partial<Record<"sankhya" | "vrmaster", Readonly<Record<string, string>>>>
+> = { vrmaster: { buyer: "buyer" } };
+
+/**
+ * The denial when a product selection explicitly names records the person's
+ * sales scope does not admit, instead of answering a silently restricted
+ * total. Null when the selection fits the scope.
+ */
+export function selectionScopeConflict(
+  source: "sankhya" | "vrmaster",
+  selection: ProductSelection,
+  access: SalesAccess,
+): string | null {
+  for (const criterion of selection.criteria) {
+    if (criterion.kind !== "entity" || criterion.mode !== "include") continue;
+    const dimension = restrictedCriteria[source]?.[criterion.dimension];
+    if (!dimension) continue;
+    const outside = outsideScope(
+      access[source],
+      dimension,
+      criterion.matched.map((record) => ({
+        value: String(record.id),
+        label: record.label,
+      })),
+    );
+    if (outside.length) return deniedScopeMessage(source, dimension, outside);
+  }
+  return null;
+}
 
 /** Read-only reuse of the existing sales selection, with its original version. */
 export function salesProductState(
@@ -151,7 +199,11 @@ export function createSemanticSalesCapability(
       const resolver = resolvers.find(
         (item) => item.catalog.source.id === input.source,
       );
-      const authorized = input.permissions?.has(productPermission) === true;
+      // A product selection reads the registration of the selected source.
+      const authorized =
+        input.permissions?.has(productPermission) === true &&
+        (input.source === "all" ||
+          input.permissions.has(productSourcePermission(input.source)));
       let productTurn: ProductTurn | undefined;
       let awaitingSource = false;
       const turn = await service.execute(
@@ -164,6 +216,7 @@ export function createSemanticSalesCapability(
         {
           selection: input.source,
           report: input.report,
+          access: salesAccessOf(input.permissions ?? new Set(), input.scopes),
           products: {
             guide: {
               authorized,
@@ -193,8 +246,15 @@ export function createSemanticSalesCapability(
                 scoped.mode = null;
                 scoped.catalogVersion = null;
               }
+              const denied = () => ({
+                kind: "unsupported" as const,
+                message: deniedProductSelection(
+                  input.source,
+                  input.permissions,
+                ),
+              });
               if (mode === "resolve" || mode === "reuse") {
-                if (!authorized) throw new AgentFailure("AGENT_ACCESS_DENIED");
+                if (!authorized) return denied();
                 if (step.notes.relation === "new" || mode === "reuse")
                   scoped.products = structuredClone(emptyProductState);
                 scoped.request = input.message;
@@ -208,7 +268,7 @@ export function createSemanticSalesCapability(
                 scoped.products.active !== null ||
                 scoped.products.pending !== null;
               if (!hasScope) return { kind: "ready" };
-              if (!authorized) throw new AgentFailure("AGENT_ACCESS_DENIED");
+              if (!authorized) return denied();
               if (input.source === "all") {
                 awaitingSource = true;
                 return {
@@ -284,6 +344,12 @@ export function createSemanticSalesCapability(
                   message:
                     "Conclua a seleção de produtos antes de consultar suas vendas.",
                 };
+              const conflict = selectionScopeConflict(
+                input.source,
+                scoped.products.active,
+                salesAccessOf(input.permissions ?? new Set(), input.scopes),
+              );
+              if (conflict) return { kind: "unsupported", message: conflict };
               return {
                 kind: "ready",
                 scope: await resolver.salesScope(

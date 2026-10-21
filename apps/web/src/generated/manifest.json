@@ -4,6 +4,23 @@
   "api": { "title": "IA-MNS API", "version": "1.0.0" },
   "entries": [
     {
+      "id": "api/addIdentityGroupMember",
+      "kind": "api",
+      "title": "addIdentityGroupMember",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/admin/groups/{groupId}/members/{personId}",
+      "method": "PUT",
+      "path": "/identity/admin/groups/{groupId}/members/{personId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/addIdentityGroupMember.json"
+    },
+    {
       "id": "api/askSalesQuestion",
       "kind": "api",
       "title": "askSalesQuestion",
@@ -165,6 +182,24 @@
       "file": "pages/api/createAgentConversation.json"
     },
     {
+      "id": "api/createIdentityGroup",
+      "kind": "api",
+      "title": "createIdentityGroup",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /identity/admin/groups",
+      "method": "POST",
+      "path": "/identity/admin/groups",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/createIdentityGroup.json"
+    },
+    {
       "id": "api/createIdentityPerson",
       "kind": "api",
       "title": "createIdentityPerson",
@@ -233,6 +268,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/deleteAgentConversation.json"
+    },
+    {
+      "id": "api/deleteIdentityGroup",
+      "kind": "api",
+      "title": "deleteIdentityGroup",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/admin/groups/{groupId}",
+      "method": "DELETE",
+      "path": "/identity/admin/groups/{groupId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/deleteIdentityGroup.json"
     },
     {
       "id": "api/disableTotp",
@@ -320,6 +372,23 @@
       "file": "pages/api/getAgentStatus.json"
     },
     {
+      "id": "api/getIdentityGroup",
+      "kind": "api",
+      "title": "getIdentityGroup",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/groups/{groupId}",
+      "method": "GET",
+      "path": "/identity/admin/groups/{groupId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getIdentityGroup.json"
+    },
+    {
       "id": "api/getIdentityMe",
       "kind": "api",
       "title": "getIdentityMe",
@@ -337,6 +406,23 @@
       "file": "pages/api/getIdentityMe.json"
     },
     {
+      "id": "api/getIdentityPermissionCatalog",
+      "kind": "api",
+      "title": "getIdentityPermissionCatalog",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/catalog",
+      "method": "GET",
+      "path": "/identity/admin/catalog",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getIdentityPermissionCatalog.json"
+    },
+    {
       "id": "api/getIdentityPerson",
       "kind": "api",
       "title": "getIdentityPerson",
@@ -352,6 +438,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/getIdentityPerson.json"
+    },
+    {
+      "id": "api/getIdentityProviderGroups",
+      "kind": "api",
+      "title": "getIdentityProviderGroups",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/provider-groups",
+      "method": "GET",
+      "path": "/identity/admin/provider-groups",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/getIdentityProviderGroups.json"
     },
     {
       "id": "api/getIdentityStatus",
@@ -456,6 +559,24 @@
       "file": "pages/api/getStartupHealth.json"
     },
     {
+      "id": "api/grantIdentityGroupPermission",
+      "kind": "api",
+      "title": "grantIdentityGroupPermission",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/admin/groups/{groupId}/grants/{permission}",
+      "method": "PUT",
+      "path": "/identity/admin/groups/{groupId}/grants/{permission}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/grantIdentityGroupPermission.json"
+    },
+    {
       "id": "api/grantIdentityPermission",
       "kind": "api",
       "title": "grantIdentityPermission",
@@ -467,6 +588,7 @@
       "tags": ["Identity"],
       "headings": [
         { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
         { "id": "responses", "text": "Responses", "level": 2 },
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
@@ -596,6 +718,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/listAgentConversations.json"
+    },
+    {
+      "id": "api/listIdentityGroups",
+      "kind": "api",
+      "title": "listIdentityGroups",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/groups",
+      "method": "GET",
+      "path": "/identity/admin/groups",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/listIdentityGroups.json"
     },
     {
       "id": "api/listIdentityPersons",
@@ -739,6 +878,24 @@
       "file": "pages/api/reauthenticate.json"
     },
     {
+      "id": "api/receiveWhatsappWebhook",
+      "kind": "api",
+      "title": "receiveWhatsappWebhook",
+      "group": "WhatsApp",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "POST /whatsapp/webhook",
+      "method": "POST",
+      "path": "/whatsapp/webhook",
+      "tags": ["WhatsApp"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/receiveWhatsappWebhook.json"
+    },
+    {
       "id": "api/refreshSession",
       "kind": "api",
       "title": "refreshSession",
@@ -773,6 +930,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/regenerateRecoveryCodes.json"
+    },
+    {
+      "id": "api/removeIdentityGroupMember",
+      "kind": "api",
+      "title": "removeIdentityGroupMember",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/admin/groups/{groupId}/members/{personId}",
+      "method": "DELETE",
+      "path": "/identity/admin/groups/{groupId}/members/{personId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/removeIdentityGroupMember.json"
     },
     {
       "id": "api/removeIdentityLink",
@@ -826,6 +1000,23 @@
       "file": "pages/api/removeIdentityPersonLink.json"
     },
     {
+      "id": "api/removeIdentityPersonWhatsapp",
+      "kind": "api",
+      "title": "removeIdentityPersonWhatsapp",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/admin/persons/{personId}/whatsapp",
+      "method": "DELETE",
+      "path": "/identity/admin/persons/{personId}/whatsapp",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/removeIdentityPersonWhatsapp.json"
+    },
+    {
       "id": "api/resetIdentityLocalCredential",
       "kind": "api",
       "title": "resetIdentityLocalCredential",
@@ -842,6 +1033,23 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/resetIdentityLocalCredential.json"
+    },
+    {
+      "id": "api/revokeIdentityGroupPermission",
+      "kind": "api",
+      "title": "revokeIdentityGroupPermission",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "DELETE /identity/admin/groups/{groupId}/grants/{permission}",
+      "method": "DELETE",
+      "path": "/identity/admin/groups/{groupId}/grants/{permission}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/revokeIdentityGroupPermission.json"
     },
     {
       "id": "api/revokeIdentityPermission",
@@ -931,6 +1139,23 @@
       "file": "pages/api/searchAgentConversations.json"
     },
     {
+      "id": "api/searchIdentityRestrictionValues",
+      "kind": "api",
+      "title": "searchIdentityRestrictionValues",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /identity/admin/restriction-values",
+      "method": "GET",
+      "path": "/identity/admin/restriction-values",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/searchIdentityRestrictionValues.json"
+    },
+    {
       "id": "api/searchSankhyaUsers",
       "kind": "api",
       "title": "searchSankhyaUsers",
@@ -982,6 +1207,42 @@
         { "id": "explorer", "text": "Try this operation", "level": 2 }
       ],
       "file": "pages/api/setIdentityPersonStatus.json"
+    },
+    {
+      "id": "api/setIdentityPersonWhatsapp",
+      "kind": "api",
+      "title": "setIdentityPersonWhatsapp",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/admin/persons/{personId}/whatsapp",
+      "method": "PUT",
+      "path": "/identity/admin/persons/{personId}/whatsapp",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/setIdentityPersonWhatsapp.json"
+    },
+    {
+      "id": "api/setIdentityProviderGroup",
+      "kind": "api",
+      "title": "setIdentityProviderGroup",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PUT /identity/admin/provider-groups/{provider}",
+      "method": "PUT",
+      "path": "/identity/admin/provider-groups/{provider}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/setIdentityProviderGroup.json"
     },
     {
       "id": "api/setLocalPassword",
@@ -1092,6 +1353,24 @@
       "file": "pages/api/updateAgentConversation.json"
     },
     {
+      "id": "api/updateIdentityGroup",
+      "kind": "api",
+      "title": "updateIdentityGroup",
+      "group": "Identity",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "PATCH /identity/admin/groups/{groupId}",
+      "method": "PATCH",
+      "path": "/identity/admin/groups/{groupId}",
+      "tags": ["Identity"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "request", "text": "Request body", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/updateIdentityGroup.json"
+    },
+    {
       "id": "api/updateIdentityMe",
       "kind": "api",
       "title": "updateIdentityMe",
@@ -1164,6 +1443,23 @@
       "file": "pages/api/uploadAgentAttachment.json"
     },
     {
+      "id": "api/verifyWhatsappWebhook",
+      "kind": "api",
+      "title": "verifyWhatsappWebhook",
+      "group": "WhatsApp",
+      "source": "docs/generated/api/openapi.json",
+      "summary": "GET /whatsapp/webhook",
+      "method": "GET",
+      "path": "/whatsapp/webhook",
+      "tags": ["WhatsApp"],
+      "headings": [
+        { "id": "parameters", "text": "Parameters", "level": 2 },
+        { "id": "responses", "text": "Responses", "level": 2 },
+        { "id": "explorer", "text": "Try this operation", "level": 2 }
+      ],
+      "file": "pages/api/verifyWhatsappWebhook.json"
+    },
+    {
       "id": "database/agent_conversations",
       "kind": "database",
       "title": "agent_conversations",
@@ -1209,7 +1505,7 @@
       "title": "identity_capability_grants",
       "group": "identity",
       "source": "docs/generated/database/schema.md",
-      "summary": "Explicit capability permissions granted to a Person by an owner, in addition to provider-policy grants derived from active links. The language model never creates grants.",
+      "summary": "Explicit capability permissions granted to a Person by an owner, united with group grants. External links alone grant no permission. A grant may be narrowed by data restrictions (identity_grant_restrictions); an explicit grant takes precedence over the provider policy for its permission. The language model never creates grants.",
       "headings": [],
       "file": "pages/database/identity_capability_grants.json"
     },
@@ -1222,6 +1518,56 @@
       "summary": "A link between a Person and one stable external account (PDT Connect identitySubject or Sankhya CODUSU) under a fixed issuer, created from a server-verified proof by the account holder or by an owner selecting the account in the Sankhya directory.",
       "headings": [],
       "file": "pages/database/identity_external_identities.json"
+    },
+    {
+      "id": "database/identity_grant_restrictions",
+      "kind": "database",
+      "title": "identity_grant_restrictions",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Data restrictions of a Person's explicit grant (ADR-0037): each row admits one value of one dimension. Values of a dimension are alternatives; every restricted dimension of the grant must match. A grant without rows admits every row of its source.",
+      "headings": [],
+      "file": "pages/database/identity_grant_restrictions.json"
+    },
+    {
+      "id": "database/identity_group_grant_restrictions",
+      "kind": "database",
+      "title": "identity_group_grant_restrictions",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Data restrictions of a group grant, with the same meaning as identity_grant_restrictions.",
+      "headings": [],
+      "file": "pages/database/identity_group_grant_restrictions.json"
+    },
+    {
+      "id": "database/identity_group_grants",
+      "kind": "database",
+      "title": "identity_group_grants",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Permissions an owner granted to a group, optionally narrowed by identity_group_grant_restrictions; every member holds them.",
+      "headings": [],
+      "file": "pages/database/identity_group_grants.json"
+    },
+    {
+      "id": "database/identity_group_members",
+      "kind": "database",
+      "title": "identity_group_members",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Membership of a Person in a group; the member holds the group's grants.",
+      "headings": [],
+      "file": "pages/database/identity_group_members.json"
+    },
+    {
+      "id": "database/identity_groups",
+      "kind": "database",
+      "title": "identity_groups",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Owner-managed groups of Persons (ADR-0037). Every member holds the group's grants, united with its own grants.",
+      "headings": [],
+      "file": "pages/database/identity_groups.json"
     },
     {
       "id": "database/identity_local_credentials",
@@ -1242,6 +1588,16 @@
       "summary": "An IA-MNS Person: the single internal identity that owns conversations, preferences, links, credentials, roles and grants, independent of the surface or method used to sign in.",
       "headings": [],
       "file": "pages/database/identity_persons.json"
+    },
+    {
+      "id": "database/identity_provider_groups",
+      "kind": "database",
+      "title": "identity_provider_groups",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Owner-selected default group for each external sign-in provider; no implicit permission policy.",
+      "headings": [],
+      "file": "pages/database/identity_provider_groups.json"
     },
     {
       "id": "database/identity_recovery_codes",
@@ -1314,6 +1670,16 @@
       "file": "pages/database/identity_used_assertions.json"
     },
     {
+      "id": "database/identity_whatsapp_links",
+      "kind": "database",
+      "title": "identity_whatsapp_links",
+      "group": "identity",
+      "source": "docs/generated/database/schema.md",
+      "summary": "The WhatsApp number that an owner linked to a Person: the only authorization of the WhatsApp channel. An external identity attribute of an existing Person, never a sign-in method; it grants no permission by itself.",
+      "headings": [],
+      "file": "pages/database/identity_whatsapp_links.json"
+    },
+    {
       "id": "database/operational_parameters",
       "kind": "database",
       "title": "operational_parameters",
@@ -1322,6 +1688,46 @@
       "summary": "Values that owners saved for the operational parameters declared by the runtime catalog in apps/api/src/parameters.ts (ADR-0028). The catalog owns each parameter's type, domain, installation default and effect; a missing row or a null value means the installation default applies. Secrets and bootstrap settings are never stored here.",
       "headings": [],
       "file": "pages/database/operational_parameters.json"
+    },
+    {
+      "id": "database/whatsapp_inbound_messages",
+      "kind": "database",
+      "title": "whatsapp_inbound_messages",
+      "group": "whatsapp",
+      "source": "docs/generated/database/schema.md",
+      "summary": "WhatsApp messages from senders that matched exactly one active Person through an owner-linked number when the signature-verified webhook arrived. Unknown, unlinked or unauthorized senders are never recorded. Each row is processed once, in order per Person, after the sender is authorized again.",
+      "headings": [],
+      "file": "pages/database/whatsapp_inbound_messages.json"
+    },
+    {
+      "id": "database/whatsapp_outbound_messages",
+      "kind": "database",
+      "title": "whatsapp_outbound_messages",
+      "group": "whatsapp",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Replies to inbound WhatsApp messages: an outbox of text parts sent through the Graph API only after the recipient is authorized again for the same Person and link version, and only within the customer service window.",
+      "headings": [],
+      "file": "pages/database/whatsapp_outbound_messages.json"
+    },
+    {
+      "id": "database/whatsapp_threads",
+      "kind": "database",
+      "title": "whatsapp_threads",
+      "group": "whatsapp",
+      "source": "docs/generated/database/schema.md",
+      "summary": "Per-Person WhatsApp channel state: the agent conversation that new messages continue and the sales source the person chose with a command.",
+      "headings": [],
+      "file": "pages/database/whatsapp_threads.json"
+    },
+    {
+      "id": "components/Button",
+      "kind": "component",
+      "title": "Button",
+      "group": "Web components",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A themed native button with consistent action hierarchy and pending feedback.",
+      "headings": [],
+      "file": "pages/components/Button.json"
     },
     {
       "id": "components/ConversationMaterials",
@@ -1342,6 +1748,16 @@
       "summary": "Displays a public API failure message and an optional reload action.",
       "headings": [],
       "file": "pages/components/ErrorNotice.json"
+    },
+    {
+      "id": "components/PageHeader",
+      "kind": "component",
+      "title": "PageHeader",
+      "group": "Web components",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A page title and description with optional back navigation and primary actions.",
+      "headings": [],
+      "file": "pages/components/PageHeader.json"
     },
     {
       "id": "components/ProductAnswer",
@@ -1382,6 +1798,46 @@
       "summary": "Presents validated sales aggregates of one source, distinct units, comparisons and matched products.",
       "headings": [],
       "file": "pages/components/SalesResults.json"
+    },
+    {
+      "id": "components/SectionCard",
+      "kind": "component",
+      "title": "SectionCard",
+      "group": "Web components",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A named section with a consistent heading, optional description and decorative icon.",
+      "headings": [],
+      "file": "pages/components/SectionCard.json"
+    },
+    {
+      "id": "components/SelectField",
+      "kind": "component",
+      "title": "SelectField",
+      "group": "Web components",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A themed native select with an associated label, help and validation messages.",
+      "headings": [],
+      "file": "pages/components/SelectField.json"
+    },
+    {
+      "id": "components/StatusBadge",
+      "kind": "component",
+      "title": "StatusBadge",
+      "group": "Web components",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A compact textual label for a state or category.",
+      "headings": [],
+      "file": "pages/components/StatusBadge.json"
+    },
+    {
+      "id": "components/TextField",
+      "kind": "component",
+      "title": "TextField",
+      "group": "Web components",
+      "source": "apps/web/src/components.tsx",
+      "summary": "A labeled text-like input with associated help and validation messages.",
+      "headings": [],
+      "file": "pages/components/TextField.json"
     },
     {
       "id": "repository/AGENTS",
@@ -1804,6 +2260,36 @@
       "file": "pages/repository/docs/adr/0035-compose-conversations-over-authorized-evidence-and-semantic-tools.json"
     },
     {
+      "id": "repository/docs/adr/0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers",
+      "kind": "repository",
+      "title": "ADR-0036: Add WhatsApp as an Agent Channel Authorized by Owner-Linked Numbers",
+      "group": "Decisions",
+      "source": "docs/adr/0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md",
+      "summary": "The owner asked for WhatsApp as a fourth way to use IA-MNS, beside the direct web application, Sankhya and PDT Connect (ADR-0023). The product decisions are fixed: a dedicated…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.json"
+    },
+    {
+      "id": "repository/docs/adr/0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions",
+      "kind": "repository",
+      "title": "ADR-0037: Grant Identified Per-Source Permissions to People and Groups with Data Restrictions",
+      "group": "Decisions",
+      "source": "docs/adr/0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md",
+      "summary": "Until now IA-MNS had two capability permissions, sales:read (Sankhya and VR Master sales together) and products:read (both product registrations), granted to one Person at a…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.json"
+    },
+    {
+      "id": "repository/docs/adr/0038-join-default-user-groups-after-verified-provider-sign-in",
+      "kind": "repository",
+      "title": "ADR-0038: Join Default User Groups after Verified Provider Sign-In",
+      "group": "Decisions",
+      "source": "docs/adr/0038-join-default-user-groups-after-verified-provider-sign-in.md",
+      "summary": "The owner requested replacing automatic permission grants with a default user group for each external system. Groups already own per-source permissions and their restrictions;…",
+      "headings": [],
+      "file": "pages/repository/docs/adr/0038-join-default-user-groups-after-verified-provider-sign-in.json"
+    },
+    {
       "id": "repository/docs/adr/AGENTS",
       "kind": "repository",
       "title": "ADR Instructions",
@@ -2174,6 +2660,26 @@
       "file": "pages/repository/docs/domains/sankhya-product-lookup.json"
     },
     {
+      "id": "repository/docs/domains/whatsapp-channel",
+      "kind": "repository",
+      "title": "IA-MNS WhatsApp Channel",
+      "group": "Domain guides",
+      "source": "docs/domains/whatsapp-channel.md",
+      "summary": "WhatsApp is the fourth way to reach IA-MNS, beside the direct web application, Sankhya and PDT Connect. It is another entry point to the same corporate agent: the same Person,…",
+      "headings": [],
+      "file": "pages/repository/docs/domains/whatsapp-channel.json"
+    },
+    {
+      "id": "repository/docs/features/README",
+      "kind": "repository",
+      "title": "Feature Catalog by Origin",
+      "group": "Project guides",
+      "source": "docs/features/README.md",
+      "summary": "Find an implemented product function, its data source, SQL and filters. Open a linked detail for the behavior and limits. This inventory describes the repository's composition,…",
+      "headings": [],
+      "file": "pages/repository/docs/features/README.json"
+    },
+    {
       "id": "repository/docs/generated/api/errors",
       "kind": "repository",
       "title": "API Error Registry",
@@ -2189,7 +2695,7 @@
       "title": "Web Component Reference",
       "group": "Generated references",
       "source": "docs/generated/components/web.md",
-      "summary": "Displays a public API failure message and an optional reload action.",
+      "summary": "A page title and description with optional back navigation and primary actions.",
       "headings": [],
       "file": "pages/repository/docs/generated/components/web.json"
     },
@@ -2212,6 +2718,246 @@
       "summary": "Actor-owned corporate agent conversation with capability-specific validated context and a bounded execution lease.",
       "headings": [],
       "file": "pages/repository/docs/generated/database/schema.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/products",
+      "kind": "repository",
+      "title": "MNS (Sankhya): product lookup and filters",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/products.md",
+      "summary": "Finds unique registered products through verified catalog relationships, explains the interpretation and returns a bounded preview plus a complete count. The same selection can…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/products.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-net_value-month_product",
+      "kind": "repository",
+      "title": "MNS (Sankhya): net_value / month_product",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-net_value-month_product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-net_value-month_product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-net_value-month",
+      "kind": "repository",
+      "title": "MNS (Sankhya): net_value / month",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-net_value-month.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-net_value-month.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-net_value-product",
+      "kind": "repository",
+      "title": "MNS (Sankhya): net_value / product",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-net_value-product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-net_value-product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-net_value-total",
+      "kind": "repository",
+      "title": "MNS (Sankhya): net_value / total",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-net_value-total.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-net_value-total.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-quantity-month_product",
+      "kind": "repository",
+      "title": "MNS (Sankhya): quantity / month_product",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-quantity-month_product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-quantity-month_product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-quantity-month",
+      "kind": "repository",
+      "title": "MNS (Sankhya): quantity / month",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-quantity-month.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-quantity-month.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-quantity-product",
+      "kind": "repository",
+      "title": "MNS (Sankhya): quantity / product",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-quantity-product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-quantity-product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-quantity-total",
+      "kind": "repository",
+      "title": "MNS (Sankhya): quantity / total",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-quantity-total.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-quantity-total.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-weight-month_product",
+      "kind": "repository",
+      "title": "MNS (Sankhya): weight / month_product",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-weight-month_product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-weight-month_product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-weight-month",
+      "kind": "repository",
+      "title": "MNS (Sankhya): weight / month",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-weight-month.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-weight-month.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-weight-product",
+      "kind": "repository",
+      "title": "MNS (Sankhya): weight / product",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-weight-product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-weight-product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales-weight-total",
+      "kind": "repository",
+      "title": "MNS (Sankhya): weight / total",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales-weight-total.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales-weight-total.json"
+    },
+    {
+      "id": "repository/docs/generated/features/sankhya/sales",
+      "kind": "repository",
+      "title": "MNS (Sankhya): sales",
+      "group": "Generated references",
+      "source": "docs/generated/features/sankhya/sales.md",
+      "summary": "Vendas confirmadas, sem devoluções e sem vendas bonificadas; data de negociação (DTNEG).",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/sankhya/sales.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/products",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): product lookup and filters",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/products.md",
+      "summary": "Finds unique registered products through verified catalog relationships, explains the interpretation and returns a bounded preview plus a complete count. The same selection can…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/products.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales-net_value-month_product",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): net_value / month_product",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales-net_value-month_product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales-net_value-month_product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales-net_value-month",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): net_value / month",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales-net_value-month.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales-net_value-month.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales-net_value-product",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): net_value / product",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales-net_value-product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales-net_value-product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales-net_value-total",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): net_value / total",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales-net_value-total.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales-net_value-total.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales-quantity-month_product",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): quantity / month_product",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales-quantity-month_product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales-quantity-month_product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales-quantity-month",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): quantity / month",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales-quantity-month.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales-quantity-month.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales-quantity-product",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): quantity / product",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales-quantity-product.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales-quantity-product.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales-quantity-total",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): quantity / total",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales-quantity-total.md",
+      "summary": "This is the complete SQL emitted by the production compiler for the plan below, without a semantic product selection or a permission restriction. The portal offers a local SQL…",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales-quantity-total.json"
+    },
+    {
+      "id": "repository/docs/generated/features/vrmaster/sales",
+      "kind": "repository",
+      "title": "Pilar da Terra (VR Master): sales",
+      "group": "Generated references",
+      "source": "docs/generated/features/vrmaster/sales.md",
+      "summary": "Vendas registradas no VR Master (tabela venda, todas as lojas), pela data da venda; valor = soma de valortotal.",
+      "headings": [],
+      "file": "pages/repository/docs/generated/features/vrmaster/sales.json"
     },
     {
       "id": "repository/docs/project-derivation",
@@ -2464,6 +3210,16 @@
       "file": "pages/repository/docs/runbooks/template.json"
     },
     {
+      "id": "repository/docs/runbooks/whatsapp-channel",
+      "kind": "repository",
+      "title": "Runbook: WhatsApp Channel Activation, Revocation and Rollback",
+      "group": "Runbooks",
+      "source": "docs/runbooks/whatsapp-channel.md",
+      "summary": "Follow production access, secrets and incident response. The WhatsApp channel domain owns behavior; ADR-0036 owns the decision. Meta's dashboard changes over time: follow its…",
+      "headings": [],
+      "file": "pages/repository/docs/runbooks/whatsapp-channel.json"
+    },
+    {
       "id": "repository/docs/security/ai-data-processing",
       "kind": "repository",
       "title": "AI Data Processing",
@@ -2648,33 +3404,38 @@
     "shards": [
       { "file": "search/0000.json", "count": 12, "kinds": ["api"] },
       { "file": "search/0001.json", "count": 11, "kinds": ["api"] },
-      { "file": "search/0002.json", "count": 15, "kinds": ["api"] },
-      { "file": "search/0003.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0004.json", "count": 14, "kinds": ["api"] },
-      { "file": "search/0005.json", "count": 12, "kinds": ["api"] },
+      { "file": "search/0002.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0003.json", "count": 15, "kinds": ["api"] },
+      { "file": "search/0004.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0005.json", "count": 13, "kinds": ["api"] },
       { "file": "search/0006.json", "count": 12, "kinds": ["api"] },
-      { "file": "search/0007.json", "count": 13, "kinds": ["api", "database"] },
+      { "file": "search/0007.json", "count": 13, "kinds": ["api"] },
+      { "file": "search/0008.json", "count": 10, "kinds": ["api"] },
+      { "file": "search/0009.json", "count": 11, "kinds": ["api"] },
+      { "file": "search/0010.json", "count": 27, "kinds": ["api", "database"] },
       {
-        "file": "search/0008.json",
-        "count": 57,
+        "file": "search/0011.json",
+        "count": 75,
         "kinds": ["component", "database", "repository"]
       },
-      { "file": "search/0009.json", "count": 108, "kinds": ["repository"] },
-      { "file": "search/0010.json", "count": 118, "kinds": ["repository"] },
-      { "file": "search/0011.json", "count": 145, "kinds": ["repository"] },
-      { "file": "search/0012.json", "count": 161, "kinds": ["repository"] },
-      { "file": "search/0013.json", "count": 140, "kinds": ["repository"] },
-      { "file": "search/0014.json", "count": 102, "kinds": ["repository"] },
-      { "file": "search/0015.json", "count": 115, "kinds": ["repository"] },
-      { "file": "search/0016.json", "count": 77, "kinds": ["repository"] },
-      { "file": "search/0017.json", "count": 69, "kinds": ["repository"] },
-      { "file": "search/0018.json", "count": 72, "kinds": ["repository"] },
-      { "file": "search/0019.json", "count": 43, "kinds": ["repository"] },
-      { "file": "search/0020.json", "count": 86, "kinds": ["repository"] },
-      { "file": "search/0021.json", "count": 124, "kinds": ["repository"] },
-      { "file": "search/0022.json", "count": 80, "kinds": ["repository"] },
-      { "file": "search/0023.json", "count": 13, "kinds": ["repository"] }
+      { "file": "search/0012.json", "count": 112, "kinds": ["repository"] },
+      { "file": "search/0013.json", "count": 118, "kinds": ["repository"] },
+      { "file": "search/0014.json", "count": 161, "kinds": ["repository"] },
+      { "file": "search/0015.json", "count": 148, "kinds": ["repository"] },
+      { "file": "search/0016.json", "count": 140, "kinds": ["repository"] },
+      { "file": "search/0017.json", "count": 101, "kinds": ["repository"] },
+      { "file": "search/0018.json", "count": 116, "kinds": ["repository"] },
+      { "file": "search/0019.json", "count": 79, "kinds": ["repository"] },
+      { "file": "search/0020.json", "count": 61, "kinds": ["repository"] },
+      { "file": "search/0021.json", "count": 105, "kinds": ["repository"] },
+      { "file": "search/0022.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0023.json", "count": 112, "kinds": ["repository"] },
+      { "file": "search/0024.json", "count": 66, "kinds": ["repository"] },
+      { "file": "search/0025.json", "count": 41, "kinds": ["repository"] },
+      { "file": "search/0026.json", "count": 115, "kinds": ["repository"] },
+      { "file": "search/0027.json", "count": 109, "kinds": ["repository"] },
+      { "file": "search/0028.json", "count": 63, "kinds": ["repository"] }
     ],
-    "count": 1611
+    "count": 1935
   }
 }

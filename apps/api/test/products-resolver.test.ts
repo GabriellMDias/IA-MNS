@@ -951,6 +951,7 @@ describe("product capability", () => {
     message: "Produtos da Ana",
     history: [],
     context: null,
+    permissions: new Set(["products:read", "products_vrmaster:read"]),
     signal: new AbortController().signal,
     progress: () => Promise.resolve(),
     trace: {

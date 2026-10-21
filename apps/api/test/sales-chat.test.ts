@@ -428,11 +428,15 @@ describe("sales HTTP authorization and errors", () => {
       verify: (authorization) =>
         Promise.resolve(
           authorization === "Bearer alice"
-            ? { id: "alice", scopes: new Set(["sales:read"]) }
+            ? { id: "alice", scopes: new Set(["sales_sankhya:read"]) }
             : authorization === "Bearer bob"
-              ? { id: "bob", scopes: new Set(["sales:read"]) }
+              ? { id: "bob", scopes: new Set(["sales_sankhya:read"]) }
               : authorization === "Bearer denied"
-                ? { id: "denied", scopes: new Set() }
+                ? // The capability or another source does not reach Sankhya.
+                  {
+                    id: "denied",
+                    scopes: new Set(["sales:read", "sales_vrmaster:read"]),
+                  }
                 : null,
         ),
     };

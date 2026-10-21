@@ -338,6 +338,15 @@ export function ConversationSidebar(props: Props) {
               title={item.title}
             >
               {item.pinned && <span aria-label="Fixada">◆ </span>}
+              {item.channel === "whatsapp" && (
+                <span
+                  className="agent-channel-mark"
+                  aria-label="Conversa do WhatsApp"
+                  title="Conversa iniciada pelo WhatsApp"
+                >
+                  WA{" "}
+                </span>
+              )}
               {item.title}
             </Link>
             <ConversationMenu
