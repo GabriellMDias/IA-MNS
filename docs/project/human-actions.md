@@ -14,7 +14,7 @@ The My Account, Administration and conversation-material visual improvements in 
 
 ## Maintaining this checklist
 
-The PR #11 corrections in [PJ-58](implementation-plan.md#current-work) need no new human-controlled account, secret or ERP access. They add the forward application migration `202610210002_identity_whatsapp_link_generations`; deployment must apply it before the updated runtime and must not run older WhatsApp workers concurrently. Disable the channel before rolling back to an older runtime and keep it disabled there. Existing WhatsApp activation approvals remain PH-32 to PH-35.
+The PR #11 corrections in [PJ-58](implementation-plan.md#current-work) need no new human-controlled account, secret or ERP access. They add the forward application migrations `202610210002_identity_whatsapp_link_generations` and `202610210003_rotate_legacy_whatsapp_generations`; deployment must apply both before the updated runtime and must not run older WhatsApp workers concurrently. Disable the channel before rolling back to an older runtime and keep it disabled there. Existing WhatsApp activation approvals remain PH-32 to PH-35.
 
 The static feature/SQL catalog in [PJ-56](implementation-plan.md#current-work) requires no new human action or ERP access. It documents the existing catalog exposure and deployment prerequisites; it does not complete or change PH-27, PH-28 or PH-36.
 

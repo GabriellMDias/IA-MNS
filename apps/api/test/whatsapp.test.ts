@@ -422,6 +422,18 @@ it("backfills link generations from current links and retained channel work on u
           sentAt: new Date(),
         },
       });
+      // A legacy link might already have been recreated under a reused version.
+      const ambiguous = await database.whatsappInboundMessage.create({
+        data: {
+          id: randomUUID(),
+          messageId: "wamid.legacy-recreated",
+          personId: linked,
+          linkVersion: 4,
+          senderPhone: "5511987654321",
+          kind: "text",
+          sentAt: new Date(),
+        },
+      });
       await database.whatsappOutboundMessage.create({
         data: {
           id: randomUUID(),
@@ -447,8 +459,22 @@ it("backfills link generations from current links and retained channel work on u
           "utf8",
         ),
       );
+      // An older worker may have written a higher generation between deployments.
+      await database.whatsappInboundMessage.update({
+        where: { id: ambiguous.id },
+        data: { linkVersion: 6 },
+      });
+      await admin.query(
+        await readFile(
+          new URL(
+            "../prisma/migrations/202610210003_rotate_legacy_whatsapp_generations/migration.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
       for (const [id, expected] of [
-        [linked, 4],
+        [linked, 7],
         [removed, 9],
         [fresh, 0],
       ] as const)
@@ -456,6 +482,20 @@ it("backfills link generations from current links and retained channel work on u
           (await database.identityPerson.findUniqueOrThrow({ where: { id } }))
             .whatsappLinkVersion,
         ).toBe(expected);
+      expect(
+        (
+          await database.identityWhatsappLink.findUniqueOrThrow({
+            where: { personId: linked },
+          })
+        ).version,
+      ).toBe(7);
+      expect(
+        (
+          await database.whatsappInboundMessage.findUniqueOrThrow({
+            where: { id: ambiguous.id },
+          })
+        ).linkVersion,
+      ).toBe(6);
       await new IdentityRepository(database).setWhatsappLink({
         personId: removed,
         phoneNumber: "5521998765432",
