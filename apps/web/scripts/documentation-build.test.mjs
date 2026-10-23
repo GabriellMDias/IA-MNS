@@ -109,6 +109,12 @@ test(
         ),
         "utf8",
       );
+      const { foundationOnly } = JSON.parse(
+        await readFile(resolve(root, "../../.orion/derivation.json"), "utf8"),
+      );
+      const foundationModules = foundationOnly
+        .filter((path) => path.startsWith("apps/web/src/"))
+        .map((path) => resolve(root, "../..", path).replaceAll("\\", "/"));
       const internalAssets = [
         ...(await files(join(root, "src/generated/pages"))),
         ...(await files(join(root, "src/generated/search"))),
@@ -184,7 +190,12 @@ test(
         assert.equal(modules.some(isInternalDocumentationModule), internal);
         if (derived && !internal)
           assert.equal(
-            modules.some((id) => id.includes("/approval-requests/")),
+            modules.some((id) => {
+              const path = id.replaceAll("\\", "/").split("?")[0];
+              return foundationModules.some(
+                (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+              );
+            }),
             false,
           );
         const emitted = await files(outDir);
