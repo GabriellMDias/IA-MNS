@@ -13,6 +13,7 @@ This React/Vite application provides the application shell, a home page, compose
 | API client and failure wording | [`src/api-client.ts`](src/api-client.ts) |
 | Client configuration and build identity | [`src/config.ts`](src/config.ts), [`vite.config.ts`](vite.config.ts), [`scripts/project-identity.ts`](scripts/project-identity.ts) |
 | Exported shared components and canonical examples | [`src/components.tsx`](src/components.tsx), [`src/components.docs.json`](src/components.docs.json) |
+| Component styling and product theme hooks | [`src/ui.css`](src/ui.css) under [component design practices](../../docs/architecture/web-components.md#styling-themes-and-accessibility) |
 | Documentation presentation | [`src/documentation.tsx`](src/documentation.tsx) under [portal ownership](../../docs/architecture/living-documentation.md) |
 
 ## Modules
@@ -37,7 +38,11 @@ Modules that call authenticated operations hold an already-issued bearer token o
 
 ## Living Documentation Portal
 
-The public `/docs` hub provides separate API, data dictionary, component, and repository-documentation collections, nested local pages, breadcrumbs, page outlines, and full-text search. Reading and synthetic previews need no token, API process, or database. The API explorer sends only explicit requests to the configured same-origin API, keeps tokens in memory, and asks for acknowledgement before writes. See [portal setup](../../docs/setup.md#living-documentation-portal) to run it.
+For component selection, ownership, categories, source metadata and styling/theme practices, follow [component architecture](../../docs/architecture/web-components.md). Inspect existing components before implementing equivalent UI. The public shared entry point stays small; feature components keep their own scope and optional local metadata.
+
+The internal engineering `/docs` hub is available in local development and excluded from production builds by default, together with its catalog, pages, search assets, styles and reference downloads. It provides API, data dictionary, component, and repository-documentation collections, nested local pages, breadcrumbs, page outlines, and full-text search. Reading and synthetic previews need no token, API process, or database. The API explorer sends only explicit requests to the configured same-origin API, keeps tokens in memory, and asks for acknowledgement before writes. See [portal setup](../../docs/setup.md#living-documentation-portal) and [explicit internal builds and access requirements](../../docs/architecture/living-documentation.md#build-and-deployment-boundary).
+
+The portal owns its layout and scoped styles; application UI remains independently replaceable in `shell.tsx`, `home.tsx`, and the project-owned `modules.tsx` and brand assets. Product help and public API documentation use separately approved sources and application-owned presentation under [the audience policy](../../docs/architecture/living-documentation.md#documentation-audiences-and-publication). They never inherit the internal catalog automatically.
 
 Shared component examples/descriptions belong in [`components.docs.json`](src/components.docs.json) beside the real exports in `components.tsx`. `pnpm docs:references:write` produces [component Markdown](../../docs/generated/components/web.md) and a lightweight catalog, separately loaded pages, and search shards. All `docs/` Markdown and repository README/instruction files are rendered locally; normal documentation links stay in the portal. Regenerate after authored documentation edits too. API/database/error references come from their respective canonical generators. The portal is a presentation of those facts, not another authoring source.
 

@@ -1,5 +1,248 @@
 [
   {
+    "id": "repository/docs/database/schema-documentation",
+    "title": "Database Schema Documentation",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Generated Reference",
+    "anchor": "generated-reference",
+    "text": "Generated Reference\n`pnpm -C apps/api references:write` intentionally regenerates current API/database/configuration/error references using a freshly migrated disposable PostgreSQL. `pnpm references:check` checks freshness without editing tracked files; `pnpm docs:references:check` checks the portal's derived representation. See [artifact workflow](../architecture/backend-execution-and-generated-artifacts.md) for the complete order and [validation](../validation.md) for requirements.\nThe current database generator covers ordinary application tables in `public`, their columns, primary and other constraints, indexes, and enums; it excludes Prisma's migration table. It compares Prisma-representable structure to the freshly migrated database and rejects unmodeled application-owned object kinds rather than silently omitting them. It is still not a universal PostgreSQL catalog export: new schemas, partitioned tables, views, triggers, functions, RLS, or other object kinds require deliberate generator coverage and metadata before adoption.\nFor covered objects it checks exact names, stale/missing entries, required owner/descriptions/lifecycle, valid table/column classifications, nullable-column meaning, object purposes, enum descriptions, and generated drift. Units and broader business semantics still require review. Schema drift in a deployed database and reference drift from repository sources are separate defects; this disposable-database check does not inspect deployments.\nGenerated files are read-only representations. Change schema/metadata or generator sources and regenerate; never patch output to hide drift. The portal adds human navigation without becoming another schema source. Keep structured text searchable by domain/object/field meaning for agents. Generated diagrams, if added, should reflect actual schema; authored simplified diagrams must be clearly explanatory rather than canonical. Reliable metadata, not guesses, should drive links to code, domain, or API.\n"
+  },
+  {
+    "id": "repository/docs/database/schema-documentation",
+    "title": "Database Schema Documentation",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Schema Documentation Requirements",
+    "anchor": "schema-documentation-requirements",
+    "text": "Schema Documentation Requirements\nBefore handing off a schema change:\nInspect the current physical/authored schema, metadata, ownership, classification, constraints, relationships, domain rules, and migration release status. Escalate uncertain non-obvious meaning as a documentation defect rather than guessing.\nUpdate object/column meaning, classification, null/unit/lifecycle semantics, native side effects, and ownership with the schema change. Give newly sensitive fields explicit review.\nExtend metadata and generator coverage for newly introduced object kinds; missing documentation must fail validation wherever that coverage exists.\nRegenerate the current reference and portal data. Review schema, SQL, metadata, and reference diffs together, especially nullability, constraints, relationships, and classification changes.\nVerify links/navigation, current terminology, test evidence, and that structural facts are derived rather than maintained independently. Generation proves covered consistency, not semantic correctness.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Transactions and Concurrency",
+    "anchor": "transactions-and-concurrency",
+    "text": "Transactions and Concurrency\n[Task index](../README.md) · [Database principles](principles.md) · [Delivery and side effects](../architecture/delivery-and-side-effects.md) · [Testing](../architecture/testing-strategy.md)\nThis policy owns database atomicity, isolation, conditional writes, locks, and transaction retries. Cross-system delivery, idempotency, message claiming, retry ownership, and reconciliation belong to [delivery policy](../architecture/delivery-and-side-effects.md). [ADR-0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md) permits appropriate Prisma or explicit SQL transaction mechanisms; [ADR-0009](../adr/0009-establish-testing-strategy-and-tooling.md) requires real-database verification where its semantics matter.\nEach module's implementation conventions record its concrete transaction choices, such as atomic PostgreSQL creation/conditional writes, durable create replay, and integer version preconditions. The shared runtime does not automatically retry writes. Do not infer that outboxes, distributed locks, or generic transaction infrastructure already exist.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Transactions",
+    "anchor": "transactions",
+    "text": "Transactions\nAssume concurrent requests, processes, retries, workers, and deployment overlap unless the architecture proves exclusive ownership. Sequential code does not imply sequential execution across the system. Identify the durable invariant, which changes must become visible together, relevant competing actors, and failure/recovery semantics before choosing a mechanism.\nTransactions protect all-or-nothing state within their actual database boundary. They must remain as short as practical and should not automatically surround every HTTP request or every repository method. Splitting dependent writes into independently committed methods can destroy atomicity; wrapping remote work in a transaction can hold locks without providing distributed rollback.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Application-Level Transaction Ownership",
+    "anchor": "application-level-transaction-ownership",
+    "text": "Application-Level Transaction Ownership\nThe application operation owns the complete consistency requirement; domain logic stays independent of SQL/Prisma transaction APIs. Persistence infrastructure must make scope and participating connection/context discoverable. Repositories in one atomic operation must use the same transaction rather than silently opening independent connections or escaping context.\nNested transaction calls may mean savepoints rather than independent transactions; understand actual library/database semantics. Use savepoints, Unit of Work, implicit async-local context, or transaction hooks only when they add concrete value and remain predictable/testable. Hooks need explicit retry, rollback, and crash semantics. An after-commit callback is best effort unless required work is durably recorded under [delivery policy](../architecture/delivery-and-side-effects.md#after-commit-work).\nExternal calls generally stay outside database transactions. Rollback cannot unsend mail, reverse an accepted provider mutation, remove an uploaded file reliably, or retract a published message. Never place unsafe non-idempotent external effects in transparently retried blocks. A payment provider's “transaction” is not a shared database transaction.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Isolation Levels",
+    "anchor": "isolation-levels",
+    "text": "Isolation Levels\nChoose isolation and conflict mechanisms for actual invariants, not framework defaults or labels. PostgreSQL's real behavior matters; names shared with other databases need not imply identical guarantees. Consider relevant anomalies: dirty/non-repeatable reads, phantoms, lost updates, and write skew. The default is not a universal guarantee; serializable execution can still abort and require bounded safe retry.\nA read/snapshot may become stale immediately after commit. Read-committed work still needs constraints or conditional updates where read-then-write would race; stronger isolation carries contention, resource, and throughput costs. Do not weaken correctness because of speculative performance concerns, or select the strongest isolation without considering its actual benefit.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Check-Then-Act Race",
+    "anchor": "check-then-act-race",
+    "text": "Check-Then-Act Race\nApplication checks can become stale before a write. Protect uniqueness with database constraints even when a precheck improves feedback. Prefer atomic counter updates, conditional decrements/state transitions, reservations, or other native atomic operations to unprotected read–calculate–write sequences.\nFor example, updating only where ID, expected version, valid source state, and protected ownership still match lets PostgreSQL arbitrate competing writes. Inspect affected-row count and safely classify failure; zero rows alone does not prove which precondition failed. Authorization checks must not leak hidden state while classifying a conflict.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Optimistic concurrency",
+    "anchor": "optimistic-concurrency",
+    "text": "Optimistic concurrency\nUse a deliberate expected version/state when stale writes must be rejected. Increment a dedicated version exactly once per successful mutation and return meaningful conflict semantics. Reload/reconciliation versus safe retry depends on the domain; do not silently rebase a user's stale intent onto a newer version.\nTimestamps are concurrency tokens only with proven precision and update semantics; explicit versions are often clearer. Wall-clock timestamps across machines do not guarantee total order. Use database time, sequences, or logical versions when correctness requires ordering.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Locks and reservations",
+    "anchor": "locks-and-reservations",
+    "text": "Locks and reservations\nPessimistic row locks can serialize high-conflict short work. Cover the smallest meaningful resource, bound waits, and use deterministic multi-resource lock ordering to reduce deadlocks. Locks consume connections and can cause blocking/latency; measure their cost. Advisory locks require explicit ownership, timeout, and failure semantics.\nDistributed locks are not a default. First consider constraints, conditional writes, versions, row locks, queue ownership, or a single logical writer. Expiring leases can leave a stale worker running after another acquires the lease; high-risk protocols may need fencing tokens or equivalent enforcement. A lease alone does not prove exclusivity.\nBusiness reservations such as seat holds are durable domain state with expiry/renewal/release/claim races; do not implement minutes-long business holds as long-lived database locks. Concurrent numbering needs safe allocation, never `MAX(number) + 1`. Sequences may contain gaps; a gapless requirement is a stronger business decision with concurrency cost.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Deadlock Retry",
+    "anchor": "deadlock-retry",
+    "text": "Deadlock Retry\nDeadlocks and serialization failures are recognized conflict modes, not evidence of corruption. Repeated deadlocks or lock timeouts may indicate poor access ordering, contention, or defects and must remain observable. Distinguish lock contention from database unavailability and domain/constraint failures.\nRetry only classified transient failures for an operation safe to repeat, with bounded attempts/time and appropriate backoff/jitter based on evidence. Do not retry permanent constraint/query/schema failures blindly. Expected transient retries need useful telemetry without becoming duplicate incident reports.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Database Retry Boundary",
+    "anchor": "database-retry-boundary",
+    "text": "Database Retry Boundary\nRetry the complete logical transaction, including its reads and business assumptions, not only the last failed statement. Everything in that boundary can execute again. Inspect driver, repository, service, SDK, proxy, and caller policies to avoid multiplying retries; normally one layer owns retries for a failure.\nA timeout/cancellation or lost connection during commit may mean the operation committed and the response was lost. Propagate cancellation where supported and safe, clean up transactions reliably, and preserve unknown outcomes when relevant. Idempotency, state lookup, or reconciliation must resolve retry safety; a transient connection failure does not prove a write did not occur. Follow the owning module's recovery conventions for current behavior and [delivery retry rules](../architecture/delivery-and-side-effects.md) for broader workflows.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Authorization, audit, and derived reads",
+    "anchor": "authorization-audit-and-derived-reads",
+    "text": "Authorization, audit, and derived reads\nFor database-dependent authorization, define the consistency point between permission/ownership checks and the protected write. Immediate revocation requirements may affect transaction, token, and cache design; a distant precheck is insufficient when those semantics require freshness. Do not invent immediate revocation guarantees from short-lived tokens alone.\nWhen a required audit record and business change share a database boundary, they may need to commit atomically. External audit/event delivery requires durable intent and recovery; diagnostic logs are not authoritative business audit. Publish no event implying durable state before commit, and do not rely on unrecorded post-commit publication where delivery is required.\nRead replicas, caches, projections, and materialized views introduce staleness. Define whether an operation requires read-your-writes, its acceptable delay, canonical source, update/invalidation, repair, and failure behavior. “Eventually consistent” requires a process that actually repairs divergence. Cache stampede mitigations or single-writer/partitioned processing are optional responses to real load, not defaults; partition order does not imply global order.\nDatabase plus object storage needs partial-failure design such as temporary upload/finalization, orphan cleanup, and reconciliation. Distributed workflows must define convergence, compensation, or safe manual intervention rather than pretend to share one atomic commit. Do not claim exactly-once effects without end-to-end evidence.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Performance, observability, and repair",
+    "anchor": "performance-observability-and-repair",
+    "text": "Performance, observability, and repair\nBatch sizes affect transaction duration, lock scope, failure granularity, and memory. Large updates may need batching under [migration policy](migrations.md#backfills). Investigate hot rows/indexes, contention, and retry patterns with evidence before redesigning consistency.\nUse stable semantic operation names and bounded safe telemetry for latency, conflict/retry counts, lock waits, deadlocks, attempts, and final outcomes where useful. Trace meaningful latency/failure boundaries rather than every trivial query. Never dump rows or sensitive query values during conflict diagnostics; follow [redaction](../security/telemetry-redaction.md).\nRepair by retry, reconciliation, or intervention must be part of the design. Rare states requiring manual action must be detectable, diagnosable, and safe to repair through a concrete runbook. Separate high-risk audit requirements from diagnostic logging. Production signals can reveal duplicates, stuck work, and failed reconciliation that tests cannot exhaustively predict.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "Testing and verification",
+    "anchor": "testing-and-verification",
+    "text": "Testing and verification\nUse real PostgreSQL for guarantees involving rollback, constraints, isolation, and locks. Sequential mocks cannot prove concurrent safety. Coordinate competing operations explicitly where practical rather than sleeping and hoping they overlap; avoid deadlock tests tied to undocumented scheduler timing.\nVerify relevant cases: mid-operation failure leaves no partial state; concurrent uniqueness/create claims produce one consistent result; stale versions conflict; competing transitions cannot both win; retry limits and complete-transaction restart behave safely; process interruption and response loss preserve documented recovery. The [delivery test requirements](../architecture/delivery-and-side-effects.md#verification) cover duplicate delivery, idempotency, external failure, and reconciliation when introduced. Testing and review remain necessary even where static checks can help.\n"
+  },
+  {
+    "id": "repository/docs/database/transactions-and-concurrency",
+    "title": "Transactions and Concurrency",
+    "group": "Database guides",
+    "kind": "repository",
+    "heading": "New Transaction Checklist",
+    "anchor": "new-transaction-checklist",
+    "text": "New Transaction Checklist\nBefore implementing or changing a state-changing operation:\nIdentify the invariant, owner, participating writes, concurrency sources, duplicate possibility, and applicable authorization/audit consistency.\nChoose constraints, atomic writes, versioning, isolation, locks, or explicit reservations proportionally; explain scope and maximum duration.\nDetermine conflict/error semantics, full retry boundary and owner, transient categories, attempt/time bounds, and safety of every repeated action.\nResolve halfway failure, external-success/database-failure, commit ambiguity, lost response, and crash windows without unsupported rollback or exactly-once claims.\nAdd deterministic integration evidence, safe operational signals, and recovery/repair guidance. Update the owning domain and generated contract/metadata when behavior changes.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Approval Request Implementation Conventions",
+    "anchor": "approval-request-implementation-conventions",
+    "text": "Approval Request Implementation Conventions\n[Business specification](approval-request.md) · [API runtime](../../apps/api/README.md) · [Web workflow](../../apps/web/README.md) · [Artifact workflow](../architecture/backend-execution-and-generated-artifacts.md)\nThis document owns implementation conventions for the reference feature. The business specification owns actors, invariants, and transitions; executable sources own wire and physical details. The API module, PostgreSQL schema, generated references, SDK, and web workflow exist. A concrete identity provider remains unselected.\nThe reference feature and its documentation are foundation-only: they exist in the Orion repository and are removed when a project is derived. Shared runtime, tooling, and policy never depend on them; the feature attaches only through `apps/api/src/modules.ts` and `apps/web/src/modules.tsx`.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Placement and ownership",
+    "anchor": "placement-and-ownership",
+    "text": "Placement and ownership\nResponsibility\nCurrent source\nFramework-independent rules and access decisions\n[`domain.ts`](../../apps/api/src/features/approval-requests/domain.ts)\nApplication operations, persistence port, intent fingerprint, cursor\n[`service.ts`](../../apps/api/src/features/approval-requests/service.ts)\nPostgreSQL writes and authorized read predicates\n[`prisma-repository.ts`](../../apps/api/src/features/approval-requests/prisma-repository.ts)\nTypeBox contracts, routes/defaults, scope-to-capability mapping\n[`contracts.ts`](../../apps/api/src/features/approval-requests/contracts.ts), [`routes.ts`](../../apps/api/src/features/approval-requests/routes.ts)\nModule contract, requirements, and public errors\n[`module.ts`](../../apps/api/src/features/approval-requests/module.ts), [`errors.ts`](../../apps/api/src/features/approval-requests/errors.ts)\nAuthored schema, meaning, and runtime grants\n[`approval-requests.prisma`](../../apps/api/prisma/schema/approval-requests.prisma), [`metadata`](../../apps/api/prisma/metadata/approval-requests.json), [`runtime grants`](../../apps/api/prisma/runtime-grants/approval-requests.sql), and the reviewed migration\nReal-database and process verification\n[`integration.test.ts`](../../apps/api/test/approval-requests/integration.test.ts), [module smoke](../../apps/api/scripts/smoke/approval-requests.ts)\nBrowser workflow and journeys\n[`apps/web/src/approval-requests/`](../../apps/web/src/approval-requests/routes.tsx), [browser journeys](../../apps/web/test/e2e/approval-requests/workflow.spec.ts)\n`apps/api/src/modules.ts` composes the feature, which requires the shared database and bearer authentication. Fastify and the shared token verifier remain at transport/infrastructure boundaries; the module maps the issuer's `approval:review` scope to its review capability; domain/application behavior depends on neither Fastify nor Prisma. The feature owns table meaning and writes. Other applications consume its API rather than importing internals or accessing the table directly. Follow [application boundaries](../architecture/application-boundaries.md), [dependency rules](../architecture/dependency-rules.md), and ADRs [0004](../adr/0004-select-fastify-as-the-backend-http-framework.md), [0006](../adr/0006-select-prisma-orm-for-database-access-and-migrations.md), and [0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md).\n`apps/api/prisma/` remains the schema/migration owner until genuine multi-application ownership exists. Do not create generic domain/contracts/database packages for one backend consumer. `packages/sdk` provides the thin generated boundary used by `apps/web`; these responsibilities do not require a ceremonial file-per-layer scaffold.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Identity, identifiers, and time",
+    "anchor": "identity-identifiers-and-time",
+    "text": "Identity, identifiers, and time\nThe backend generates one immutable random UUID for each new request, serving as both primary key and public resource ID. Clients cannot choose it; it carries no permission. A future storage change must preserve the public identity under [API](../api/principles.md#identifiers) and [database](../database/principles.md#identifiers) policies.\nThe trusted boundary supplies a stable provider-independent principal UUID. Creation stores it as immutable `creatorId`, the sole owner relation. Request bodies cannot supply ownership/capability, and provider migration must preserve stored ownership. There is no tenant or administrator override.\nPostgreSQL owns creation/update time in `timestamptz`; API serialization is UTC RFC 3339. Successful writes advance `updatedAt` in the same statement, using database time and at least a millisecond beyond the previous value. Browser/ORM convenience clocks are not authoritative. Timestamps are informational, not concurrency tokens or a complete audit trail; no additional lifecycle timestamp is currently required.\nThe [API token adapter guide](../../apps/api/README.md#identity-and-contract) describes trusted claim mapping. Application/domain code receives principal/capability meaning, not provider-specific claims.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Mutations, concurrency, and transactions",
+    "anchor": "mutations-concurrency-and-transactions",
+    "text": "Mutations, concurrency, and transactions\nPersist `version=1` on creation and increment exactly once per successful edit/transition. Reads return it; every edit, submit, approve, reject, and cancel request supplies its observed positive integer `expectedVersion`. Never silently retry stale intent against a newer version.\nEach write is an atomic PostgreSQL statement. Conditional mutations include ID, expected version, source state, and owner/non-owner relation in the `UPDATE` predicate; the trusted review capability is checked by application code. Authorization and input/state checks precede the write. A losing conditional update returns a version conflict, never silently overwrites the winner. An earlier read alone cannot enforce the invariant.\nCreation commits the request, owner-scoped opaque `Idempotency-Key`, and canonical title/description intent fingerprint together under a unique owner/key constraint. A repeated owner/key with identical intent returns the same request's current state; different intent conflicts. A uniqueness collision is followed by a read to classify replay/conflict, not another insert attempt. The key follows the request's eventual retention disposition and does not establish a global idempotency service.\nOther mutations use version preconditions rather than durable replay. Repeating a committed action with the old version conflicts; no request acquires multiple terminal outcomes or a reason inconsistent with its state. State, version, rejection reason, and update time commit together. No transaction spans identity-provider calls or external effects, and there is no default audit/outbox write. [Transaction](../database/transactions-and-concurrency.md) and [delivery](../architecture/delivery-and-side-effects.md) policies govern any extension.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Read and list contracts",
+    "anchor": "read-and-list-contracts",
+    "text": "Read and list contracts\nOwners can get their requests in every state. A non-owner reviewer can get currently `SUBMITTED` requests; completed decisions leave that review view. A reviewer sees their own requests through owner access but cannot self-review. Broader reviewer history requires an explicit business/access decision.\nList scope is `mine` by default or `reviewable` with trusted review capability. The latter selects non-owner `SUBMITTED` requests. Apply authorization in the database query before pagination; there is no unrestricted list. Each scope uses opaque cursors ordered by `createdAt DESC, id DESC`, default page size 20, maximum 100. Routes own defaults and TypeBox owns request bounds.\nCursors are bound to scope and principal, validated on every request, and never accepted as authorization evidence. Current access predicates still apply on every page. Inserts/state changes can change membership; cursors provide no snapshot guarantee. No arbitrary sort, search, or ORM-field filter exists. Follow [pagination policy](../api/principles.md#pagination) if this contract evolves.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "API failures and canonical metadata",
+    "anchor": "api-failures-and-canonical-metadata",
+    "text": "API failures and canonical metadata\nThe [error registry](../../apps/api/src/errors.ts) owns messages/statuses and [TypeBox contracts](../../apps/api/src/features/approval-requests/contracts.ts) own wire declarations. Feature-specific classification is:\nCondition\nPublic code\nMissing, expired, or invalid token\n`AUTHENTICATION_REQUIRED`\nMissing review capability, self-review, or unauthorized `reviewable` scope\n`PERMISSION_DENIED`\nAbsent/inaccessible ID or non-owner use of owner-only mutation\n`RESOURCE_NOT_FOUND`\nInvalid input, unusable rejection reason, invalid cursor/version/key\n`VALIDATION_FAILED`\nAuthorized action from an invalid/terminal state\n`APPROVAL_REQUEST_INVALID_STATE`\nAuthorized stale write or losing conditional update\n`RESOURCE_VERSION_CONFLICT`\nCreation key reused for different intent\n`IDEMPOTENCY_KEY_REUSED`\nAuthentication/authorization precede disclosure of resource state/version. Hidden and absent reads share not-found semantics. If both the observed version and state are obsolete, the current service checks version before transition validity. Messages are safe explanatory copy, not machine contracts. Do not expose Prisma/SQLSTATE/provider internals. Cross-cutting limiting, availability, and unexpected failures follow the [API error contract](../api/error-contract.md); exact status/response shapes are in [generated errors](../generated/api/errors.md) and [OpenAPI](../generated/api/openapi.json).\nSchema-adjacent metadata owns table/column meaning, `INTERNAL` classification, null/clock/unit semantics, and constraint/index purpose. It identifies immutable creator/creation intent, rejection reason present only in `REJECTED`, and version increments. Prisma owns representable authored structure; reviewed SQL covers PostgreSQL details; the fully migrated database owns complete physical truth. [Schema documentation policy](../database/schema-documentation.md) owns generation coverage and completeness requirements. Never maintain the derived reference manually.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Current contract",
+    "anchor": "current-contract",
+    "text": "Current contract\nThe executable contract requires nonblank `title` up to 200 characters. Optional `description` is `null`/omitted or nonblank supporting text up to 2,000 characters. A draft edit replaces both fields; omitting `description` clears it. Rejection requires nonblank `reason` up to 2,000 characters. These are existing limits, not additional states. Exact wire details remain in TypeBox/OpenAPI.\nMigration commands use `ORION_MIGRATION_DATABASE_URL`; runtime uses the separate restricted `ORION_DATABASE_URL`. The [API runtime guide](../../apps/api/README.md#configuration-and-database-access) owns grants and setup; do not duplicate credentials or runtime configuration parsing inside this feature.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Run the reference workflow manually",
+    "anchor": "run-the-reference-workflow-manually",
+    "text": "Run the reference workflow manually\nWith Docker running, build the API and start the disposable reference stack from the repository root:\npnpm db:generate\npnpm -C apps/api build\nnode apps/web/test/e2e/approval-requests/manual.ts\n\nIt starts a disposable PostgreSQL container, applies the committed migrations with a migration credential, grants the separate restricted runtime role its [runtime grants](../../apps/api/prisma/runtime-grants/approval-requests.sql), and starts the emitted API and Vite server on available loopback ports with an ephemeral synthetic token issuer. The API verifies signed bearer tokens, ownership, and review capability exactly as in the automated journeys; authentication is never bypassed. The command supplies its own temporary configuration and does not read the root `.env.local`.\nOpen the printed `/approval-requests` URL and choose **Use local owner**. Create a draft, edit it, and submit it; trying **Approve** with this owner identity should be denied. Choose **Disconnect**, then **Use local reviewer**. Under **For review**, open the submitted request and approve or reject it. The reviewer cannot decide their own requests, and the owner can inspect the terminal result after reconnecting. Reloading the page, or leaving the workflow, clears the in-memory token.\nThe local buttons appear only when the development server is paired with this synthetic issuer. They fetch a signed token through a same-origin, no-store development route and hand it directly to the in-memory credential state. Tokens are never written to files, URLs, browser storage, or terminal output, and they expire after one hour. Press Ctrl+C to stop the servers and database. The same stack serves the [API explorer](../architecture/living-documentation.md) for authenticated reference operations. A real provider and user-facing token acquisition remain conditional under [H-07](../human-actions.md#h-07).\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nReal migrated-PostgreSQL tests cover the authorization matrix with synthetic principals, HTTP failure mappings, create replay/conflict and concurrent creation, authorized cursor ordering, conditional races, stale/invalid transitions, repeat submission, failed-statement rollback, and a caller deadline after committed creation. The emitted-process smoke interrupts the API after a committed decision and verifies recovery/replay after restart.\nThe generated SDK and web workflow add browser coverage of the owner/reviewer journey, stale mutation, and recovery guidance. See [validation](../validation.md) for commands and prerequisites. These tests prove the exercised boundaries, not a selected provider, deployment rollout, external side effect, or universal exactly-once guarantee.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request-implementation",
+    "title": "Approval Request Implementation Conventions",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Failure recovery and retry ownership",
+    "anchor": "failure-recovery-and-retry-ownership",
+    "text": "Failure recovery and retry ownership\nThe API, adapter, SDK, and web mutations do not automatically retry state changes; the web query client also disables automatic read retries. A caller may deliberately request again, but a transport failure cannot prove the database did not commit. The adapter's only creation-recovery read follows a unique-key collision; it does not reissue the insert or conditional update.\nOperation/outcome\nSafe recovery\nCreation response lost\nReuse the same authenticated owner's key and exact intent to obtain the same durable request, including after restart. Different intent under that key conflicts.\nOriginal creation key lost\nInspect the authorized list before creating a new intent. A new key can create another request.\nEdit/transition timeout, disconnect, or unexpected failure\nFetch current state/version and reconcile before a new action. Blind reuse of a committed version conflicts; the conflict alone does not identify which caller won.\nKnown validation, authorization, state/version, or rate-limit failure\nInterpret the stable code and operation-specific guidance. Readiness failure does not prove a previous write failed.\nThe web UI provides unknown-outcome guidance and detail reload. Unexpected dependency exceptions produce one safe internal-error diagnostic, without raw exception content. No operation has an external effect to compensate or call transactionally reversible.\nNo deletion worker, audit table, outbox/inbox, compensation, or derived-copy reconciliation is required by the current feature. This does not authorize indefinite retention: actual production disposal/retention remains conditional under [H-09](../human-actions.md#h-09) and [retention policy](../security/data-retention.md). Durable data resides in PostgreSQL; browser query data is transient and cleared with token changes. Logs/traces/errors/metrics retain only allowlisted operational fields under [redaction policy](../security/telemetry-redaction.md), not request content or credentials.\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request",
+    "title": "Approval Request: Reference Feature",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Approval Request: Reference Feature",
+    "anchor": "approval-request-reference-feature",
+    "text": "Approval Request: Reference Feature\n[Documentation index](../README.md) · [Implementation conventions](approval-request-implementation.md) · [API reference](../generated/api/openapi.json)\nThis is the canonical business specification for Orion’s Approval Request reference feature, implemented by the API, durable PostgreSQL schema, and web interface. It preserves the approved actors, access model, and state rules. Concrete identity-provider provisioning remains conditional; architectural and security policies govern further evolution. It is foundation-only: projects derived from Orion do not contain it; see [Orion's reference implementation](../project-derivation.md#orions-reference-implementation).\n"
+  },
+  {
+    "id": "repository/docs/domains/approval-request",
+    "title": "Approval Request: Reference Feature",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Purpose and actors",
+    "anchor": "purpose-and-actors",
+    "text": "Purpose and actors\nA **Requester** is an authenticated human who creates an approval request. The creator owns that request. An owner may view, edit, submit, or cancel their request within the state limits below. A **Reviewer** is an authenticated human with the review capability. A reviewer may view requests relevant to review and decide a submitted request they do not own. These are overlapping capabilities, not mutually exclusive roles: a user may own requests and possess review capability, but can never approve or reject their own request.\n"
+  },
+  {
     "id": "repository/docs/domains/approval-request",
     "title": "Approval Request: Reference Feature",
     "group": "Domain guides",
@@ -189,6 +432,96 @@
     "text": "End-to-end derivation validation\nOn 2026-10-01 the derivation flow was validated end to end, following the commands in the [derivation guide](project-derivation.md) as a user runs them. A disposable folder at the repository root, excluded only through the local `.git/info/exclude`, held the project, a teammate clone, and an Orion maintainer clone. Because the branch was not yet on GitHub, `github.com` URLs were resolved with a session-only Git `url.<base>.insteadOf` setting to local bare repositories: a stand-in for `GabriellMDias/Orion` whose `main` was the commit under test, with Orion's tags, and an empty stand-in for the new product repository. The configured remote URLs stayed the real GitHub URLs, which the provenance checks inspect. Nothing in the project was edited by hand; every project file came from initialization, the documented upgrade commands, or the generators.\nThe test project was named `Pedido Fácil` (repository `git@github.com:GabriellMDias/pedido-facil.git`), exercising a non-ASCII name and the derived package scope `@pedido-facil`.\nStep\nCommands\nResult in the final cycle\nClone and install\n`git clone https://github.com/GabriellMDias/Orion.git pedido-facil`, `pnpm install --frozen-lockfile`\nFull history; `origin` recorded as the canonical URL\nDry run\n`pnpm orion:init-project --name \"Pedido Fácil\" --repository …`\nPreconditions passed; listed actions; worktree unchanged\nInitialization\nthe same command with `--apply`\nCommit `Initialize Pedido Fácil from Orion 0dfdc69eb19d` whose parent is the Orion commit; clean worktree\nInspection\n44 read-only checks\nAll passed: the 15 foundation-only paths, the Orion plan, human actions, acceptance report, domain documents, migrations, metadata, and grants are absent; Approval Request is named only in ADR-0012/0014/0017, the derivation guide and contract, and their generated portal copies; no Orion history markers in shared documents; README, plan (PJ-01–PJ-05), and human actions (PH-01–PH-06) are the project's own with no unresolved placeholders; packages `pedido-facil` and `@pedido-facil/{api,web,sdk}`, no `@orion/` references in code or configuration, OpenAPI title `Pedido Fácil API`, portal title `Pedido Fácil Living Documentation`, telemetry service `pedido-facil-api`, neutral brand mark; manifest schema 2 with equal initialization and baseline commits; `origin` is the product repository; `orion-upstream` is fetch-only, tag-free, untracked, and refuses pushes; no modules, no tables\nProject gate\n`pnpm validate`\nPassed: 93 cruised modules, 83 Markdown files, 26 derivation tests, 87 portal pages, 95 Vitest tests, smoke, 13 browser journeys; built page title `Pedido Fácil`\nPublication (PH-01)\ncreate the empty repository, `git push -u origin main`\n`origin/main` equals the initialization commit\nTeammate\n`git clone`, `pnpm orion:check`, `pnpm orion:upstream`, `git fetch orion-upstream`, `pnpm orion:status`\nValid before and after configuring the foundation remote; push to `orion-upstream` refused\nFoundation upgrade\nan Orion maintainer commit changing a shared document, the reference implementation and Orion plan, adding a foundation-only test and a shared file importing `@orion/sdk`, with regenerated portal data\nPublished as `83be01d` on the stand-in\nUpgrade merge\n`git fetch orion-upstream`, `git switch -c orion-upgrade/…`, `git merge --no-ff …`, `pnpm orion:prune`\nFour conflicts; prune resolved the two foundation-only ones, removed the added foundation-only test, renamed the new import to `@pedido-facil/sdk`, and left the two generated-portal conflicts for regeneration\nRegeneration\nstep 5 generators, staging generated output, `pnpm orion:prune` again\nNo unresolved files; `pnpm validate` passed again\nBaseline and merge\n`pnpm orion:record-baseline …`, commit, push, merge with a merge commit\nBaseline `83be01d`; initialization commit preserved; `pnpm orion:check` passed on `main` and in the teammate clone after pulling\nEarlier cycles found these defects, corrected in Orion before the final cycle: the portal header linked to the reference workflow's list scope; the generated portal manifest and the CI workflow carried Orion titles; shared policies named the system Orion; reference-only styling and an Orion release and phase narrative remained in shared files; the derivation test fixture used reference names; the large-portal generator test assumed Orion's documentation size; and the guide did not say how to resolve conflicts in generated output. The `ORION_*` variables, `orion_*` claims and database roles, the `Orion required gate` check, the portal's Orion baseline badge, and provenance references remain by design ([ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)).\nOrion's own format, lint, and documentation checks scan the working tree, so they report the disposable project while it exists; the folder and its exclusion line were removed before Orion's gate ran. Disposable logs and scripts were not committed.\n"
   },
   {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Documentation and Component Release Readiness",
+    "anchor": "documentation-and-component-release-readiness",
+    "text": "Documentation and Component Release Readiness\n[Versioning policy](versioning.md) · [Project upgrades](project-derivation.md#upgrade-to-a-newer-orion-revision) · [Implementation status](implementation-plan.md#maintaining-this-plan)\nReview date: 2026-10-23. Scope: Orion's uncommitted documentation isolation and component-catalog candidate based on `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. No actual derived repository, deployment, remote branch, tag or GitHub Release is changed. Disposable rehearsal commits are evidence only and must never become a recorded production baseline.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Implemented changes and review findings",
+    "anchor": "implemented-changes-and-review-findings",
+    "text": "Implemented changes and review findings\nThe complete engineering catalog, references, search, navigation and synthetic previews remain in development and in repository sources for agents. Default production builds remove the portal import tree, styles, pages, search assets and internal downloads. Artifact/browser tests also reject accidental product imports of the catalog, metadata and generated references.\nInternal builds require explicit selection and an acknowledgement of full-artifact hosting access controls. This supplies no authentication; an authorized host must protect direct assets/downloads and caches. Product help and public API documentation require separately approved source inventories and application-owned presentation. There is no automatic public publisher or public portal mode.\nThe small native reference set is Button, TextField and the existing ErrorNotice. Categories, owner, reuse scope, props, states, accessibility, source links and code/live examples are generated from root or feature-owned metadata. Product styling uses inherited semantic tokens. Feature behavior stays in features; private components do not all need documentation.\nRoot and web agent instructions route to one component policy and require inspecting existing UI before creating equivalents. No dependency, theme provider, workspace package, API/database change or manifest schema change was introduced.\nFinal review fixed type-only export discovery, undocumented destructured shared exports, duplicate active navigation, the static-example outline label, and isolation-test assumptions about product help/home layouts. Artifact checks include the internal manifest and approved product help at `/docs`. Policy preserves explicit synthetic feature previews in products. Upgrade guidance preserves project-owned files even after conflict-free Git merges. Existing checks protect legacy metadata, local re-exports, deleted/ignored sources and the generated renderer discriminator.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Validation evidence",
+    "anchor": "validation-evidence",
+    "text": "Validation evidence\nDisposable rehearsals passed with Node.js 24.13.0, pnpm 11.25.0, Chromium and Testcontainers. A working-tree candidate was committed only in an isolated temporary foundation mirror; canonical Git URLs were rewritten to that local mirror through process-scoped Git configuration. No real remote writes, release tags or project changes were made.\nBoundary\nEvidence on 2026-10-23\nFresh derivation\nActual `orion:init-project` dry run and application, frozen install, regeneration and full `pnpm validate`: 21 generator tests, 26 derivation tests, 32 shared API tests, 63 web unit tests, 5 browser component tests and 19 E2E journeys. A later clean initialization with the final 15-path contract passed provenance/docs/freshness and artifact/browser isolation without `.env.local`.\nUpgrade from v2.0.0\nActual merge, prune, source resolution, regeneration, full derived gate and `orion:record-baseline`. Eleven existing product-owned files stayed byte-identical after deliberate ownership resolution; custom component/category metadata and product docs remained discoverable. Browser checks retained a real `/product` route, action, badge, theme and brand while internal `/docs` stayed absent in production.\nUpgrade from v1.1.1\nActual legacy initialization, schema 1 to 2 migration, source/composition port, prune, full derived gate, baseline recording and the same product browser checks. Seven product source/asset/docs files stayed byte-identical; the product route moved into the new composition seam. Both fixtures ended clean with the verified baseline as an ancestor; provenance, freshness and product browser checks passed after baseline recording. The synthetic legacy reference was unadopted and had no durable releases; existing refusal tests cover recorded migrations, not actual product migration history.\nHuman/agent discovery\nLegacy and feature metadata, source/re-export checks, static/live examples and navigation regression tests; desktop/mobile screenshot inspection. Read-only normalization of actual IA-MNS/Teluni metadata passed, as detailed below.\nOrion final gate\nFinal isolated `pnpm validate` passed: 21 generator tests, 26 derivation tests, 54 API tests, 63 web unit tests, 6 browser component tests, 2 artifact/browser tests and 31 E2E journeys. Formatting, lint, types, architecture, docs/agents, environment/release checks, generated references, build/bundle and both process smokes passed. One earlier concurrent attempt passed 30/31 E2E journeys; its saved trace shows `net::ERR_NETWORK_CHANGED` on three bootstrap modules before the portal loaded. The complete isolated rerun passed with no retry, timeout change or weakened assertion.\nLocal diagnostic logs are retained under ignored `node_modules/.cache/orion-documentation-validation/`: `final-isolated-validate.log`, `final-reviewed-validate.log`, `final-rehearsal-setup.log`, `final-rehearsal-upgrades.log`, `final-navigation-e2e.log` and `final-network-change-trace.zip`. Final plan/report edits were regenerated and checked for documentation, agent, provenance, formatting and diff consistency. These are local evidence, not release artifacts or remote CI. Remote checks on the actual eventual release commit and real hosting controls remain separate.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Compatibility and migration",
+    "anchor": "compatibility-and-migration",
+    "text": "Compatibility and migration\nRecommend **`v3.0.0`** under [foundation compatibility policy](versioning.md#compatibility-meaning). The canonical remote's latest annotated tag was verified read-only as `v2.0.0`, targeting the base SHA above. Removing previously available production `/docs` and its downloadable assets intentionally changes an established distribution behavior and requires deliberate migration. Optional component/catalog improvements alone would be MINOR; ordinary merge conflicts alone do not justify MAJOR. The tag remains the only release-number source; do not bump private package versions or add a VERSION file.\nExisting development routes, generator commands, legacy metadata shape, ErrorNotice props, source references, SDK and database contracts remain supported. New metadata fields have additive defaults; named uppercase runtime exports in the curated shared entry point require metadata. Inspect newly discovered feature metadata for valid source/export links and unique IDs; keep product-specific examples and categories. Type-only exports are exempt.\nAdopters must rebuild a default product artifact, remove stale internal assets through their deployment procedure, and replace product links that relied on the portal with separately approved product/public documentation. Intentional internal deployments must use the explicit internal build and verify the selected host's access controls. Review customized Vite and shell code when merging; preserve product composition, UI, identity, styling tokens and documentation rather than replacing them with Orion templates.\nSchema version 2 projects require no provenance/schema migration. Schema version 1 projects must additionally follow [the existing migration](project-derivation.md#migrate-a-project-from-schema-version-1): preserve any product-adopted reference behavior and immutable released migrations before pruning.\nRead-only inspection of the actual IA-MNS and Teluni sources on 2026-10-23 found both at manifest schema 2 with initialization and baseline `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea` (v2.0.0), and the same 15-path derivation contract as Orion. Neither needs the legacy schema migration on that evidence. Their metadata normalizes with the new generator without writes: IA-MNS has seven shared and five feature-specific entries, including existing feature metadata/registered previews; Teluni has the existing ErrorNotice entry. No build, generation, validation gate, Git mutation or deployment was run in either product.\nIA-MNS already owns Button, TextField and other controls. Preserve their actual props, examples, styling and behavior rather than replacing them with Orion's reference implementations. Its Vite config, shell, home, component source/metadata, module composition and styles differ from v2.0.0. Teluni customizes Vite, shell, module composition and styles. Merge isolation into those files deliberately; retain product previews, metadata extension fields and documentation. Recheck this inventory and each product's migration registry, release state and complete validation when its upgrade is authorized; these read-only checks do not certify either product's runtime or deployment.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Proposed release notes",
+    "anchor": "proposed-release-notes",
+    "text": "Proposed release notes\n**Orion v3.0.0 — internal documentation isolation and reusable React components**\nBreaking distribution change: default production builds exclude the internal Living Documentation portal and all generated engineering assets. Development documentation remains complete. Rebuild and retire stale published assets; migrate end-user documentation to approved product/public sources.\nExplicit internal builds support protected internal deployments; the host remains responsible for authentication and authorization of every page, asset and download.\nAdd native Button/TextField references and evolve the existing ErrorNotice, semantic styling hooks, inspect-before-implementing guidance, category navigation, ownership/reuse metadata, source references and safe examples.\nPreserve legacy component metadata and add feature-owned discovery with proportional export/reference validation. Expand generator, browser and production-artifact regression coverage.\nRetain SHA-based provenance and reviewed merge upgrades. No new dependencies, database/SDK migration or manifest schema change. Node.js 24.13.0 and pnpm 11.25.0 remain the documented toolchain.\nThe publisher must add the exact released commit SHA and links to [documentation migration](architecture/living-documentation.md#existing-project-migration), [component practices](architecture/web-components.md) and [project upgrades](project-derivation.md#upgrade-to-a-newer-orion-revision). Local validation does not certify a production deployment.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Publishing steps after authorization",
+    "anchor": "publishing-steps-after-authorization",
+    "text": "Publishing steps after authorization\nThese steps govern publication after owner authorization. The [publication record](#authorized-publication) distinguishes the completed review from the subsequent authorized release run.\nCommit the reviewed source and regenerated output on a release-preparation branch, open a PR into Orion `main`, and obtain the required review and CI results on its exact head. Review the entire candidate diff, including newly added files. Do not publish from a dirty checkout or disposable rehearsal commit.\nAfter the owner merges that PR, use a clean canonical Orion clone. Fetch `main` and tags, check out the intended merge commit, and verify that it contains the reviewed changes and that the required push/PR gates apply to that revision. Record its full SHA and CI links. Recheck that no newer release has superseded this recommendation.\nWith Node.js 24.13.0, pnpm 11.25.0, Chromium and a Testcontainers-compatible runtime, run the following in PowerShell. Stop on any failure, dirty output or existing version; do not move a published tag.\n$ErrorActionPreference = 'Stop'\n$PSNativeCommandUseErrorActionPreference = $true # PowerShell 7.3+\ngit fetch origin main --tags\nif (git status --porcelain) { throw 'Release checkout must be clean' }\n$releaseCommit = '<approved full merged commit SHA>'\ngit switch --detach $releaseCommit\ngit merge-base --is-ancestor $releaseCommit origin/main\ngit show --no-patch --format=fuller $releaseCommit\nif (git tag --list v3.0.0) { throw 'Release tag already exists' }\n# Confirm this exact SHA is the reviewed release point with passing remote gates.\npnpm install --frozen-lockfile\npnpm validate\nif ($LASTEXITCODE -ne 0) { throw 'Release validation failed' }\nif (git status --porcelain) { throw 'Validation changed tracked files' }\n# Only after owner authorization and verified remote gates:\ngit tag -a v3.0.0 $releaseCommit -m 'Orion v3.0.0: documentation isolation and component catalog'\ngit rev-parse 'v3.0.0^{commit}'\ngit push origin refs/tags/v3.0.0\n# Save the notes above, exact SHA and documentation links to a reviewed notes file.\ngh release create v3.0.0 --repo GabriellMDias/Orion --verify-tag --title 'Orion v3.0.0' --notes-file 'C:\\path\\reviewed-notes.md'\n\nVerify the remote annotated tag resolves to the recorded SHA and the GitHub Release describes that same revision. Record the tag/Release/CI links in Orion's acceptance history and plan. No production deployment is implied.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Subsequent IA-MNS and Teluni upgrades",
+    "anchor": "subsequent-ia-mns-and-teluni-upgrades",
+    "text": "Subsequent IA-MNS and Teluni upgrades\nUpgrade each project separately, only after explicit authorization, using its own clean checkout and plan. Do not run initialization or blindly apply Orion's project templates to an existing product.\nIn IA-MNS, then independently in Teluni, refresh the read-only inventory above: applicable instructions, manifests/provenance, retained features/previews, product/public documentation sources, customized shell/Vite/UI, release registry and deployment assets. Preserve IA-MNS's existing controls and feature examples; do not add duplicate Button/TextField implementations. Commit or preserve unrelated work first. Configure the verified fetch-only upstream with `pnpm orion:upstream`; fetch and inspect status. Resolve `v3.0.0` to its full SHA in the canonical Orion clone; the project's upstream intentionally does not fetch tags.\nIn the product checkout, run the commands below, replacing the value with that verified SHA. Review the diff from the recorded baseline before merging. If schema version 1 is present, perform the linked migration before pruning; product-adopted behavior and released migrations must be retained. Stop for uncertain migration/release status rather than deleting history.\npnpm orion:upstream\ngit fetch orion-upstream\npnpm orion:status\n$orionCommit = '<verified full v3.0.0 commit SHA>'\n$baseline = (Get-Content .orion/project.json -Raw | ConvertFrom-Json).foundation.baselineCommit\ngit log --oneline \"$baseline..$orionCommit\"\ngit diff $baseline $orionCommit\ngit switch -c codex/orion-v3-upgrade\n$projectCommit = (git rev-parse HEAD).Trim()\ngit merge --no-ff --no-commit $orionCommit\n# Resolve manifest/contract/package conflicts first; migrate schema 1 if needed.\npnpm orion:prune\n# Preserve project-owned README, module composition, branding, plans and actions.\n# Check all projectFiles, including automatic merges. For each existing owned path:\n# git restore --source=$projectCommit --staged --worktree -- <path>\n# For schema 1's new composition seams, port product behavior rather than restoring an absent path.\n# Merge shared source/policies; preserve product components, metadata, themes and docs.\npnpm install --frozen-lockfile\npnpm db:generate\npnpm -C apps/api references:write\npnpm -C packages/sdk generate\npnpm docs:references:write\ngit add -A apps/web/src/generated docs/generated packages/sdk/src/generated\n# Resolve/stage remaining source conflicts, then rerun prune until none remain.\npnpm orion:prune\npnpm validate\n# Also run the product's existing release, migration, ACL and critical-flow gates.\n# Inspect production artifact exclusion and protected-internal hosting if applicable.\ngit commit -m 'Merge Orion v3.0.0 foundation changes'\n# Worktree must be clean; this fetches and verifies the canonical main ancestry.\npnpm orion:record-baseline $orionCommit\ngit add .orion/project.json\ngit commit -m 'Record Orion v3.0.0 baseline'\npnpm validate\npnpm orion:check\npnpm orion:status\n\nUpdate the project's plan and migration/deployment notes, including stale-asset removal and any `/docs` link migration. Review the full diff and open its upgrade PR only when authorized. Require the project's CI on the exact head; use a merge commit when subsequently authorized to merge. Squash/rebase would discard the required upstream ancestry. Recheck baseline ancestry after merge. Schedule deployment and any protected internal documentation artifact separately under that project's authority.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Remaining release conditions",
+    "anchor": "remaining-release-conditions",
+    "text": "Remaining release conditions\nThe documentation/component review is complete. The subsequent [dependency review](#pre-release-dependency-review) adds outstanding security prerequisites to publication. Owner review/commit/PR submission, remote CI on the actual candidate, merge and release publication remain unperformed under [H-16](human-actions.md#h-16). Real internal hosting verification is conditional [H-15](human-actions.md#h-15). IA-MNS/Teluni changes, upgrade execution and deployments require separate authorization; refresh their inventory and migration/release review at that time. Passing disposable fixtures and read-only metadata checks do not certify either real product.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Pre-release dependency review",
+    "anchor": "pre-release-dependency-review",
+    "text": "Pre-release dependency review\nReview date: 2026-10-23. [Renovate PR #23](https://github.com/GabriellMDias/Orion/pull/23), head `c2aed9071f205a3a669570c890135da68dc22d42`, changes only the root manifest and lockfile: `markdown-it` 15.0.2 to 15.0.3, its `argparse` dependency 3.0.2 to 3.0.3, and registry deprecation annotations for three unchanged OpenTelemetry packages. Validate, Orion required gate, Dependency review, CodeQL and GitGuardian checks passed on the PR. These remote results cover the v2.0.0 base, not the uncommitted documentation/component candidate.\nRecommendation: include the reviewed security patch before publishing v3.0.0; do not close or dismiss the PR. The current renderer and documentation validator use `html: false`, reducing exposure to [the inline HTML advisory](https://github.com/advisories/GHSA-vfgh-jcmw-g37q), but the same patch also fixes [high-severity reference-definition parsing](https://github.com/advisories/GHSA-gfr2-rv44-r23c) under default options. Repository-authored Markdown processed during generation is not a public request-time Markdown endpoint. The patch also tightens reference-label/title parsing, so generated-reference freshness and link validation remain necessary.\nIn a disposable clone containing the local documentation/component changes plus the exact PR patch, frozen installation passed, all 21 generator tests passed, generated references remained current, and documentation validation passed (90 Markdown files, 1517 local links, 18 ADR records). The original checkout's dependency installation and running manual-test services were preserved. This evidence does not validate the still-pending Vite correction or replace checks on the eventual merged candidate.\nThe combined `pnpm validate` run passed static checks, types, architecture, release/provenance rules, 26 derivation tests, generated checks and documentation isolation, then stopped on one API transport test exceeding its unchanged 5000 ms timeout (53/54 passed). Repeating `pnpm test` without source or timeout changes passed all 54 API, 63 web unit and 6 browser component tests; subsequent `pnpm build`, `pnpm smoke` and `pnpm test:e2e` passed, including all 31 E2E journeys. Thus the gate's stages passed across the initial run and continuation, rather than one uninterrupted successful `pnpm validate`. Logs are retained locally under `node_modules/.cache/orion-documentation-validation/renovate-review.log` and the disposable review directory. The initial timeout remains evidence for final-candidate validation; no assertion is made that its cause was established.\nThe live Dependabot inventory additionally reports Vite 8.3.1 affected by [Windows path validation](https://github.com/advisories/GHSA-587h-7wmj-h5pm), [Windows percent escaping](https://github.com/advisories/GHSA-698v-4r3x-3vcv) and [editor flag interpretation](https://github.com/advisories/GHSA-r825-w8mm-5pxw). These concern the development editor integration, not emitted static product assets. Update to Vite 8.3.4 (the patched 8.3 line begins at 8.3.3), review its lockfile and rerun the full gate before release. The ten open alert records represent five advisories reported against both manifests and lockfile, not ten distinct defects. Passing PR checks do not clear unrelated, pre-existing alerts.\nKeep [Dependency Dashboard #2](https://github.com/GabriellMDias/Orion/issues/2) open as the Renovate control panel. Do not select the bulk approval/retry boxes. Review routine updates in their existing schedule; handle TypeScript 7, pnpm 12, Ubuntu 26 and the OpenTelemetry major/replacement as separate compatibility work. The `sdk-trace-base` deprecation needs a coordinated telemetry migration and validation, rather than an isolated package rename. No automerge or policy change is needed.\nPublication order: after owner authorization, merge PR #23 through its required checks; prepare the focused Vite security correction; reconcile both with the documentation/component candidate and regenerate references; require frozen installation, full local validation, security-alert reinspection and remote checks on the exact final candidate before following the publishing steps above. These compatible patches do not change the v3.0.0 recommendation driven by documentation distribution. No PR merge, dashboard edit, alert dismissal, push, tag, release or derived-project change is performed by this review.\n"
+  },
+  {
+    "id": "repository/docs/foundation-acceptance",
+    "title": "Development Foundation Acceptance Report",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Authorized publication",
+    "anchor": "authorized-publication",
+    "text": "Authorized publication\nThe owner subsequently authorized the complete GitHub CLI release process on 2026-10-23. Actual derived-project upgrades and deployments remain outside that authorization. Renovate [PR #23](https://github.com/GabriellMDias/Orion/pull/23) was merged as `7dce4c8cfe4b69341007c1350e8a7ef6e852893e` after all required PR checks passed. Vite correction, combined candidate validation, release PR, immutable annotated tag and GitHub Release are in progress. The Dependency Dashboard remains open with bulk/major approvals unchanged.\n"
+  },
+  {
     "id": "repository/docs/generated/api/errors",
     "title": "API Error Registry",
     "group": "Generated references",
@@ -204,16 +537,16 @@
     "kind": "repository",
     "heading": "Web Component Reference",
     "anchor": "web-component-reference",
-    "text": "Web Component Reference\n[Living documentation](../../architecture/living-documentation.md) · [Component source](../../../apps/web/src/components.tsx)\n"
+    "text": "Web Component Reference\n[Component architecture](../../architecture/web-components.md) · [Living documentation](../../architecture/living-documentation.md)\n"
   },
   {
     "id": "repository/docs/generated/components/web",
     "title": "Web Component Reference",
     "group": "Generated references",
     "kind": "repository",
-    "heading": "ErrorNotice",
-    "anchor": "errornotice",
-    "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\n"
+    "heading": "AccessTokenForm",
+    "anchor": "accesstokenform",
+    "text": "AccessTokenForm\nConnects this reference workflow using a caller-supplied bearer token or optional local synthetic identity.\nCategory: Forms. Scope: feature-specific. Owner: Approval Request workflow.\nSource: [apps/web/src/approval-requests/access-token-form.tsx](../../../apps/web/src/approval-requests/access-token-form.tsx) (export `AccessTokenForm`). Metadata: [apps/web/src/approval-requests/components.docs.json](../../../apps/web/src/approval-requests/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -222,7 +555,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props",
-    "text": "Props\nName\nType\nMeaning\n`error`\n`unknown`\nMapped through the shared public failure-message boundary.\n`operation`\n`read | create | write`\nSelects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read.\n`messages`\n`Record<string, string> (optional)`\nModule-specific wording for its own stable error codes.\n`onReload`\n`() => void`\nOptional recovery action when current data can be refreshed.\n`reloadLabel`\n`string (optional)`\nAccessible name of the reload action; defaults to Reload.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`onConnect`\n`(token: string) => void`\nReceives a token in memory after an explicit connection; never persist or log it.\nYes\n—\n`showLocalIdentity`\n`boolean`\nShows optional synthetic development identities when available.\nNo\ntrue\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -231,7 +564,7 @@
     "kind": "repository",
     "heading": "States",
     "anchor": "states",
-    "text": "States\nFailure message\nFailure message with reload action\nAccessibility: Uses role=alert so the failure is announced; the optional reload control is a native button.\nUsage: Pass the original error to preserve stable-code mapping. Offer reload only when the current data can be refreshed, and never imply that an unknown write outcome failed.\n"
+    "text": "States\nManual entry\nRequired field\nOptional local synthetic identity\nConnecting\nConnection error\nAccessibility: Provides a labeled required password field and a native submit action. Errors remain visible; connections and synthetic identity requests require explicit user actions.\nUsage: Keep credential handling inside this feature. Reuse Button and TextField for shared presentation; this form is not a general login, session or refresh component.\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -240,6 +573,114 @@
     "kind": "repository",
     "heading": "Examples",
     "anchor": "examples",
+    "text": "Examples\n**Feature-owned connection form** (`access-token-form-usage`): Source example only; the catalog never connects credentials or calls an identity service.\n<AccessTokenForm showLocalIdentity={false} onConnect={connectInMemory} />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Button",
+    "anchor": "button",
+    "text": "Button\nA native action button with explicit variants and safe pending behavior.\nCategory: Actions. Scope: shared. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `Button`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-1",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`children`\n`ReactNode`\nVisible action name or content with an equivalent accessible name.\nYes\n—\n`type`\n`button | submit | reset`\nNative form behavior; the safe default does not submit a form.\nNo\nbutton\n`variant`\n`primary | secondary`\nSemantic action emphasis, styled through product-owned tokens.\nNo\nsecondary\n`pending`\n`boolean`\nDisables activation and exposes aria-busy while the caller owns pending work.\nNo\nfalse\n`…buttonProps`\n`ComponentPropsWithRef<\"button\">`\nNative props such as disabled, onClick, className, ref and ARIA attributes are forwarded.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-1",
+    "text": "States\nDefault and primary\nHover and keyboard focus\nDisabled\nPending\nProduct token override\nAccessibility: Uses a native button and visible focus. Pending disables activation and sets aria-busy; preserve meaningful button text while work is pending.\nUsage: Use for actions. Use a link for navigation. Keep a visible accessible name; choose type=submit explicitly inside forms. Native button props and refs are forwarded.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-1",
+    "text": "Examples\n**Action states and product styling** (`button-states`): Local actions, disabled and pending states, and a scoped token override.\n<Button variant=\"primary\" onClick={save}>Save</Button>\n<Button pending>Saving…</Button>\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "TextField",
+    "anchor": "textfield",
+    "text": "TextField\nA labeled native input with linked hints and validation messages.\nCategory: Inputs. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `TextField`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-2",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`type`\n`Text-entry native input types`\nSupports text, email, password, search, tel, url, number and native date/time inputs. Use separate native controls for checkbox, radio, file, range or other selection behavior.\nNo\ntext\n`label`\n`string`\nPersistent accessible label; a placeholder cannot replace it.\nYes\n—\n`id`\n`string`\nOptional DOM id; a stable useId value is generated when absent.\nNo\nGenerated with useId\n`hint`\n`string`\nOptional help linked to the input through aria-describedby.\nNo\n—\n`error`\n`string`\nCaller-owned validation message linked to the input; also marks it invalid.\nNo\n—\n`…inputProps`\n`ComponentPropsWithRef<\"input\">`\nNative value/defaultValue, onChange, type, required, disabled, className, ref and ARIA props are forwarded. Existing aria-describedby references are retained.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-2",
+    "text": "States\nEmpty and populated\nHint\nValidation error\nRequired\nDisabled\nKeyboard focus\nAccessibility: Associates label and input through a stable id; links hint and error descriptions and sets aria-invalid for errors. Native required, disabled, ref and keyboard behavior are preserved. The feature owns dynamic error summaries or announcements.\nUsage: Use for a single native input with a persistent label. The caller owns value, validation and submission. Keep domain-specific validation and credentials in the feature; use other native controls for multiline text or selection.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-2",
+    "text": "Examples\n**Labeled input and validation** (`text-field-states`): Synthetic form input with a hint, validation message and disabled state.\n<TextField label=\"Name\" hint=\"Shown to your colleagues.\" required />\n<TextField label=\"Email\" type=\"email\" error=\"Enter an email address.\" />\n\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "ErrorNotice",
+    "anchor": "errornotice",
+    "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\nCategory: Feedback. Scope: composed. Owner: Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `ErrorNotice`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-3",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`error`\n`unknown`\nMapped through the shared public failure-message boundary.\nSee type\n—\n`operation`\n`read | create | write`\nSelects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read.\nSee type\n—\n`messages`\n`Record<string, string> (optional)`\nModule-specific wording for its own stable error codes.\nSee type\n—\n`onReload`\n`() => void`\nOptional recovery action when current data can be refreshed.\nSee type\n—\n`reloadLabel`\n`string (optional)`\nAccessible name of the reload action; defaults to Reload.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-3",
+    "text": "States\nFailure message\nFailure message with reload action\nAccessibility: Uses role=alert so the failure is announced; the optional reload control is a native button.\nUsage: Pass the original error to preserve stable-code mapping. Offer reload only when the current data can be refreshed, and never imply that an unknown write outcome failed.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-3",
     "text": "Examples\n**Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.\n"
   },
   {
@@ -250,347 +691,5 @@
     "heading": "API Configuration Reference",
     "anchor": "api-configuration-reference",
     "text": "API Configuration Reference\n[Configuration policy](../../architecture/configuration.md) · [API runtime](../../../apps/api/README.md)\nNo values are eligible for client exposure. `ORION_ENV` is always required. The three token settings are configured together. API modules that require the database or bearer authentication stay unmounted until those settings exist, and production startup fails instead.\nEnvironment variable\nType\nRequired\nDefault\nVisibility\nClassification\nSecret\nPurpose\n`ORION_ENV`\ndevelopment | test | production\nyes\n—\nserver\nINTERNAL\nno\nRuntime environment.\n`ORION_RELEASE_ID`\nartifact identifier, 1..128 ASCII letters/digits/._-\nno\n`local`\nserver\nINTERNAL\nno\nActual artifact revision for correlated logs and traces; local for unversioned development.\n`ORION_API_HOST`\nnonempty string\nno\n`127.0.0.1`\nserver\nINTERNAL\nno\nListen address; loopback by default.\n`ORION_API_PORT`\ninteger 0..65535\nno\n`3000`\nserver\nINTERNAL\nno\nListen port; zero selects an ephemeral port.\n`ORION_LOG_LEVEL`\nPino level\nno\n`info`\nserver\nINTERNAL\nno\nStructured log threshold.\n`ORION_SHUTDOWN_TIMEOUT_MS`\ninteger 100..30000\nno\n`5000`\nserver\nINTERNAL\nno\nTotal graceful shutdown deadline.\n`ORION_OTLP_ENDPOINT`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nOptional OTLP HTTP collector base URL.\n`ORION_TRACE_SAMPLE_RATIO`\nnumber 0..1\nno\n`1`\nserver\nINTERNAL\nno\nTrace sampling probability.\n`ORION_DATABASE_URL`\nPostgreSQL URL\nno\n—\nserver\nRESTRICTED\nyes\nRuntime PostgreSQL credential; enables the database for modules that require it and adds it to readiness.\n`ORION_TOKEN_ISSUER`\nissuer URL\nno\n—\nserver\nINTERNAL\nno\nExpected access-token issuer; configure with audience and JWKS URL to enable bearer authentication.\n`ORION_TOKEN_AUDIENCE`\nnonempty string\nno\n—\nserver\nINTERNAL\nno\nExpected API access-token audience.\n`ORION_TOKEN_JWKS_URL`\nhttp(s) URL\nno\n—\nserver\nINTERNAL\nno\nTrusted issuer public-key endpoint.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Database Reference",
-    "anchor": "database-reference",
-    "text": "Database Reference\n[Schema documentation policy](../../database/schema-documentation.md) · [Database principles](../../database/principles.md)\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "approval_requests",
-    "anchor": "approval_requests",
-    "text": "approval_requests\nCanonical current state of a human-owned Approval Request, from draft through a terminal decision or cancellation.\nOwner: Approval Request. Classification: INTERNAL.\nLifecycle: Created in DRAFT; retained through terminal state. No automatic deletion or legal retention duration is defined; production retention remains a separate decision.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nBackend-generated immutable UUID that is both the primary key and public resource identifier.\n—\n—\n`creator_id`\n`uuid`\nno\n—\nINTERNAL\nImmutable provider-independent Orion principal UUID of the human who owns the request; supplied by the trusted authentication boundary.\n—\n—\n`title`\n`character varying(200)`\nno\n—\nINTERNAL\nOwner-authored concise purpose of the approval request; editable only in DRAFT.\n—\n—\n`description`\n`character varying(2000)`\nyes\n—\nINTERNAL\nOptional owner-authored supporting context; editable only in DRAFT.\nNo supporting context supplied.\n—\n`status`\n`\"ApprovalRequestStatus\"`\nno\n`'DRAFT'::\"ApprovalRequestStatus\"`\nINTERNAL\nCurrent lifecycle state; APPROVED, REJECTED, and CANCELLED are terminal.\n—\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nOptimistic concurrency token, initialized to one and incremented exactly once per successful edit or transition.\n—\nsuccessful writes\n`rejection_reason`\n`character varying(2000)`\nyes\n—\nINTERNAL\nReviewer-authored reason for rejection, present exactly when status is REJECTED.\nThe request has not been rejected.\n—\n`idempotency_key`\n`character varying(200)`\nno\n—\nINTERNAL\nOpaque caller-supplied creation intent key, unique within creator_id and retained with the request.\n—\n—\n`intent_fingerprint`\n`character varying(64)`\nno\n—\nINTERNAL\nSHA-256 fingerprint of the canonical title and description creation intent; detects key reuse for different content.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock absolute creation instant, serialized as UTC RFC 3339; does not constitute audit history.\n—\nUTC instant, millisecond precision\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nPostgreSQL-clock absolute instant of the latest successful write; not a concurrency token or audit history.\n—\nUTC instant, millisecond precision\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`approval_requests_description_nonblank`\n`CHECK (((description IS NULL) OR ((description)::text ~ '[^[:space:]]'::text)))`\nOptional description cannot be whitespace only.\n`approval_requests_fingerprint_sha256`\n`CHECK (((intent_fingerprint)::text ~ '^[a-f0-9]{64}$'::text))`\nFingerprint is exactly lowercase SHA-256 hex.\n`approval_requests_idempotency_key_nonblank`\n`CHECK (((idempotency_key)::text ~ '^[A-Za-z0-9._~-]+$'::text))`\nCreation keys must use the documented opaque ASCII key alphabet and cannot be blank.\n`approval_requests_pkey`\n`PRIMARY KEY (id)`\nEnforces the immutable unique request identity used by persistence and the public API.\n`approval_requests_rejection_reason_state`\n`CHECK (((status = 'REJECTED'::\"ApprovalRequestStatus\") = ((rejection_reason IS NOT NULL) AND ((rejection_reason)::text ~ '[^[:space:]]'::text))))`\nRequires one nonblank reason exactly for a rejected request.\n`approval_requests_title_nonblank`\n`CHECK (((title)::text ~ '[^[:space:]]'::text))`\nRejects blank titles even if a caller bypasses the API.\n`approval_requests_version_positive`\n`CHECK ((version > 0))`\nRejects invalid concurrency versions.\n`approval_requests_creator_key_unique`\n`CREATE UNIQUE INDEX approval_requests_creator_key_unique ON public.approval_requests USING btree (creator_id, idempotency_key)`\nPrevents two requests for one owner and creation intent key, including racing inserts.\n`approval_requests_mine_page_idx`\n`CREATE INDEX approval_requests_mine_page_idx ON public.approval_requests USING btree (creator_id, created_at DESC, id DESC)`\nSupports authorized owner pagination by creation time and ID.\n`approval_requests_review_page_idx`\n`CREATE INDEX approval_requests_review_page_idx ON public.approval_requests USING btree (status, created_at DESC, id DESC)`\nSupports submitted reviewable pagination before applying the non-owner predicate.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Database enums",
-    "anchor": "database-enums",
-    "text": "Database enums\nEnum\nValues\nMeaning\n`ApprovalRequestStatus`\nDRAFT, SUBMITTED, APPROVED, REJECTED, CANCELLED\nFive-state request lifecycle: DRAFT, SUBMITTED, APPROVED, REJECTED, CANCELLED.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Human Actions for Implementation",
-    "anchor": "human-actions-for-implementation",
-    "text": "Human Actions for Implementation\n[Implementation plan](implementation-plan.md) · [Documentation index](README.md) · [Secrets policy](security/secrets-management.md)\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Purpose and current state",
-    "anchor": "purpose-and-current-state",
-    "text": "Purpose and current state\nThis checklist records implementation prerequisites of the Orion foundation repository that require a project-owner decision, human-controlled account action, unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.\nThe actions below were requested and verified for `GabriellMDias/Orion`. This checklist stays in the foundation and is removed during clean-project initialization. The project's own checklist is `docs/project/human-actions.md`, created by [project derivation](project-derivation.md) with pending equivalents. Copies inherited before the clean-baseline contract do not establish Renovate, branch protection, or security settings for the project's repository.\nPhases 1-11 and the original development foundation are complete. The Approval Request owner decisions are recorded in H-04 and H-05; the API, database, generated SDK, web workflow, [configuration schema](../apps/api/src/config.ts), [local setup](setup.md), and [Living Documentation Portal](architecture/living-documentation.md) are implemented. The owner completed the current portal's manual browser acceptance in [H-12](#h-12); automated validation is recorded separately. Phase 12 remains unstarted. A selected identity provider or production environment is not required for the foundation. Conditional items become necessary only when their stated trigger applies; the [generated configuration reference](generated/configuration/api.md) records current API variable names.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Maintaining this checklist",
-    "anchor": "maintaining-this-checklist",
-    "text": "Maintaining this checklist\nInspect existing decisions, access, tools, configuration, and prior authorization before requesting human intervention. Complete authorized automation and all useful preparation first. Do not ask a human to repeat work an agent or contributor can already perform safely within scope.\nKeep one stable ID per coherent action. As providers, environments, or owners become concrete, split broad anticipated items into independently verifiable actions and update the plan's links. Add newly discovered actions immediately; this initial list is not exhaustive.\nEvery action must retain its stable ID, checkbox, owner, status, applicability, dependency, and evidence. Active or conditional requests also need the exact action, reason, non-secret configuration names, and verification method. Completed actions may summarize the fulfilled request and link its canonical result. Use `pending`, `in progress`, `completed`, `blocked`, or `changed` consistently with the [plan](implementation-plan.md#maintaining-this-plan).\nBefore asking the user, provide a concrete request: the exact setting or decision, prepared configuration or options where appropriate, why automation cannot finish it, affected task IDs, and how completion will be checked. Do not ask for approval again when existing authorization covers the action.\nIf an action blocks work now, mark the dependent plan task `blocked`, link this entry, and explicitly surface the request to the user. Record the blocker here. Continue independent authorized work; do not mark the whole phase complete while required work remains blocked.\nUse `[x]` and `completed` only after verification. Record safe evidence and, when completed, the verification date. For owner decisions, the recorded decision is evidence; for technical actions, test the intended access or behavior. If direct verification is unavailable, record the limitation and the remaining verification task rather than claiming success.\nReopen an action with `[ ]` if later evidence invalidates completion, access expires, or configuration changes. Record why and update affected plan tasks.\nA conditional item that is unnecessary remains `[ ]` with status `changed`, an explicit not-applicable/deferred reason, and its future trigger or replacement. It is not a completed action. Update plan applicability too; do not silently remove it or let inapplicable work block foundation completion.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Safe configuration handoff",
-    "anchor": "safe-configuration-handoff",
-    "text": "Safe configuration handoff\nRecord configuration names, required scopes, environment, purpose, non-secret resource identifiers, and secure destination. Never record passwords, tokens, API keys, connection strings containing credentials, private keys, or complete environment dumps here, in the plan, in chat, or in tracked example files.\nWhen a schema exists, replace each relevant `not defined yet` entry with the exact implemented configuration keys or `.env` names and a link to the schema/reference. Do this before requesting a value; do not invent variable names in advance.\nHumans should place secrets directly into the selected protected secret store or an explicitly documented ignored local file, where appropriate. Agents and contributors should verify presence and authorized behavior without printing secret contents. Public client identifiers must be distinguished from server-only credentials.\nUse synthetic local/test data and ephemeral credentials where possible. Production secrets must not be prerequisites for ordinary development or CI.\nPrefer delegated, short-lived identity over raw long-lived credentials where supported. Existing [production-access policy](security/production-access.md) continues to govern privileged actions; a checkbox is not blanket authorization.\nExternal settings below were verified on the stated dates. They are evidence of completed prerequisites, not a live assertion about GitHub settings today. Reinspect them before relying on remote enforcement for a new release or changing their configuration.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-01",
-    "anchor": "h-01",
-    "text": "H-01\n[x] **Enable Renovate for Orion.**\n**Status:** completed. **Owner:** repository administrator. **Dependency:** Phase 2, P2.5.\n**Result and evidence (2026-09-24):** The owner authorized the Renovate GitHub App for `GabriellMDias/Orion`; its [bot-authored Dependency Dashboard](https://github.com/GabriellMDias/Orion/issues/2) detected the committed dependencies and expected update schedule. [Configuration](../renovate.json) passed strict validation. This establishes processing of the repository, not a guarantee about future update PRs.\n**Reverification:** Inspect the app's effective repository access, dashboard/run and update PR behavior against the configuration. No application environment variable or personal token is required.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-02",
-    "anchor": "h-02",
-    "text": "H-02\n[x] **Require pull requests and Orion's CI gate on the default branch.**\n**Status:** completed. **Owner:** repository administrator. **Dependency:** Phase 2, P2.3/P2.6.\n**Result and evidence (2026-09-24):** GitHub's effective `Protect main` ruleset (ID `23941496`) applied to the default branch, required pull requests and `Orion required gate`, blocked deletion/force pushes, and had no bypass actors. The check passed in [run #3](https://github.com/GabriellMDias/Orion/actions/runs/36004323007). Effective ruleset inspection supplied the enforcement evidence; no failing test PR was created.\n**Reverification:** Read effective rules and the exact required check from [CI](../.github/workflows/ci.yml); confirm branch applicability and bypass actors. Never weaken protection to test it. A workflow file alone does not enforce merges; no application environment variable is involved.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-03",
-    "anchor": "h-03",
-    "text": "H-03\n[x] **Enable and verify applicable GitHub security controls.**\n**Status:** completed. **Owner:** repository administrator. **Dependency:** Phase 2, P2.6.\n**Result and evidence (2026-09-24):** The public repository had CodeQL default setup configured, secret scanning/push protection enabled, dependency graph/vulnerability alerts available, and `DEPENDENCY_REVIEW_ENABLED=true`. [PR #3 run #6](https://github.com/GabriellMDias/Orion/actions/runs/36009789640) executed Dependency Review with the high/critical threshold and passed the aggregate gate.\n**Reverification:** Inspect current effective security settings, the Actions variable, and a PR run showing the enabled review path. Record feature-specific entitlement limits. Keep Renovate as version-update owner; do not enable competing Dependabot version updates. No production secret is required.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-04",
-    "anchor": "h-04",
-    "text": "H-04\n[x] **Define the reference feature and business acceptance criteria.**\n**Status:** completed. **Owner:** project owner. **Dependency:** Phase 3, P3.1–P3.3; feature work in Phases 5–7.\n**Result and evidence (2026-09-24):** The owner selected Approval Request. The [business specification](domains/approval-request.md) owns actors, states, operations, invariants, concurrent/repeated-operation behavior, internal data classification, and acceptance scenarios. No external integration, automatic deletion, legal retention duration, or authoritative business-audit persistence is required by this reference feature. Identity is resolved in H-05. No configuration or credentials are needed.\n**Reverification:** Trace changed behavior to the canonical specification and acceptance tests; ask only about genuinely missing product meaning. Illustrative examples in general policy are not requirements.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-05",
-    "anchor": "h-05",
-    "text": "H-05\n[x] **Resolve reference-feature identity, authorization, and tenancy.**\n**Status:** completed. **Owner:** project owner. **Dependency:** Phase 3, P3.3; protected behavior in P5.4/P6.6.\n**Result and evidence (2026-09-24):** The [identity/access matrix](domains/approval-request.md#identity-and-authorization-boundary) requires authenticated human actors, creator ownership, scoped owner/reviewer operations, mandatory self-review denial, no tenancy, and no admin override. The owner selected a provider-independent bearer access-token boundary; [ADR-0012](adr/0012-verify-jwt-access-tokens-at-the-first-api-boundary.md) specifies JWT verification. Provider login/session/refresh/revocation choices remain conditional H-07.\n**Reverification:** Trace allow/deny tests to the matrix and token boundary. Current variable names belong to the [generated configuration reference](generated/configuration/api.md); they are implemented even though real provider values are not selected.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-06",
-    "anchor": "h-06",
-    "text": "H-06\n[ ] **Supply host administration only when required tooling cannot be made available autonomously.**\n**Status:** changed (conditional; no current host blocker). **Owner:** developer or host administrator. **Dependency:** required local/container/browser checks in Phases 1, 5, 6 and ongoing validation.\n**Trigger and request:** First inspect the host. Request only the exact missing capability when administrator privileges, virtualization, reboot, licensing acceptance, or managed policy prevents authorized automation. Follow [setup](setup.md); Testcontainers use does not select the deployment platform.\n**Configuration / verification:** State the missing runtime/version, host error, and any runtime endpoint without exposing secrets. Verify executable versions, daemon access, disposable database migration/cleanup, and browser launch with the actual repository checks; an installed executable alone is insufficient.\n**Evidence:** For this review Node.js 24.13.0, pnpm 11.25.0, frozen installation, and reachable Docker 28.4.0 were verified on 2026-09-26. On 2026-09-27, `pnpm validate` passed, including disposable PostgreSQL, real browser tests, builds, process-recovery smoke checks, and all five end-to-end journeys. [D3](implementation-plan.md#maintaining-this-plan) records completed review verification; no runtime setup action remains.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-07",
-    "anchor": "h-07",
-    "text": "H-07\n[ ] **Provision an external service only after it is selected and required.**\n**Status:** changed (conditional; no concrete provider selected). **Owner:** service account owner/administrator where delegated authority is insufficient. **Dependency:** actual integration work, including P5.4/P6.6 or Phase 12.\n**Trigger and request:** Prepare the integration, exact configuration contract, minimum scopes, safe destination, and verification path first. Split by provider/environment before requesting account creation, consent, billing, origins/callbacks, or scoped credentials. Local development, tests, telemetry verification, CI, and the portal need no external account.\n**Configuration:** Current server-only keys are `ORION_TOKEN_ISSUER`, `ORION_TOKEN_AUDIENCE`, and `ORION_TOKEN_JWKS_URL`; see [configuration](generated/configuration/api.md). A trusted issuer must map stable `orion_principal_id`, `orion_actor_type=human`, and optional `approval:review` scope. No real issuer values, client ID, redirects, extra scopes, secure destination, or rotation owner are selected. Do not invent or commit them.\n**Verification:** Validate without printing values; test bounded connectivity, token/claim mapping, intended redirects and allow/deny/revocation behavior where applicable. Record inaccessible provider settings and remaining technical verification separately.\n**Current evidence:** The API verifies JWTs; the browser holds an issued token in memory. [Manual setup](../apps/web/test/e2e/approval-requests/manual.ts) and automated journeys use a loopback synthetic issuer and disposable database. No provider login/session/refresh workflow is claimed.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-08",
-    "anchor": "h-08",
-    "text": "H-08\n[ ] **Identify durable release boundaries and supported consumers when they exist.**\n**Status:** changed (conditional; no durable release or independently released consumer is recorded). **Owner:** release owner/environment operator only for facts unavailable to authorized inspection. **Dependency:** P8.1/P8.3/P8.4; before refining uncertain migration history or introducing a persistent environment.\n**Trigger and request:** Inspect release/deployment evidence first. Identify non-secret environment names, deployed revisions, applied migrations, supported API/client versions, and rollback/support windows. Unknown migration release status remains immutable. An empty [release registry](../apps/api/prisma/release-history.json) does not prove no private durable environment exists.\n**Verification:** Correlate supplied facts with available release metadata and database migration state; record immutable baselines using [release evolution](database/release-evolution.md). Run upgrade/compatibility checks for actual supported combinations. No credentials or new environment keys are inherently required; use scoped read-only access if needed.\n**Current evidence:** Repository workflows validate but do not deploy; the registry is empty and automated databases are disposable. Historical upgrade/API-baseline checks remain conditional, not falsely completed.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-09",
-    "anchor": "h-09",
-    "text": "H-09\n[ ] **Define deployment and operational requirements before activating Phase 12.**\n**Status:** changed (conditional; Phase 12 unstarted). **Owner:** project owner and actual operational owners. **Dependency:** P12.1–P12.5; not foundation maintenance.\n**Trigger and request:** For an authorized real deployment, specify hosting/environment constraints, release/distribution model, consumers/workload, service and recovery objectives, retention/disposal obligations, budget, operators, alert recipients, incident ownership, and access expectations. Orion selects none of these by default.\n**Configuration / verification:** Record non-secret environment/domain/region and provider identifiers once selected, actual objectives/owners, release permissions, and retention policies. Use schema-defined configuration names. Link requirements/ADRs to deployment, alert, backup, recovery and access work; do not invent thresholds, durations, owners, or guarantees.\n**Current evidence:** No deployment target or operational objectives are selected. The reference feature's absence of automatic deletion or a legal retention duration does not supply a production retention policy.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-10",
-    "anchor": "h-10",
-    "text": "H-10\n[ ] **Enable selected resources and operational access beyond available authority.**\n**Status:** changed (conditional on H-09 and selected resources). **Owner:** account/environment administrator and operational owners. **Dependency:** P12.2–P12.7.\n**Trigger and request:** After the design is concrete, prepare deployable definitions and least-privilege requirements. Split any unavailable external administration by resource/environment: accounts, DNS, secret stores, workload identities, protected environments, backup access, telemetry destinations, or notifications. Do not request hypothetical resources.\n**Configuration / verification:** Supply exact non-secret IDs/endpoints/configuration names, identity scopes/trust, runtime versus migration access, backup destination, alert contacts, and access expiry. Store secrets only in the selected protected destination. Verify effective permissions, DNS/TLS where applicable, identity exchange, bounded access, staging deployment, telemetry and notifications; exercise restore/rotation/recovery under actual authorization. Granted access alone does not prove recovery passed.\n**Current evidence:** Conditional; no resources selected or provisioning begun.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-11",
-    "anchor": "h-11",
-    "text": "H-11\n[ ] **Resolve product-specific distribution licensing when required.**\n**Status:** changed (Orion repository license selected; product distribution remains conditional). **Owner:** project owner, with legal input when needed. **Dependency:** P12.8 or earlier product distribution.\n**Trigger and request:** For a concrete product distribution, choose its overall licensing, copyright notices where supported by ownership evidence, distribution model, and applicable dependency-license obligations. Orion's repository license does not decide these for an independent derived project. Agents must not choose legal/distribution policy by assumption. No environment variables or credentials are needed.\n**Verification:** Match the product owner's decision to its license and publication metadata. Add license checks only for a concrete policy; there is no global dependency-license allowlist/denylist by default.\n**Current evidence (2026-09-30):** The Orion owner selected Apache License 2.0 for the foundation repository. The [root license](../LICENSE), [README](../README.md#license), and [ADR-0016](adr/0016-license-the-orion-foundation-under-apache-2-0.md) record that decision. No separate product distribution or licensing decision is made here.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-12",
-    "anchor": "h-12",
-    "text": "H-12\n[x] **Verify the improved Living Documentation portal in a browser.**\n**Status:** completed. **Owner:** project owner. **Dependency:** [L4](implementation-plan.md#maintaining-this-plan), current portal browser acceptance only.\n**Result:** On 2026-09-29 the owner explicitly reported H-12 manual browser acceptance complete. The [manual browser checklist](validation.md#living-documentation-manual-browser-checks) records the scope. This is owner-observed acceptance, not an automated browser-test result or a claim that the agent independently reproduced every observation.\n**Configuration:** No external account or production credentials. Use the standalone local portal for reading and a disposable module stack (the former `pnpm dev:approval` workflow, now [the Approval Request end-to-end stack](../apps/web/test/e2e/approval-requests/stack.ts)) for API execution. Its synthetic identities and database exist only for local verification; keep tokens out of evidence.\n**Reverification:** Repeat the checklist after material portal changes; record the tested revision, browser/version, viewport, development and production-preview results, and any failing route or control. The current owner attestation did not include that granular log, so automated validation and future regression evidence remain separate.\n**Evidence (2026-09-29):** Direct owner instruction to record completed H-12 acceptance. Existing automated browser suites remain enabled as the normal repository gate. The acceptance does not activate Phase 12 or choose a provider/deployment.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-13",
-    "anchor": "h-13",
-    "text": "H-13\n[x] **Open the agent-portability and project-derivation pull request.**\n**Status:** completed. **Owner:** repository owner. **Dependency:** [PD5](implementation-plan.md#maintaining-this-plan).\n**Request and reason:** The agent pushed `feature/agent-portability-and-project-derivation` over the existing SSH access but could not open a pull request: the environment had no GitHub CLI or token, and the agent's browser was not signed in and must not handle credentials. The owner was asked to open the pull request into `main` without merging it before review and a passing required gate.\n**Configuration:** none.\n**Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; the run link is recorded under PD5.\n**Evidence (2026-09-29):** The owner opened [PR #15](https://github.com/GabriellMDias/Orion/pull/15) from that branch into `main`. On head `d593d7e` the [`Orion required gate`](https://github.com/GabriellMDias/Orion/actions/runs/36626454325) passed. Review, remaining CI results, and merge are tracked under PD5 rather than this action.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "H-14",
-    "anchor": "h-14",
-    "text": "H-14\n[x] **Open the clean-project-baseline pull request.**\n**Status:** completed. **Owner:** repository owner. **Dependency:** [CB5](implementation-plan.md#maintaining-this-plan).\n**Request and reason:** Pushing `feature/clean-project-baseline` and opening its pull request publish the change, so they required the owner's explicit authorization. The pull request must not be merged before review and a passing required gate, and the change creates no tag or GitHub Release.\n**Configuration:** none.\n**Verification:** The pull request exists against `main`, and its `Orion required gate` run passes; the links are recorded under CB5.\n**Evidence (2026-10-01):** The owner authorized the submission; the agent pushed the branch and opened [PR #21](https://github.com/GabriellMDias/Orion/pull/21) through the authenticated GitHub CLI. On head `0d75edf` all seven remote checks passed, including the [`Orion required gate`](https://github.com/GabriellMDias/Orion/actions/runs/36863164319). Review, later CI runs, and merge are tracked under CB5 rather than this action.\n"
-  },
-  {
-    "id": "repository/docs/human-actions",
-    "title": "Human Actions for Implementation",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "New action template",
-    "anchor": "new-action-template",
-    "text": "New action template\nAllocate a new stable H-number; do not reuse existing IDs. Link it from the blocked or conditional plan task.\n## H-NN\n\n- [ ] **Concrete human action.**\n\n**Status:** pending. **Owner:** actual person or responsible role.\n**Dependency / trigger:** Linked task; whether it blocks current work.\n**Request and reason:** Exact need, completed preparation, and why authorized automation cannot finish it.\n**Configuration:** Exact non-secret names, minimum scopes and secure destination; never secret values. Use \"none\" if no configuration is needed.\n**Verification:** Observable checks required before completion.\n**Evidence / blocker:** Dated safe evidence, outstanding limit, or changed applicability.\n\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Orion Implementation Plan",
-    "anchor": "orion-implementation-plan",
-    "text": "Orion Implementation Plan\n[Documentation index](README.md) · [Human-action checklist](human-actions.md) · [Validation availability](validation.md)\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Purpose and current baseline",
-    "anchor": "purpose-and-current-baseline",
-    "text": "Purpose and current baseline\nThis is Orion's living execution plan. It tracks implementation progress of the Orion foundation repository; it does not replace current architectural policy or accepted ADRs. Preserve accepted decisions, rationale, exceptions, and technology responsibilities.\nThis plan stays in the Orion foundation and is removed during clean-project initialization. A new project's current plan is `docs/project/implementation-plan.md`, created by [project derivation](project-derivation.md). Copies inherited before the clean-baseline contract describe Orion's history, not the project's progress.\nOrion now contains documentation, a pnpm workspace, local validation tooling and CI, plus the Approval Request API, PostgreSQL persistence, generated OpenAPI/client, web reference workflow, and project-derivation tooling. `pnpm validate` runs the checks listed in [validation](validation.md). A concrete identity provider and production deployment remain conditional future work. The phase tables below retain stable task IDs, current deliverables, and conditional obligations. Git preserves implementation chronology.\nThe foundation includes a complete reference feature—persistence, domain/application behavior, API contracts, generated client, web UI, tests, and telemetry—and [living documentation](architecture/living-documentation.md) for its API, database/data dictionary, and frontend components. Human navigation must coexist with AI-readable canonical and generated artifacts. Phases 9-11 are complete; use the acceptance report for evidence and the current maintenance table for active work. Deployment-specific operation is conditional Phase 12. A particular business product and production environment have not been defined.\nThe [README](../README.md), [principles](architecture/principles.md), [technology map](architecture/technology-decisions.md), and [accepted ADRs](adr/README.md) govern implementation. Later accepted decisions resolve older deferred wording; genuine conflicts must be surfaced rather than silently bypassed. The sequence below is an execution plan, not a new architectural decision.\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Maintaining this plan",
-    "anchor": "maintaining-this-plan",
-    "text": "Maintaining this plan\nThe final foundation audit is complete locally, including a full clean-checkout gate. The owner reported H-12 manual browser acceptance complete on 2026-09-29; automated validation is recorded independently in the [acceptance report](foundation-acceptance.md#final-foundation-audit). A submitted PR must satisfy its own required CI gate before merge. Deployment-specific Phase 12 remains excluded.\nTask\nScope\nStatus\nEvidence / dependency\nL1\nReview portal architecture and implement local document catalog, detail pages, hierarchy, and search.\ncompleted\n[Portal architecture](architecture/living-documentation.md): generated local Markdown, hierarchical collections, lazy detail assets and scoped worker search within the existing React/Vite app.\nL2\nImprove API, data dictionary, component experience and safe interactive route exploration.\ncompleted\nGenerated contract/schema detail pages, local component examples and an explicit, bounded same-origin API explorer; browser acceptance is tracked separately in L4.\nL3\nVerify generation, security, clean setup, non-browser checks and available CI evidence.\ncompleted\n[Current review evidence](foundation-acceptance.md#living-documentation-portal-review): reproducible generation, installation, build, and security checks passed; the 2026-09-29 local full gate also passed. Remote CI requires its own evidence.\nL4\nVerify final browser navigation, responsive layout, accessibility, previews and API exploration.\ncompleted\nOwner reported manual browser acceptance complete on 2026-09-29 under [H-12](human-actions.md#h-12). This is human-observed acceptance; automated suite evidence is tracked separately.\nFinal foundation audit (2026-09-29): architecture, backend, persistence, frontend, generated references, security, developer workflow, documentation, and CI have been reviewed and actionable local gaps closed. The [acceptance report](foundation-acceptance.md#final-foundation-audit) records the fixes, full local gate, and clean-checkout evidence. PR/remote CI is verified separately before integration.\nCompleted maintenance: comprehensive documentation review (2026-09-26–27). Deployment-specific Phase 12 remains excluded and unstarted.\nTask\nScope\nStatus\nEvidence / dependency\nD1\nReview every file under `docs/`, every repository `AGENTS.md`, and every repository `README.md`.\ncompleted\nAll 79 scoped files reviewed, including generated references and all seven instruction files and seven READMEs. [Review evidence](foundation-acceptance.md#documentation-maintenance-review).\nD2\nImprove navigation, ownership, clarity, current truth, and context efficiency while preserving requirements and accepted decisions.\ncompleted\n66 Markdown files improved; canonical task/source routes and focused policies replace repeated guidance and stale history. Generated sources/output and accepted ADR substance remain intact.\nD3\nVerify semantic preservation, links, full validation, and the final diff; reconcile human actions.\ncompleted\nFrozen install, `pnpm validate`, final documentation/reference checks, and diff review passed. Semantic cross-review completed; all 12 ADR bodies and 85 original task IDs/statuses preserved. No human action required.\nThe documentation review's [implementation concerns](foundation-acceptance.md#implementation-concerns-identified-during-review) were subsequently addressed in the final foundation audit. New database object kinds still need deliberate generator support before adoption; deployed operational choices remain conditional Phase 12 work. No human action is needed for the current foundation audit.\nAgent portability and project derivation (2026-09-29): Orion's instructions become agent-neutral, and real projects can be derived from Orion with recorded provenance and reviewable upgrades. The implementation is complete and merged. Commit identity remains the provenance source; the [foundation versioning policy](versioning.md) defines human-readable stable release tags without changing derivation mechanics. The real GitHub-backed derivation exercise from `v1.1.0` exposed a first-push validation defect on 2026-09-30; [acceptance evidence](foundation-acceptance.md#github-backed-derivation-first-push-defect) and RH1 below track its foundation correction. Deployment-specific Phase 12 remains excluded and unstarted.\nTask\nScope\nStatus\nEvidence / dependency\nAP1\nVerify how current Codex, Claude Code, and Gemini CLI discover repository instructions; generalize agent-specific normative wording.\ncompleted\n[Verified behavior](architecture/agent-instructions.md#tool-specific-compatibility). Codex-specific obligations in this plan and the [checklist](human-actions.md#maintaining-this-checklist) now apply to any contributor or agent; no other normative agent-specific wording was found.\nAP2\nKeep `AGENTS.md` canonical, add only necessary thin adapters, and enforce the rule.\ncompleted\n[ADR-0013](adr/0013-keep-agents-md-as-the-agent-neutral-instruction-source.md), [`.gemini/settings.json`](../.gemini/settings.json), `pnpm agents:check` and `pnpm agents:test`. No `CLAUDE.md` or `GEMINI.md` is needed.\nPD1\nDecide the derivation model and machine-readable provenance record.\ncompleted\n[ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) and [`.orion/project.json`](../.orion/project.json); portal source links derive from the manifest.\nPD2\nImplement guarded project initialization: protected upstream, project identity, project-owned plan and human actions, and the Approval Request disposition.\ncompleted\n[Project derivation](project-derivation.md#start-a-new-project), `tooling/project/`, and `pnpm orion:test` against disposable local Git repositories.\nPD3\nImplement provenance inspection, upstream configuration, baseline recording, and validation for reviewable upgrades.\ncompleted\n[Upgrade workflow](project-derivation.md#upgrade-to-a-newer-orion-revision); `pnpm orion:check` runs in `pnpm validate` and enforces the [remote rules](project-derivation.md#remote-rules) while allowing fork or mirror origins. Project human action PH-02 keeps merge commits available for upgrade pull requests.\nPD4\nExercise initialization from a pristine clone and validate both Orion and the derived checkout.\ncompleted\n[Acceptance evidence](foundation-acceptance.md#agent-portability-and-project-derivation): full gates passed in Orion and in a freshly initialized project; the upgrade merge, baseline recording, and teammate upstream setup were exercised.\nPD5\nSubmit the change for review and verify the required remote CI gate.\ncompleted\n[PR #15](https://github.com/GabriellMDias/Orion/pull/15) ([H-13](human-actions.md#h-13)). Review hardened the change: one CodeQL test-code alert and five Codex P2 findings, covering branch tracking of `orion-upstream`, explicit ports, repository path case, every `origin` URL before initialization, and foundation-remote verification before recording a baseline. All were fixed with regression tests and answered in their review threads. A third Codex review could not run because the review quota was exhausted, so it is not evidence; the owner reviewed the final code against the five findings instead. On final head `601587c` the [required gate](https://github.com/GabriellMDias/Orion/actions/runs/36637414096), Validate, Dependency review, CodeQL (no new alerts), both Analyze jobs, and GitGuardian passed. Merged into `main` by merge commit `01f4da03d3ab1f9de02d7a3f4e0cc885c7d09f29`.\nV1\nDefine stable Orion foundation version names and compatibility meaning before the GitHub-backed derivation exercise.\ncompleted\n[Versioning policy](versioning.md) and [ADR-0015](adr/0015-name-stable-orion-foundation-revisions-with-semantic-tags.md) keep Git SHA provenance and commit-based upgrades; this change creates no tag or release. Local documentation and full-gate evidence is recorded in the policy PR. Review, CI, merge, and tag creation remain subsequent release steps.\nV2\nPrepare Apache-2.0 licensing for Orion source as a compatible PATCH release.\ncompleted\nOwner selected [Apache License 2.0](../LICENSE); [ADR-0016](adr/0016-license-the-orion-foundation-under-apache-2-0.md), the [README](../README.md#license), and [H-11](human-actions.md#h-11) reconcile current documentation. PR #18 was reviewed, validated, and merged into `main`; the planned `v1.0.1` tag was never created, and no GitHub Release was published.\nV3\nDisplay the Orion foundation revision visibly in the documentation shell.\ncompleted\n[Build metadata](../apps/web/scripts/foundation-version.ts) derives the label from Git tags, marks unreleased work, and respects recorded derived-project baselines. The [placement policy](versioning.md#where-version-information-belongs) keeps package, schema, and artifact identities separate; README routes readers to the canonical release information. On 2026-09-30, focused unit/type checks, desktop/mobile visual inspection, and `pnpm validate` passed, including 19 Playwright journeys. No human prerequisite or tag creation is required.\nV4\nRefine Orion's visual identity from the documentation asterisk and apply a canonical vector across the interface and browser icons.\ncompleted\n[Visual identity](../apps/web/README.md#identity) owns the SVG and its consumers; only the Apple touch icon remains raster and is generated from that SVG. The former raster mark and generation prompt are removed. On 2026-09-30, desktop/mobile inspection, focused type/documentation checks, and `pnpm validate` passed, including all 19 browser journeys, SVG/favicon loading, and the 180×180 touch icon. Generated portal artifacts are current. No human prerequisite, release, or tag creation is required.\n`v1.1.0` identifies merged PR #19 at `d31ca7ddfc3632d46af09db43580004f69b728d9` and was the baseline that exposed the defect during the real `Orion-Derivation-Test`. `v1.0.0` remains immutable; `v1.0.1` was never created.\nTask\nScope\nStatus\nEvidence / dependency\nRH1\nHandle GitHub's first-push zero-SHA comparison sentinel without weakening durable release-history validation.\ncompleted\n[Acceptance origin and verification](foundation-acceptance.md#github-backed-derivation-first-push-defect). On 2026-09-30, frozen installation, all eight release-history tests, focused checks with zero and real bases, full `pnpm validate` with the exact first-push environment value, generated-documentation checks, and `git diff --check` passed. Real comparison commits retain append-only and released-migration protections. The dedicated Orion PR requires its own remote CI and review before merge; no new human prerequisite blocks the correction.\nThe compatible PATCH correction was merged through [PR #20](https://github.com/GabriellMDias/Orion/pull/20) and subsequently tagged `v1.1.1` at `b2b087037070a228810f3186a6ae92d8a1ca4557`. The correction itself changed no `Orion-Derivation-Test` files or settings and performed no derived-project upgrade. The subsequent sandbox upgrade/reverification remains separate follow-up work.\nClean project baseline (2026-09-30): the owner directed that a newly derived project start as a clean product base—shared architecture, tooling, validation, CI, Living Documentation, provenance, and upgrades, without Orion's reference implementation or development history, and with the project's identity on its important surfaces. `v1.1.1` identifies `b2b087037070a228810f3186a6ae92d8a1ca4557`, the base of this work. [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) records the decision; the [acceptance report](foundation-acceptance.md#clean-project-baseline) summarizes the change.\nTask\nScope\nStatus\nEvidence / dependency\nCB1\nSeparate shared API and web runtime from the Approval Request reference through module contracts and project-owned composition files; isolate shared documentation and tests.\ncompleted\n[Module contract](../apps/api/src/module.ts), [API composition](../apps/api/src/modules.ts), [web composition](../apps/web/src/modules.tsx), per"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Maintaining this plan",
-    "anchor": "maintaining-this-plan",
-    "text": "iles; isolate shared documentation and tests.\ncompleted\n[Module contract](../apps/api/src/module.ts), [API composition](../apps/api/src/modules.ts), [web composition](../apps/web/src/modules.tsx), per-module schema/metadata/grants/tests/journeys, and the `no-shared-api-to-module` dependency rule with its architecture test.\nCB2\nDefine the derivation contract and rework initialization, pruning, and provenance checks for the clean baseline and project identity.\ncompleted\n[`.orion/derivation.json`](../.orion/derivation.json), manifest schema version 2, [templates](../tooling/project/templates/README.md.tmpl), `pnpm orion:prune`; `pnpm orion:test` covers initialization, rollback, pruning after a conflicting upgrade, isolation, cleanliness, contract validation, and schema version 1 refusal.\nCB3\nUpdate the derivation guide, ADRs, policies, and Orion-only history for the new contract.\ncompleted\n[Derivation guide](project-derivation.md), [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) partly superseding ADR-0014; release history moved from the versioning policy to the [acceptance report](foundation-acceptance.md#foundation-release-history).\nCB4\nValidate Orion and rehearse a derivation from a pristine clone, validating the derived project.\ncompleted\nOn 2026-10-01, full `pnpm validate` passed in Orion at `d6a669a` (26 derivation tests, 118 Vitest tests, smoke, 24 browser journeys). A pristine clone of `5f6d825`, served from a local mirror under Orion's canonical URL, was initialized as `Acme Ledger`: 15 foundation-only paths removed, project files rendered, `@acme-ledger/*` packages, `Acme Ledger API` OpenAPI title, empty database reference, protected `orion-upstream`. Its full `pnpm validate` passed (93 cruised modules, 83 Markdown files, 95 Vitest tests, smoke, 13 browser journeys), as did `pnpm release:check` with the first-push zero base, `pnpm orion:check` in a teammate clone after pushing to the local product repository, and a refused push to `orion-upstream`. The rehearsal exposed and fixed a generator test that assumed Orion's documentation size; Codex's continuation added `orion:prune` safeguards for unresolved conflicts, project-owned files, recorded durable migrations, and linked paths.\nCB5\nSubmit the change for review and verify the required remote CI gate.\ncompleted\nWith the owner's authorization on 2026-10-01, the branch was pushed and [PR #21](https://github.com/GabriellMDias/Orion/pull/21) opened into `main` ([H-14](human-actions.md#h-14)). On head `0d75edf` the [CI run](https://github.com/GabriellMDias/Orion/actions/runs/36863164319) passed: `Orion required gate`, Validate, Dependency review, CodeQL with both Analyze jobs, and GitGuardian. Review findings were then addressed on the same PR: the public error registry rejects every duplicated code, even an identical definition, with regression tests. Each later head requires its own passing gate; merge remains the owner's decision.\nCB6\nValidate the derivation flow end to end, as a user would run it, from a fresh clone to a published project and a reviewed foundation upgrade; correct Orion until it passes.\ncompleted\n[End-to-end evidence](foundation-acceptance.md#end-to-end-derivation-validation) (2026-10-01): three cycles exposed and fixed a portal link to the reference workflow, the portal manifest and CI workflow titles, policies that named the system Orion, dead reference styling, Orion history wording, derivation test fixture names, and missing guidance for generated-output conflicts. The final cycle at `0dfdc69` passed 44 inspection checks and every step, including two full project gates.\nCB7\nMake the derivation guide the practical reference for starting a project from Orion: inputs and decisions, the initialization flow, the resulting state, what is preserved, removed, or adapted, next steps, and provenance and upgrades; align routes and the portal.\ncompleted\n[Derivation guide](project-derivation.md) revised in place as the single canonical reference rather than a duplicate page: inputs and prerequisites, a step-by-step start, preserved, removed, and adapted content, the resulting state, next steps, and how provenance enables upgrades; existing anchors kept. Repository structure, contributing, validation, the documentation index, and root instructions now name the derivation contract, `orion:prune`, and the root package check. The portal Overview links the guide, covered by a browser journey and an accessibility scan. On 2026-10-01 `pnpm validate` passed (1440 local links, 101 portal pages, 25 browser journeys).\nPost-merge CI (2026-10-01): the push run on `main` at merge commit `4bdab7a` failed one browser journey that expected empty session storage, although the identical pull-request tree had passed.\nTask\nScope\nStatus\nEvidence / dependency\nCI1\nDetermine and fix the intermittent session-storage failure in the shared documentation journey without weakening the storage privacy assertion.\ncompleted\nCause: when the lazy portal chunk fails to load once, as under load on the CI development server, TanStack Router's `lazyRouteComponent` reloads the page and writes the non-sensitive marker `tanstack_router_reload:<error>` = `1`; aborting the chunk's first request reproduces exactly one such entry. The behavior predates PR #21 and is not an application regression. The shared [storage check](../apps/web/test/e2e/storage.ts) keeps local storage empty, rejects tokens and every other entry, and accepts only that marker, and only in the exact browser error forms for the portal chunk on the page's origin; nothing may follow the module URL. Journeys that duplicated the stricter count now use it. Regression journeys force the chunk failure and prove the check rejects user data, a token as a marker value, unrelated keys, and a valid marker prefix followed by arbitrary text, a token, a query, a fragment, another origin, or another module, while the real error forms stay accepted. On 2026-10-01, after review restricted the marker, the shared journeys passed 160 runs on a cold Vite cache, the three affected tests 90 more, the reference journeys 11, and `pnpm validate` passed.\nThe derivation contract and manifest schema change incompatibly, so this is a MAJOR candidate under [foundation versioning](versioning.md#compatibility-meaning), expected to become `v2.0.0` after review, passing CI, and merge. This change creates no tag or GitHub Release. Existing derived projects migrate as described in the [derivation guide](project-derivation.md#migrate-a-project-from-schema-version-1).\nEvery contributor or coding agent performing implementation work must maintain this document and the [human-action checklist](human-actions.md) throughout implementation, within the user's authorized scope.\nBefore implementation, inspect actual repository state, the relevant phase, its prerequisites, governing policy, and linked human actions. Do not treat a planned capability or unchecked action as available.\nMark a task `in progress` when work actually starts. Update statuses when evidence, scope, dependencies, or blockers change, and before each handoff or completion report.\nRecord task-level progress in the tables below. Add finer tasks with stable IDs when needed; do not hide unfinished subtasks inside a completed row.\nRecord concise evidence in active task rows or the phase's `Current evidence` section: implementation paths, validation commands/results, review references, or a linked decision. Keep task-specific exceptions and unavailable or failing checks linked to the affected task. Do not store secret values or sensitive output.\nA phase becomes `completed` only when its tasks, deliverables, applicable acceptance criteria, and required human actions are satisfied with evidence. A partial implementation or unavailable required check is not completion.\nWhen human intervention is necessary, add or update an action with an ID, exact need, dependency, safe input instructions, and verification method. Link it from the affected task, mark that task `blocked`, and tell the user what is needed. Continue independent authorized work where possible.\nA future prerequisite is `pending`, not automatically `blocked`. A phase may remain `in progress` while some tasks are blocked; use phase status `blocked` when no meaningful remaining work can proceed. Keep task-level blockers visible either way.\nWhen scope or sequencing changes, use `changed`, explain why and what replaces the work, and link supporting decisions. Then give active replacement work its own status. Keep a concise record below; Git preserves detailed history. Do not delete unresolved obligations to make the plan look complete.\nUpdate command availability, current documentation, generated artifacts, and the checklist in the same coherent change where applicable. Do not change ADR status merely to record implementation progress.\nStatus\nMeaning\n`pending`\nNot started; includes conditional work whose trigger has not occurred.\n`in progress`\nWork has started and is incomplete.\n`completed`\nApplicable deliverables and acceptance criteria are satisfied with evidence.\n`blocked`\nThe identified work cannot proceed without a recorded dependency, decision, access, or correction.\n`changed`\nScope, applicability, or sequencing was explicitly revised; reason and replacement/disposition are recorded.\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Constraints throughout implementation",
-    "anchor": "constraints-throughout-implementation",
-    "text": "Constraints throughout implementation\nRetain the accepted stack and its version/upgrade qualifications: TypeScript/ESM, Node.js LTS, pnpm, Fastify, PostgreSQL, Prisma 7, TypeBox, generated OpenAPI, openapi-typescript/openapi-fetch, React/Vite/TanStack, the accepted testing stack, OpenTelemetry/Pino, GitHub Actions, and Renovate. Exact compatible versions belong in tooling; incompatibilities require explicit resolution rather than silent substitution.\nAdd dependencies, directories, packages, and validation capabilities only when they serve real implemented responsibilities. Illustrative trees are not a scaffold checklist.\nDeliver tests, security controls, telemetry, and documentation with the behavior they protect. Later hardening phases extend that baseline rather than excuse omissions.\nPreserve domain/application independence from transport and persistence implementation; share code only for shared meaning.\nKeep generated artifacts reproducible and subordinate to canonical sources. Reviewed SQL migrations retain their separate release-history rules.\nKeep root `AGENTS.md` concise. Add local instructions only for implemented areas with distinct needs.\nRequire non-mutating `pnpm validate` for substantial changes, using the same capabilities locally and in CI. Never represent absent tests or generators as passing checks.\nEach phase leaves a coherent usable state. Split phases into small changes that preserve the checks and capabilities already delivered.\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Phase status",
-    "anchor": "phase-status",
-    "text": "Phase status\nThis table owns phase-level status; the tables within each phase own task-level status. Human-action IDs link to the separate checklist, which owns their details and completion evidence.\nPhase\nObjective\nStatus\nDependencies\nCurrent evidence or blocker\n[1](#phase-1)\nReproducible workspace and local validation\ncompleted\nNone\nSee [current evidence](#phase-1).\n[2](#phase-2)\nCI and dependency security\ncompleted\n1\nSee [current evidence](#phase-2).\n[3](#phase-3)\nReference feature and immediate decisions\ncompleted\n1-2; discovery may begin earlier\nSee [current evidence](#phase-3).\n[4](#phase-4)\nObservable API runtime\ncompleted\n1-3\nSee [current evidence](#phase-4).\n[5](#phase-5)\nSecure persistence-backed API feature\ncompleted\n3-4 and CI\nSee [current evidence](#phase-5).\n[6](#phase-6)\nGenerated client and complete web workflow\ncompleted\n5\nSee [current evidence](#phase-6).\n[7](#phase-7)\nFailure recovery, concurrency, and data lifecycle\ncompleted\n5-6\nSee [current evidence](#phase-7).\n[8](#phase-8)\nSafe evolution and reproducible artifacts\ncompleted\n5-7; actual baselines where applicable\nSee [current evidence](#phase-8).\n[9](#phase-9)\nReference vertical-slice acceptance and contributor handoff\ncompleted\n1-8\nSee [current evidence](#phase-9).\n[10](#phase-10)\nDocumentation architecture, simplification, and developer setup\ncompleted\n9\nSee [current evidence](#phase-10).\n[11](#phase-11)\nLiving Documentation Portal\ncompleted\n10\nSee [current evidence](#phase-11).\n[12](#phase-12)\nDeployment-specific operationalization\npending\n11 and concrete deployment requirements\nConditional; no deployment selected.\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Phase 1",
-    "anchor": "phase-1",
-    "text": "Phase 1\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Reproducible workspace and local validation",
-    "anchor": "reproducible-workspace-and-local-validation",
-    "text": "Reproducible workspace and local validation\n**Scope:** Turn the documentation foundation into a working, verifiable development environment.\n**Current evidence:** [Workspace manifests](../package.json), [setup](setup.md), and [validation](validation.md) own current commands and prerequisites.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP1.1\nEstablish pnpm workspace configuration, a committed shared lockfile, mechanically pinned Node.js/pnpm versions, and compatible tool versions.\ncompleted\nP1.2\nConfigure strict TypeScript and ESM for actual repository tooling.\ncompleted\nP1.3\nImplement Prettier checks, ESLint Flat Config with typescript-eslint, `tsc`, and dependency-cruiser.\ncompleted\nP1.4\nIntroduce `pnpm validate` with independently runnable checks; keep formatting and automatic fixes separate.\ncompleted\nP1.5\nAdd documentation link/anchor validation and useful checks for existing ADR metadata.\ncompleted\nP1.6\nEnforce applicable dependency rules and expand them as applications and packages appear.\ncompleted\nP1.7\nDocument installation, prerequisites, real commands, and actionable diagnostics; update availability statements.\ncompleted\n**Dependencies:** None. Request host administration only if inspection demonstrates it is needed; see [H-06](human-actions.md#h-06).\n**Validation/acceptance criteria:**\nA clean checkout can install from the frozen lockfile and execute all implemented checks.\nValidation leaves tracked source files unchanged.\nRepresentative formatting, type, link, and dependency violations fail with useful diagnostics.\nFirst-party package dependencies resolve explicitly through `workspace:` where applicable.\nDocumentation distinguishes available checks from future capabilities.\n**Governing sources:** [Validation](validation.md), [dependency rules](architecture/dependency-rules.md), ADRs 0001-0003 in the [ADR index](adr/README.md).\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Phase 2",
-    "anchor": "phase-2",
-    "text": "Phase 2\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "CI and dependency security",
-    "anchor": "ci-and-dependency-security",
-    "text": "CI and dependency security\n**Scope:** Make repository validation an enforceable delivery gate.\n**Current evidence:** [CI workflow](../.github/workflows/ci.yml), [Renovate configuration](../renovate.json), and [CI policy](architecture/continuous-integration.md) define current behavior. Dated platform verification belongs to [H-01](human-actions.md#h-01), [H-02](human-actions.md#h-02), and [H-03](human-actions.md#h-03).\nTask\nCurrent deliverable or conditional disposition\nStatus\nP2.1\nAdd GitHub Actions validation for pull requests, the primary branch, and manual execution.\ncompleted\nP2.2\nConsume repository-pinned toolchain versions, frozen installation, and repository commands rather than CI-only correctness logic.\ncompleted\nP2.3\nExpose a stable aggregate required check that fails when required work fails or does not complete.\ncompleted\nP2.4\nPin external actions to immutable SHAs, minimize permissions, and isolate untrusted PR execution from privileged credentials.\ncompleted\nP2.5\nConfigure Renovate with its dashboard, weekly routine updates, coherent groups, visible major upgrades, and automerge disabled initially; do not delay security remediation to the routine window.\ncompleted\nP2.6\nConfigure and verify branch protection and supported GitHub security capabilities; record entitlement limitations.\ncompleted\nP2.7\nBound diagnostic artifact retention and cancel superseded PR runs where appropriate.\ncompleted\n**Dependencies:** Phase 1. External administration is tracked separately from repository changes.\n**Validation/acceptance criteria:**\nThe same revision passes equivalent local and CI validation.\nA failing required job cannot produce a successful aggregate gate.\nCache misses remain reproducible.\nPR validation requires no production credentials.\nDependency review blocks newly introduced high/critical vulnerabilities where available, subject to reviewed exceptions.\nExternal settings are verified; workflow files alone do not count as branch protection.\n**Governing source:** [ADR-0011](adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md).\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Phase 3",
-    "anchor": "phase-3",
-    "text": "Phase 3\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Define the reference feature and immediate implementation details",
-    "anchor": "define-the-reference-feature-and-immediate-implementation-details",
-    "text": "Define the reference feature and immediate implementation details\n**Scope:** Establish concrete behavior before creating business models or security assumptions.\n**Current evidence:** [Business rules](domains/approval-request.md), [implementation conventions](domains/approval-request-implementation.md), and [execution/artifact conventions](architecture/backend-execution-and-generated-artifacts.md) record the H-04/H-05 decisions and accepted implementation boundaries.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP3.1\nSelect the reference feature with the project owner; orders/payments in existing examples are not product requirements.\ncompleted\nP3.2\nDefine actors, use cases, ownership, invariants, state transitions, expected failures, side effects, and acceptance scenarios.\ncompleted\nP3.3\nSpecify data classifications/lifecycle and determine required authentication, authorization, tenancy, audit history, and integrations.\ncompleted\nP3.4\nResolve feature placement, identifiers, timestamps, transaction ownership, schema metadata, API errors, and pagination where applicable.\ncompleted\nP3.5\nDecide backend development/build execution and generated-artifact storage conventions.\ncompleted\nP3.6\nRecord significant new architectural choices through the ADR process; keep ordinary conventions near their owners.\ncompleted\n**Dependencies:** Phases 1-2; requirements discovery may begin earlier. Owner inputs do not block independent foundation tooling work.\n**Validation/acceptance criteria:**\nEvery planned business behavior traces to a stated requirement.\nProtected and anonymous operations are explicitly distinguished.\nRequired security choices are resolved before protected operations are exposed.\nNo invented tenancy, permissions model, retention duration, authentication provider, or deployment target.\nThe feature can be delivered incrementally without speculative infrastructure.\n**Governing sources:** [Principles](architecture/principles.md), [authentication](security/authentication.md), [authorization](security/authorization.md), [classification](security/data-classification.md), [retention](security/data-retention.md).\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Phase 4",
-    "anchor": "phase-4",
-    "text": "Phase 4\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Observable API runtime",
-    "anchor": "observable-api-runtime",
-    "text": "Observable API runtime\n**Scope:** Establish a runnable backend with correct lifecycle and boundary behavior.\n**Current evidence:** [API guide](../apps/api/README.md), API configuration/lifecycle/telemetry tests, and [process smoke](../apps/api/scripts/smoke.mjs) cover bootstrap, health, redaction, correlation, bounded shutdown, and exporter failure.\nTask\nCurrent deliverable or conditional disposition\nStatus\nP4.1\nCreate `apps/api` with an explicit composition root and Fastify transport boundary.\ncompleted\nP4.2\nImplement TypeBox bootstrap configuration with explicit parsing, validation, safe defaults, immutable typed values, and centralized environment access.\ncompleted\nP4.3\nSeparate server-only configuration from client-eligible values.\ncompleted\nP4.4\nInitialize Pino/OpenTelemetry before instrumented infrastructure, with preferred Fastify instrumentation, W3C propagation, and configurable OTLP export.\ncompleted\nP4.5\nImplement centralized redaction and request/log/trace correlation.\ncompleted\nP4.6\nEstablish the public error envelope and a small canonical registry for errors actually used.\ncompleted\nP4.7\nImplement distinct startup, liveness, readiness, and bounded shutdown behavior.\ncompleted\nP4.8\nAdd configuration, HTTP-boundary, error, lifecycle, and telemetry tests.\ncompleted\n**Dependencies:** Phases 1-3. [H-07](human-actions.md#h-07) applies only if a selected external integration actually requires provisioning; local telemetry verification must not depend on a purchased vendor.\n**Validation/acceptance criteria:**\nInvalid required configuration fails before accepting work.\nHealth responses disclose no secrets or internal diagnostics.\nShutdown stops accepting work and attempts bounded cleanup/telemetry flushing.\nUnexpected errors produce safe public responses and one authoritative diagnostic capture.\nCorrelation remains isolated between concurrent requests.\nTelemetry export failure does not normally fail business operations.\nFastify request injection exercises real validation and serialization.\n**Governing sources:** [Configuration](architecture/configuration.md), [error contract](api/error-contract.md), [health checks](reliability/health-checks.md), [ADR-0010](adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md).\n"
-  },
-  {
-    "id": "repository/docs/implementation-plan",
-    "title": "Orion Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Phase 5",
-    "anchor": "phase-5",
-    "text": "Phase 5\n"
   }
 ]

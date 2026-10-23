@@ -12,6 +12,8 @@ This repository is the canonical upstream foundation. Real projects start from a
 
 ## Start here
 
+The portal is an internal development tool. Default production builds exclude its UI and generated assets; developers and agents retain the full repository knowledge and local `/docs` workflow. Product and public documentation use separately approved sources and application-owned UI. See [documentation audiences, build controls, and migration](docs/architecture/living-documentation.md).
+
 | Task | Entry point |
 | --- | --- |
 | Find the policy for a change | [Documentation task index](docs/README.md) |

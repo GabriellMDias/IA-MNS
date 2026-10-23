@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "bundle:check": "node scripts/check-bundle.mjs",
+    "test:documentation": "node --test scripts/documentation-build.test.mjs",
     "test:browser": "vitest run --config vitest.browser.config.ts",
     "test:unit": "vitest run --config vitest.node.config.ts",
     "test:e2e": "playwright test"

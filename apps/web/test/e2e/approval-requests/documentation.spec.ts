@@ -17,6 +17,31 @@ async function openDocument(page: Page, path: string, title: string) {
   ).toBeVisible();
 }
 
+test("feature-owned component metadata stays discoverable without executing credential examples", async ({
+  page,
+}) => {
+  const identityRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/__orion_local_identity/"))
+      identityRequests.push(request.url());
+  });
+  await openDocument(
+    page,
+    "/docs/components/AccessTokenForm",
+    "AccessTokenForm",
+  );
+  await expect(page.locator(".docs-facts")).toContainText("feature-specific");
+  await expect(page.locator(".docs-article pre")).toContainText(
+    "<AccessTokenForm",
+  );
+  await expect(page.locator(".docs-preview")).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Owned metadata", exact: true }),
+  ).toHaveAttribute("href", /approval-requests\/components\.docs\.json$/);
+  expect(identityRequests).toEqual([]);
+  await expectNoStoredUserData(page);
+});
+
 test("reference operations and tables have isolated deep-linked pages", async ({
   page,
 }) => {

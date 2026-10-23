@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Button, TextField } from "../components.js";
 
 export function AccessTokenForm({
   onConnect,
@@ -27,8 +28,8 @@ export function AccessTokenForm({
         memory and is cleared on refresh or disconnect.
       </p>
       <form onSubmit={connect} className="form-stack">
-        <label htmlFor="access-token">Access token</label>
-        <input
+        <TextField
+          label="Access token"
           id="access-token"
           type="password"
           autoComplete="off"
@@ -36,9 +37,9 @@ export function AccessTokenForm({
           onChange={(event) => setEntry(event.target.value)}
           required
         />
-        <button type="submit" className="button-primary">
+        <Button type="submit" variant="primary">
           Connect
-        </button>
+        </Button>
       </form>
       {showLocalIdentity && <LocalIdentityConnect onConnect={onConnect} />}
     </section>
