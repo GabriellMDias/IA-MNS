@@ -223,7 +223,7 @@ External settings below were verified on the stated dates. They are evidence of 
 
 **Verification:** Record the reviewed commit, required remote CI, merged revision, immutable annotated tag and matching Release. For each later product upgrade, retain product code/identity/docs, validate its actual gates, record the verified SHA baseline with ancestry, and require its own reviewed merge PR. Internal documentation hosting remains separately conditional on H-15.
 
-**Evidence / blocker (2026-10-23):** The owner explicitly authorized publication. Renovate PR #23 was merged as `7dce4c8cfe4b69341007c1350e8a7ef6e852893e` after its required checks passed. The Vite correction and combined release candidate are in progress; exact merged revision, CI, tag and Release evidence belong in the [publication record](foundation-acceptance.md#authorized-publication). No actual product upgrade or deployment is authorized.
+**Evidence / blocker (2026-10-23):** The owner explicitly authorized publication. Renovate PRs #23, #24 and #25 were merged after their required checks passed. The combined candidate also updates Vite/Vitest and vulnerable transitives; frozen installation and npm audit pass with zero reported vulnerabilities. Final validation, exact merged revision, CI, tag and Release evidence belong in the [publication record](foundation-acceptance.md#authorized-publication). No actual product upgrade or deployment is authorized.
 
 ## New action template
 
