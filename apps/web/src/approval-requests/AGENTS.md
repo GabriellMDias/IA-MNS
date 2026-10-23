@@ -5,3 +5,4 @@ This browser workflow is part of Orion's foundation-only reference implementatio
 - Read the [business specification](../../../../docs/domains/approval-request.md) and [implementation conventions](../../../../docs/domains/approval-request-implementation.md) before changing behavior.
 - Keep the workflow's routes, pages, credential handling, styles, and wording in this folder. Shared shell and portal code must not import it; only `src/modules.tsx` composes it.
 - Its browser journeys live in `test/e2e/approval-requests/` and start their own disposable stack.
+- Reuse matching shared controls before adding UI. Notable feature components may use the local `components.docs.json` with `feature-specific` scope; keep credential examples static and retain feature-owned state and side effects under [component policy](../../../../docs/architecture/web-components.md).

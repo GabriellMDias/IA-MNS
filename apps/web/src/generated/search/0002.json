@@ -1,5 +1,77 @@
 [
   {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Hono",
+    "anchor": "hono",
+    "text": "Hono\nHono provides a small, TypeScript-oriented framework built around Web Standards and supports multiple JavaScript runtimes and deployment environments.\nIt offers strong performance, a compact API, and considerable portability.\nIt was not selected because Orion has already established Node.js as its primary backend runtime.\nHono's cross-runtime portability therefore provides less architectural value for Orion than it would for a system intentionally targeting multiple JavaScript runtimes or edge platforms.\nFastify provides a more Node.js-focused backend ecosystem and stronger alignment with Orion's expected requirements around schema-based validation, response serialization, structured logging, plugin encapsulation, and long-lived server applications.\nHono may still be appropriate for a specialized future application where Web Standards portability or a different execution environment provides concrete value.\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nOrion backend applications receive a high-performance HTTP foundation with relatively low framework overhead.\nFastify remains primarily an HTTP and infrastructure concern rather than defining the business architecture.\nDomain code can remain plain TypeScript without Fastify dependencies.\nApplication operations can remain reusable outside HTTP execution paths.\nFramework-specific request and response objects are prevented from becoming general application models.\nThe architecture remains suitable for both small APIs and large backend systems.\nBackend instances can scale horizontally without requiring a framework change solely because traffic increases.\nFastify's schema capabilities align well with Orion's future machine-readable contract strategy.\nExplicit response serialization can improve correctness and reduce accidental exposure of internal fields.\nFastify's plugin and encapsulation system provides organization for large transport and infrastructure layers.\nPino provides structured HTTP logging through Fastify's native integration.\nThe framework does not require Orion to adopt a framework-specific dependency-injection container.\nExecution paths remain comparatively explicit, which benefits debugging, testing, human comprehension, and AI-agent reasoning.\nThe application architecture remains less coupled to the HTTP framework than it would with a more comprehensive application framework.\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nFastify provides fewer built-in application-architecture conventions than NestJS.\nOrion must define and enforce its own composition, dependency injection, lifecycle, authorization integration, transport mapping, and application-organization conventions where necessary.\nContributors familiar with NestJS may initially miss its modules, providers, decorators, guards, pipes, and dependency-injection container.\nGreater architectural freedom can lead to inconsistent application structure if Orion's boundaries and reference patterns are not mechanically enforced.\nFastify plugins can be misused as business-module boundaries if their infrastructure role is not kept explicit.\nFastify-specific APIs still create framework coupling inside the HTTP adapter layer.\nSome third-party Node.js libraries or examples may target Express or NestJS more directly.\nSchema-driven validation and serialization require discipline to remain aligned with canonical API contracts.\nPino becomes an implementation dependency of the backend runtime even though application and domain code should remain minimally coupled to it.\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion does not currently have an established backend HTTP implementation that must be migrated.\nThe initial API application will therefore be implemented directly on Fastify.\nRepository architecture enforcement should prevent Fastify-specific imports from entering framework-independent layers where such dependencies are prohibited.\nThe backend composition root will be responsible for assembling Fastify, transport adapters, application dependencies, infrastructure implementations, and runtime concerns.\nFastify and Pino versions must be pinned using the package-management strategy established by ADR-0002.\nBackend validation must participate in the canonical repository workflow established by ADR-0003.\nRoutine compatible upgrades of Fastify or Pino do not require a new ADR when they preserve the responsibilities and architectural boundaries described here.\nReplacing Fastify as Orion's primary backend HTTP framework would be an architectural change and should supersede this ADR.\nIntroducing NestJS or another application framework for a specialized future application does not necessarily supersede this ADR if that application has a concrete requirement and the exception is explicitly scoped and documented.\n"
+  },
+  {
+    "id": "repository/docs/adr/0004-select-fastify-as-the-backend-http-framework",
+    "title": "ADR-0004: Select Fastify as the Backend HTTP Framework",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [error handling](../architecture/error-handling.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [logging](../reliability/logging.md)\nRelated policy: [observability](../reliability/observability.md)\nRelated policy: [telemetry redaction](../security/telemetry-redaction.md)\nRelated policy: [principles](../api/principles.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "anchor": "adr-0005-select-postgresql-as-the-primary-database",
+    "text": "ADR-0005: Select PostgreSQL as the Primary Database\n**Status:** accepted\n**Date:** 2026-09-13\n"
+  },
+  {
+    "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
+    "title": "ADR-0005: Select PostgreSQL as the Primary Database",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a primary database technology before the persistence strategy, migration tooling, schema canonical source, integration-testing infrastructure, and initial backend persistence implementation can be selected consistently.\nThe database must support applications with substantially different sizes and operational requirements, ranging from small applications to large, long-lived business systems with complex transactional workflows, significant data volumes, concurrent usage, reporting requirements, and extensive integration surfaces.\nOrion favors relational integrity, explicit schemas, safe evolution, transactional correctness, mature operational behavior, and infrastructure that can scale incrementally without introducing distributed complexity before it is justified.\nThe primary database should therefore support:\nACID transactions;\nrelational constraints;\nforeign keys and referential integrity;\nindexes and query optimization;\nconcurrency control;\ncomplex transactional workflows;\nstructured relational data;\nsemi-structured data where appropriate;\nsafe schema evolution;\nmature backup and recovery tooling;\nproduction observability;\nbroad managed-service availability;\nhorizontal application scaling;\nlarge and long-lived schemas;\nintegration with TypeScript and Node.js tooling;\nreliable local and automated testing;\npredictable operational behavior.\nThe database technology should not require applications to introduce additional infrastructure solely in anticipation of hypothetical future scale.\nAt the same time, Orion is intended to support AI-enabled applications.\nSome future applications may require capabilities such as:\nembeddings;\nsemantic search;\nsimilarity search;\nretrieval-augmented generation;\ndocument retrieval;\nproduct similarity;\nrelated-case retrieval;\nsemantic knowledge search.\nThese workloads require vector storage and similarity-search capabilities but do not justify making a dedicated vector database mandatory for every Orion application.\nVector retrieval must also remain distinct from structured access to transactional business data.\nA chatbot or AI agent that needs to query business information should not be given unrestricted database access merely because the database contains the relevant information.\n"
+  },
+  {
     "id": "repository/docs/adr/0005-select-postgresql-as-the-primary-database",
     "title": "ADR-0005: Select PostgreSQL as the Primary Database",
     "group": "Decisions",
@@ -925,86 +997,5 @@
     "heading": "Operational or Migration Impact",
     "anchor": "operational-or-migration-impact",
     "text": "Operational or Migration Impact\nOrion does not currently have an established web application stack that must be migrated.\nThe initial web application will therefore be implemented directly using:\nReact 19.x\nReact Compiler\nVite 8.x\nTanStack Router\nTanStack Query\n\nRepository tooling must pin compatible versions of these dependencies through the package-management strategy established by ADR-0002.\nReact Compiler integration must remain compatible with the selected Vite React integration and must participate in normal repository validation.\nThe web application must consume the generated API integration established by ADR-0007 rather than accessing backend persistence or implementation internals.\nWeb build, type-checking, linting, architecture validation, and eventually browser testing must participate in the canonical `pnpm validate` workflow established by ADR-0003.\nProduction builds must be reproducible through repository tooling.\nA general-purpose global state library must not be introduced into the Orion baseline without a demonstrated state-management requirement.\nIntroducing SSR, SSG, or a full-stack React framework for a particular product does not necessarily supersede this ADR when that application has a documented requirement and the Fastify backend remains authoritative.\nChanging Orion's default UI framework or materially replacing the client-first web architecture would require a new ADR that supersedes this decision.\nRoutine compatible upgrades of React, React Compiler, Vite, TanStack Router, or TanStack Query do not require a new ADR when they preserve the responsibilities established here.\n"
-  },
-  {
-    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
-    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [principles](../api/principles.md)\nRelated policy: [versioning](../api/versioning.md)\nExternal reference: React documentation.\nExternal reference: React Compiler documentation.\nExternal reference: Vite documentation.\nExternal reference: TanStack Router documentation.\nExternal reference: TanStack Query documentation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0009: Establish Testing Strategy and Tooling",
-    "anchor": "adr-0009-establish-testing-strategy-and-tooling",
-    "text": "ADR-0009: Establish Testing Strategy and Tooling\n**Status:** accepted\n**Date:** 2026-09-23\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nOrion requires a concrete testing strategy that implements the testing principles already established by the architecture foundation.\nThe strategy must support projects ranging from small applications to large, long-lived systems while balancing:\nfast developer feedback;\nrealistic verification of infrastructure behavior;\nconfidence in database migrations and persistence;\nbrowser fidelity;\ndeterministic and isolated execution;\nparallel execution;\nmaintainable test suites;\neffective failure diagnostics;\ncompatibility with the canonical `pnpm validate` workflow;\nreasonable CI execution cost;\nclear responsibility between different test levels.\nNo single test environment provides the best tradeoff for every kind of behavior.\nPure domain calculations do not require PostgreSQL or a browser.\nPersistence behavior cannot be validated reliably through mocks when correctness depends on PostgreSQL, Prisma, migrations, constraints, SQL, or transaction semantics.\nBrowser APIs and DOM behavior cannot always be represented faithfully by simulated DOM implementations.\nComplete user journeys require a real application stack but are too expensive to become the primary way to test every business rule.\nOrion therefore requires multiple complementary test levels, each selected according to the behavior being verified.\nThe guiding principle is:\nUse the lowest-cost test level that can reliably prove the required behavior.\nThe strategy must also preserve previous architectural decisions:\n`tsc` remains the authority for TypeScript correctness;\nPostgreSQL is the primary database;\nPrisma is the primary persistence tooling;\nproduction database structure is created through versioned migrations;\nFastify is the HTTP transport framework;\nReact is the primary web UI framework;\n`pnpm validate` is the canonical repository validation entry point.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nOrion will use **Vitest as its primary test runner for TypeScript tests**.\nOrion will use **Testcontainers for tests that require real infrastructure**, with PostgreSQL as the initial primary use case.\nOrion will use **Vitest Browser Mode with the Playwright browser provider for browser-dependent component and feature tests**.\nOrion will use **Playwright Test for full browser end-to-end testing**.\nThe resulting default testing model is:\npure logic\n    → Vitest in Node\n\nbackend integration\n    → Vitest + real dependencies\n\ndatabase integration\n    → Vitest + Testcontainers + PostgreSQL\n\nbrowser component / feature behavior\n    → Vitest Browser Mode + Playwright provider\n\ncomplete user journeys\n    → Playwright Test\n\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Type checking",
-    "anchor": "type-checking",
-    "text": "Type checking\nVitest is responsible for runtime test execution.\nIt does not replace the TypeScript compiler as Orion's type-checking authority.\nThe responsibility remains:\ntype correctness\n    → tsc\n\nruntime behavior\n    → Vitest / Playwright\n\nTest code must therefore participate in the repository's normal TypeScript validation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Unit tests",
-    "anchor": "unit-tests",
-    "text": "Unit tests\nUnit tests will normally run through Vitest in a Node.js environment.\nThey should be used for behavior that can be verified without starting infrastructure or browser environments.\nTypical examples include:\ndomain rules;\ncalculations;\nstate transitions;\nvalue-object behavior;\nparsers;\ndeterministic transformations;\napplication decisions;\nmappers;\nvalidation helpers;\npure utility functions.\nUnit tests should remain fast and should minimize dependencies on infrastructure that does not contribute to the behavior being tested.\nA domain calculation must not require PostgreSQL, Fastify, or a browser merely because those technologies exist elsewhere in the application.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Mocking and test doubles",
-    "anchor": "mocking-and-test-doubles",
-    "text": "Mocking and test doubles\nOrion will avoid pervasive mocking of internal implementation details.\nMocks, fakes, stubs, and other test doubles should be used primarily at meaningful external or nondeterministic boundaries.\nAppropriate examples include:\nthird-party HTTP APIs;\npayment providers;\nemail delivery;\nclocks;\nrandom-number generation;\nexternal object storage;\nexternal services unavailable or inappropriate during the test.\nInternal infrastructure whose real behavior is important to correctness should generally be tested using the real implementation at the appropriate integration level.\nFor example, persistence tests should not attempt to prove Prisma/PostgreSQL behavior using a mocked Prisma client.\nThe principle is:\nmock external or nondeterministic boundaries\n    ≠\nmock every internal dependency\n\nTests should verify observable behavior rather than mirror the internal call structure of the implementation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Integration tests",
-    "anchor": "integration-tests",
-    "text": "Integration tests\nIntegration tests will use Vitest and real dependencies when the behavior under test materially depends on those dependencies.\nExamples include:\nPrisma persistence adapters;\nPostgreSQL constraints;\ntransaction behavior;\ncustom SQL;\ndatabase migrations;\nFastify routes and plugins;\nserialization;\nHTTP validation;\ninfrastructure adapters.\nIntegration tests should remain narrower than full end-to-end tests.\nThey may exercise multiple real application components while still avoiding unnecessary browsers, network sockets, or external services.\n"
-  },
-  {
-    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
-    "title": "ADR-0009: Establish Testing Strategy and Tooling",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "PostgreSQL integration tests",
-    "anchor": "postgresql-integration-tests",
-    "text": "PostgreSQL integration tests\nTests that verify PostgreSQL-dependent behavior will use a **real PostgreSQL instance**.\nOrion will not use SQLite, an in-memory relational substitute, or mocked database behavior as the default replacement for PostgreSQL in persistence integration tests.\nThe intended test path is:\nVitest\n    ↓\nTestcontainers\n    ↓\nreal PostgreSQL\n    ↓\nreal Orion migrations\n    ↓\nPrisma\n    ↓\npersistence implementation\n\nThis provides coverage for behavior that depends on:\nPostgreSQL data types;\nconstraints;\nindexes;\ntransaction semantics;\nPrisma behavior;\nmigration correctness;\ncustom SQL;\nPostgreSQL extensions when present.\n"
   }
 ]

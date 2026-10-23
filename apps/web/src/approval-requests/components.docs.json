@@ -1,0 +1,44 @@
+{
+  "components": [
+    {
+      "name": "AccessTokenForm",
+      "source": "apps/web/src/approval-requests/access-token-form.tsx",
+      "category": "Forms",
+      "scope": "feature-specific",
+      "owner": "Approval Request workflow",
+      "summary": "Connects this reference workflow using a caller-supplied bearer token or optional local synthetic identity.",
+      "usage": "Keep credential handling inside this feature. Reuse Button and TextField for shared presentation; this form is not a general login, session or refresh component.",
+      "accessibility": "Provides a labeled required password field and a native submit action. Errors remain visible; connections and synthetic identity requests require explicit user actions.",
+      "props": [
+        {
+          "name": "onConnect",
+          "type": "(token: string) => void",
+          "meaning": "Receives a token in memory after an explicit connection; never persist or log it.",
+          "required": true
+        },
+        {
+          "name": "showLocalIdentity",
+          "type": "boolean",
+          "meaning": "Shows optional synthetic development identities when available.",
+          "required": false,
+          "default": "true"
+        }
+      ],
+      "states": [
+        "Manual entry",
+        "Required field",
+        "Optional local synthetic identity",
+        "Connecting",
+        "Connection error"
+      ],
+      "examples": [
+        {
+          "id": "access-token-form-usage",
+          "label": "Feature-owned connection form",
+          "description": "Source example only; the catalog never connects credentials or calls an identity service.",
+          "code": "<AccessTokenForm showLocalIdentity={false} onConnect={connectInMemory} />"
+        }
+      ]
+    }
+  ]
+}

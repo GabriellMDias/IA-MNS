@@ -193,3 +193,167 @@ The test project was named `Pedido Fácil` (repository `git@github.com:GabriellM
 Earlier cycles found these defects, corrected in Orion before the final cycle: the portal header linked to the reference workflow's list scope; the generated portal manifest and the CI workflow carried Orion titles; shared policies named the system Orion; reference-only styling and an Orion release and phase narrative remained in shared files; the derivation test fixture used reference names; the large-portal generator test assumed Orion's documentation size; and the guide did not say how to resolve conflicts in generated output. The `ORION_*` variables, `orion_*` claims and database roles, the `Orion required gate` check, the portal's Orion baseline badge, and provenance references remain by design ([ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)).
 
 Orion's own format, lint, and documentation checks scan the working tree, so they report the disposable project while it exists; the folder and its exclusion line were removed before Orion's gate ran. Disposable logs and scripts were not committed.
+
+## Documentation and Component Release Readiness
+
+[Versioning policy](versioning.md) · [Project upgrades](project-derivation.md#upgrade-to-a-newer-orion-revision) · [Implementation status](implementation-plan.md#maintaining-this-plan)
+
+Review date: 2026-10-23. Scope: Orion's uncommitted documentation isolation and component-catalog candidate based on `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea`. No actual derived repository, deployment, remote branch, tag or GitHub Release is changed. Disposable rehearsal commits are evidence only and must never become a recorded production baseline.
+
+### Implemented changes and review findings
+
+- The complete engineering catalog, references, search, navigation and synthetic previews remain in development and in repository sources for agents. Default production builds remove the portal import tree, styles, pages, search assets and internal downloads. Artifact/browser tests also reject accidental product imports of the catalog, metadata and generated references.
+- Internal builds require explicit selection and an acknowledgement of full-artifact hosting access controls. This supplies no authentication; an authorized host must protect direct assets/downloads and caches. Product help and public API documentation require separately approved source inventories and application-owned presentation. There is no automatic public publisher or public portal mode.
+- The small native reference set is Button, TextField and the existing ErrorNotice. Categories, owner, reuse scope, props, states, accessibility, source links and code/live examples are generated from root or feature-owned metadata. Product styling uses inherited semantic tokens. Feature behavior stays in features; private components do not all need documentation.
+- Root and web agent instructions route to one component policy and require inspecting existing UI before creating equivalents. No dependency, theme provider, workspace package, API/database change or manifest schema change was introduced.
+- Final review fixed type-only export discovery, undocumented destructured shared exports, duplicate active navigation, the static-example outline label, and isolation-test assumptions about product help/home layouts. Artifact checks include the internal manifest and approved product help at `/docs`. Policy preserves explicit synthetic feature previews in products. Upgrade guidance preserves project-owned files even after conflict-free Git merges. Existing checks protect legacy metadata, local re-exports, deleted/ignored sources and the generated renderer discriminator.
+
+### Validation evidence
+
+Disposable rehearsals passed with Node.js 24.13.0, pnpm 11.25.0, Chromium and Testcontainers. A working-tree candidate was committed only in an isolated temporary foundation mirror; canonical Git URLs were rewritten to that local mirror through process-scoped Git configuration. No real remote writes, release tags or project changes were made.
+
+| Boundary | Evidence on 2026-10-23 |
+| --- | --- |
+| Fresh derivation | Actual `orion:init-project` dry run and application, frozen install, regeneration and full `pnpm validate`: 21 generator tests, 26 derivation tests, 32 shared API tests, 63 web unit tests, 5 browser component tests and 19 E2E journeys. A later clean initialization with the final 15-path contract passed provenance/docs/freshness and artifact/browser isolation without `.env.local`. |
+| Upgrade from v2.0.0 | Actual merge, prune, source resolution, regeneration, full derived gate and `orion:record-baseline`. Eleven existing product-owned files stayed byte-identical after deliberate ownership resolution; custom component/category metadata and product docs remained discoverable. Browser checks retained a real `/product` route, action, badge, theme and brand while internal `/docs` stayed absent in production. |
+| Upgrade from v1.1.1 | Actual legacy initialization, schema 1 to 2 migration, source/composition port, prune, full derived gate, baseline recording and the same product browser checks. Seven product source/asset/docs files stayed byte-identical; the product route moved into the new composition seam. Both fixtures ended clean with the verified baseline as an ancestor; provenance, freshness and product browser checks passed after baseline recording. The synthetic legacy reference was unadopted and had no durable releases; existing refusal tests cover recorded migrations, not actual product migration history. |
+| Human/agent discovery | Legacy and feature metadata, source/re-export checks, static/live examples and navigation regression tests; desktop/mobile screenshot inspection. Read-only normalization of actual IA-MNS/Teluni metadata passed, as detailed below. |
+| Orion final gate | Final isolated `pnpm validate` passed: 21 generator tests, 26 derivation tests, 54 API tests, 63 web unit tests, 6 browser component tests, 2 artifact/browser tests and 31 E2E journeys. Formatting, lint, types, architecture, docs/agents, environment/release checks, generated references, build/bundle and both process smokes passed. One earlier concurrent attempt passed 30/31 E2E journeys; its saved trace shows `net::ERR_NETWORK_CHANGED` on three bootstrap modules before the portal loaded. The complete isolated rerun passed with no retry, timeout change or weakened assertion. |
+
+Local diagnostic logs are retained under ignored `node_modules/.cache/orion-documentation-validation/`: `final-isolated-validate.log`, `final-reviewed-validate.log`, `final-rehearsal-setup.log`, `final-rehearsal-upgrades.log`, `final-navigation-e2e.log` and `final-network-change-trace.zip`. Final plan/report edits were regenerated and checked for documentation, agent, provenance, formatting and diff consistency. These are local evidence, not release artifacts or remote CI. Remote checks on the actual eventual release commit and real hosting controls remain separate.
+
+### Compatibility and migration
+
+Recommend **`v3.0.0`** under [foundation compatibility policy](versioning.md#compatibility-meaning). The canonical remote's latest annotated tag was verified read-only as `v2.0.0`, targeting the base SHA above. Removing previously available production `/docs` and its downloadable assets intentionally changes an established distribution behavior and requires deliberate migration. Optional component/catalog improvements alone would be MINOR; ordinary merge conflicts alone do not justify MAJOR. The tag remains the only release-number source; do not bump private package versions or add a VERSION file.
+
+Existing development routes, generator commands, legacy metadata shape, ErrorNotice props, source references, SDK and database contracts remain supported. New metadata fields have additive defaults; named uppercase runtime exports in the curated shared entry point require metadata. Inspect newly discovered feature metadata for valid source/export links and unique IDs; keep product-specific examples and categories. Type-only exports are exempt.
+
+Adopters must rebuild a default product artifact, remove stale internal assets through their deployment procedure, and replace product links that relied on the portal with separately approved product/public documentation. Intentional internal deployments must use the explicit internal build and verify the selected host's access controls. Review customized Vite and shell code when merging; preserve product composition, UI, identity, styling tokens and documentation rather than replacing them with Orion templates.
+
+Schema version 2 projects require no provenance/schema migration. Schema version 1 projects must additionally follow [the existing migration](project-derivation.md#migrate-a-project-from-schema-version-1): preserve any product-adopted reference behavior and immutable released migrations before pruning.
+
+Read-only inspection of the actual IA-MNS and Teluni sources on 2026-10-23 found both at manifest schema 2 with initialization and baseline `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea` (v2.0.0), and the same 15-path derivation contract as Orion. Neither needs the legacy schema migration on that evidence. Their metadata normalizes with the new generator without writes: IA-MNS has seven shared and five feature-specific entries, including existing feature metadata/registered previews; Teluni has the existing ErrorNotice entry. No build, generation, validation gate, Git mutation or deployment was run in either product.
+
+IA-MNS already owns Button, TextField and other controls. Preserve their actual props, examples, styling and behavior rather than replacing them with Orion's reference implementations. Its Vite config, shell, home, component source/metadata, module composition and styles differ from v2.0.0. Teluni customizes Vite, shell, module composition and styles. Merge isolation into those files deliberately; retain product previews, metadata extension fields and documentation. Recheck this inventory and each product's migration registry, release state and complete validation when its upgrade is authorized; these read-only checks do not certify either product's runtime or deployment.
+
+### Proposed release notes
+
+**Orion v3.0.0 — internal documentation isolation and reusable React components**
+
+- Breaking distribution change: default production builds exclude the internal Living Documentation portal and all generated engineering assets. Development documentation remains complete. Rebuild and retire stale published assets; migrate end-user documentation to approved product/public sources.
+- Explicit internal builds support protected internal deployments; the host remains responsible for authentication and authorization of every page, asset and download.
+- Add native Button/TextField references and evolve the existing ErrorNotice, semantic styling hooks, inspect-before-implementing guidance, category navigation, ownership/reuse metadata, source references and safe examples.
+- Preserve legacy component metadata and add feature-owned discovery with proportional export/reference validation. Expand generator, browser and production-artifact regression coverage.
+- Include compatible security corrections for Markdown parsing, Vite, Fastify and Vitest, plus patched URI/IP parsing, source-map and test HTTP dependencies. Remove the obsolete Vite release-age exception; retain existing supply-chain checks and explicit dependency pins.
+- Retain SHA-based provenance and reviewed merge upgrades. No new dependencies, database/SDK migration or manifest schema change. Node.js 24.13.0 and pnpm 11.25.0 remain the documented toolchain.
+
+The publisher must add the exact released commit SHA and links to [documentation migration](architecture/living-documentation.md#existing-project-migration), [component practices](architecture/web-components.md) and [project upgrades](project-derivation.md#upgrade-to-a-newer-orion-revision). Local validation does not certify a production deployment.
+
+### Publishing steps after authorization
+
+These steps govern publication after owner authorization. The [publication record](#authorized-publication) distinguishes the completed review from the subsequent authorized release run.
+
+1. Commit the reviewed source and regenerated output on a release-preparation branch, open a PR into Orion `main`, and obtain the required review and CI results on its exact head. Review the entire candidate diff, including newly added files. Do not publish from a dirty checkout or disposable rehearsal commit.
+2. After the owner merges that PR, use a clean canonical Orion clone. Fetch `main` and tags, check out the intended merge commit, and verify that it contains the reviewed changes and that the required push/PR gates apply to that revision. Record its full SHA and CI links. Recheck that no newer release has superseded this recommendation.
+3. With Node.js 24.13.0, pnpm 11.25.0, Chromium and a Testcontainers-compatible runtime, run the following in PowerShell. Stop on any failure, dirty output or existing version; do not move a published tag.
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true # PowerShell 7.3+
+git fetch origin main --tags
+if (git status --porcelain) { throw 'Release checkout must be clean' }
+$releaseCommit = '<approved full merged commit SHA>'
+git switch --detach $releaseCommit
+git merge-base --is-ancestor $releaseCommit origin/main
+git show --no-patch --format=fuller $releaseCommit
+if (git tag --list v3.0.0) { throw 'Release tag already exists' }
+# Confirm this exact SHA is the reviewed release point with passing remote gates.
+pnpm install --frozen-lockfile
+pnpm validate
+if ($LASTEXITCODE -ne 0) { throw 'Release validation failed' }
+if (git status --porcelain) { throw 'Validation changed tracked files' }
+# Only after owner authorization and verified remote gates:
+git tag -a v3.0.0 $releaseCommit -m 'Orion v3.0.0: documentation isolation and component catalog'
+git rev-parse 'v3.0.0^{commit}'
+git push origin refs/tags/v3.0.0
+# Save the notes above, exact SHA and documentation links to a reviewed notes file.
+gh release create v3.0.0 --repo GabriellMDias/Orion --verify-tag --title 'Orion v3.0.0' --notes-file 'C:\path\reviewed-notes.md'
+```
+
+4. Verify the remote annotated tag resolves to the recorded SHA and the GitHub Release describes that same revision. Record the tag/Release/CI links in Orion's acceptance history and plan. No production deployment is implied.
+
+### Subsequent IA-MNS and Teluni upgrades
+
+Upgrade each project separately, only after explicit authorization, using its own clean checkout and plan. Do not run initialization or blindly apply Orion's project templates to an existing product.
+
+1. In IA-MNS, then independently in Teluni, refresh the read-only inventory above: applicable instructions, manifests/provenance, retained features/previews, product/public documentation sources, customized shell/Vite/UI, release registry and deployment assets. Preserve IA-MNS's existing controls and feature examples; do not add duplicate Button/TextField implementations. Commit or preserve unrelated work first. Configure the verified fetch-only upstream with `pnpm orion:upstream`; fetch and inspect status. Resolve `v3.0.0` to its full SHA in the canonical Orion clone; the project's upstream intentionally does not fetch tags.
+2. In the product checkout, run the commands below, replacing the value with that verified SHA. Review the diff from the recorded baseline before merging. If schema version 1 is present, perform the linked migration before pruning; product-adopted behavior and released migrations must be retained. Stop for uncertain migration/release status rather than deleting history.
+
+```powershell
+pnpm orion:upstream
+git fetch orion-upstream
+pnpm orion:status
+$orionCommit = '<verified full v3.0.0 commit SHA>'
+$baseline = (Get-Content .orion/project.json -Raw | ConvertFrom-Json).foundation.baselineCommit
+git log --oneline "$baseline..$orionCommit"
+git diff $baseline $orionCommit
+git switch -c codex/orion-v3-upgrade
+$projectCommit = (git rev-parse HEAD).Trim()
+git merge --no-ff --no-commit $orionCommit
+# Resolve manifest/contract/package conflicts first; migrate schema 1 if needed.
+pnpm orion:prune
+# Preserve project-owned README, module composition, branding, plans and actions.
+# Check all projectFiles, including automatic merges. For each existing owned path:
+# git restore --source=$projectCommit --staged --worktree -- <path>
+# For schema 1's new composition seams, port product behavior rather than restoring an absent path.
+# Merge shared source/policies; preserve product components, metadata, themes and docs.
+pnpm install --frozen-lockfile
+pnpm db:generate
+pnpm -C apps/api references:write
+pnpm -C packages/sdk generate
+pnpm docs:references:write
+git add -A apps/web/src/generated docs/generated packages/sdk/src/generated
+# Resolve/stage remaining source conflicts, then rerun prune until none remain.
+pnpm orion:prune
+pnpm validate
+# Also run the product's existing release, migration, ACL and critical-flow gates.
+# Inspect production artifact exclusion and protected-internal hosting if applicable.
+git commit -m 'Merge Orion v3.0.0 foundation changes'
+# Worktree must be clean; this fetches and verifies the canonical main ancestry.
+pnpm orion:record-baseline $orionCommit
+git add .orion/project.json
+git commit -m 'Record Orion v3.0.0 baseline'
+pnpm validate
+pnpm orion:check
+pnpm orion:status
+```
+
+3. Update the project's plan and migration/deployment notes, including stale-asset removal and any `/docs` link migration. Review the full diff and open its upgrade PR only when authorized. Require the project's CI on the exact head; use a merge commit when subsequently authorized to merge. Squash/rebase would discard the required upstream ancestry. Recheck baseline ancestry after merge. Schedule deployment and any protected internal documentation artifact separately under that project's authority.
+
+### Remaining release conditions
+
+The documentation/component review is complete. The subsequent [dependency review](#pre-release-dependency-review) adds outstanding security prerequisites to publication. Owner review/commit/PR submission, remote CI on the actual candidate, merge and release publication remain unperformed under [H-16](human-actions.md#h-16). Real internal hosting verification is conditional [H-15](human-actions.md#h-15). IA-MNS/Teluni changes, upgrade execution and deployments require separate authorization; refresh their inventory and migration/release review at that time. Passing disposable fixtures and read-only metadata checks do not certify either real product.
+
+### Pre-release dependency review
+
+Review date: 2026-10-23. [Renovate PR #23](https://github.com/GabriellMDias/Orion/pull/23), head `c2aed9071f205a3a669570c890135da68dc22d42`, changes only the root manifest and lockfile: `markdown-it` 15.0.2 to 15.0.3, its `argparse` dependency 3.0.2 to 3.0.3, and registry deprecation annotations for three unchanged OpenTelemetry packages. Validate, Orion required gate, Dependency review, CodeQL and GitGuardian checks passed on the PR. These remote results cover the v2.0.0 base, not the uncommitted documentation/component candidate.
+
+Recommendation: include the reviewed security patch before publishing v3.0.0; do not close or dismiss the PR. The current renderer and documentation validator use `html: false`, reducing exposure to [the inline HTML advisory](https://github.com/advisories/GHSA-vfgh-jcmw-g37q), but the same patch also fixes [high-severity reference-definition parsing](https://github.com/advisories/GHSA-gfr2-rv44-r23c) under default options. Repository-authored Markdown processed during generation is not a public request-time Markdown endpoint. The patch also tightens reference-label/title parsing, so generated-reference freshness and link validation remain necessary.
+
+In a disposable clone containing the local documentation/component changes plus the exact PR patch, frozen installation passed, all 21 generator tests passed, generated references remained current, and documentation validation passed (90 Markdown files, 1517 local links, 18 ADR records). The original checkout's dependency installation and running manual-test services were preserved. This evidence does not validate the still-pending Vite correction or replace checks on the eventual merged candidate.
+
+The combined `pnpm validate` run passed static checks, types, architecture, release/provenance rules, 26 derivation tests, generated checks and documentation isolation, then stopped on one API transport test exceeding its unchanged 5000 ms timeout (53/54 passed). Repeating `pnpm test` without source or timeout changes passed all 54 API, 63 web unit and 6 browser component tests; subsequent `pnpm build`, `pnpm smoke` and `pnpm test:e2e` passed, including all 31 E2E journeys. Thus the gate's stages passed across the initial run and continuation, rather than one uninterrupted successful `pnpm validate`. Logs are retained locally under `node_modules/.cache/orion-documentation-validation/renovate-review.log` and the disposable review directory. The initial timeout remains evidence for final-candidate validation; no assertion is made that its cause was established.
+
+The live Dependabot inventory additionally reports Vite 8.3.1 affected by [Windows path validation](https://github.com/advisories/GHSA-587h-7wmj-h5pm), [Windows percent escaping](https://github.com/advisories/GHSA-698v-4r3x-3vcv) and [editor flag interpretation](https://github.com/advisories/GHSA-r825-w8mm-5pxw). These concern the development editor integration, not emitted static product assets. Update to Vite 8.3.4 (the patched 8.3 line begins at 8.3.3), review its lockfile and rerun the full gate before release. The ten open alert records represent five advisories reported against both manifests and lockfile, not ten distinct defects. Passing PR checks do not clear unrelated, pre-existing alerts.
+
+Keep [Dependency Dashboard #2](https://github.com/GabriellMDias/Orion/issues/2) open as the Renovate control panel. Do not select the bulk approval/retry boxes. Review routine updates in their existing schedule; handle TypeScript 7, pnpm 12, Ubuntu 26 and the OpenTelemetry major/replacement as separate compatibility work. The `sdk-trace-base` deprecation needs a coordinated telemetry migration and validation, rather than an isolated package rename. No automerge or policy change is needed.
+
+Publication order: after owner authorization, merge PR #23 through its required checks; prepare the focused Vite security correction; reconcile both with the documentation/component candidate and regenerate references; require frozen installation, full local validation, security-alert reinspection and remote checks on the exact final candidate before following the publishing steps above. These compatible patches do not change the v3.0.0 recommendation driven by documentation distribution. No PR merge, dashboard edit, alert dismissal, push, tag, release or derived-project change is performed by this review.
+
+### Authorized publication
+
+The owner subsequently authorized the complete GitHub CLI release process on 2026-10-23. Actual derived-project upgrades and deployments remain outside that authorization. Renovate [PR #23](https://github.com/GabriellMDias/Orion/pull/23) was merged as `7dce4c8cfe4b69341007c1350e8a7ef6e852893e`, [PR #24](https://github.com/GabriellMDias/Orion/pull/24) as `05d56ab093f7b2be3cff23ec4cd8f4547627bbf4`, and [PR #25](https://github.com/GabriellMDias/Orion/pull/25) as `60213f2d611a1f691a704b99a66d4697f29631b1`, each after all required PR checks passed. The Dependency Dashboard remains open with bulk/major approvals unchanged.
+
+The refreshed GitHub advisory inventory expanded after the first merge. The combined candidate pins markdown-it 15.0.3, Fastify 5.12.6, Vite 8.3.4 and the Vitest cohort 5.0.5. Existing dependency ranges resolve undici 8.12.3, ip-address 10.7.4, fast-uri 3.1.9/4.2.3 and source-map-js 1.2.2. No new override or dependency family is needed. The obsolete `vite@8.3.1` release-age exception is removed. Frozen installation and `pnpm audit --json` passed with zero reported vulnerabilities; npm and GitHub advisory inventories are checked separately because their timing/coverage differ. Earlier inventory counts above are dated review evidence, not the final candidate's outstanding-alert count.
+
+Combined local validation, release PR, immutable annotated tag and GitHub Release remain in progress. The final release must identify the reviewed merged SHA and link its actual CI evidence. No database migration, API contract, SDK contract, provenance schema or derived repository changes are introduced by these compatible security patches.

@@ -1,5 +1,86 @@
 [
   {
+    "id": "repository/docs/adr/0008-select-react-vite-and-tanstack-for-web-applications",
+    "title": "ADR-0008: Select React, Vite, and TanStack for Web Applications",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0001: Select TypeScript and Node.js as the Primary Language and Runtime](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nRelated ADR: [ADR-0002: Select pnpm for Package and Workspace Management](0002-select-pnpm-for-package-and-workspace-management.md)\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0007: Establish API Contract, OpenAPI, SDK, and Configuration Schema Strategy](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nRelated policy: [principles](../architecture/principles.md)\nRelated policy: [application boundaries](../architecture/application-boundaries.md)\nRelated policy: [dependency rules](../architecture/dependency-rules.md)\nRelated policy: [testing strategy](../architecture/testing-strategy.md)\nRelated policy: [principles](../api/principles.md)\nRelated policy: [versioning](../api/versioning.md)\nExternal reference: React documentation.\nExternal reference: React Compiler documentation.\nExternal reference: Vite documentation.\nExternal reference: TanStack Router documentation.\nExternal reference: TanStack Query documentation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0009: Establish Testing Strategy and Tooling",
+    "anchor": "adr-0009-establish-testing-strategy-and-tooling",
+    "text": "ADR-0009: Establish Testing Strategy and Tooling\n**Status:** accepted\n**Date:** 2026-09-23\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a concrete testing strategy that implements the testing principles already established by the architecture foundation.\nThe strategy must support projects ranging from small applications to large, long-lived systems while balancing:\nfast developer feedback;\nrealistic verification of infrastructure behavior;\nconfidence in database migrations and persistence;\nbrowser fidelity;\ndeterministic and isolated execution;\nparallel execution;\nmaintainable test suites;\neffective failure diagnostics;\ncompatibility with the canonical `pnpm validate` workflow;\nreasonable CI execution cost;\nclear responsibility between different test levels.\nNo single test environment provides the best tradeoff for every kind of behavior.\nPure domain calculations do not require PostgreSQL or a browser.\nPersistence behavior cannot be validated reliably through mocks when correctness depends on PostgreSQL, Prisma, migrations, constraints, SQL, or transaction semantics.\nBrowser APIs and DOM behavior cannot always be represented faithfully by simulated DOM implementations.\nComplete user journeys require a real application stack but are too expensive to become the primary way to test every business rule.\nOrion therefore requires multiple complementary test levels, each selected according to the behavior being verified.\nThe guiding principle is:\nUse the lowest-cost test level that can reliably prove the required behavior.\nThe strategy must also preserve previous architectural decisions:\n`tsc` remains the authority for TypeScript correctness;\nPostgreSQL is the primary database;\nPrisma is the primary persistence tooling;\nproduction database structure is created through versioned migrations;\nFastify is the HTTP transport framework;\nReact is the primary web UI framework;\n`pnpm validate` is the canonical repository validation entry point.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **Vitest as its primary test runner for TypeScript tests**.\nOrion will use **Testcontainers for tests that require real infrastructure**, with PostgreSQL as the initial primary use case.\nOrion will use **Vitest Browser Mode with the Playwright browser provider for browser-dependent component and feature tests**.\nOrion will use **Playwright Test for full browser end-to-end testing**.\nThe resulting default testing model is:\npure logic\n    → Vitest in Node\n\nbackend integration\n    → Vitest + real dependencies\n\ndatabase integration\n    → Vitest + Testcontainers + PostgreSQL\n\nbrowser component / feature behavior\n    → Vitest Browser Mode + Playwright provider\n\ncomplete user journeys\n    → Playwright Test\n\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Type checking",
+    "anchor": "type-checking",
+    "text": "Type checking\nVitest is responsible for runtime test execution.\nIt does not replace the TypeScript compiler as Orion's type-checking authority.\nThe responsibility remains:\ntype correctness\n    → tsc\n\nruntime behavior\n    → Vitest / Playwright\n\nTest code must therefore participate in the repository's normal TypeScript validation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Unit tests",
+    "anchor": "unit-tests",
+    "text": "Unit tests\nUnit tests will normally run through Vitest in a Node.js environment.\nThey should be used for behavior that can be verified without starting infrastructure or browser environments.\nTypical examples include:\ndomain rules;\ncalculations;\nstate transitions;\nvalue-object behavior;\nparsers;\ndeterministic transformations;\napplication decisions;\nmappers;\nvalidation helpers;\npure utility functions.\nUnit tests should remain fast and should minimize dependencies on infrastructure that does not contribute to the behavior being tested.\nA domain calculation must not require PostgreSQL, Fastify, or a browser merely because those technologies exist elsewhere in the application.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Mocking and test doubles",
+    "anchor": "mocking-and-test-doubles",
+    "text": "Mocking and test doubles\nOrion will avoid pervasive mocking of internal implementation details.\nMocks, fakes, stubs, and other test doubles should be used primarily at meaningful external or nondeterministic boundaries.\nAppropriate examples include:\nthird-party HTTP APIs;\npayment providers;\nemail delivery;\nclocks;\nrandom-number generation;\nexternal object storage;\nexternal services unavailable or inappropriate during the test.\nInternal infrastructure whose real behavior is important to correctness should generally be tested using the real implementation at the appropriate integration level.\nFor example, persistence tests should not attempt to prove Prisma/PostgreSQL behavior using a mocked Prisma client.\nThe principle is:\nmock external or nondeterministic boundaries\n    ≠\nmock every internal dependency\n\nTests should verify observable behavior rather than mirror the internal call structure of the implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Integration tests",
+    "anchor": "integration-tests",
+    "text": "Integration tests\nIntegration tests will use Vitest and real dependencies when the behavior under test materially depends on those dependencies.\nExamples include:\nPrisma persistence adapters;\nPostgreSQL constraints;\ntransaction behavior;\ncustom SQL;\ndatabase migrations;\nFastify routes and plugins;\nserialization;\nHTTP validation;\ninfrastructure adapters.\nIntegration tests should remain narrower than full end-to-end tests.\nThey may exercise multiple real application components while still avoiding unnecessary browsers, network sockets, or external services.\n"
+  },
+  {
+    "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
+    "title": "ADR-0009: Establish Testing Strategy and Tooling",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "PostgreSQL integration tests",
+    "anchor": "postgresql-integration-tests",
+    "text": "PostgreSQL integration tests\nTests that verify PostgreSQL-dependent behavior will use a **real PostgreSQL instance**.\nOrion will not use SQLite, an in-memory relational substitute, or mocked database behavior as the default replacement for PostgreSQL in persistence integration tests.\nThe intended test path is:\nVitest\n    ↓\nTestcontainers\n    ↓\nreal PostgreSQL\n    ↓\nreal Orion migrations\n    ↓\nPrisma\n    ↓\npersistence implementation\n\nThis provides coverage for behavior that depends on:\nPostgreSQL data types;\nconstraints;\nindexes;\ntransaction semantics;\nPrisma behavior;\nmigration correctness;\ncustom SQL;\nPostgreSQL extensions when present.\n"
+  },
+  {
     "id": "repository/docs/adr/0009-establish-testing-strategy-and-tooling",
     "title": "ADR-0009: Establish Testing Strategy and Tooling",
     "group": "Decisions",
@@ -1069,104 +1150,5 @@
     "heading": "Alternatives Considered",
     "anchor": "alternatives-considered",
     "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "GitLab CI",
-    "anchor": "gitlab-ci",
-    "text": "GitLab CI\nGitLab CI provides a mature repository-integrated CI/CD platform and would be technically capable of implementing Orion's validation requirements.\nIt was not selected because Orion's current source-management and collaboration environment is GitHub.\nSelecting GitLab CI would introduce a second primary platform without a concrete benefit.\nRepository-owned validation commands preserve the possibility of using GitLab CI for a future project when necessary.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Buildkite, CircleCI, or Similar External CI Platforms",
-    "anchor": "buildkite-circleci-or-similar-external-ci-platforms",
-    "text": "Buildkite, CircleCI, or Similar External CI Platforms\nDedicated CI platforms may provide advanced scaling, execution, or enterprise capabilities.\nThey were not selected as the foundation default because GitHub Actions is sufficient for Orion's current requirements and requires less platform integration.\nA future repository may adopt another CI provider if scale, compliance, runner requirements, or economics justify the change.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Dedicated Monorepo Task Runner for CI",
-    "anchor": "dedicated-monorepo-task-runner-for-ci",
-    "text": "Dedicated Monorepo Task Runner for CI\nOrion could introduce Nx, Turborepo, or another task-graph system specifically to optimize CI from the beginning.\nThis could provide affected-project detection, task caching, and remote execution.\nIt was not selected because ADR-0002 already established that such tooling should enter only when real repository scale makes it valuable.\nCI will initially execute the complete validation capabilities directly through pnpm workspace commands.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Dependabot Version Updates",
-    "anchor": "dependabot-version-updates",
-    "text": "Dependabot Version Updates\nDependabot can create dependency-update pull requests and integrates directly with GitHub.\nIt was not selected as Orion's primary version-update system because Renovate provides a broader and more configurable dependency-maintenance model suited to a growing monorepo.\nDependabot vulnerability alerts may still be used as a security signal.\nDependabot version-update automation and Renovate should not manage the same dependencies simultaneously.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Automatic Merge for All Patch Updates",
-    "anchor": "automatic-merge-for-all-patch-updates",
-    "text": "Automatic Merge for All Patch Updates\nOrion could automatically merge every dependency patch update that passes CI.\nThis would minimize maintenance effort.\nIt was not selected because semantic-version classification does not guarantee operational safety, and the initial foundation does not yet have enough production history to justify blanket dependency automerge.\nSelective automerge may be introduced later.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Mutable GitHub Action Tags",
-    "anchor": "mutable-github-action-tags",
-    "text": "Mutable GitHub Action Tags\nGitHub Actions could be referenced through convenient tags such as:\nactions/checkout@vX\n\nThis is easy to read and update manually.\nIt was not selected as the Orion security baseline because a mutable reference allows workflow execution to change without a repository commit changing the reference.\nFull commit SHA pinning provides a stronger reproducibility boundary.\nReadable version comments preserve maintainability.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Long-Lived Cloud Credentials in Repository Secrets",
-    "anchor": "long-lived-cloud-credentials-in-repository-secrets",
-    "text": "Long-Lived Cloud Credentials in Repository Secrets\nFuture deployment workflows could store permanent cloud credentials in GitHub secrets.\nThis is broadly supported and straightforward.\nIt is not Orion's preferred future authentication model because long-lived credentials create greater rotation and exposure risk.\nOIDC-based short-lived federation should be preferred where supported.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Mandatory Paid GitHub Security Features",
-    "anchor": "mandatory-paid-github-security-features",
-    "text": "Mandatory Paid GitHub Security Features\nOrion could require dependency review, private-repository CodeQL, secret scanning, and push protection as mandatory capabilities for every repository.\nThis would provide a stronger uniform security baseline.\nIt was not selected because feature availability depends on repository visibility and GitHub plan.\nOrion should take advantage of those capabilities when available without making a commercial GitHub product a prerequisite for adopting the foundation.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Package Manager Audit as the Sole Vulnerability Gate",
-    "anchor": "package-manager-audit-as-the-sole-vulnerability-gate",
-    "text": "Package Manager Audit as the Sole Vulnerability Gate\nOrion could fail every pull request solely based on `pnpm audit` or an equivalent package-manager command.\nThis would provide a simple portable rule.\nIt was not selected because dependency-security assessment benefits from context including whether a vulnerability is newly introduced, its severity, available remediation, runtime exposure, and advisory quality.\nPackage-manager auditing remains useful but is not the complete supply-chain security strategy.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "CI-Specific Validation Scripts",
-    "anchor": "ci-specific-validation-scripts",
-    "text": "CI-Specific Validation Scripts\nGitHub workflow steps could independently run tools with CI-specific arguments and configuration.\nThis might make workflow files self-contained.\nIt was not selected because it would make CI behavior harder to reproduce locally and risk divergence from `pnpm validate`.\nRepository scripts remain the authoritative interface.\n"
-  },
-  {
-    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
-    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
   }
 ]

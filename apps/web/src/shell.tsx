@@ -14,9 +14,12 @@ function Shell() {
   const navigation = useModuleNavigation();
   const isDocumentation = useRouterState({
     select: (state) =>
-      state.location.pathname === "/docs" ||
-      state.location.pathname.startsWith("/docs/"),
+      __ORION_INTERNAL_DOCS__ &&
+      (state.location.pathname === "/docs" ||
+        state.location.pathname.startsWith("/docs/")),
   });
+  // The engineering portal owns its layout; application UI stays repository-owned.
+  if (__ORION_INTERNAL_DOCS__ && isDocumentation) return <Outlet />;
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -24,24 +27,16 @@ function Shell() {
           <Link to="/" className="brand">
             <img src={brandMark} alt="" width="32" height="32" />
             {__PROJECT_NAME__}
-            {isDocumentation && <span> / Documentation</span>}
           </Link>
-          {isDocumentation && (
-            <span className="header-note">Living documentation</span>
-          )}
           <nav aria-label="Application" className="header-nav">
             {navigation.map((Item, index) => (
               <Item key={index} />
             ))}
-            <Link to="/docs">Documentation</Link>
+            {__ORION_INTERNAL_DOCS__ && <Link to="/docs">Documentation</Link>}
           </nav>
         </div>
       </header>
-      <main
-        className={
-          isDocumentation ? "main-content documentation-main" : "main-content"
-        }
-      >
+      <main className="main-content">
         <Outlet />
       </main>
     </div>
@@ -65,26 +60,28 @@ const documentationSearch = (
     ? { page: Math.min(Number(search.page), 100000) }
     : {}),
 });
-const documentationComponent = lazyRouteComponent(
-  () => import("./documentation.js"),
-  "DocumentationPage",
-);
-const documentationRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs",
-  component: documentationComponent,
-  validateSearch: documentationSearch,
-});
-const documentationDetailRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/$",
-  component: documentationComponent,
-  validateSearch: documentationSearch,
-});
+function createDocumentationRoutes() {
+  const documentationComponent = lazyRouteComponent(
+    () => import("./documentation.js"),
+    "DocumentationPage",
+  );
+  const documentationRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/docs",
+    component: documentationComponent,
+    validateSearch: documentationSearch,
+  });
+  const documentationDetailRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/docs/$",
+    component: documentationComponent,
+    validateSearch: documentationSearch,
+  });
+  return [documentationRoute, documentationDetailRoute] as const;
+}
 
-/** Routes every application shell provides; modules add theirs beside them. */
-export const coreRoutes = [
-  homeRoute,
-  documentationRoute,
-  documentationDetailRoute,
-] as const;
+/** Local engineering routes are removed with their imports in product builds. */
+const documentationRoutes: ReadonlyArray<
+  ReturnType<typeof createDocumentationRoutes>[number]
+> = __ORION_INTERNAL_DOCS__ ? createDocumentationRoutes() : [];
+export const coreRoutes = [homeRoute, ...documentationRoutes] as const;

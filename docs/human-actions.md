@@ -197,6 +197,34 @@ External settings below were verified on the stated dates. They are evidence of 
 
 **Evidence (2026-10-01):** The owner authorized the submission; the agent pushed the branch and opened [PR #21](https://github.com/GabriellMDias/Orion/pull/21) through the authenticated GitHub CLI. On head `0d75edf` all seven remote checks passed, including the [`Orion required gate`](https://github.com/GabriellMDias/Orion/actions/runs/36863164319). Review, later CI runs, and merge are tracked under CB5 rather than this action.
 
+## H-15
+
+- [ ] **Authorize and verify hosting access before an internal documentation deployment.**
+
+**Status:** conditional; does not block local implementation. **Owner:** the deploying project's owner/operator. **Dependency / trigger:** [DI4](implementation-plan.md#maintaining-this-plan), only when an internal deployment is requested.
+
+**Request and reason:** Select an authorized internal audience and host that enforces authentication and authorization for the complete static artifact, including direct hashed assets, search shards, downloads, and caches. The static portal has no selected identity provider; a build acknowledgement cannot prove host enforcement.
+
+**Configuration:** Non-secret process environment controls `ORION_WEB_DOCUMENTATION=internal` and `ORION_WEB_INTERNAL_DOCS_ACCESS=external`, under [the distribution policy](architecture/living-documentation.md#build-and-deployment-boundary). Configure any hosting credentials only in the selected host's secure mechanism, never in browser values or generated files.
+
+**Verification:** Show anonymous denial and authorized access for pages, assets and downloads, retain API permission enforcement, and confirm a separate default product build excludes documentation. Record deployment-specific evidence without tokens or user data.
+
+**Evidence / blocker (2026-10-23):** Local artifact and browser tests exercise selection/exclusion; no host or deployment is selected, changed, or verified. This action does not activate Phase 12.
+
+## H-16
+
+- [ ] **Complete authorized publication and separately authorize subsequent product upgrades.**
+
+**Status:** publication authorized and in progress; actual product upgrades remain conditional. **Owner:** repository/project owner. **Dependency / trigger:** [RR4](implementation-plan.md#maintaining-this-plan), local review completion and explicit authorization of each operation.
+
+**Request and reason:** The owner authorized the complete GitHub CLI publication process, including security corrections, PR merges, an immutable annotated tag and the GitHub Release. Require CI on the actual candidate before merging and publishing. IA-MNS and Teluni still require separate instructions before any changes; their current provenance, adopted behavior and released migrations must be inspected first.
+
+**Configuration:** none. The [release-readiness report](foundation-acceptance.md#documentation-and-component-release-readiness) supplies the version rationale, proposed notes and publishing/adoption sequence. Use existing authorized Git/GitHub access; no credentials belong in documentation.
+
+**Verification:** Record the reviewed commit, required remote CI, merged revision, immutable annotated tag and matching Release. For each later product upgrade, retain product code/identity/docs, validate its actual gates, record the verified SHA baseline with ancestry, and require its own reviewed merge PR. Internal documentation hosting remains separately conditional on H-15.
+
+**Evidence / blocker (2026-10-23):** The owner explicitly authorized publication. Renovate PRs #23, #24 and #25 were merged after their required checks passed. The combined candidate also updates Vite/Vitest and vulnerable transitives; frozen installation and npm audit pass with zero reported vulnerabilities. Final validation, exact merged revision, CI, tag and Release evidence belong in the [publication record](foundation-acceptance.md#authorized-publication). No actual product upgrade or deployment is authorized.
+
 ## New action template
 
 Allocate a new stable H-number; do not reuse existing IDs. Link it from the blocked or conditional plan task.
