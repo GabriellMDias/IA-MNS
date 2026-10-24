@@ -2,50 +2,23 @@ import {
   createRootRoute,
   createRoute,
   lazyRouteComponent,
-  Link,
   Outlet,
   useRouterState,
 } from "@tanstack/react-router";
-import brandMark from "./assets/brand-mark.svg";
 import { HomePage } from "./home.js";
-import { useModuleNavigation } from "./module-navigation.js";
-import { ThemeToggle } from "./theme.js";
 
 function Shell() {
-  const navigation = useModuleNavigation();
   const isDocumentation = useRouterState({
     select: (state) =>
-      state.location.pathname === "/docs" ||
-      state.location.pathname.startsWith("/docs/"),
+      __ORION_INTERNAL_DOCS__ &&
+      (state.location.pathname === "/docs" ||
+        state.location.pathname.startsWith("/docs/")),
   });
+  // The engineering portal owns its layout; application UI stays repository-owned.
+  if (__ORION_INTERNAL_DOCS__ && isDocumentation) return <Outlet />;
   return (
     <div className="app-shell">
-      {isDocumentation && (
-        <header className="site-header">
-          <div className="site-header-inner">
-            <Link to="/" className="brand">
-              <img src={brandMark} alt="" width="32" height="32" />
-              {__PROJECT_NAME__}
-              <span> / Documentation</span>
-            </Link>
-            <span className="header-note">Living documentation</span>
-            <nav aria-label="Application" className="header-nav">
-              {navigation.map((Item, index) => (
-                <Item key={index} />
-              ))}
-              {__ORION_DOCUMENTATION__ && <Link to="/docs">Documentation</Link>}
-              <ThemeToggle />
-            </nav>
-          </div>
-        </header>
-      )}
-      <main
-        className={
-          isDocumentation
-            ? "main-content documentation-main"
-            : "main-content product-main"
-        }
-      >
+      <main className="main-content product-main">
         <Outlet />
       </main>
     </div>
@@ -69,37 +42,28 @@ const documentationSearch = (
     ? { page: Math.min(Number(search.page), 100000) }
     : {}),
 });
-// Without the portal the routes stay typed but only say the page does not
-// exist, and the bundler drops the lazy import with the generated documentation.
-function DocumentationUnavailable() {
-  return (
-    <section className="panel" aria-labelledby="missing-title">
-      <h1 id="missing-title">Página não encontrada</h1>
-      <p>
-        <Link to="/">Voltar ao início</Link>
-      </p>
-    </section>
+function createDocumentationRoutes() {
+  const documentationComponent = lazyRouteComponent(
+    () => import("./documentation.js"),
+    "DocumentationPage",
   );
+  const documentationRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/docs",
+    component: documentationComponent,
+    validateSearch: documentationSearch,
+  });
+  const documentationDetailRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/docs/$",
+    component: documentationComponent,
+    validateSearch: documentationSearch,
+  });
+  return [documentationRoute, documentationDetailRoute] as const;
 }
-const documentationComponent = __ORION_DOCUMENTATION__
-  ? lazyRouteComponent(() => import("./documentation.js"), "DocumentationPage")
-  : DocumentationUnavailable;
-const documentationRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs",
-  component: documentationComponent,
-  validateSearch: documentationSearch,
-});
-const documentationDetailRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/$",
-  component: documentationComponent,
-  validateSearch: documentationSearch,
-});
 
-/** Routes every application shell provides; modules add theirs beside them. */
-export const coreRoutes = [
-  homeRoute,
-  documentationRoute,
-  documentationDetailRoute,
-] as const;
+/** Local engineering routes are removed with their imports in product builds. */
+const documentationRoutes: ReadonlyArray<
+  ReturnType<typeof createDocumentationRoutes>[number]
+> = __ORION_INTERNAL_DOCS__ ? createDocumentationRoutes() : [];
+export const coreRoutes = [homeRoute, ...documentationRoutes] as const;

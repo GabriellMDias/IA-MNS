@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "StatusBadge",
   "summary": "A compact textual label for a state or category.",
   "props": [
@@ -21,7 +20,19 @@
     {
       "id": "ui-status-badges",
       "label": "State labels",
-      "description": "Synthetic neutral and accent states."
+      "description": "Synthetic neutral and accent states.",
+      "code": "<StatusBadge tone=\"accent\">Esta sessão</StatusBadge>",
+      "live": true
     }
-  ]
+  ],
+  "category": "Data Display",
+  "scope": "shared",
+  "owner": "IA-MNS Web UI",
+  "id": "StatusBadge",
+  "exportName": "StatusBadge",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.docs.json"
 }

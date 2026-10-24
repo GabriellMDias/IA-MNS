@@ -46,3 +46,4 @@ For a new decision, read [authoring policy](authoring.md), inspect related recor
 | [ADR-0036](0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md) | Add WhatsApp as an Agent Channel Authorized by Owner-Linked Numbers |
 | [ADR-0037](0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md) | Grant Identified Per-Source Permissions to People and Groups with Data Restrictions |
 | [ADR-0038](0038-join-default-user-groups-after-verified-provider-sign-in.md) | Join Default User Groups after Verified Provider Sign-In |
+| [ADR-0039](0039-isolate-internal-documentation-from-product-distribution.md) | Isolate Internal Documentation from Product Distribution (Orion ADR-0018) |

@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "SelectField",
   "summary": "A themed native select with an associated label, help and validation messages.",
   "props": [
@@ -32,7 +31,19 @@
     {
       "id": "ui-select-field",
       "label": "Native choice",
-      "description": "Synthetic options and help; the selection is not saved or sent."
+      "description": "Synthetic options and help; the selection is not saved or sent.",
+      "code": "<SelectField label=\"Duração\"><option value=\"12\">12 horas</option></SelectField>",
+      "live": true
     }
-  ]
+  ],
+  "category": "Inputs",
+  "scope": "composed",
+  "owner": "IA-MNS Web UI",
+  "id": "SelectField",
+  "exportName": "SelectField",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.docs.json"
 }

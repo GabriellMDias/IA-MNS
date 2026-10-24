@@ -1,5 +1,13 @@
 import { execFile, spawn } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import {
+  cp,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { request as httpsRequest } from "node:https";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
@@ -245,9 +253,17 @@ try {
       .map((line) => line.split(/=(.*)/s).slice(0, 2)),
   );
 
+  const internalWebRoot = resolve(work, "internal-web");
+  await cp(webRoot, internalWebRoot, { recursive: true });
+  await writeFile(
+    resolve(internalWebRoot, "ia-mns-web.json"),
+    JSON.stringify({ schemaVersion: 1, documentation: true }),
+  );
+
   const valid = await command("config-check", [], {
     ORION_ENV: "test",
     ORION_WEB_ROOT: webRoot,
+    ORION_WEB_DOCS: "disabled",
     // Composition never connects, so an unreachable database is enough.
     ORION_DATABASE_URL: "postgresql://smoke:unused@127.0.0.1:9/smoke",
     IA_MNS_PUBLIC_ORIGIN: "http://127.0.0.1:5173",
@@ -266,7 +282,7 @@ try {
     [
       {
         ORION_ENV: "test",
-        ORION_WEB_ROOT: webRoot,
+        ORION_WEB_ROOT: internalWebRoot,
         ORION_WEB_DOCS: "disabled",
       },
       "contains the /docs portal",

@@ -1,9 +1,4 @@
 {
-  "featureMetadata": [
-    "apps/web/src/features/agent/components.docs.json",
-    "apps/web/src/features/sales/components.docs.json",
-    "apps/web/src/features/products/components.docs.json"
-  ],
   "components": [
     {
       "name": "PageHeader",
@@ -32,9 +27,14 @@
         {
           "id": "ui-page-header",
           "label": "Settings page header",
-          "description": "A synthetic page heading with a local demonstration action."
+          "description": "A synthetic page heading with a local demonstration action.",
+          "code": "<PageHeader title=\"Administração\" description=\"Preferências da equipe.\" />",
+          "live": true
         }
-      ]
+      ],
+      "category": "Layout",
+      "scope": "composed",
+      "owner": "IA-MNS Web UI"
     },
     {
       "name": "SelectField",
@@ -69,9 +69,14 @@
         {
           "id": "ui-select-field",
           "label": "Native choice",
-          "description": "Synthetic options and help; the selection is not saved or sent."
+          "description": "Synthetic options and help; the selection is not saved or sent.",
+          "code": "<SelectField label=\"Duração\"><option value=\"12\">12 horas</option></SelectField>",
+          "live": true
         }
-      ]
+      ],
+      "category": "Inputs",
+      "scope": "composed",
+      "owner": "IA-MNS Web UI"
     },
     {
       "name": "Button",
@@ -110,9 +115,14 @@
         {
           "id": "ui-buttons",
           "label": "Action hierarchy",
-          "description": "Button variants and pending feedback; no request or account change."
+          "description": "Button variants and pending feedback; no request or account change.",
+          "code": "<Button loading={saving}>Salvar</Button>\n<Button variant=\"danger\">Encerrar</Button>",
+          "live": true
         }
-      ]
+      ],
+      "category": "Actions",
+      "scope": "shared",
+      "owner": "IA-MNS Web UI"
     },
     {
       "name": "TextField",
@@ -147,9 +157,14 @@
         {
           "id": "ui-text-fields",
           "label": "Labels, help and errors",
-          "description": "Synthetic profile fields with no persistence or network request."
+          "description": "Synthetic profile fields with no persistence or network request.",
+          "code": "<TextField label=\"Nome\" hint=\"Como você aparece no IA-MNS.\" required />",
+          "live": true
         }
-      ]
+      ],
+      "category": "Inputs",
+      "scope": "composed",
+      "owner": "IA-MNS Web UI"
     },
     {
       "name": "SectionCard",
@@ -178,9 +193,14 @@
         {
           "id": "ui-section-card",
           "label": "Settings section",
-          "description": "A synthetic settings group demonstrating the shared surface and controls."
+          "description": "A synthetic settings group demonstrating the shared surface and controls.",
+          "code": "<SectionCard title=\"Perfil\"><TextField label=\"Nome\" /></SectionCard>",
+          "live": true
         }
-      ]
+      ],
+      "category": "Layout",
+      "scope": "composed",
+      "owner": "IA-MNS Web UI"
     },
     {
       "name": "StatusBadge",
@@ -204,9 +224,14 @@
         {
           "id": "ui-status-badges",
           "label": "State labels",
-          "description": "Synthetic neutral and accent states."
+          "description": "Synthetic neutral and accent states.",
+          "code": "<StatusBadge tone=\"accent\">Esta sessão</StatusBadge>",
+          "live": true
         }
-      ]
+      ],
+      "category": "Data Display",
+      "scope": "shared",
+      "owner": "IA-MNS Web UI"
     },
     {
       "name": "ErrorNotice",
@@ -245,9 +270,14 @@
         {
           "id": "unavailable-reload",
           "label": "Unavailable service with reload",
-          "description": "A synthetic SERVICE_UNAVAILABLE response; no live request is involved."
+          "description": "A synthetic SERVICE_UNAVAILABLE response; no live request is involved.",
+          "code": "<ErrorNotice error={error} onReload={reload} />",
+          "live": true
         }
-      ]
+      ],
+      "category": "Feedback",
+      "scope": "composed",
+      "owner": "IA-MNS Web UI"
     }
   ]
 }

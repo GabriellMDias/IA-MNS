@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "SalesAnswer",
   "source": "apps/web/src/features/sales/results.tsx",
   "summary": "Presents a sales answer with one labeled section per queried source: MNS (Sankhya), Pilar da Terra (VR Master) or both.",
@@ -22,7 +21,17 @@
     {
       "id": "sales-answer-both-sources",
       "label": "Both sources, one unavailable",
-      "description": "Synthetic Tudo answer with a Sankhya total and an unavailable VRMaster; the preview makes no API or provider request."
+      "description": "Synthetic Tudo answer with a Sankhya total and an unavailable VRMaster; the preview makes no API or provider request.",
+      "live": true
     }
-  ]
+  ],
+  "scope": "feature-specific",
+  "owner": "sales",
+  "category": "Data Display",
+  "id": "SalesAnswer",
+  "exportName": "SalesAnswer",
+  "metadataSource": "apps/web/src/features/sales/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/sales/results.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/sales/components.docs.json"
 }

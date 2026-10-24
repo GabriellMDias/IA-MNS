@@ -24,6 +24,7 @@ import { Detail } from "./documentation/reference-pages.js";
 import { Catalog, Overview } from "./documentation/catalog.js";
 import { SearchPage } from "./documentation/search-page.js";
 import "./documentation.css";
+import { ThemeToggle } from "./theme.js";
 import brandMark from "./assets/brand-mark.svg";
 function safeDecode(value: string): string {
   try {
@@ -148,7 +149,7 @@ export function DocumentationPage() {
     component: [
       { id: "props", text: "Props", level: 2 },
       { id: "usage", text: "Usage and accessibility", level: 2 },
-      { id: "examples", text: "Live examples", level: 2 },
+      { id: "examples", text: "Examples", level: 2 },
     ],
   };
   const outline =
@@ -160,7 +161,7 @@ export function DocumentationPage() {
           : (defaultHeadings[entry.kind] ?? [])
         : [];
   return (
-    <div className="docs-workspace">
+    <main className="docs-workspace">
       <a className="docs-skip" href={`#${titleId}`}>
         Skip to documentation
       </a>
@@ -207,7 +208,11 @@ export function DocumentationPage() {
             </DocLink>
             <p className="docs-nav-label">Reference</p>
             {sections.slice(0, 3).map((s) => (
-              <DocLink id={s.id} key={s.id} current={id === s.id}>
+              <DocLink
+                id={s.id}
+                key={s.id}
+                current={id === s.id || id.startsWith(`${s.id}/`)}
+              >
                 {s.title}
               </DocLink>
             ))}
@@ -300,6 +305,7 @@ export function DocumentationPage() {
             </select>
             <button type="submit">Search</button>
           </form>
+          <ThemeToggle />
           <Link to="/" className="docs-app-link">
             Application ↗
           </Link>
@@ -398,6 +404,6 @@ export function DocumentationPage() {
           )}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

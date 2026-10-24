@@ -1,9 +1,10 @@
 import { spawn, execFile, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readdir, readFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { createServer as createNetServer } from "node:net";
 import { resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import pg from "pg";
@@ -258,6 +259,40 @@ export async function startIssuer({
 
 /** The production web build `pnpm build` emits, as the API serves it. */
 export const webBuild = resolve(webRoot, "dist");
+
+/** Disposable internal artifact; the ordinary dist remains a product build. */
+export async function buildInternalWeb(): Promise<
+  Stoppable & { path: string }
+> {
+  const path = await mkdtemp(resolve(tmpdir(), "ia-mns-internal-web-"));
+  const stop = () => rm(path, { recursive: true, force: true });
+  try {
+    await run(
+      process.execPath,
+      [
+        resolve(webRoot, "node_modules/vite/bin/vite.js"),
+        "build",
+        "--outDir",
+        path,
+        "--emptyOutDir",
+      ],
+      {
+        cwd: webRoot,
+        env: {
+          ...process.env,
+          ORION_WEB_DOCUMENTATION: "internal",
+          ORION_WEB_INTERNAL_DOCS_ACCESS: "external",
+        },
+        timeout: 120_000,
+        maxBuffer: 8 * 1024 * 1024,
+      },
+    );
+    return { path, stop };
+  } catch (error) {
+    await stop();
+    throw error;
+  }
+}
 
 /** Starts the emitted API (`pnpm build` first) with the given environment. */
 export async function startApi({

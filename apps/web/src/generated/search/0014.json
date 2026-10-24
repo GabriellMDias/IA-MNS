@@ -1,5 +1,50 @@
 [
   {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nOrion already selected Pino as the Fastify runtime logger, so structured logging implementation does not require replacement.\nThe initial observability implementation should introduce OpenTelemetry before instrumented infrastructure is initialized.\nServer bootstrap should follow an ordering compatible with:\nconfiguration\n    ↓\nobservability initialization\n    ↓\ninstrumentation registration\n    ↓\nPrisma / Fastify / HTTP infrastructure\n    ↓\napplication composition\n\nFastify instrumentation should use `@fastify/otel`.\nPrisma tracing should use the supported Prisma OpenTelemetry instrumentation compatible with the repository's selected Prisma version.\nHTTP instrumentation must support distributed context propagation for inbound and outbound calls.\nPino tracing correlation should inject active `trace_id` and `span_id` values centrally rather than requiring manual fields at each logging call.\nPino configuration must establish production JSON logging and centralized redaction.\nThe initial server-side telemetry export should support OTLP through configuration.\nProduction deployments may send OTLP either:\napplication\n    → Collector\n    → backend\n\nor, for simpler environments:\napplication\n    → compatible backend\n\nwithout changing domain or application code.\nTelemetry resource identity must be configured explicitly for each executable service.\nSampling must be externally configurable and must not require source-code changes.\nGraceful shutdown should attempt to flush buffered telemetry before process termination when practical.\nNo OpenTelemetry Logs SDK integration, browser instrumentation, observability vendor, or external error-reporting provider is required by the initial Orion implementation.\nRepository validation should verify observability configuration and architecture where such verification can be performed mechanically.\nOperational dashboards, alert thresholds, telemetry retention, and backend-specific infrastructure remain deployment concerns and may be documented by application-specific runbooks.\nRoutine compatible upgrades to OpenTelemetry, Pino, Fastify instrumentation, Prisma instrumentation, or OTLP exporters do not require a new ADR when the responsibilities established here remain unchanged.\nSelecting a particular observability backend for one deployment does not supersede this ADR.\nReplacing OpenTelemetry as the observability standard, replacing Pino as the logging strategy, or materially changing the responsibility boundaries defined here would require an ADR that supersedes this decision.\n"
+  },
+  {
+    "id": "repository/docs/adr/0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy",
+    "title": "ADR-0010: Establish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\nRelated ADR: [ADR-0003: Establish Repository Validation and Architecture Enforcement](0003-establish-repository-validation-and-architecture-enforcement.md)\nRelated ADR: [ADR-0004: Select Fastify as the Backend HTTP Framework](0004-select-fastify-as-the-backend-http-framework.md)\nRelated ADR: [ADR-0006: Select Prisma ORM for Database Access and Migrations](0006-select-prisma-orm-for-database-access-and-migrations.md)\nRelated policy: [error handling](../architecture/error-handling.md)\nRelated policy: [configuration](../architecture/configuration.md)\nRelated policy: [logging](../reliability/logging.md)\nRelated policy: [observability](../reliability/observability.md)\nRelated policy: [data classification](../security/data-classification.md)\nRelated policy: [secrets management](../security/secrets-management.md)\nExternal reference: OpenTelemetry JavaScript documentation.\nExternal reference: OpenTelemetry specification and semantic conventions.\nExternal reference: OpenTelemetry Protocol documentation.\nExternal reference: OpenTelemetry Collector documentation.\nExternal reference: `@fastify/otel` documentation.\nExternal reference: Prisma OpenTelemetry tracing documentation.\nExternal reference: OpenTelemetry Pino instrumentation documentation.\nExternal reference: Pino documentation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "anchor": "adr-0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "text": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n**Status:** accepted\n**Date:** 2026-09-23\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nOrion requires a continuous-integration strategy that converts the repository validation contract established by ADR-0003 into an enforceable pull-request and primary-branch quality gate.\nThe CI system must support the repository as it grows from a small TypeScript monorepo into potentially large applications containing:\nbackend services;\nReact web applications;\nshared packages;\ndatabase migrations;\ngenerated API artifacts;\nintegration tests using real infrastructure;\nbrowser tests;\nend-to-end tests;\narchitecture validation;\nsecurity checks.\nThe CI strategy must preserve a fundamental Orion principle:\nlocal validation\n    =\nCI validation capabilities\n\nCI must not become a separate implementation of repository correctness.\nA contributor or AI agent should be able to reproduce a CI failure locally using repository-owned commands rather than reverse-engineering workflow YAML.\nThe repository has already established:\npnpm validate\n\nas its canonical repository validation entry point.\nCI must orchestrate those capabilities without duplicating their logic.\nThe CI system must also address software supply-chain risks.\nA modern TypeScript repository depends on:\nnpm packages;\ntransitive dependencies;\nGitHub Actions;\ngenerated lockfiles;\nbrowser binaries;\ncontainer images;\nexternal development tools.\nDependency updates must therefore be automated enough to prevent stagnation while remaining reviewable and controlled.\nGitHub is the repository platform assumed by the current Orion foundation, making GitHub Actions a natural CI candidate.\nHowever, GitHub-specific workflow mechanics must remain an orchestration concern rather than leak into application architecture.\n"
+  },
+  {
+    "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
+    "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nOrion will use **GitHub Actions as its primary continuous-integration platform**.\nCI will execute repository-owned validation commands and will not duplicate linting, formatting, type-checking, testing, architecture, generation, or build logic directly in workflow YAML.\nThe primary model is:\ndeveloper / AI agent\n        ↓\nrepository commands\n        ↓\npnpm validate\n        ↓\nsame capabilities\n        ↓\nGitHub Actions\n\n"
+  },
+  {
     "id": "repository/docs/adr/0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy",
     "title": "ADR-0011: Establish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy",
     "group": "Decisions",
@@ -1325,123 +1370,6 @@
   {
     "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
     "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Alternatives Considered",
-    "anchor": "alternatives-considered",
-    "text": "Alternatives Considered\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
-    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Free-form assistant with arbitrary tools or SQL",
-    "anchor": "free-form-assistant-with-arbitrary-tools-or-sql",
-    "text": "Free-form assistant with arbitrary tools or SQL\nRejected because grounded numbers and bounded execution are existing guarantees. The current registry selects only implemented execution code.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
-    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Streaming responses and durable workflow engine",
-    "anchor": "streaming-responses-and-durable-workflow-engine",
-    "text": "Streaming responses and durable workflow engine\nDeferred: one bounded read capability does not require autonomous loops or resumable external actions. Progress in PostgreSQL provides recovery without another transport.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
-    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "In-memory history or browser persistence",
-    "anchor": "in-memory-history-or-browser-persistence",
-    "text": "In-memory history or browser persistence\nRejected because restart durability and future capability context require a canonical server-owned store. Credentials and confidential transcripts remain out of browser storage.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
-    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Consequences",
-    "anchor": "consequences",
-    "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
-    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nProduct identity and conversation are separate from sales semantics.\nHistory, outcomes and per-capability filters survive restart.\nProgress describes real operations and no speculative functionality is advertised.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
-    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nLocal PostgreSQL becomes required for the product conversation flow.\nSales interpretation uses a routing request followed by capability planning.\nStored result snapshots need lifecycle controls and are historical, not refreshed ERP data.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
-    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nNew tables are additive and application-owned. Docker binds only loopback, persists a named volume, and uses separate migration/runtime credentials. No ERP changes occur. The local provisioning helper applies migrations/grants without dumping credentials or deleting volumes. An interrupted execution is visible after its 120-second lease expires and is never automatically repeated.\n"
-  },
-  {
-    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
-    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[Corporate agent](../domains/corporate-agent.md)\n[Database principles](../database/principles.md)\n[Transactions](../database/transactions-and-concurrency.md)\n[Sales capability](../domains/sales-chat.md)\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
-    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
-    "anchor": "adr-0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
-    "text": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy\n**Status:** accepted\n**Date:** 2026-10-01\n**Extends:** [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md), only temporary owner-controlled device testing. Persistent history, normal loopback development and production verifier requirements remain unchanged.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
-    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe owner requests testing IA-MNS from a phone on the same network. The current web/API bind to loopback, and the credential-free developer access is deliberately unavailable to other devices. Simply exposing that proxy would disclose local confidential history. Production identity remains outside scope.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
-    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Decision",
-    "anchor": "decision",
-    "text": "Decision\nAccepted under the owner's request for phone testing, after reviewing the existing isolation rules and validating the non-production, expiry, credential and origin boundaries. Production identity remains deliberately deferred.\nProvide an explicit temporary network-test launcher with a separate loopback API and a web listener bound to one assigned RFC1918 IPv4 address. All protected operations in that API require a random 256-bit bearer, an absolute expiry within two hours, the application-client header and the configured browser origin when present. Cross-site and non-loopback upstream requests are rejected. Normal credential-free local access and the temporary mode are mutually exclusive; production and normal issuer configuration reject this mode.\nThe bearer maps to the existing local developer's conversations. Agent permissions are explicitly provided by composition; currently only sales:read. Future capability registration does not automatically expand this token's permission. The existing access field holds the token in memory, never URL/browser storage. Save its initial value only in an ignored local environment file for the owner to transfer to their device. Stop/expiry terminates the separate services and removes that file; it does not rotate OpenAI/Oracle credentials or alter normal .env.local.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
-    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Rationale",
-    "anchor": "rationale",
-    "text": "Rationale\nThis reuses the current bearer UI and owner-scoped API without selecting a production identity provider, adding cookies, weakening the desktop bypass or exposing database listeners. A two-hour absolute lifetime and process-local service separation bound this development convenience. HTTP on a private test network does not provide transport encryption; use only an owner-controlled trusted LAN. This is not shared employee access or a deployment method.\n"
-  },
-  {
-    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
-    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
     "group": "Decisions",
     "kind": "repository",
     "heading": "Alternatives Considered",

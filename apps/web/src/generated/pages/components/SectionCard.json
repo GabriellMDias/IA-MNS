@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "SectionCard",
   "summary": "A named section with a consistent heading, optional description and decorative icon.",
   "props": [
@@ -26,7 +25,19 @@
     {
       "id": "ui-section-card",
       "label": "Settings section",
-      "description": "A synthetic settings group demonstrating the shared surface and controls."
+      "description": "A synthetic settings group demonstrating the shared surface and controls.",
+      "code": "<SectionCard title=\"Perfil\"><TextField label=\"Nome\" /></SectionCard>",
+      "live": true
     }
-  ]
+  ],
+  "category": "Layout",
+  "scope": "composed",
+  "owner": "IA-MNS Web UI",
+  "id": "SectionCard",
+  "exportName": "SectionCard",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.docs.json"
 }

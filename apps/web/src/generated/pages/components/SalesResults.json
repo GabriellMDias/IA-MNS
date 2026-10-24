@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "SalesResults",
   "source": "apps/web/src/features/sales/results.tsx",
   "summary": "Presents validated sales aggregates of one source, distinct units, comparisons and matched products.",
@@ -28,7 +27,17 @@
     {
       "id": "sales-monthly-results",
       "label": "Monthly sales with comparison",
-      "description": "Synthetic decimal sales and prior-year totals; the preview makes no API or provider request."
+      "description": "Synthetic decimal sales and prior-year totals; the preview makes no API or provider request.",
+      "live": true
     }
-  ]
+  ],
+  "scope": "feature-specific",
+  "owner": "sales",
+  "category": "Data Display",
+  "id": "SalesResults",
+  "exportName": "SalesResults",
+  "metadataSource": "apps/web/src/features/sales/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/sales/results.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/sales/components.docs.json"
 }

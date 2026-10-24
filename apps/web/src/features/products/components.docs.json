@@ -25,7 +25,10 @@
           "label": "Category with an exclusion",
           "description": "Synthetic classification paths and products; the preview makes no API, provider or ERP request."
         }
-      ]
+      ],
+      "scope": "feature-specific",
+      "owner": "products",
+      "category": "Data Display"
     },
     {
       "name": "ProductOptions",
@@ -52,7 +55,10 @@
           "label": "Two interpretations",
           "description": "Synthetic choices; selecting one shows a local message and makes no request."
         }
-      ]
+      ],
+      "scope": "feature-specific",
+      "owner": "products",
+      "category": "Data Display"
     }
   ]
 }

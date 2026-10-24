@@ -1,8 +1,4 @@
-.documentation-main {
-  max-width: none;
-  padding: 0;
-}
-.documentation-main select {
+.docs-workspace select {
   font: inherit;
 }
 .docs-workspace {
@@ -12,7 +8,7 @@
   color: var(--docs-ink);
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
-  min-height: calc(100vh - 63px);
+  min-height: 100vh;
   background: var(--surface);
 }
 .docs-workspace a {
@@ -866,8 +862,18 @@
   color: var(--muted);
   font-size: 0.82rem;
 }
-@media (max-width: 760px) {
-  .main-content.documentation-main {
-    padding: 0;
-  }
+.docs-component-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.docs-component-categories a {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--docs-border);
+  border-radius: 6px;
+}
+.docs-component-categories a[aria-current] {
+  background: var(--selected);
+  font-weight: 650;
 }

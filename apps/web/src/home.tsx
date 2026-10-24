@@ -23,7 +23,7 @@ export function HomePage() {
           <code>apps/api/src/modules.ts</code>.
         </p>
       )}
-      {__ORION_DOCUMENTATION__ && (
+      {__ORION_INTERNAL_DOCS__ && (
         <p>
           <Link to="/docs">Read the living documentation</Link>
         </p>

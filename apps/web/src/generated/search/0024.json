@@ -1,5 +1,356 @@
 [
   {
+    "id": "repository/docs/generated/features/vrmaster/sales-quantity-total",
+    "title": "Pilar da Terra (VR Master): quantity / total",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Diagnose a difference",
+    "anchor": "diagnose-a-difference",
+    "text": "Diagnose a difference\nMatch the source, dates, measure, grouping, product selection and effective permission scope before comparing figures. A comparison runs this same SQL again with the comparison dates. The SQL above deliberately shows the unrestricted reference; the filters page documents the extra predicates a restricted request receives.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Pilar da Terra (VR Master): sales",
+    "anchor": "pilar-da-terra-vr-master-sales",
+    "text": "Pilar da Terra (VR Master): sales\n[Feature catalog](../../../features/README.md) · [Product filters](products.md) · [Sales behavior](../../../domains/sales-chat.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "What it does",
+    "anchor": "what-it-does",
+    "text": "What it does\nVendas registradas no VR Master (tabela venda, todas as lojas), pela data da venda; valor = soma de valortotal.\nQuantidades separadas pelo tipo de embalagem do produto; tipos diferentes não são somados.\nPermission: `VRM-VEN-01` (`sales_vrmaster:read`). Availability depends on the configured Runtime reader and the person's effective permission.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Request options",
+    "anchor": "request-options",
+    "text": "Request options\nOption\nAccepted values / behavior\nSource\nExplicit selector: Sankhya, VR Master or Tudo. Tudo keeps separate results; it does not merge ERP rows or product IDs.\nDates\nInclusive startDate/endDate; valid dates from 2000-01-01, at most 366 days, no future dates (America/Sao_Paulo). SQL uses an exclusive next-day upper bound.\nRelative periods\nCurrent or previous day/month/year; last N days or completed months (includeCurrent controls the current block); calendar month with optional year; calendar year; explicit range. Started periods are clamped to today.\nMeasure\n`net_value` (Valor total vendido); `quantity` (Quantidade vendida).\nGrouping\n`total`, `month`, `product`, `month_product`. Quantities always retain their unit/packaging partition.\nComparison\n`none`, `previous_year`, `previous_period`. previous_period means the preceding equal number of days; previous_year clamps leap day.\nLiteral product\nproductSearch = null for all products, or a trimmed phrase of 2–80 characters. Whole words, case/accent insensitive; regex metacharacters are escaped. This is not a product ID or arbitrary SQL filter.\nSemantic products\nResolve or reuse a verified selection from the same ERP; AND between criteria, include/exclude, hierarchy descendants. Requires the source's product permission too. See Product filters.\nMultiple measures\nThe analytical tool accepts 1–3 distinct supported measures, sharing dates, grouping, product selection and comparison. It uses the same SQL compilers.\nDefault measure: net_value; grouping: total; comparison: none. The period must be supplied or clarified. A completed analysis is limited to 500 aggregate rows; the SQL fetches 501 to detect overflow. The matching-product preview fetches 101 to detect a list above 100; it never limits the semantic membership used for totals.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Complete SQL by measure and grouping",
+    "anchor": "complete-sql-by-measure-and-grouping",
+    "text": "Complete SQL by measure and grouping\nOpen a combination to inspect, copy or download its complete SQL and parameter example. Fixed joins, DISTINCT and business exclusions remain visible in every statement.\nMeasure\nGrouping\nStatement\n`net_value`\n`total`\n[View SQL](sales-net_value-total.md)\n`net_value`\n`month`\n[View SQL](sales-net_value-month.md)\n`net_value`\n`product`\n[View SQL](sales-net_value-product.md)\n`net_value`\n`month_product`\n[View SQL](sales-net_value-month_product.md)\n`quantity`\n`total`\n[View SQL](sales-quantity-total.md)\n`quantity`\n`month`\n[View SQL](sales-quantity-month.md)\n`quantity`\n`product`\n[View SQL](sales-quantity-product.md)\n`quantity`\n`month_product`\n[View SQL](sales-quantity-month_product.md)\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Literal product bindings",
+    "anchor": "literal-product-bindings",
+    "text": "Literal product bindings\nSynthetic phrase example. The compiler supplies both the normalized phrase and its escaped whole-word pattern; use these values together rather than writing your own regex.\n[\n  \"2026-01-01\",\n  \"2026-01-31\",\n  \"ARROZ\",\n  \"(^|[^[:alnum:]])ARROZ([^[:alnum:]]|$)\"\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Comparison bindings",
+    "anchor": "comparison-bindings",
+    "text": "Comparison bindings\nThe reader runs the same compiled statement for the current interval and, when requested, the interval below. Product membership and access restrictions apply to both.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "previous_year",
+    "anchor": "previous_year",
+    "text": "previous_year\n[\n  \"2025-01-01\",\n  \"2025-01-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "previous_period",
+    "anchor": "previous_period",
+    "text": "previous_period\n[\n  \"2025-12-01\",\n  \"2025-12-31\",\n  null,\n  null\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Effective access restrictions",
+    "anchor": "effective-access-restrictions",
+    "text": "Effective access restrictions\nThese are owner-assigned permission conditions, not additional freely selectable chat filters. Conditions within one rule are ANDed; alternative grant rules are ORed. An unrestricted grant admits every row. The examples below use fictional ID 1 and show isolated predicates; the runtime injects them into the reference before aggregation and binds their values. Sankhya applies the same predicate to eligible lot controls and final sales; VR Master applies it in base. The final VR Master parameter offset follows any semantic product binds, so it can be greater than 4.\nSankhya result-center selection additionally depends on [PH-36](../../../project/human-actions.md#ph-36). Read [access semantics](../../../domains/sales-chat.md#access-and-restrictions) before interpreting a restricted total.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "LOJ: Loja",
+    "anchor": "loj-loja",
+    "text": "LOJ: Loja\nLoja da venda (id_loja).\nHierarchy descendants: not applicable.\n((venda.id_loja = ANY($5::int[])))\n\n[\n  [\n    1\n  ]\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "COM: Comprador",
+    "anchor": "com-comprador",
+    "text": "COM: Comprador\nComprador registrado na venda (id_comprador), como o PDT Connect usa nos indicadores de compradores; não é o comprador atual do cadastro.\nHierarchy descendants: not applicable.\n((venda.id_comprador = ANY($5::int[])))\n\n[\n  [\n    1\n  ]\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "CC: Centro de custo",
+    "anchor": "cc-centro-de-custo",
+    "text": "CC: Centro de custo\nCentro de custo da seção (nível 1 do mercadológico) do produto vendido; inclui os centros abaixo dele. Produtos de seções sem centro de custo ficam fora.\nHierarchy descendants: included.\n((m.id_centrocusto IN (SELECT rd.id FROM public.centrocusto rd JOIN public.centrocusto rs ON rs.id = ANY($5::int[]) WHERE rd.centrocusto1 = rs.centrocusto1 AND (rs.nivel < 2 OR rd.centrocusto2 = rs.centrocusto2) AND (rs.nivel < 3 OR rd.centrocusto3 = rs.centrocusto3))))\n\n[\n  [\n    1\n  ]\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "MER: Mercadológico",
+    "anchor": "mer-mercadológico",
+    "text": "MER: Mercadológico\nClassificação mercadológica do produto vendido, em qualquer nível (seção, grupo, subgrupo...); inclui os níveis abaixo dela.\nHierarchy descendants: included.\n((EXISTS (SELECT 1 FROM public.mercadologico rm WHERE rm.id = ANY($5::int[]) AND rm.mercadologico1 = produto.mercadologico1 AND (rm.nivel < 2 OR rm.mercadologico2 = produto.mercadologico2) AND (rm.nivel < 3 OR rm.mercadologico3 = produto.mercadologico3) AND (rm.nivel < 4 OR rm.mercadologico4 = produto.mercadologico4) AND (rm.nivel < 5 OR rm.mercadologico5 = produto.mercadologico5))))\n\n[\n  [\n    1\n  ]\n]\n\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Semantic product membership",
+    "anchor": "semantic-product-membership",
+    "text": "Semantic product membership\nThe product resolver compiles a complete key subquery from the enabled catalog filters. Sales adds PRO.CODPROD IN (subquery) in both Sankhya selections, or produto.id IN (subquery) in VR Master's base. This selects all eligible products, not only the visible preview. It uses current registration membership for both time periods. It cannot reconstruct historical buyer or category responsibility. Literal product search and a semantic selection cannot be combined in one read.\n"
+  },
+  {
+    "id": "repository/docs/generated/features/vrmaster/sales",
+    "title": "Pilar da Terra (VR Master): sales",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Canonical implementation",
+    "anchor": "canonical-implementation",
+    "text": "Canonical implementation\n[SQL compiler](../../../../apps/api/src/features/sales/vrmaster-query.ts)\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Start and Upgrade a Project from Orion",
+    "anchor": "start-and-upgrade-a-project-from-orion",
+    "text": "Start and Upgrade a Project from Orion\n[Repository README](../README.md) · [Development setup](setup.md) · [Validation](validation.md) · [Foundation versioning](versioning.md) · [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) · [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nThis is the practical reference for turning a revision of Orion into a new, independent project and for keeping that project's foundation current: what to decide and provide, how to run the initialization, what the new repository contains, what to do next, and how provenance and foundation upgrades work. [ADR-0014](adr/0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md) records the ancestry and provenance decision; [ADR-0017](adr/0017-start-derived-projects-from-a-clean-foundation-baseline.md) records the clean-baseline contract. The commands exist in every Orion checkout; the canonical Orion repository itself is never initialized as a project.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Model",
+    "anchor": "model",
+    "text": "Model\nThe canonical `GabriellMDias/Orion` repository is the upstream development foundation. A derived project is an independent Git repository with its own `origin`, branches, pull requests, CI history, human actions, product decisions, and releases. It starts from a clean clone of Orion and keeps Orion's commit history, so Git can compute what changed upstream and merge it later, but its first commit removes Orion's own reference implementation and development history and gives the repository the project's identity.\nConcern\nMechanism\nIdentity and provenance\n[`.orion/project.json`](../.orion/project.json), validated by `pnpm orion:check`\nClean-baseline contract\n[`.orion/derivation.json`](../.orion/derivation.json): foundation-only paths, project-owned files and their templates, and the foundation workspace package scope\nImmutable starting point\n`foundation.initializedFromCommit`: the published Orion commit the project was initialized from; never changes\nCurrent foundation\n`foundation.baselineCommit`: the newest Orion commit integrated and validated through a reviewed merge\nCanonical upstream\nLocal remote `orion-upstream`: fetch-only (its push URL is disabled), fetches no tags, and is tracked by no local branch\nProduct repository\nRecorded as `repository.url`; each clone's `origin` is that repository or a fork or mirror of it, never the foundation ([remote rules](#remote-rules))\nIn the Orion repository the manifest has `\"kind\": \"foundation\"` and only describes Orion. A derived project's manifest (schema version 2) has `\"kind\": \"project\"` and additionally records its npm `packageScope` and its foundation ancestry. The Living Documentation Portal links source files to the manifest's repository.\nA derived project inherits [Apache-2.0-licensed Orion source](../LICENSE). The project remains responsible for licensing its independently created product code and for applicable obligations of inherited and third-party material; Orion's license does not choose the project's overall license.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Before you start",
+    "anchor": "before-you-start",
+    "text": "Before you start\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "What you decide and provide",
+    "anchor": "what-you-decide-and-provide",
+    "text": "What you decide and provide\nOnly the first two inputs are required. Product decisions such as scope, license, identity provider, deployment, and branding are not needed to initialize; the new project's plan and human actions track them afterward.\nInput\nOption\nHow the project uses it\nRules\nProject name\n`--name`, required\nManifest `name`, README and documentation titles, browser title, web shell, portal, OpenAPI title (`<name> API`), plan, human actions, and the initialization commit message\n1–80 letters, digits, spaces, dots, underscores, or hyphens, starting with a letter or digit; accented letters are allowed\nProduct repository\n`--repository`, required\nRecorded, normalized, as `repository.url`; configured as `origin`\nHTTPS, SSH, or scp-like URL of the repository the project will publish to; it need not exist yet. It must not embed credentials, use a non-default SSH port (supply its HTTPS URL instead), or identify Orion ([repository identities](#remote-rules))\nPackage scope\n`--package-scope`, optional\nWorkspace packages `@<scope>/api`, `@<scope>/web`, and `@<scope>/sdk`, the root package `<scope>`, and the telemetry service name `<scope>-api`\nDefaults to the name in lowercase, without accents, with other characters replaced by hyphens (`Pedido Fácil` → `@pedido-facil`). Otherwise `@` and 1–50 lowercase letters, digits, or hyphens, starting with a letter or digit, and not the foundation scope `@orion`\nOrion revision\noptional\nBecomes `foundation.initializedFromCommit` and the first `foundation.baselineCommit`\nDefaults to the latest commit on Orion's `main`. Any commit on `main` that contains `.orion/derivation.json` may be chosen; [stable tags](versioning.md) name released points. A revision from before the clean-baseline contract runs its own older initialization and produces that revision's layout instead\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Prerequisites",
+    "anchor": "prerequisites",
+    "text": "Prerequisites\nGit with `user.name` and `user.email` configured, Node.js 24.13.0, and pnpm 11.25.0.\nA running Testcontainers-compatible container runtime: initialization regenerates the database reference from a migrated PostgreSQL.\nPlaywright Chromium for the browser tests in `pnpm validate` ([setup](setup.md#prepare-a-clean-checkout)).\nA fresh, full clone of Orion that contains no other work. Shallow clones cannot preserve Orion's ancestry.\nPermission to create the product repository before publishing. Initialization never contacts the product repository: it creates no repositories and pushes nothing.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Start a new project",
+    "anchor": "start-a-new-project",
+    "text": "Start a new project\nClone Orion and install its dependencies. To start from an older published Orion revision, run `git reset --hard <commit>` on `main` before initializing.\ngit clone https://github.com/GabriellMDias/Orion.git acme-ledger\ncd acme-ledger\npnpm install --frozen-lockfile\n\nRun a dry run. It checks every precondition and lists the actions without changing anything.\npnpm orion:init-project --name \"Acme Ledger\" --repository git@github.com:acme/acme-ledger.git\n\nInitialize. Add `--package-scope @acme` to choose a scope other than the default.\npnpm orion:init-project --name \"Acme Ledger\" --repository git@github.com:acme/acme-ledger.git --apply\n\nVerify the result. `pnpm orion:status` shows the identity, package scope, and recorded Orion commits; the last commit is `Initialize Acme Ledger from Orion <commit>` on top of Orion's history.\npnpm orion:status\ngit log --oneline -2\npnpm validate\n\nCreate an empty repository at the URL you supplied, without a generated README, license, or ignore file (project human action PH-01), and publish:\ngit push -u origin main\n\nInitialization refuses, without changing anything, when:\nthe checkout is not the repository root, is shallow, or has uncommitted or untracked changes (ignored files such as `node_modules/` and `.env.local` are allowed);\nthe manifest already describes a project, `docs/project/` exists, or an `orion-upstream` remote exists;\n`main` is not checked out, any configured `origin` URL does not identify the canonical Orion repository, or `HEAD` has commits that are not on `origin/main`;\nthe project name is invalid, the package scope is not a valid npm scope or equals the foundation scope, the repository URL embeds credentials, uses a non-default SSH port (see [repository identities](#remote-rules)), or identifies the Orion repository;\nthe derivation contract is invalid or a template is missing;\nthe migration release registry records durable releases, which would describe another deployment;\nGit has no committer identity.\nWith `--apply`, it:\nwrites the project manifest;\nremoves every foundation-only path;\nrenders the project-owned files with the project name, repository, package scope, date, and Orion baseline;\nrenames the workspace package scope in package manifests, `pnpm-lock.yaml`, and source, and names the root package after the scope (authored Markdown and ADRs are not rewritten);\nregenerates workspace links, the Prisma client, API and database references, SDK types, and portal data;\ncommits `Initialize <name> from Orion <commit>` on top of Orion's history, renames `origin` to the protected `orion-upstream`, and adds the project repository as `origin`.\nIt never creates remote repositories or pushes. If a step before the commit fails, it restores the clean checkout; run `pnpm install --frozen-lockfile` before retrying.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "What carries over, what is removed, and what is adapted",
+    "anchor": "what-carries-over-what-is-removed-and-what-is-adapted",
+    "text": "What carries over, what is removed, and what is adapted\nOutcome\nContent\nPreserved from the foundation\nArchitecture, principles, policies, accepted ADRs, setup and validation guides, runbook guidance, and this guide; the validation gate, agent instructions, CI workflow, and Renovate configuration; the API runtime (configuration, telemetry, health, error registry, module contract, PostgreSQL client, optional JWT verification); the web shell and Living Documentation Portal; the SDK package; the derivation tooling and contract; Orion's full Git history\nRemoved as foundation-only\nOrion's Approval Request reference implementation: its API feature, Prisma models, migration, metadata, runtime grants, smoke, tests, web module, browser tests and journeys, and domain documentation. Orion's own implementation plan, human actions, and acceptance and release history\nAdapted or created for the project\nThe manifest (`kind: project`, name, package scope, provenance); `README.md`; the API and web composition files, which compose no modules; a neutral brand mark and touch icon; the project's plan and human actions in `docs/project/`; workspace package names, the lockfile, and imports; generated OpenAPI, SDK types, configuration, error, and database references, and portal data; the remotes `origin` and `orion-upstream`\nKept as the foundation's technical namespace\n`ORION_*` configuration names, `orion_*` token claims and database role names, the `Orion required gate` check name, the `.orion/` directory, the `orion:*` commands, and the `orion-upstream` remote. Renaming them would touch shared files throughout the repository and conflict on every upgrade; the check name is also referenced by branch protection. Accepted ADRs keep their original wording\nThe [content ownership](#content-ownership) contract defines these categories precisely and how each behaves during upgrades.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "A newly derived project",
+    "anchor": "a-newly-derived-project",
+    "text": "A newly derived project\nThe full internal engineering catalog, generators, references, search, previews, and `/docs` development workflow remain in the repository for developers and AI agents. Default production builds exclude the portal and its generated assets through [the build boundary](architecture/living-documentation.md#build-and-deployment-boundary). This requires no generated environment setting or manifest schema change. The application owns its UI and any product/public documentation sources; the internal catalog is never automatically published. Existing projects adopting this change follow [the migration guidance](architecture/living-documentation.md#existing-project-migration).\nImmediately after initialization the repository contains:\nArea\nState\nIdentity\n`README.md`, `<title>`, the web shell, the portal, the OpenAPI title (`<name> API`), and the telemetry service name (from `@<scope>/api`) use the project name; workspace packages are `@<scope>/api`, `@<scope>/web`, and `@<scope>/sdk`; the brand mark is a neutral placeholder\nAPI\nThe shared runtime with health endpoints, configuration, telemetry, error registry, module contract, PostgreSQL client, and optional JWT verification; `apps/api/src/modules.ts` composes no modules\nDatabase\nThe Prisma schema folder with only shared configuration, no migrations, no metadata or grants, an empty release registry, and a generated database reference stating that no application tables exist\nWeb\nThe shell, home page, and Living Documentation Portal; `apps/web/src/modules.tsx` mounts no module routes\nDocumentation\nShared architecture, policies, ADRs, setup, validation, runbook guidance, this guide, and the project's README, plan (PJ-01 to PJ-05), and human actions (PH-01 to PH-06); no Orion plan, human actions, acceptance report, or reference-feature documentation\nTooling and CI\nUnchanged validation gate, agent instructions, CI workflow, Renovate configuration, and derivation commands\nProvenance\nOrion's full history plus the initialization commit; `foundation.initializedFromCommit` and `foundation.baselineCommit` both name the Orion commit; `orion-upstream` fetch-only; `origin` the project repository\nWorktree\nClean; nothing is pushed until you publish\n`pnpm validate` passes in this state, including the shell and portal browser journeys.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Next steps after creation",
+    "anchor": "next-steps-after-creation",
+    "text": "Next steps after creation\nThe project's [README](../README.md) routes to its plan and human actions, which track these steps with stable IDs.\n**Publish and validate (PH-01, PJ-01).** Push `main` to the new repository and confirm that `pnpm validate` passes locally and that the repository's CI runs.\n**Protect the repository (PH-02 to PH-04).** Require pull requests and the `Orion required gate` check on `main`, keep merge commits available for foundation upgrades, enable Renovate, and enable the applicable GitHub security controls. Settings verified for Orion do not apply to the new repository.\n**Onboard contributors.** Each clone needs `pnpm install --frozen-lockfile` and the local configuration from [setup](setup.md). Run `pnpm orion:upstream` and `git fetch orion-upstream` in any clone that will inspect or perform foundation upgrades; clones receive no `orion-upstream` remote automatically.\n**Define the product (PH-05, PJ-02).** Record the product scope, actors, first capabilities, data classification, and acceptance criteria, then replace the README introduction and current state.\n**Build the first module (PJ-03).** Add its schema, reviewed migration, contract, SDK use, web workflow, tests, and documentation as described for [API modules](../apps/api/README.md#modules) and [web modules](../apps/web/README.md#modules), and compose it in `apps/api/src/modules.ts` and `apps/web/src/modules.tsx`. [Orion's reference implementation](#orions-reference-implementation) shows a complete module.\n**Replace the placeholder identity (PJ-04).** Replace the brand mark and regenerate the touch icon as described under [web identity](../apps/web/README.md#identity).\n**Decide the product license (PH-06)** before distribution requires it.\n**Add conditional work when it becomes real (PJ-05).** An identity provider, durable releases, or a deployment environment become new tasks and human actions in the project's own files.\nKeep the project's plan and human actions current as work proceeds; `AGENTS.md` routes contributors and agents to them through the README's Current state.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Content ownership",
+    "anchor": "content-ownership",
+    "text": "Content ownership\n[`.orion/derivation.json`](../.orion/derivation.json) divides Orion's content into three categories. `pnpm orion:check` enforces the boundaries in both Orion and projects.\nCategory\nContents\nIn Orion\nIn a new project\nUpgrade behavior\nShared foundation\nArchitecture, policies, ADRs, tooling, CI, the API runtime and module contract, the web shell and portal, generated-reference machinery, and `.orion/derivation.json`\nPresent; must not import, link to, name, or describe foundation-only content\nIdentical to Orion except for package-scope renames\nNormal three-way merges; product changes to the same lines need review\nFoundation-only\nOrion's reference implementation and Orion's own implementation plan, human actions, and acceptance history\nPresent\nAbsent\nReintroduced or conflicting paths are removed with `pnpm orion:prune`\nProject-owned\n`README.md`, `apps/api/src/modules.ts`, `apps/web/src/modules.tsx`, the brand mark and touch icon, `docs/project/implementation-plan.md`, `docs/project/human-actions.md`\nOrion's own versions, composing its reference implementation\nRendered from [templates](../.orion/derivation.json) at initialization; then owned by the project\nKeep the project's version when Orion changes them; port relevant upstream facts deliberately\nGenerated\nOpenAPI, SDK types, configuration/error/database references, portal data\nDerived from Orion's sources\nRegenerated from the project's sources at initialization\nResolve source conflicts, then regenerate; never hand-merge\n`AGENTS.md` routes implementation work to the plan and human actions linked from the README's Current state; in a project that is `docs/project/`. Orion's completed human actions verified settings for the Orion repository only; initialization creates pending project actions for the new repository's equivalents.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Orion's reference implementation",
+    "anchor": "orions-reference-implementation",
+    "text": "Orion's reference implementation\nThe Orion repository composes a complete Approval Request module that demonstrates the architecture from database to browser and is exercised by Orion's validation gate. It is foundation-only: initialization removes it, and no project-owned or shared file refers to it. To study it while building a module, read it in Orion at the commit recorded as the project's baseline, for example in a separate Orion clone or with `git show <baseline>:<path>` after `git fetch orion-upstream`. The paths it occupies are listed in [`.orion/derivation.json`](../.orion/derivation.json). Copy patterns, not the feature: a product module belongs under its own name and is composed in the project's `modules.ts` and `modules.tsx`.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Provenance and foundation upgrades",
+    "anchor": "provenance-and-foundation-upgrades",
+    "text": "Provenance and foundation upgrades\nProvenance is what makes upgrades possible. Initialization records the Orion commit in both `foundation.initializedFromCommit`, which never changes, and `foundation.baselineCommit`. Because the project keeps Orion's history, Git can compute what changed upstream since the baseline and merge it with a normal three-way merge. Each upgrade merges a newer Orion commit with its history and then records it as the new baseline; `pnpm orion:check` verifies that the baseline is an ancestor of `HEAD`, and `pnpm orion:status` compares it with a fetched `orion-upstream`. The derivation contract travels with every upgrade, and `pnpm orion:prune` reapplies it, so the project stays free of foundation-only content and keeps its own package scope. [Stable semantic tags](versioning.md) make released foundation points easier to identify: a project may be described as derived from a tagged Orion release when its initialization commit matches that tag, while the manifest continues to record the exact commit SHA.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Inspect provenance",
+    "anchor": "inspect-provenance",
+    "text": "Inspect provenance\npnpm orion:status\n\nIt prints the project identity and package scope, the initialization and recorded baseline commits, whether `orion-upstream` is configured and fetch-only, and, after `git fetch orion-upstream`, how many upstream commits follow the baseline and whether integrated commits are not yet recorded. It does not fetch or change anything.\n`pnpm orion:check` runs in `pnpm validate`.\nIn Orion, it validates the manifest and derivation contract, requires every foundation-only path and template to exist, and rejects shared tracked files that link to, import, name, or mention foundation-only content. Derivation tooling, ADRs, this guide, and generated output are exempt.\nIn a project, it validates the manifest and contract, requires the project plan and human actions and the root package name of the recorded scope, rejects any foundation-only path and any remaining reference to the foundation package scope in code or configuration, requires both recorded commits to exist with the initialization commit an ancestor of the baseline and the baseline an ancestor of `HEAD`, and applies the [remote rules](#remote-rules). It needs full history; CI already uses `fetch-depth: 0`.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Remote rules",
+    "anchor": "remote-rules",
+    "text": "Remote rules\nGit remotes are local configuration, so other clones of the project do not receive `orion-upstream`. Configure it in any clone with:\npnpm orion:upstream\ngit fetch orion-upstream\n\nRemote\nRule\nEnforced by\n`origin`\nMust not identify the Orion foundation through its fetch or push URL, so product work never has the foundation as its normal push target. It need not equal the project's `repository.url`: contributors may work through a fork or mirror.\n`pnpm orion:upstream` refuses; `pnpm orion:check` fails\n`orion-upstream`, when present\nIts fetch URL must identify the foundation repository recorded in the manifest.\n`pnpm orion:upstream` refuses; `pnpm orion:check` fails\n`orion-upstream`, when present\nIts only push URL must be the disabled `orion-upstream-is-fetch-only`.\n`pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream`\n`orion-upstream`, when absent\nValid; a normal clone has no foundation remote until a developer configures it.\n—\nLocal branches\nNo local branch may track `orion-upstream`; an argument-free `git pull` would otherwise merge foundation changes outside a reviewed upgrade.\n`pnpm orion:check` fails and directs you to rerun `pnpm orion:upstream`\n`pnpm orion:upstream` adds `orion-upstream` from the manifest when absent, replaces every push URL of it with the disabled one, disables its tags, and removes upstream tracking of it from every local branch. It is safe to rerun.\nRepository identities compare as normalized HTTPS URLs, so HTTPS, SSH, and scp-like forms of the same repository match. Host names are case-insensitive, but repository path case is significant because self-hosted servers may treat `acme/Ledger` and `acme/ledger` as different repositories: accepting a URL as a given repository, as for `orion-upstream` or the `origin` checked before initialization, requires the exact path. Refusing a URL because it could reach the foundation, as for `origin` or a new project's repository, ignores path case, because hosts such as GitHub resolve differently cased paths to the same repository. An explicit non-default HTTPS port is part of the identity: `https://git.example.com:8443/acme/ledger` differs from `https://git.example.com/acme/ledger`, while `:443` is the same endpoint as no port. A non-default SSH port only selects the SSH transport and does not identify the HTTPS endpoint, so such a URL is refused as a project repository and never matches the foundation; supply the repository's HTTPS URL instead.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Upgrade to a newer Orion revision",
+    "anchor": "upgrade-to-a-newer-orion-revision",
+    "text": "Upgrade to a newer Orion revision\nAn upgrade is a normal reviewable engineering change on a branch. Nothing is applied automatically, and semantic conflicts are resolved by people or agents under review. Tags help humans choose a known release point but do not change this workflow. Ordinary conflicts in project-modified shared files do not by themselves indicate a MAJOR Orion release.\nRun `git fetch orion-upstream` and `pnpm orion:status`. Review upstream changes with `git log --oneline <baseline>..orion-upstream/main` and `git diff <baseline> orion-upstream/main`, including ADRs, policies, migrations, tooling, and `.orion/derivation.json`.\nChoose the candidate commit; it must be on `orion-upstream/main`. Create a branch, for example `git switch -c codex/orion-upgrade/<short-commit>`, and run `git merge --no-ff --no-commit <commit>` so even a conflict-free merge remains available for inspection and regeneration before committing.\nResolve conflicts in `.orion/project.json`, `.orion/derivation.json`, the release registry, and `package.json` first if they prevent the command from loading. Run `pnpm orion:prune` while other merge conflicts remain. It deletes foundation-only paths the merge changed or added (resolving their modify/delete conflicts), renames foundation package-scope references in resolved shared files, and stages those changes. It leaves unresolved shared files and project-owned files untouched, reports the unresolved paths, and refuses to delete a recorded durable migration or follow linked paths outside the checkout. Resolve and stage reported conflicts, then rerun it.\nResolve remaining conflicts according to [content ownership](#content-ownership): keep the project's version of project-owned files and merge shared files. Git may also change project-owned files automatically without a conflict: inspect every `projectFiles` path in `.orion/derivation.json`, restore existing project-owned files from the pre-merge project commit (for example `git restore --source=<project-commit> --staged --worktree -- README.md`), and deliberately port any needed upstream facts. Do not blindly restore paths absent from that commit; new composition seams in a schema version 1 migration need product behavior ported into them. Never hand-merge generated output: run the generators from step 5, then stage their results (for example `git add -A apps/web/src/generated docs/generated packages/sdk/src/generated`), which resolves conflicts in generated files, including ones the project's output no longer contains. Rerun `pnpm orion:prune` until it reports no unresolved files. Review semantic interactions with product code even where Git reports no conflict.\nRun `pnpm install --frozen-lockfile`, `pnpm db:generate`, `pnpm -C apps/api references:write`, `pnpm -C packages/sdk generate`, `pnpm docs:references:write`, and `pnpm validate`. Commit the merge.\nRun `pnpm orion:record-baseline <commit>`. It refuses unless the worktree is clean and `orion-upstream` exists and satisfies the [remote rules](#remote-rules). It then fetches `main` from that verified foundation, so refs fetched earlier from another repository cannot vouch for the commit. Finally it requires the commit to be on `orion-upstream/main`, descend from the recorded baseline, and already be an ancestor of `HEAD`. Commit the manifest change, rerun `pnpm validate`, and open the pull request against the project's `main`.\nMerge the pull request with a merge commit. Squash or rebase merges discard Orion's commit identities, and `pnpm orion:check` then fails because the recorded baseline is not an ancestor of `HEAD`. The project repository must therefore keep merge commits enabled (project human action PH-02). This applies only to Orion upgrade pull requests.\nIf the project's default branch requires pull requests, as PH-02 establishes, the merge and baseline update reach `main` together through that pull request. Record the upgrade and any project-specific follow-up in the project plan.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Migrate a project from schema version 1",
+    "anchor": "migrate-a-project-from-schema-version-1",
+    "text": "Migrate a project from schema version 1\nProjects initialized before the clean-baseline contract have a schema version 1 manifest with `referenceImplementations`, Orion's plan, human actions, and acceptance report, and usually the Approval Request implementation and `@orion/*` packages. After merging an Orion revision that contains this contract, `pnpm orion:check` refuses the old manifest. Migrate in the upgrade branch:\nIf the project adopted Approval Request as product behavior, move its code, schema, metadata, grants, and tests out of the foundation-only paths first (for example to `src/features/<product-module>/` and matching paths under the module's own name). Preserve every released migration at its original path and remove that path from the project's `foundationOnly` list in `.orion/derivation.json`; never rename or delete it. Verify uncertain release status under [migration policy](database/migrations.md) before classifying a migration as removable. Only genuinely unreleased reference migrations may be removed or renamed. `orion:prune` refuses removal of recorded durable migrations.\nEdit `.orion/project.json`: set `schemaVersion` to `2`, remove `referenceImplementations`, and add `\"packageScope\": \"@<scope>\"`.\nRun `pnpm orion:prune` to remove foundation-only paths and rename package-scope references.\nReplace the project-owned files that still carry Orion's content: render `README.md`, `apps/api/src/modules.ts`, `apps/web/src/modules.tsx`, and the brand assets from the [templates](../.orion/derivation.json) (substituting each `{{PLACEHOLDER}}`), keeping existing project-specific text. Keep `docs/project/`; remove its references to Orion's plan, human actions, acceptance report, and reference implementation, and port the maintenance rules from the plan and human-action templates.\nRegenerate as in [upgrade step 5](#upgrade-to-a-newer-orion-revision), run `pnpm validate`, and continue with baseline recording.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Contributing improvements back to Orion",
+    "anchor": "contributing-improvements-back-to-orion",
+    "text": "Contributing improvements back to Orion\nProduct work never goes to `orion-upstream`; its push URL is disabled. To improve the foundation itself, make the change in a separate clone of Orion and submit it there under Orion's own review, then adopt it in projects through the upgrade workflow. Do not move product code, requirements, or history into Orion. In Orion, keep new shared content independent of foundation-only content; extend `.orion/derivation.json` when adding foundation-only or project-owned files.\n"
+  },
+  {
+    "id": "repository/docs/project-derivation",
+    "title": "Start and Upgrade a Project from Orion",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Limits",
+    "anchor": "limits",
+    "text": "Limits\nProvenance proves which Orion commits are ancestors of the project; it does not prove that the project still follows every inherited policy. Validation and review remain the enforcement.\n`pnpm orion:check` can verify that the recorded baseline is integrated, but only `pnpm orion:status` with a fetched upstream can report newer integrated commits that were not yet recorded.\nUpgrades that change foundation-only or project-owned files conflict in projects; projects that diverge heavily from shared files should expect more conflicts there.\nThe isolation check matches links, imports, path names, and listed terms; it cannot judge whether shared prose implicitly assumes the reference implementation. Review remains necessary.\nThe immutable Git commit remains the exact foundation revision and provenance identity. [Foundation versioning](versioning.md) assigns human-readable tags only to deliberate stable release points; commits between tags remain usable by SHA.\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "anchor": "proposal-conversational-autonomy-with-controlled-business-tools",
+    "text": "Proposal: Conversational Autonomy with Controlled Business Tools\n**Status:** historical proposal; implementation authorized by the owner on 2026-10-12 and tracked in PJ-42–46.\n**Date:** 2026-10-12.\n**Scope:** original repository analysis and proposed evolution of IA-MNS. The diagnosis and proposed targets below describe the baseline at the analysis date. Current behavior is owned by [conversational autonomy](../architecture/conversational-autonomy.md), [ADR-0035](../adr/0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md) and the [implementation plan](implementation-plan.md#conversational-autonomy-implementation).\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Owner-authorized revision",
+    "anchor": "owner-authorized-revision",
+    "text": "Owner-authorized revision\nThe subsequent implementation request authorized all phases and delegated technical decisions without phase-by-phase approval. The owner also explicitly approved necessary real business data in OpenAI requests and reuse of the existing API key for synthetic evaluations. The former opaque-only/privacy-decision gate below is historical and does not block ordinary in-scope analysis. [AI data processing](../security/ai-data-processing.md) now defines allowed categories, minimization, metadata traceability, `store:false`, category-specific personal-data gates and the unverified account/legal prerequisites. No new ERP writes, grants or production deployment were authorized. The phased proposal is implemented incrementally with bounded text/CSV and PNG/JPEG attachment support; arbitrary document formats, full spreadsheet calculation and global autonomous business-rule learning are outside its validated scope.\n[Documentation index](../README.md) · [Current implementation plan](implementation-plan.md) · [Human actions](human-actions.md) · [Current AI architecture](../architecture/ai-interpretation.md)\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Recommendation",
+    "anchor": "recommendation",
+    "text": "Recommendation\nEvolve IA-MNS into a conversational assistant that can reason over authorized context, write its own responses, and choose among controlled business tools. Keep data access, authorization, business definitions, query compilation, arithmetic, and execution limits in the application. The model should decide how to help within those boundaries, including when no new database query is necessary.\nThis addresses a broad class of requests: summarize, explain, rewrite, translate, compare available facts, adjust presentation, continue an analysis, and combine supported operations. Each phrasing should not require a new intent, conditional branch, prompt exception, or business capability. New data sources, metrics, business meanings, and side effects still require explicit integration and validation.\nThe immediate recommendation is a general conversation and evidence layer over the existing capabilities, followed by a bounded tool-calling loop. Retain the existing Responses API integration, PostgreSQL history, semantic product catalogs, and reviewed ERP adapters. Do not start by replacing the stack, adding multiple agents, fine-tuning, or exposing a SQL console.\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "What the repository shows",
+    "anchor": "what-the-repository-shows",
+    "text": "What the repository shows\nThis analysis inspected the actual working tree, including substantial pre-existing uncommitted sales/product work, on top of `885cf58`. That commit alone does not identify everything analyzed. The reported conversation was not replayed against the live model; no stored private conversation, ERP data, credentials, or operational model setting was read. The diagnosis below is supported by executable code and current policy, not a claim about the exact model output in that turn.\nFinding\nEvidence\nEffect\nThe router can choose a registered capability or a small social/unavailable intent. It is expressly forbidden to produce answers or public prose.\n[`routeSchema` and `createAgentPlanner`](../../apps/api/src/features/agent/planner.ts)\nA legitimate writing request has no general conversational execution path.\nBusiness answers in router history are replaced by an answer-delivered marker.\n[`runAgentTurn`](../../apps/api/src/features/agent/application.ts)\nThe model cannot read the figures or explanation behind “summarize this.”\nSales interpretation sees filters, active/pending plans, and filter-only descriptions of answers. It cannot emit figures or public text.\n[`interpreterState`, `interpreterInstructions`, `interpreterMessages`](../../apps/api/src/features/sales/interpreter.ts); [`recordExchange` use](../../apps/api/src/features/sales/application.ts)\nSales context supports query refinement, not discussion of the returned evidence.\nThe exact reported refusal is a fixed sales message.\n`unsupportedMessage` in [`sales/application.ts`](../../apps/api/src/features/sales/application.ts)\nThe reported wording is consistent with the sales unsupported branch. The route/interpretation for the specific incident remains unverified.\nEach model request forces exactly one named strict function call, then consumes only its validated arguments.\n[`StructuredModel`](../../apps/api/src/ai/model.ts), [`createOpenAiModel`](../../apps/api/src/ai/openai.ts)\nThere is no general response-generation or iterative tool-result conversation in this adapter.\nDurable turns already contain reply snapshots; execution loads up to 12 completed turns.\n[`AgentRepository`](../../apps/api/src/features/agent/prisma-repository.ts), [`storedReplySchema`](../../apps/api/src/features/agent/contracts.ts)\nThe information is not necessarily lost. The missing piece is authorized, purpose-specific model context. Older references need bounded retrieval beyond that window.\nProduct choices and sales scope already have structured, ERP-specific state and complete-membership execution.\n[`products/sales.ts`](../../apps/api/src/features/products/sales.ts), [semantic sales integration](../architecture/semantic-product-resolution.md#sales-integration)\nPreserve and reuse this work; do not reconstruct a product selection from a displayed list or prose.\nThe chat sends text and a source selection and renders structured results with a text message.\n[`agent/contracts.ts`](../../apps/api/src/features/agent/contracts.ts), [`agent/page.tsx`](../../apps/web/src/features/agent/page.tsx), [`ModelMessage`](../../apps/api/src/ai/model.ts)\nFile/image ingestion and evidence-aware prose need actual contracts and UI support; choosing a multimodal model alone does not implement them.\nThe source inspection explains the failure class: IA-MNS currently uses the model as an interpreter for a restricted query workflow. It does not expose the broader conversational abilities needed to discuss an answer. Changing only the model or adding a synonym for “resumo” would leave these architectural restrictions in place.\nThese restrictions were deliberate. [ADR-0018](../adr/0018-bound-natural-language-sales-to-a-read-only-query-capability.md), [ADR-0019](../adr/0019-compose-a-corporate-agent-with-durable-conversations.md), and [ADR-0024](../adr/0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md) retain application-authored responses, deterministic financial results, and figure-free model context. A future implementation must explicitly extend or partially supersede the affected decisions rather than silently contradict them.\n"
+  },
+  {
+    "id": "repository/docs/project/agent-autonomy-proposal",
+    "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "What “use ChatGPT's capabilities” means here",
+    "anchor": "what-use-chatgpts-capabilities-means-here",
+    "text": "What “use ChatGPT's capabilities” means here\nThe requested behavior is feasible using the API: a model can receive conversation context, call application functions, and produce an answer after seeing the tool results. Responses also supports file and image inputs, subject to model and input-type support. IA-MNS must implement the surrounding context, tools, permissions, persistence, and presentation; an API model setting does not import the ChatGPT application's complete product behavior. See the official [conversation-state](https://developers.openai.com/api/docs/guides/conversation-state), [function-calling](https://developers.openai.com/api/docs/guides/function-calling), [file-input](https://developers.openai.com/api/docs/guides/file-inputs), and [vision](https://developers.openai.com/api/docs/guides/images-vision) documentation.\nThe goal is broad conversational competence over controlled resources. The agent may explain concepts from general knowledge, clearly distinguish that from company facts, and transform user-provided material. Claims about MNS or its operations require authorized evidence. If the required evidence or tool is absent, it should describe the specific gap and any useful supported next step.\nThis reduces configuration of language and workflows. It cannot eliminate the need to define what “sales,” “net value,” “active product,” or a source-specific unit means. Neither a schema nor a powerful model can reliably infer all business rules, undocumented join cardinalities, or organizational permissions.\n"
+  },
+  {
     "id": "repository/docs/project/agent-autonomy-proposal",
     "title": "Proposal: Conversational Autonomy with Controlled Business Tools",
     "group": "Project guides",
@@ -213,7 +564,7 @@
     "kind": "repository",
     "heading": "Purpose and current state",
     "anchor": "purpose-and-current-state",
-    "text": "Purpose and current state\nThis checklist records IA-MNS's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.\nIA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), the terms for publishing the Sankhya add-on template (PH-17), and the production deployment decisions approved on 2026-10-07: proxy topology and hop protection, a production OpenAI key, the remaining operations, and Oracle transit protection (PH-22 to PH-25), the column grants and business confirmations that refine product lookup (PH-27, PH-28), and the completed isolation of existing administrative Discovery credentials (PH-29), inherited PostgreSQL PUBLIC DDL privileges awaiting coordinated review (PH-30), and the Meta account, dedicated number, credentials, webhook and approvals that activate the WhatsApp channel (PH-32 to PH-35), and the Runtime read of Sankhya result centers for the sales restriction by result center (PH-36). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.\nLocal development startup is covered by [PJ-49](implementation-plan.md#current-work): the web server reuses the configured provider origins from the root ignored `.env.local`, without a repeated shell assignment or a new human prerequisite. The existing Om installation and access requirements remain under [PH-16](#ph-16).\nThe My Account, Administration and conversation-material visual improvements in [PJ-50 to PJ-53](implementation-plan.md#current-work) require no new human action or external access; existing account, security and channel prerequisites still apply.\n"
+    "text": "Purpose and current state\nThis checklist records IA-MNS's prerequisites that require a project-owner decision, a human-controlled account action, an unavailable privilege, or securely supplied external configuration. Every contributor or coding agent performing implementation work must maintain it and must never silently skip work because human intervention is needed.\nIA-MNS (https://github.com/GabriellMDias/IA-MNS) was initialized from Orion (https://github.com/GabriellMDias/Orion). Repository settings verified for Orion do not apply to this repository; PH-01 to PH-04 record this repository's own publication, protection, Renovate, and security settings, verified through the GitHub API on 2026-10-03. The repository is public and its own work is licensed under Apache-2.0 (PH-06). Open items concern the dedicated ERP reader, shared-deployment lifecycle, the first durable release, and the external preconditions of the IA-MNS identity: Sankhya Om security hardening, PDT Connect homologation, the Om identity add-on, the automatic-grant policy and production identity deployment (PH-11 to PH-15), the terms for publishing the Sankhya add-on template (PH-17), and the production deployment decisions approved on 2026-10-07: proxy topology and hop protection, a production OpenAI key, the remaining operations, and Oracle transit protection (PH-22 to PH-25), the column grants and business confirmations that refine product lookup (PH-27, PH-28), and the completed isolation of existing administrative Discovery credentials (PH-29), inherited PostgreSQL PUBLIC DDL privileges awaiting coordinated review (PH-30), and the Meta account, dedicated number, credentials, webhook and approvals that activate the WhatsApp channel (PH-32 to PH-35), and the Runtime read of Sankhya result centers for the sales restriction by result center (PH-36). The Sankhya add-on development environment is prepared (PH-16). Conditional needs such as an identity provider, durable releases, or a deployment environment become new actions when their trigger occurs.\nLocal development startup is covered by [PJ-49](implementation-plan.md#current-work): the web server reuses the configured provider origins from the root ignored `.env.local`, without a repeated shell assignment or a new human prerequisite. The existing Om installation and access requirements remain under [PH-16](#ph-16).\nThe My Account, Administration and conversation-material visual improvements in [PJ-50 to PJ-53](implementation-plan.md#current-work) require no new human action or external access; existing account, security and channel prerequisites still apply.\nThe foundation upgrade in [PJ-59](implementation-plan.md#current-work) requires review and a merge commit to retain Orion ancestry; no production deployment, ERP mutation or new credential is authorized. Future deployments must rebuild clean production artifacts and remove stale internal-documentation assets and caches. Protected internal builds require external host access control over all pages, assets and downloads as well as the existing `ORION_WEB_DOCS` runtime opt-in. Existing deployment prerequisites remain open.\n"
   },
   {
     "id": "repository/docs/project/human-actions",
@@ -322,266 +673,5 @@
     "heading": "PH-10",
     "anchor": "ph-10",
     "text": "PH-10\n[ ] **Record the first durable migration boundary before publishing a durable release.**\n**Status:** pending (conditional on durable release publication). **Owner:** project owner/release maintainer.\n**Dependency / trigger:** PJ-01/PJ-05 and the repository's [release workflow](../database/release-evolution.md).\n**Request and reason:** Commit the reviewed migration/application baseline and record its immutable commit/checksums in release-history.json when establishing a supported persistent environment. The local conversation migration has been applied; treat its SQL as immutable now. Do not edit applied history because the registry currently has no recorded release. Committing the migrations in the first pull request does not record a release.\n**Configuration:** none.\n**Verification:** Release-history validation and supported upgrade evidence reference the actual committed baseline.\n**Evidence / blocker:** On 2026-10-07 [ADR-0030](../adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) fixed the sequence for the first durable release ([PJ-34](implementation-plan.md#current-work)): an `ia-mns-vX.Y.Z` tag on a `main` commit that passed CI, the artifact built from that commit with the tag as `ORION_RELEASE_ID`, its migrations applied to the production database, that database's finished and not rolled-back `_prisma_migrations` compared by name with the tagged commit's migrations and by Prisma checksum with the deployed artifact's files, and only then a reviewed release-history entry with `pnpm release:checksums <tagged SHA>` under the tag's name. Two additive local agent migrations have been applied, including conversation organization on 2026-10-02. On 2026-10-03 they were first committed for review in the initial project pull request; no release-history entry, release tag, or remote release was created. On 2026-10-05 PJ-20 added the additive `202610050001_agent_turn_traces` migration; it was verified on disposable PostgreSQL only and has not been applied to the owner's local volume.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-11",
-    "anchor": "ph-11",
-    "text": "PH-11\n[ ] **Harden the Sankhya Om transport and session before trusting it for IA-MNS sign-in.**\n**Status:** pending (blocks production approval of Sankhya sign-in, PJ-17). **Owner:** infrastructure administrator with the project owner; Sankhya support for WildFly settings.\n**Dependency / trigger:** [PJ-17](implementation-plan.md#current-work); does not block the rest of the identity.\n**Request and reason:** An internal read-only review on 2026-10-04 found that the current Om deployment does not yet meet the conditions below. The specific hosts, ports and observations are kept with the project owner, outside this public repository. Approve and apply, preferably at the TLS reverse proxy that Sankhya recommends:\nHTTPS-only access with HSTS for the Om host.\n`Secure` and `SameSite=Lax` on the Om session cookie. Use `Lax`, not `Strict`, which would break \"Entrar com Sankhya\".\nOnly `https://` redirects generated by the Om behind the proxy (forwarded protocol honored by WildFly, or `Location` rewriting).\nA private or encrypted proxy-to-Om hop.\nNo direct public exposure of the Om HTTP port, after an inventory of every consumer (PDT Connect integrations, the Sankhya API Gateway, mobile apps, TVs and other integrations) moves to the HTTPS name or a private path.\n`HttpOnly` once custom BI components that read the session cookie are adjusted and tested.\nSession-id rotation at login.\nApply nothing without the owner's approval. Never test with real credentials over plain HTTP.\nOn 2026-10-06 the owner decided that IA-MNS trusts only the Om HTTPS name in production; the other current addresses of the Om (kept with the owner, outside this public repository) are not trusted, and the add-on tells people who open the Om through them to use the secure address. An internal address can be added later only if it is served over HTTPS, which would also need IA-MNS support for more than one Om origin.\n**Configuration:** none in IA-MNS until approval, then `SANKHYA_SESSION_TRUST=approved` (non-secret) in production.\n**Verification:** Anonymous HTTPS checks show HSTS, `Secure; SameSite=Lax` on the session cookie and only `https://` redirects, and the direct HTTP port is closed to the public. The Om proof of concept, run only through the HTTPS name, confirms the CODUSU and the frame chain.\n**Evidence / blocker:** 2026-10-04 internal review (details withheld from this public repository). No infrastructure was changed.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-12",
-    "anchor": "ph-12",
-    "text": "PH-12\n[ ] **Provide a PDT Connect homologation installation for IA-MNS sign-in and embedding.**\n**Status:** pending (blocks PJ-16). **Owner:** PDT Connect owner/administrator.\n**Dependency / trigger:** [PJ-16](implementation-plan.md#current-work); IA-MNS's PDT connector and the PDT IA-MNS screen are implemented and passed with a local PDT ([PJ-27](implementation-plan.md#current-work)).\n**Request and reason:** In an HTTPS homologation PDT (never production):\nApply the identity migration.\nSet `PDT_IDENTITY_ISSUER`.\nRegister the IA-MNS client in `PDT_IDENTITY_CLIENTS` with the redirect URI of the IA-MNS homologation `/api/identity/pdt/callback` and only the SHA-256 of a secret generated for IA-MNS.\nReview, commit and deploy the PDT IA-MNS screen (PJ-27; uncommitted in the PDT Connect working tree), apply its migration, set the `IA_MNS_*` parameters to the IA-MNS homologation values and grant `ia-mns:acessar` to the intended users ([identity](../domains/identity.md#pdt-host-component-outside-this-repository)). If the PDT proxy sends a Content-Security-Policy, its `frame-src` must allow the IA-MNS origin.\nKeep the production PDT origin and other environment addresses out of this public repository; they belong to the deployment configuration.\n**Configuration:** in IA-MNS: `PDT_IDENTITY_BASE_URL`, `PDT_IDENTITY_ISSUER`, `PDT_IDENTITY_CLIENT_ID`, `PDT_IDENTITY_CLIENT_SECRET` (secret store only), `PDT_IDENTITY_REDIRECT_URI`, `PDT_EMBED_ORIGIN`; `ORION_WEB_EMBED_ANCESTORS` or the hosting equivalent.\n**Verification:** In homologation:\ndirect sign-in, first access and reload work;\nembedded sign-in without a new login works, including silent renewal and reload;\nrevocation is followed by a 401;\nhostile framing is blocked.\nRecord the HTTPS evidence.\n**Evidence / blocker:** Homologation URL and deployment not yet provided. On 2026-10-06 the owner authorized changes to the PDT Connect repository, and the embedded flow passed with a local PDT over HTTP ([PJ-27](implementation-plan.md#current-work)); that is not HTTPS or homologation evidence.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-13",
-    "anchor": "ph-13",
-    "text": "PH-13\n[ ] **Select and review default user groups for PDT Connect and Sankhya before shared use.**\n**Status:** pending (non-blocking for implementation). **Owner:** project owner.\n**Dependency / trigger:** PJ-55; before shared use after applying migration `202610210001_identity_provider_groups`.\n**Request and reason:** On 2026-10-21 the owner replaced automatic permission grants by provider link with automatic entry into a default user group after verified sign-in. Both selections start empty. In **Administração → Grupos**, create or choose the groups and review their per-source permissions and restrictions, particularly whether Sankhya users may read Pilar da Terra sales and which product permissions they receive. Then select each group in **Parâmetros → Grupo de Usuário padrão por vínculo**, or retain **Nenhum grupo**. Personal restrictions do not narrow a broader group grant. Existing memberships persist after changing or clearing a selection; remove unwanted memberships explicitly.\n**Verification:** A verified login through each configured system shows the expected group, permissions and restrictions; a local login or mere stored link does not add membership. Record the chosen production groups here.\n**Evidence / blocker:** The authorization model is resolved by the owner's request. The actual installation groups and grants remain owner selections; legacy automatic-grant settings no longer grant permissions ([ADR-0038](../adr/0038-join-default-user-groups-after-verified-provider-sign-in.md)).\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-14",
-    "anchor": "ph-14",
-    "text": "PH-14\n[ ] **Review and publish the IA-MNS add-on in the production Sankhya Om with production key custody.**\n**Status:** pending (blocks PJ-17; PJ-24 is completed; production also depends on PH-11 and PH-17). **Owner:** project owner with the Sankhya Om administrator.\n**Dependency / trigger:** [PJ-17](implementation-plan.md#current-work), after the add-on passes in the development environment ([PJ-24](implementation-plan.md#current-work)).\n**Request and reason:** The add-on in [`apps/sankhya-addon`](../../apps/sankhya-addon/README.md) reads the authenticated user from the server-side Om session and signs short assertions under the [assertion contract](../domains/identity.md#sankhya-om-add-on-assertion-contract). Its menu screen frames `/embed/sankhya` and answers the bridge; the direct-URL authorize page is PJ-25. On 2026-10-06 the owner chose an Add-on Studio add-on, not BI JSP packaging ([ADR-0026](../adr/0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)); the developer-area solution and template are in place (PH-16). Before production: review the add-on, generate the production P-256 signing key pair and write the add-on host configuration (`ia-mns-addon.properties` with the production IA-MNS and Om HTTPS origins, issuer, audience and key id) in the production WildFly configuration directory, keeping the private key there, outside sources editable by ordinary BI authors and outside this repository; restrict who can publish JSP or add-ons; provide the add-on `appKey` to the build without committing it; install the add-on in the production Om; and grant the screen **IA-MNS** (resource `ia-mns.IaMns`) only to the intended users or groups in the Om access control. `om.origin` is the Om HTTPS name only (owner decision of 2026-10-06). The owner also decided to accept the shared SUP account (CODUSU 0) and consolidate it into the principal administrator's Person: restrict who knows the production SUP password, because anyone signed in as SUP will act as that administrator in IA-MNS (production still requires the administrator's second factor for administration). Agents do not publish to or change the production Om. The disposable proof-of-concept JSP outside this repository is not production code.\n**Configuration:** in IA-MNS: `SANKHYA_IDENTITY_ISSUER`, `SANKHYA_IDENTITY_KEYS` (public keys only), `SANKHYA_IDENTITY_AUTHORIZE_URL`, `SANKHYA_EMBED_ORIGIN`; in the Om WildFly: `ia-mns-addon.properties` and the signing key file ([add-on guide](../../apps/sankhya-addon/README.md#how-it-works)).\n**Verification:** Through the HTTPS name, test with native and Sankhya ID logins:\nthe CODUSU is correct;\nassertions are bound to the nonce and single-use;\nsigned-out users are refused;\nthe add-on refuses requests outside the HTTPS name.\n**Evidence / blocker:** Packaging decided on 2026-10-06. The embedded add-on passed these checks in the development Om on 2026-10-06 over local HTTP with a development key ([PJ-24](implementation-plan.md#current-work)); that is not production evidence. Nothing has been installed in the production Om.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-15",
-    "anchor": "ph-15",
-    "text": "PH-15\n[ ] **Provision production identity configuration and web hosting rules.**\n**Status:** pending (conditional on shared deployment, PJ-05). **Owner:** project owner / platform operator.\n**Dependency / trigger:** [PJ-05](implementation-plan.md#current-work).\n**Request and reason:**\nAn HTTPS IA-MNS public origin, with web and API under the same origin.\nThe signing and encryption keys generated for production in the secret store, never reused from local development.\nWeb hosting that sends `frame-ancestors 'none'` on every route except `/embed/pdt` and `/embed/sankhya`, which allow only their host origins.\nRunning `pnpm identity:bootstrap` on the server to create the first owner, plus a second owner for recovery.\nAn owner reviewing **Administração → Autenticação e segurança** before opening production: a policy relaxed for development (long sessions, remembered browsers) should return to production values; production always keeps the administrators' second factor ([ADR-0025](../adr/0025-administer-the-authentication-policy-within-fixed-safeguards.md)).\nAn owner reviewing **Administração → Parâmetros** before opening production: the AI model in use (evaluated with `pnpm eval` before any change), the trace level (content tracing is refused in production), and the default user groups by provider with their permissions and restrictions ([ADR-0028](../adr/0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)). Values saved in a development database do not travel to production; production starts from its environment defaults.\n**Configuration:** `IA_MNS_PUBLIC_ORIGIN`, `IA_MNS_IDENTITY_SIGNING_KEY`, `IA_MNS_IDENTITY_ENCRYPTION_KEY` (both secret), optional `IA_MNS_IDENTITY_AUDIENCE`.\n**Verification:** HTTPS, the `__Host-` session cookie, framing headers per path, owner bootstrap and TOTP, the reviewed authentication policy and operational parameters are verified in the deployed environment.\n**Evidence / blocker:** No deployment environment yet. On 2026-10-07 [PJ-32](implementation-plan.md#current-work) implemented the application side: the API serves the web build at one origin with per-surface framing from `PDT_EMBED_ORIGIN`/`SANKHYA_EMBED_ORIGIN`, `pnpm identity:keys` (or `dist/cli/identity-keys.js`) writes fresh keys to a new owner-only file, and `dist/cli/identity-bootstrap.js` issues the owner invitation from a build ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)). Nothing was configured in an environment. On 2026-10-07 [PJ-33](implementation-plan.md#current-work) added `ia-mns-deploy init-secrets` (generates the identity keys and database passwords in `/etc/ia-mns` without displaying them) and `ia-mns-deploy bootstrap-owner` ([host setup runbook](../runbooks/production-host-setup-and-first-deployment.md)).\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-16",
-    "anchor": "ph-16",
-    "text": "PH-16\n[x] **Prepare the Sankhya add-on development environment and the official template.**\n**Status:** completed. **Owner:** project owner.\n**Dependency / trigger:** [PJ-23](implementation-plan.md#current-work) and [PJ-24](implementation-plan.md#current-work); a Sankhya developer account and the solution are account actions.\n**Request and reason:** Create the IA-MNS solution in the Sankhya developer area, download its add-on template, run the development database in Docker, and install and configure the development WildFly and Om as the Sankhya developer documentation describes. Place the template in `apps/sankhya-addon`.\n**Configuration:** local only: `JAVA_HOME` (JDK 8); `wildfly.home` and the solution `sankhya.appKey` in the ignored `apps/sankhya-addon/local.properties` (or `WILDFLY_HOME` and `SANKHYA_ADDON_APP_KEY`) ([add-on guide](../../apps/sankhya-addon/README.md#development-environment)).\n**Verification:** The template is in `apps/sankhya-addon`; the development database container and WildFly run locally.\n**Evidence / blocker:** The owner reported on 2026-10-06 that the solution was created, the template downloaded, the database configured with Docker and the WildFly configured per the Sankhya developer documentation. Verified the same day: the template is in `apps/sankhya-addon` with Gradle wrapper 8.2 and the IA-MNS solution's project name and group; a `sankhyaimages/skdev-oracle:1.1.0` container was running and healthy; a JDK 8 process was listening on the WildFly HTTP and management ports; `JAVA_HOME` pointed to JDK 8. `WILDFLY_HOME` was not set in the user or machine environment, so it must be set (or supplied through the IDE) before `deployAddon`. The developer-area registration and the Om installation through WPM were not inspected directly. During PJ-24 on 2026-10-06 the development WildFly needed two development-only corrections: `placemm.ear`, marked failed by the deployment scanner's timeout during the first boot, was redeployed (the add-on requires it), and `-XX:MaxMetaspaceSize` in `bin/standalone.conf.bat` was raised from 256m to 1024m after the fully deployed Om ran out of metaspace (the previous file was kept as a backup); the owner restarted WildFly. The owner then granted the IA-MNS screen to the development user VENDEDOR in the Om access control.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-17",
-    "anchor": "ph-17",
-    "text": "PH-17\n[ ] **Confirm the terms for publishing the Sankhya add-on template files in this public repository.**\n**Status:** pending (blocks committing template-derived files; does not block local development). **Owner:** project owner, with Sankhya or legal input when needed.\n**Dependency / trigger:** [PJ-24](implementation-plan.md#current-work); before the first commit of template-derived files.\n**Request and reason:** The template downloaded from the Sankhya developer area carries no license statement. IA-MNS is public under Apache-2.0 ([ADR-0021](../adr/0021-license-ia-mns-under-apache-2-0.md)), so committing Sankhya-authored files publishes them under this repository. Agents must not assume redistribution rights. PJ-24 removed or replaced every template file the add-on does not need: the guide, the example Java classes, screen, dashboard, data-dictionary, database-script and parameter examples, the icon, `.gitignore`, `.editorconfig` and the build files, which were rewritten; the Gradle wrapper was regenerated from Gradle's official Apache-2.0 distribution. One Sankhya-authored file remains because the Om requires it: `apps/sankhya-addon/vc/src/main/webapp/WEB-INF/web.xml`, the Om web module descriptor (filters and servlets of the Om framework). Decide one of:\nObtain Sankhya's confirmation that `web.xml` may be published in a public repository, with any required notice.\nKeep `web.xml` out of the repository and document that developers take it from the template of their Sankhya developer area.\nUntil this is decided, the add-on `.gitignore` excludes `web.xml`, so only IA-MNS-authored files and the official Gradle wrapper can be committed; a fresh clone then needs the template's `web.xml` to build the add-on.\n**Configuration:** none.\n**Verification:** The decision and any required notice are recorded here, and the committed contents of `apps/sankhya-addon` match it.\n**Evidence / blocker:** Identified on 2026-10-06 while reviewing the template and narrowed the same day to `web.xml` (PJ-24). No template file has been committed; the solution `appKey` is no longer in any file Git would track.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-18",
-    "anchor": "ph-18",
-    "text": "PH-18\n[x] **Supply the VRMaster sales reference SQL.**\n**Status:** completed. **Owner:** project owner.\n**Dependency / trigger:** [PJ-28](implementation-plan.md#current-work); the owner chose on 2026-10-06 to provide the reference, as for Sankhya.\n**Request and reason:** Send the SQL that defines a sale in VRMaster for IA-MNS. It should make explicit: the tables and joins; the date column; the net-value expression; quantity and its unit; weight, if wanted; which stores count; how cancellations, returns and other exclusions are treated; and the product description used for search. Agents must not invent ERP business semantics; the PDT queries over `public.venda` are only a comparison point.\n**Configuration:** none.\n**Verification:** The SQL is received and transcribed into the VRMaster reader without changing which sales count. Its reconciliation with the real database was split into [PH-20](#ph-20) on 2026-10-07, because it needs the owner's account password.\n**Evidence / blocker:** Received on 2026-10-07: the query of a PDT Connect dashboard over `venda` joined to `produto`, `loja`, the store's `fornecedor`, `produtoaliquota` for the store's state, `aliquota`, the level-1 `mercadologico`, and left joins to `centrocusto` and `comprador`, filtered by `venda.data` and a store list, with cost, tax and margin computations. The owner named the fields IA-MNS uses (`venda.id`, `id_produto`, `data`, `quantidade`, `id_loja`, `valortotal`, `produto.descricaocompleta`, `id_tipoembalagem`, `loja.descricao`) and excluded stores, cost centers, buyers, margins, costs and taxes from the scope. Transcribed the same day in `apps/api/src/features/sales/vrmaster-query.ts` with every join; every store counts ([VRMaster sales semantics](../domains/sales-chat.md#vrmaster-sales-semantics)). The supplied excerpt elided the body of its `calculos` step, which the transcription assumes derives columns only; PH-20 confirms it. Synthetic PostgreSQL tests verify the transcription's behavior, not the real figures.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-19",
-    "anchor": "ph-19",
-    "text": "PH-19\n[ ] **Provide a dedicated read-only VRMaster PostgreSQL account for IA-MNS.**\n**Status:** changed (read access verified; effective DDL restriction pending PH-30). **Owner:** project owner and VRMaster DBA.\n**Dependency / trigger:** [PJ-28](implementation-plan.md#current-work); the owner chose a dedicated account on 2026-10-06. The account PDT Connect uses also runs DDL and must not be reused.\n**Request and reason:** Create a login role for IA-MNS with `CONNECT` on the VRMaster database, `USAGE` on the schemas of the reference SQL and `SELECT` only on its tables, with no ownership, DDL, DML, function execution beyond what the SQL needs, or membership in broader roles. Prefer `default_transaction_read_only = on` and a statement timeout on the role. Never send the password in chat or commit it; the owner places it in the ignored root `.env.local` (development) or the secret store.\n**Configuration:** `VRMASTER_DB_HOST`, `VRMASTER_DB_PORT`, `VRMASTER_DB_NAME`, `VRMASTER_DB_USER`, `VRMASTER_DB_PASSWORD` and `VRMASTER_DB_SSL_MODE` ([generated configuration reference](../generated/configuration/api.md), [setup](../setup.md#sales-chat)).\n**Verification:** The owner confirms the account and its limits. Connecting with it and confirming that `SELECT` works on the reference tables while writes, DDL and other tables are refused is part of [PH-20](#ph-20), because only the owner holds the password.\n**Evidence / blocker:** On 2026-10-07 the owner reported the account `ia_mns` with `CONNECT` on the VRMaster database, `USAGE` on its schema, `SELECT` only on the tables of the reference SQL (`venda`, `produto`, `loja`, `fornecedor`, `produtoaliquota`, `aliquota`, `mercadologico`, `centrocusto`, `comprador`), `default_transaction_read_only = on`, `statement_timeout = 30s` and no DDL or DML. IA-MNS has not connected with it; no password was requested or recorded. The same grants are reproduced in the adapter tests on synthetic PostgreSQL, where the transcribed SQL needs nothing more. On 2026-10-06 the VRMaster PostgreSQL port was reachable from the development machine; on 2026-10-07 the server answered the TLS request negatively ([PH-21](#ph-21)).\n**Current verified limitation:** PJ-41 connected with the existing reader on 2026-10-11, verified no privileged role attributes, memberships, owned tables or writes on existing public tables, and applied PH-27. Actual database/schema CREATE and TEMP are inherited from PUBLIC. The owner explicitly requires preserving PUBLIC; PH-30 tracks coordinated restriction. The earlier owner-reported absence of DDL was not an effective-ACL verification and is superseded by this live finding.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-20",
-    "anchor": "ph-20",
-    "text": "PH-20\n[ ] **Connect IA-MNS to the real VRMaster and reconcile the VRMaster source.**\n**Status:** pending (blocks [PJ-29](implementation-plan.md#current-work)). **Owner:** project owner.\n**Dependency / trigger:** [PH-18](#ph-18) and [PH-19](#ph-19); split from them on 2026-10-07. Only the owner holds the account password.\n**Request and reason:** Place the `VRMASTER_DB_*` settings of the [setup](../setup.md#sales-chat) in the ignored root `.env.local` (`VRMASTER_DB_SSL_MODE=disable` while [PH-21](#ph-21) is open) and restart the API. Connected as `ia_mns`, confirm that a write and a `CREATE` are refused. Then, with the queries of [VRMaster reconciliation](vrmaster-reconciliation.md), compare for the periods and products agreed with the owner the official dashboard query run with every store against the IA-MNS reference: total value and quantity per month, per product and per packaging type, an accented product phrase and a period boundary. Finally ask IA-MNS the same questions with `Pilar da Terra (VR Master)` and `Tudo` selected. Agents never receive the password.\n**Configuration:** `VRMASTER_DB_HOST`, `VRMASTER_DB_PORT`, `VRMASTER_DB_NAME`, `VRMASTER_DB_USER`, `VRMASTER_DB_PASSWORD`, `VRMASTER_DB_SSL_MODE` in the root `.env.local`.\n**Verification:** Every comparison returns no difference (or each difference is explained and corrected in the reference transcription), writes and DDL are refused, and the IA-MNS answers equal the reference aggregates. Record only equal/different results and row counts, never figures, hosts or credentials, because the repository is public.\n**Evidence / blocker:** Not started. The read-only queries are in [VRMaster reconciliation](vrmaster-reconciliation.md); on 2026-10-07 they ran without error on the synthetic VRMaster schema of the adapter tests, where the official and IA-MNS sales were identical. On 2026-10-11 ([PJ-35](implementation-plan.md#current-work)) IA-MNS connected to the real VRMaster as `ia_mns` with the owner's `.env.local`: `default_transaction_read_only = on`, SELECT privilege on exactly the nine reference tables. No write or `CREATE` was attempted, because the owner forbade any ERP change in that task; the sales reconciliation itself remains open.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-21",
-    "anchor": "ph-21",
-    "text": "PH-21\n[ ] **Decide how the VRMaster connection is protected in transit.**\n**Status:** pending (required before shared or production use of the VRMaster source). **Owner:** project owner and VRMaster DBA.\n**Dependency / trigger:** [PJ-28](implementation-plan.md#current-work), [PJ-29](implementation-plan.md#current-work).\n**Request and reason:** On 2026-10-07 the VRMaster PostgreSQL server answered the TLS request negatively, so IA-MNS can connect only with `VRMASTER_DB_SSL_MODE=disable`, which sends the `ia_mns` credentials and the sales results unencrypted on that network. Either enable TLS on the server with a certificate IA-MNS can verify (then use `verify-full`, the default), or record an explicit owner decision accepting unencrypted traffic on that network for a named environment.\n**Configuration:** `VRMASTER_DB_SSL_MODE`.\n**Verification:** The server accepts TLS and IA-MNS connects with `verify-full`, or the owner's dated acceptance with its scope is recorded here.\n**Evidence / blocker:** Not started. The probe sent only the PostgreSQL TLS request, without credentials. Since 2026-10-11 product lookup ([PJ-35](implementation-plan.md#current-work)) uses the same connection, so product descriptions and classifications also travel unencrypted on that network until this is decided.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-22",
-    "anchor": "ph-22",
-    "text": "PH-22\n[ ] **Confirm the reverse proxy topology and how the proxy-to-application hop is protected.**\n**Status:** pending (blocks [PJ-33](implementation-plan.md#current-work) configuration and [PJ-34](implementation-plan.md#current-work)). **Owner:** infrastructure administrator with the project owner.\n**Dependency / trigger:** The owner approved on 2026-10-07 a corporate TLS reverse proxy in front of IA-MNS at its public HTTPS origin; plain HTTP on the hop to the application is not assumed approved.\n**Request and reason:** Confirm, keeping the concrete values with the owner and the deployment configuration, never in this public repository:\nWhere the proxy runs (the IA-MNS host or another machine) and every source address it uses towards IA-MNS, for `ORION_TRUSTED_PROXIES` and the host firewall.\nWhether the hop stays on a private server network or must be encrypted; if encrypted, which certificate (and issuing CA) the proxy will trust for `ORION_TLS_CERT_FILE` / `ORION_TLS_KEY_FILE`.\nThat the proxy forwards every path unchanged (no prefix stripping, no cookie rewriting), appends `X-Forwarded-For`, sets `X-Forwarded-Proto: https`, sends no `X-Frame-Options` or `Content-Security-Policy` of its own (they would break `/embed/*`), does not cache `/api`, and allows a 60-second read timeout.\nTLS, the HTTP-to-HTTPS redirect, HSTS (initial max-age and whether subdomains are included) and internal DNS for people inside the network.\n**Configuration:** `ORION_TRUSTED_PROXIES`, optionally `ORION_TLS_CERT_FILE` and `ORION_TLS_KEY_FILE` ([generated configuration reference](../generated/configuration/api.md)); `IA_MNS_PUBLIC_ORIGIN`.\n**Verification:** The application sees the real client address only through the listed proxy, the hop protection matches the decision, and anonymous HTTPS checks show the redirect, HSTS and per-path framing.\n**Evidence / blocker:** Not started. The application side is implemented by [PJ-32](implementation-plan.md#current-work) ([ADR-0029](../adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)); [PJ-33](implementation-plan.md#current-work) supports both outcomes (`ORION_TRUSTED_PROXIES`, and the TLS overlay that mounts `/etc/ia-mns/tls`), and `check-config` and `status` report a plain HTTP hop and an unset trusted proxy as open production requirements.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-23",
-    "anchor": "ph-23",
-    "text": "PH-23\n[ ] **Create a dedicated OpenAI project and key for production.**\n**Status:** pending (blocks [PJ-34](implementation-plan.md#current-work)). **Owner:** project owner / OpenAI Platform administrator.\n**Dependency / trigger:** Owner decision of 2026-10-07: production uses its own OpenAI project and key, never the development key of [PH-07](#ph-07).\n**Request and reason:** Create the production project, its key with only the Responses capability the application uses, spending limits and the data-retention settings chosen under [PH-09](#ph-09). Place the key only in the production secret store.\n**Configuration:** `OPENAI_API_KEY` (secret); optional installation default `OPENAI_MODEL`, which owners override in **Administração → Parâmetros** after evaluating a model with `pnpm eval`.\n**Verification:** Presence is verified without displaying the key; a production agent turn succeeds; the development key is not present in production configuration.\n**Evidence / blocker:** Not started.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-24",
-    "anchor": "ph-24",
-    "text": "PH-24\n[ ] **Decide the remaining production operations: host port, network rules, external backup, public access, operators and alerts.**\n**Status:** pending (blocks [PJ-34](implementation-plan.md#current-work); informs [PJ-33](implementation-plan.md#current-work)). **Owner:** project owner with the infrastructure administrator.\n**Dependency / trigger:** Approved production plan of 2026-10-07; retention and provider data policy remain [PH-09](#ph-09).\n**Request and reason:** Decide and record, without addresses or credentials in this repository:\nChoose the host port the application is published on (only on the host's internal address, mapped to 3000 in the container) and confirm on the server that it is free.\nInbound rules (only the proxy reaches the application port; SSH only from administration) and outbound rules from the IA-MNS host to the Sankhya Oracle listener, the VRMaster PostgreSQL, OpenAI and PDT Connect, plus the matching allowances on those systems for the IA-MNS host.\nThe external backup destination, who holds the backup decryption key, and who runs and verifies restores.\nWhether the public origin is reachable from the internet or only from authorized networks at the proxy.\nThe named operators with server and production database access.\nThe alert channel for an unready application, failed backups, overdue restore checks and disk usage.\n**Configuration:** none in IA-MNS beyond the PJ-33 deployment settings.\n**Verification:** Each decision is recorded here with its date and reflected in the PJ-33 configuration; nothing is assumed.\n**Evidence / blocker:** Not started. [PJ-33](implementation-plan.md#current-work) prepared each decision as configuration: `IA_MNS_BIND_ADDRESS` and `IA_MNS_HTTP_PORT` (required, no default), `IA_MNS_BACKUP_EXTERNAL_TARGET` with `IA_MNS_BACKUP_AGE_RECIPIENT`, and `IA_MNS_ALERT_COMMAND`; `status` reports a missing external backup destination as an unmet production requirement.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-25",
-    "anchor": "ph-25",
-    "text": "PH-25\n[ ] **Decide how the Sankhya Oracle connection is protected in transit.**\n**Status:** pending (required before production use of the Sankhya source). **Owner:** project owner and ERP DBA.\n**Dependency / trigger:** [PJ-34](implementation-plan.md#current-work); the equivalent decision for VRMaster is [PH-21](#ph-21).\n**Request and reason:** The production IA-MNS host will read sales and, with the directory view, user names from the Sankhya Oracle database. Choose Oracle Net native encryption or TCPS that the IA-MNS Thick-mode client can use, or record an explicit owner acceptance of unencrypted traffic on a named network segment for production.\n**Configuration:** `SANKHYA_DB_CONNECT_STRING` (secret); any Oracle Net client setting the decision requires belongs to the deployment, not this repository.\n**Verification:** The connection is encrypted as decided, or the dated acceptance with its scope is recorded here.\n**Evidence / blocker:** Not started.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-26",
-    "anchor": "ph-26",
-    "text": "PH-26\n[ ] **Install IA-MNS on the Ubuntu host and record homologation evidence.**\n**Status:** pending (blocks [PJ-34](implementation-plan.md#current-work)). **Owner:** project owner, with the infrastructure administrator for host access.\n**Dependency / trigger:** [PJ-33](implementation-plan.md#current-work) (tooling ready); a merged release tagged `ia-mns-vX.Y.Z`; [PH-08](#ph-08), [PH-22](#ph-22), [PH-23](#ph-23) and [PH-24](#ph-24) for production values.\n**Request and reason:** Follow the [host setup and first deployment runbook](../runbooks/production-host-setup-and-first-deployment.md) on the production host. The rehearsal proves the tooling on disposable resources only; the host's network, proxy, firewall, external systems and real configuration can only be verified there, by people with access to them. Keep the host address, domain and credentials out of this repository.\n**Configuration:** the five `/etc/ia-mns/*.env` files on the host; never in this repository.\n**Verification:** `ia-mns-deploy status` exits 0 on the host; the public origin serves the application through the proxy with HSTS and per-path framing; an owner signs in with a second factor; `verify-restore` succeeds; the external encrypted copy exists. Record dated, non-sensitive evidence here.\n**Evidence / blocker:** Not started; nothing has been installed on the host.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-27",
-    "anchor": "ph-27",
-    "text": "PH-27\n[x] **Grant the VRMaster reader the columns product lookup needs for status, packaging and family.**\n**Status:** completed. **Owner:** project owner and VRMaster DBA.\n**Dependency / trigger:** PJ-35/PJ-36; owner explicitly authorized the minimum Runtime grants in PJ-41.\n**Request and reason:** Completed three column grants to existing `ia_mns`: `produtocomplemento` (id, id_produto, id_loja, id_situacaocadastro, descontinuado), `tipoembalagem` (id, descricao, descricaocompleta), and `familiaproduto` (id, descricao, id_situacaocadastro). No whole-table reads on these registrations, prices, costs, stock, writes, role changes or PUBLIC changes were granted.\n**Configuration:** no credentials/settings changed for VRMaster.\n**Verification:** Actual column privilege metadata, forbidden-column checks and `products:catalog`; replanning reports zero missing grants. PJ-36 must validate the three paths before exposure, independently of this completed account-access action.\n**Evidence / blocker:** Applied three statements in one PostgreSQL transaction on 2026-10-11 with owner authority. [Canonical template](../../apps/api/scripts/erp-access/vrmaster-runtime.sql) and [live evidence](runtime-access-verification.md). Catalog access metadata now reflects the grants; model instructions and available product behavior are unchanged.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-28",
-    "anchor": "ph-28",
-    "text": "PH-28\n[ ] **Confirm the business meanings product lookup could not establish from data.**\n**Status:** pending (product lookup is usable; these refine it). **Owner:** project owner.\n**Dependency / trigger:** [PJ-35](implementation-plan.md#current-work).\n**Request and reason:** The [product lookup](../domains/product-lookup.md#limits-and-open-questions) records interpretations the data cannot decide: (1) cost centers are taken from the level-1 mercadológico section, so SECOS includes the sections named INATIVO and FEIRA INATIVO — confirm or name the sections to leave out; (2) the \"fornecedor fabricante\" column holds distributors and a placeholder — define what \"fabricante\" should mean, or keep it unavailable; (3) the operational meaning of the \"pesável\" flag, which fresh produce sold by KG does not carry; (4) \"banana fruta\" means the FLV › FRUTAS › BANANA products without chips and without raw materials — confirm this regression reference; (5) which product permissions SNK-PRD-01 or VRM-PRD-01 should be granted to the default user groups selected for PDT Connect and Sankhya (PH-13).\n**Configuration:** for (5), the operational parameter of automatic grants after a catalog decision; otherwise none.\n**Verification:** Each answer is recorded here with its date; the catalog, its interpretations, the regression dataset and the permission policy follow in a reviewed change.\n**Evidence / blocker:** Not started.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-29",
-    "anchor": "ph-29",
-    "text": "PH-29\n[x] **Isolate and maintain the existing ERP Administration/Discovery credentials.**\n**Status:** completed. **Owner:** project owner.\n**Dependency / trigger:** ADR-0033 and the owner's follow-up configuration in PJ-41.\n**Request and reason:** The owner supplied both existing administrative pairs in ignored root `.env.discovery` and removed VRMaster full-access entries from `.env.local`. Both Runtime identities are separately configured as `IA_MNS_RO` / `ia_mns`. Preserve the administrative accounts and credentials; no third account or automatic rotation.\n**Configuration:** Preserve all four `SANKHYA_DB_*_FULLACESS` / `VRMASTER_DB_*_FULLACESS` names. Tools prefer `.env.discovery.local` when present and otherwise read `.env.discovery`, without merging. Normal application loading never reads either file and excludes administrative keys before spawning.\n**Verification:** Key presence, distinct configured Runtime identities, Git ignore and successful separately authenticated admin/Runtime connections without printing values. Credential-boundary and file-selection tests retain production refusal, missing-pair failure and no runtime fallback.\n**Evidence / blocker:** Verified on 2026-10-11 with the owner-provided file. No credential value or account/password was altered; only the non-secret directory view setting was added to `.env.local`. Explicit owner authorization covered the separate provisioning tool, not ordinary Discovery. PUBLIC security remains PH-30.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-30",
-    "anchor": "ph-30",
-    "text": "PH-30\n[ ] **Coordinate removal of inherited PostgreSQL DDL capabilities from the Runtime role.**\n**Status:** pending. **Owner:** project owner and VRMaster DBA.\n**Dependency / trigger:** PJ-41 live ACL audit; required before claiming effective strictly read-only Runtime access.\n**Request and reason:** `ia_mns` inherits CREATE on the connected database and public schema plus TEMPORARY from PUBLIC. A direct revoke from ia_mns cannot deny that inheritance. Restricting PUBLIC affects other ERP/PDT clients and requires a coordinated review of their actual needs, explicit replacement grants and scoped owner authorization. The owner explicitly selected preserving PUBLIC and recording this dependency in the current task; do not silently revoke global access.\n**Configuration:** database/schema ACLs; no credential or third-account change.\n**Verification:** Inspect effective database/schema privileges, role attributes/memberships and table/column ACLs. Verify the other clients' required operations separately after an authorized coordinated change. Never probe real writes or DDL as a test.\n**Evidence / blocker:** Before/after ACL inspection on 2026-10-11 confirms PUBLIC unchanged, Runtime table writes absent in public and the three CREATE/TEMP capabilities retained. `default_transaction_read_only=on`, 30-second statement limits and fixed read-only application SQL supplement controls but do not eliminate those capabilities. [Live evidence](runtime-access-verification.md).\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-31",
-    "anchor": "ph-31",
-    "text": "PH-31\n[ ] **Record corporate and legal prerequisites for additional personal-data categories and provider account claims.**\n**Status:** pending, category-scoped. **Owner:** project owner and corporate privacy/legal accountable person.\n**Dependency / trigger:** PJ-42 and [AI data processing](../security/ai-data-processing.md). Ordinary authorized operational sales/product analysis is allowed; only additional restricted categories remain blocked.\n**Request and reason:** Confirm controller/operator roles, applicable legal basis and necessity for each additional personal-data use, LGPD transparency/rights/retention, and the applicable ANPD international-transfer mechanism. Verify actual OpenAI project sharing, contractual/DPA/subprocessor terms, retention controls and any claimed residency. The product approval alone cannot establish those legal/account facts.\n**Configuration:** none changed by this task; do not claim ZDR or regional processing without account evidence.\n**Verification:** Dated corporate record of the applicable category, purpose, terms and account settings; a reviewed field contract and deny-path tests before enabling it.\n**Evidence / blocker:** Owner business-data scope approved on 2026-10-12. Official OpenAI data controls, LGPD and ANPD Resolution 19 checked on 2026-10-13; organization-specific contracts/settings were not inspected. Personal catalog values remain withheld from model evidence, and no individual customer/employee or sensitive-personal-data tool is exposed.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-32",
-    "anchor": "ph-32",
-    "text": "PH-32\n[ ] **Prepare the Meta business assets for the WhatsApp channel: Business Portfolio, WhatsApp Business Account and app.**\n**Status:** pending. **Owner:** project owner as Meta Business Portfolio administrator.\n**Dependency / trigger:** PJ-48 (activation of the [WhatsApp channel](../domains/whatsapp-channel.md)); the implementation (PJ-47) does not depend on it and works with the local simulator.\n**Request and reason:** In Meta Business Suite / Business Manager: use (or create) the MNS **Business Portfolio**, complete **business verification** with the company's legal documents (required for higher messaging limits and a verified display name), and enable two-factor authentication for its administrators. In Meta for Developers, create an app of type **Business** owned by that portfolio and add the **WhatsApp** product; this creates or connects the **WhatsApp Business Account (WABA)**. Add a payment method to the WABA (Meta charges per its current pricing; reply messages inside the 24-hour service window are what IA-MNS uses). Meta account creation, legal verification and payment cannot be automated by contributors.\n**Configuration:** none in IA-MNS yet. Record, without secrets, the WhatsApp Business Account ID (later `WHATSAPP_BUSINESS_ACCOUNT_ID`) and the app ID in the owner's password vault notes.\n**Verification:** Business Manager shows the portfolio as verified (or the verification request pending, with its date), the app owned by the portfolio with the WhatsApp product, and the WABA with a payment method.\n**Evidence / blocker:** Requested on 2026-10-13 by the owner's WhatsApp integration request. The implementation used only synthetic Meta identifiers.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-33",
-    "anchor": "ph-33",
-    "text": "PH-33\n[ ] **Register the dedicated corporate number on the Cloud API, with the owner present.**\n**Status:** pending. **Owner:** project owner (holder of the corporate line).\n**Dependency / trigger:** PH-32; blocks PJ-48. The owner asked that the definitive number never be installed or registered without them.\n**Request and reason:** The number must have no WhatsApp account (it has none today) and must stay off the WhatsApp and WhatsApp Business apps afterwards. In the app's WhatsApp setup (or WhatsApp Manager → Phone numbers → Add phone number): enter the display name (it must follow Meta's display-name rules and match the business; Meta reviews it), the category and the number, then receive the **verification code by SMS or voice call** on the corporate line and confirm it. Set the number's **two-step verification PIN** and store it in the password vault. Then register the number for Cloud API use (Meta's `register` step with that PIN, done in WhatsApp Manager or by the `POST /{phone-number-id}/register` request in Meta's documentation). Until this is done, development uses the local simulator or Meta's test number from the app dashboard.\n**Configuration:** the **phone number ID** shown by Meta (later `WHATSAPP_PHONE_NUMBER_ID`); not secret. The two-step PIN is a secret kept only in the vault.\n**Verification:** WhatsApp Manager shows the number connected to the WABA with status _Connected_, the display name approved, and a messaging limit tier.\n**Evidence / blocker:** Not started. Do not use a personal or shared number.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-34",
-    "anchor": "ph-34",
-    "text": "PH-34\n[ ] **Issue the API credentials and configure the production webhook.**\n**Status:** pending. **Owner:** project owner (Meta administrator) and the production host operator.\n**Dependency / trigger:** PH-32, PH-33 and a production deployment that serves the public HTTPS origin ([PH-26](#ph-26)); blocks PJ-48.\n**Request and reason:** In Business Settings → Users → **System users**, create a system user for IA-MNS (Admin only if Meta requires it for asset assignment), assign it the app and the WABA with full control of messaging, and generate a **non-expiring system-user token** with the permissions `whatsapp_business_messaging` and `whatsapp_business_management`. Read the **app secret** (App settings → Basic). Generate a random **verify token**. Place the token, app secret and verify token directly in `/etc/ia-mns/runtime.env` (never in chat, tickets or the repository) and follow the [activation runbook](../runbooks/whatsapp-channel.md#activate): configure the callback URL `https://<public origin>/api/whatsapp/webhook` with the verify token, subscribe to the **messages** field, and switch the app to **Live** mode. Webhook subscription requires the HTTPS endpoint to be reachable by Meta, which only the deployed host provides.\n**Configuration:** `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` (secrets), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID` ([configuration reference](../generated/configuration/api.md)). The channel stays off until an owner turns on **Atendimento pelo WhatsApp** (PH-35).\n**Verification:** `ia-mns-deploy check-config` passes; Meta reports the webhook verified and the log shows `whatsapp_verification_accepted`; the app is Live; a test message from an unlinked phone produces no reply.\n**Evidence / blocker:** Not started.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-35",
-    "anchor": "ph-35",
-    "text": "PH-35\n[ ] **Approve the WhatsApp processing boundary and the pilot, then link numbers and turn the channel on.**\n**Status:** pending. **Owner:** project owner and the corporate privacy/legal accountable person.\n**Dependency / trigger:** PH-34 and [PH-09](#ph-09) (retention); related to [PH-31](#ph-31); blocks PJ-48.\n**Request and reason:** Answers with business data will transit Meta (as platform operator) and remain on the recipients' devices, outside IA-MNS control; the linked phone works as a credential without a second factor ([residual risks](../domains/whatsapp-channel.md#security-notes-and-residual-risks)). Confirm in writing that this boundary is acceptable for the current read-only sales and product capabilities, which people may use the channel and with which grants, that the provisional 30-day retention of channel metadata is acceptable until PH-09, the daily ceiling (`WHATSAPP_DAILY_LIMIT`, default 500) and the people/transparency notice required by the company's LGPD practice. Then, as owner: link the pilot numbers in **Administração → Pessoas**, set **Atendimento pelo WhatsApp** to **Ligado** in **Parâmetros**, and run the pilot checks of the runbook. Product, legal and cost acceptance cannot be decided by contributors.\n**Configuration:** operational parameter `channels.whatsapp` (no secret); optionally `WHATSAPP_DAILY_LIMIT`.\n**Verification:** Dated approval recorded here; the runbook's activation verification passes with a real pilot phone and is recorded in PJ-48.\n**Evidence / blocker:** Not started.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "PH-36",
-    "anchor": "ph-36",
-    "text": "PH-36\n[ ] **Authorize and apply the Runtime read of Sankhya result centers (`TSICUS`).**\n**Status:** pending (non-blocking: every other restriction works without it). **Owner:** project owner with ERP mutation authority.\n**Dependency / trigger:** [PJ-54](implementation-plan.md#current-work); before an owner restricts Sankhya sales by result center (CR).\n**Request and reason:** The sales restriction by _centro de resultado_ filters `TGFCAB.CODCENCUS`, which the reader already reads, but listing the centers for owners and including the centers below a selected one need `SELECT` on `TSICUS` (`CODCENCUS`, `DESCRCENCUS`, `CODCENCUSPAI`, `GRAU`, `ANALITICO`, `ATIVO`). The reviewed [Sankhya template](../../apps/api/scripts/erp-access/sankhya-runtime.sql) now adds one `SELECT` grant and one private synonym for `IA_MNS_RO`; read-only Discovery confirmed the table and its 145 centers. Applying it is an ERP privilege change, which Discovery authority does not cover ([ERP database access](../security/erp-database-access.md)). Until then, searching or granting CR values answers `IDENTITY_RESTRICTION_UNAVAILABLE` and no CR restriction can exist.\n**Configuration:** none beyond the template; run `pnpm -C apps/api erp:runtime:access` to see the plan and `--apply` only with explicit authorization.\n**Verification:** The planner reports zero missing statements; an owner searches result centers in **Administração → Permissões → SNK-VEN-01 → Conceder com restrições**, and a restricted sales answer cites the center.\n**Evidence / blocker:** Prepared on 2026-10-20; not applied.\n"
-  },
-  {
-    "id": "repository/docs/project/human-actions",
-    "title": "IA-MNS Human Actions",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "New action template",
-    "anchor": "new-action-template",
-    "text": "New action template\nAllocate a new stable `PH-NN`; do not reuse existing IDs. Link it from the blocked or conditional plan task.\n## PH-NN\n\n- [ ] **Concrete human action.**\n\n**Status:** pending. **Owner:** actual person or responsible role.\n**Dependency / trigger:** Linked task; whether it blocks current work.\n**Request and reason:** Exact need, completed preparation, and why authorized automation cannot finish it.\n**Configuration:** Exact non-secret names, minimum scopes and secure destination; never secret values. Use \"none\" if no configuration is needed.\n**Verification:** Observable checks required before completion.\n**Evidence / blocker:** Dated safe evidence, outstanding limit, or changed applicability.\n\n"
-  },
-  {
-    "id": "repository/docs/project/implementation-plan",
-    "title": "IA-MNS Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "IA-MNS Implementation Plan",
-    "anchor": "ia-mns-implementation-plan",
-    "text": "IA-MNS Implementation Plan\n[Project human actions](human-actions.md) · [Project derivation](../project-derivation.md) · [Validation](../validation.md) · [Documentation index](../README.md)\n"
-  },
-  {
-    "id": "repository/docs/project/implementation-plan",
-    "title": "IA-MNS Implementation Plan",
-    "group": "Project guides",
-    "kind": "repository",
-    "heading": "Purpose and baseline",
-    "anchor": "purpose-and-baseline",
-    "text": "Purpose and baseline\nThis is IA-MNS's living execution plan and the current plan for this repository. It tracks product and repository work; the [README](../../README.md), current policies, and [accepted ADRs](../adr/README.md) govern implementation.\nIA-MNS was initialized on 2026-10-01 from Orion commit `53bcc705a9f68f01aa1bbea3a0f4df4a009577ea` of https://github.com/GabriellMDias/Orion. The [project manifest](../../.orion/project.json) records that immutable initialization commit and the Orion baseline currently integrated. The repository starts with the foundation's architecture, policies, ADRs, tooling, validation gate, CI, generated references, and Living Documentation Portal, and with no product modules. Results recorded for the Orion repository are not results for this repository until they pass in this checkout and in this repository's CI.\n"
   }
 ]

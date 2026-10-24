@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "TextField",
   "summary": "A labeled text-like input with associated help and validation messages.",
   "props": [
@@ -32,7 +31,19 @@
     {
       "id": "ui-text-fields",
       "label": "Labels, help and errors",
-      "description": "Synthetic profile fields with no persistence or network request."
+      "description": "Synthetic profile fields with no persistence or network request.",
+      "code": "<TextField label=\"Nome\" hint=\"Como você aparece no IA-MNS.\" required />",
+      "live": true
     }
-  ]
+  ],
+  "category": "Inputs",
+  "scope": "composed",
+  "owner": "IA-MNS Web UI",
+  "id": "TextField",
+  "exportName": "TextField",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.docs.json"
 }

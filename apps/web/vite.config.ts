@@ -4,17 +4,16 @@ import { fileURLToPath } from "node:url";
 import { readFoundationVersion } from "./scripts/foundation-version.js";
 import { escapeHtml, readProjectIdentity } from "./scripts/project-identity.js";
 import { loadEmbedAncestors } from "./scripts/embed-ancestors.js";
+import {
+  documentationIsolation,
+  internalDocumentationEnabled,
+} from "./scripts/documentation-build.js";
 
 const repositoryRoot = fileURLToPath(new URL("../..", import.meta.url));
 const identity = readProjectIdentity(repositoryRoot);
 
-// A production build may leave out the /docs portal (ADR-0029); the API refuses
-// to serve a build that contains it unless ORION_WEB_DOCS=enabled.
-const documentationSetting = process.env.VITE_ORION_DOCS ?? "enabled";
-if (!["enabled", "disabled"].includes(documentationSetting))
-  throw new Error("VITE_ORION_DOCS must be enabled or disabled");
-const documentation = documentationSetting === "enabled";
 export default defineConfig(({ command }) => {
+  const documentation = internalDocumentationEnabled(command, process.env);
   const embedAncestors = loadEmbedAncestors(
     command === "serve" ? repositoryRoot : undefined,
   );
@@ -41,6 +40,7 @@ export default defineConfig(({ command }) => {
   return {
     plugins: [
       react({ compiler: true }),
+      documentationIsolation(documentation),
       {
         name: "frame-ancestors",
         configureServer: (server) =>
@@ -72,7 +72,7 @@ export default defineConfig(({ command }) => {
         readFoundationVersion(repositoryRoot),
       ),
       __PROJECT_NAME__: JSON.stringify(identity.name),
-      __ORION_DOCUMENTATION__: JSON.stringify(documentation),
+      __ORION_INTERNAL_DOCS__: JSON.stringify(documentation),
     },
     build: { assetsInlineLimit: 0 },
     server: {

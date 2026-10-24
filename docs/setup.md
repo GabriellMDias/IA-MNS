@@ -152,7 +152,19 @@ The portal needs no API, database, identity provider, or `.env.local`. After the
 
 To try an API route, also run the API as described above, open an API operation, enter declared inputs and a token when the operation requires one, then select **Send request**. Writes require explicit acknowledgement. Tokens and responses remain in memory; no request executes automatically. Cancellation/timeouts do not prove a write was undone. Without the API, reading remains available and request failures are shown safely.
 
-After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. Build with `pnpm -C apps/web build`; preview with `pnpm -C apps/web exec vite preview --host 127.0.0.1`, then open `/docs` on the printed port. Production/static serving must support the existing SPA fallback for nested routes; no deployment provider is selected here.
+After editing repository Markdown or reference sources, run `pnpm docs:references:write` and `pnpm docs:references:check`. A normal `pnpm -C apps/web build` excludes the internal portal and all of its generated assets. For an explicitly authorized internal artifact or local production-preview check, use PowerShell process environment variables:
+
+```powershell
+$env:ORION_WEB_DOCUMENTATION = 'internal'
+$env:ORION_WEB_INTERNAL_DOCS_ACCESS = 'external'
+try { pnpm -C apps/web build } finally {
+  Remove-Item Env:ORION_WEB_DOCUMENTATION
+  Remove-Item Env:ORION_WEB_INTERNAL_DOCS_ACCESS
+}
+pnpm -C apps/web exec vite preview --host 127.0.0.1
+```
+
+Open `/docs` on the printed loopback port. The access setting acknowledges external enforcement; it does not install or verify it. Before any internal deployment, follow [the full-artifact access policy](architecture/living-documentation.md#build-and-deployment-boundary). Preview always serves the already-built artifact. Rebuild without those variables before product distribution. Internal static serving needs the SPA fallback for nested routes plus protection for every asset; no deployment provider is selected here.
 
 ## Exercise automated workflows
 
@@ -180,7 +192,7 @@ After intentional repository Markdown, API, database, or component-metadata chan
 
 `pnpm build` emits the API ESM and web static assets into ignored `dist/` directories and checks the browser bundle for known server-only markers. The [release evolution workflow](database/release-evolution.md) governs migrations; no durable release is recorded merely by running these commands.
 
-Production installation and operation are not local setup: follow the [production runbooks](runbooks/README.md). To run the production shape locally after `pnpm build`, start the emitted API with `ORION_WEB_ROOT` naming `apps/web/dist` (absolute, or relative to the working directory, such as `../web/dist` for `pnpm -C apps/api start`) and open the API's own address instead of the Vite server: the API serves the web build and answers under `/api`, as [ADR-0029](adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) describes. Set `IA_MNS_PUBLIC_ORIGIN` to that address when identity is configured. `pnpm -C apps/api config:check` validates a configuration without listening, and `VITE_ORION_DOCS=disabled pnpm -C apps/web build` produces a build without the `/docs` portal, which a production configuration requires unless `ORION_WEB_DOCS=enabled`.
+Production installation and operation are not local setup: follow the [production runbooks](runbooks/README.md). To run the production shape locally after `pnpm build`, start the emitted API with `ORION_WEB_ROOT` naming `apps/web/dist` (absolute, or relative to the working directory, such as `../web/dist` for `pnpm -C apps/api start`) and open the API's own address instead of the Vite server: the API serves the web build and answers under `/api`, as [ADR-0029](adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) describes. Set `IA_MNS_PUBLIC_ORIGIN` to that address when identity is configured. `pnpm -C apps/api config:check` validates a configuration without listening, and `pnpm -C apps/web build` excludes internal documentation by default. Explicit internal builds require the [build and full-artifact access controls](architecture/living-documentation.md#build-and-deployment-boundary), plus the API runtime opt-in `ORION_WEB_DOCS=enabled`.
 
 ## Corporate agent and local PostgreSQL
 

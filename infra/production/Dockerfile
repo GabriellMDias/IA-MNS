@@ -46,13 +46,16 @@ COPY . .
 # The production web build leaves out the /docs portal (ADR-0029).
 RUN pnpm db:generate \
   && pnpm -C apps/api build \
-  && VITE_ORION_DOCS=disabled pnpm -C apps/web build \
+  && ORION_WEB_DOCUMENTATION=disabled pnpm -C apps/web build \
   && pnpm -C apps/web bundle:check
 RUN --mount=type=cache,id=ia-mns-pnpm-store,target=/pnpm/store \
     pnpm --filter @ia-mns/api deploy --legacy --prod /out/runtime \
   && pnpm --filter @ia-mns/api deploy --legacy /out/migrate \
   && rm -rf /out/runtime/src /out/runtime/test /out/runtime/scripts /out/runtime/evals \
             /out/migrate/src /out/migrate/test /out/migrate/scripts /out/migrate/evals \
+  # Internal application guidance is not part of either distribution image.
+  && rm -f /out/runtime/AGENTS.md /out/runtime/README.md \
+           /out/migrate/AGENTS.md /out/migrate/README.md \
   # Release checkouts are created with a restrictive umask; the images run as
   # node, which must read everything and write nothing.
   && chmod -R a+rX,go-w /out /src/apps/api/dist /src/apps/web/dist

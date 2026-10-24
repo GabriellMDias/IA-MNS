@@ -60,7 +60,7 @@ async function listFiles(directory: string): Promise<string[]> {
 /**
  * Indexes a web build. Refuses a directory that is not an IA-MNS web build,
  * and a build that contains the /docs portal when documentation is disabled
- * (the portal is removed at build time with VITE_ORION_DOCS=disabled).
+ * (the portal is removed at build time with ORION_WEB_DOCUMENTATION=disabled).
  */
 export async function loadWebBuild(
   root: string,
