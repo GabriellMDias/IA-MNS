@@ -1,4 +1,9 @@
 import type { Plugin } from "vite";
+import { fileURLToPath } from "node:url";
+
+const repositoryRoot = fileURLToPath(
+  new URL("../../../", import.meta.url),
+).replaceAll("\\", "/");
 
 /** Build selection is independent of the product identity and Vite mode name. */
 export function internalDocumentationEnabled(
@@ -28,10 +33,18 @@ export function internalDocumentationEnabled(
 
 export function isInternalDocumentationModule(id: string): boolean {
   const path = id.replaceAll("\\", "/").split("?")[0];
+  if (path.includes("/node_modules/")) return false;
+  const repositoryPath = path.startsWith(repositoryRoot)
+    ? path.slice(repositoryRoot.length)
+    : undefined;
   return (
+    repositoryPath?.startsWith("docs/") === true ||
+    (repositoryPath !== undefined &&
+      /(?:^|\/)(?:AGENTS|README)\.md$/.test(repositoryPath)) ||
     /\/(?:apps\/web\/src\/(?:documentation(?:[./])|generated\/)|docs\/generated\/)/.test(
       path,
-    ) || /\/apps\/web\/src\/(?:.*\/)?components\.docs\.json$/.test(path)
+    ) ||
+    /\/apps\/web\/src\/(?:.*\/)?components\.docs\.json$/.test(path)
   );
 }
 

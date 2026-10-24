@@ -3109,6 +3109,16 @@
       "file": "pages/repository/docs/project/mvp-audit.json"
     },
     {
+      "id": "repository/docs/project/orion-v3-post-upgrade-audit",
+      "kind": "repository",
+      "title": "Orion v3.0.0 Post-Upgrade Audit",
+      "group": "Project guides",
+      "source": "docs/project/orion-v3-post-upgrade-audit.md",
+      "summary": "Audit date: 2026-10-24. The product comparison is commit 4bed3812181489f922548a5fbba87ea9f16f6058, the first parent of the foundation merge, against the upgraded branch. The…",
+      "headings": [],
+      "file": "pages/repository/docs/project/orion-v3-post-upgrade-audit.json"
+    },
+    {
       "id": "repository/docs/project/orion-v3-upgrade",
       "kind": "repository",
       "title": "Orion v3.0.0 Foundation Upgrade",
@@ -3521,11 +3531,11 @@
       { "file": "search/0023.json", "count": 97, "kinds": ["repository"] },
       { "file": "search/0024.json", "count": 75, "kinds": ["repository"] },
       { "file": "search/0025.json", "count": 38, "kinds": ["repository"] },
-      { "file": "search/0026.json", "count": 78, "kinds": ["repository"] },
-      { "file": "search/0027.json", "count": 131, "kinds": ["repository"] },
-      { "file": "search/0028.json", "count": 90, "kinds": ["repository"] },
-      { "file": "search/0029.json", "count": 28, "kinds": ["repository"] }
+      { "file": "search/0026.json", "count": 73, "kinds": ["repository"] },
+      { "file": "search/0027.json", "count": 132, "kinds": ["repository"] },
+      { "file": "search/0028.json", "count": 93, "kinds": ["repository"] },
+      { "file": "search/0029.json", "count": 35, "kinds": ["repository"] }
     ],
-    "count": 1963
+    "count": 1969
   }
 }

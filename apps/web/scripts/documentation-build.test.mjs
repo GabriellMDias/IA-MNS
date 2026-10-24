@@ -72,6 +72,32 @@ test("documentation selection keeps local compatibility and fails closed for bui
     isInternalDocumentationModule("/apps/web/src/components.tsx"),
     false,
   );
+  for (const source of [
+    "docs/project/human-actions.md?raw",
+    "docs/features/README.md?url",
+    "AGENTS.md?raw",
+    "apps/api/README.md?raw",
+  ]) {
+    assert.equal(
+      isInternalDocumentationModule(resolve(root, "../..", source)),
+      true,
+      source,
+    );
+  }
+  assert.equal(
+    isInternalDocumentationModule(
+      resolve(root, "node_modules/vendor/README.md"),
+    ),
+    false,
+    "Third-party package notices are not repository engineering guidance.",
+  );
+  assert.equal(
+    isInternalDocumentationModule(
+      resolve(root, "src/help/approved-guide.md?raw"),
+    ),
+    false,
+    "Independently owned product help is outside the internal source tree.",
+  );
 });
 
 async function files(directory) {
@@ -277,6 +303,9 @@ export function ProductProvider({ children }) { return children; }
       delete process.env.ORION_WEB_DOCUMENTATION;
       delete process.env.ORION_WEB_INTERNAL_DOCS_ACCESS;
       for (const injection of [
+        "import guide from '../../../docs/project/human-actions.md?raw'; console.log(guide);",
+        "import instructions from '../../../AGENTS.md?raw'; console.log(instructions);",
+        "import guideUrl from '../../../docs/project/human-actions.md?url'; console.log(guideUrl);",
         "import catalog from './generated/manifest.json'; console.log(catalog);",
         "import catalog from './components.docs.json'; console.log(catalog);",
         "import download from '../../../docs/generated/api/openapi.json?url'; console.log(download);",
