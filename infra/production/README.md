@@ -5,6 +5,7 @@ IA-MNS production runs on one Ubuntu host with Docker Compose, operated by `ia-m
 | Path | Purpose |
 | --- | --- |
 | [`Dockerfile`](Dockerfile) | `runtime` and `migrate` images from one build of a release commit; Oracle Instant Client 19.32 verified by Oracle's published SHA-256 |
+| [`check-runtime-image.mjs`](check-runtime-image.mjs) | CI check inside the runtime image: non-root, Oracle Thick initialization, default product web manifest and exclusion of application engineering guidance; feed on stdin to `node --input-type=module` |
 | [`compose.yaml`](compose.yaml), [`compose.tls.yaml`](compose.tls.yaml) | `api`, `postgres` (private network, external volume) and the one-shot `migrate`; the TLS overlay mounts `/etc/ia-mns/tls` |
 | [`bin/ia-mns-deploy`](bin/ia-mns-deploy) | install, configuration checks, secret generation, database setup, deploy, rollback, backups, restore, status |
 | [`postgres/pg_hba.conf`](postgres/pg_hba.conf) | client authentication written into the data directory by `setup` |

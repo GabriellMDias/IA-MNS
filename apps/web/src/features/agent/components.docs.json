@@ -66,7 +66,10 @@
           "label": "Owned conversation attachments",
           "description": "Synthetic file metadata and custom presentation with writes disabled; use the plus trigger to inspect the floating views."
         }
-      ]
+      ],
+      "scope": "feature-specific",
+      "owner": "agent",
+      "category": "Forms"
     }
   ]
 }

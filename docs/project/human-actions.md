@@ -12,6 +12,8 @@ Local development startup is covered by [PJ-49](implementation-plan.md#current-w
 
 The My Account, Administration and conversation-material visual improvements in [PJ-50 to PJ-53](implementation-plan.md#current-work) require no new human action or external access; existing account, security and channel prerequisites still apply.
 
+The foundation upgrade in [PJ-59](implementation-plan.md#current-work) requires review and a merge commit to retain Orion ancestry; no production deployment, ERP mutation or new credential is authorized. Future deployments must rebuild clean production artifacts and remove stale internal-documentation assets and caches. Protected internal builds require external host access control over all pages, assets and downloads as well as the existing `ORION_WEB_DOCS` runtime opt-in. Existing deployment prerequisites remain open. The [post-upgrade audit](orion-v3-post-upgrade-audit.md) introduces no new credential, privilege or production action; review of PR #13 and merge-commit integration remain the next owner action.
+
 ## Maintaining this checklist
 
 The PR #11 corrections in [PJ-58](implementation-plan.md#current-work) need no new human-controlled account, secret or ERP access. They add the forward application migrations `202610210002_identity_whatsapp_link_generations` and `202610210003_rotate_legacy_whatsapp_generations`; deployment must apply both before the updated runtime and must not run older WhatsApp workers concurrently. Disable the channel before rolling back to an older runtime and keep it disabled there. Existing WhatsApp activation approvals remain PH-32 to PH-35.

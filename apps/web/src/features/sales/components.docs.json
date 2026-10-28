@@ -31,7 +31,10 @@
           "label": "Monthly sales with comparison",
           "description": "Synthetic decimal sales and prior-year totals; the preview makes no API or provider request."
         }
-      ]
+      ],
+      "scope": "feature-specific",
+      "owner": "sales",
+      "category": "Data Display"
     },
     {
       "name": "SalesAnswer",
@@ -58,7 +61,10 @@
           "label": "Both sources, one unavailable",
           "description": "Synthetic Tudo answer with a Sankhya total and an unavailable VRMaster; the preview makes no API or provider request."
         }
-      ]
+      ],
+      "scope": "feature-specific",
+      "owner": "sales",
+      "category": "Data Display"
     }
   ]
 }

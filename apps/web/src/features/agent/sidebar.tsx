@@ -226,7 +226,7 @@ export function ConversationSidebar(props: Props) {
       {navigation.map((Item, index) => (
         <Item key={index} />
       ))}
-      {__ORION_DOCUMENTATION__ && (
+      {__ORION_INTERNAL_DOCS__ && (
         <Link to="/docs" aria-label="Documentação" title="Documentação">
           <Icon kind="docs" />
           <span className="agent-sidebar-text">Documentação</span>
@@ -375,7 +375,7 @@ export function ConversationSidebar(props: Props) {
             collapsed={!expanded}
             items={
               <>
-                {__ORION_DOCUMENTATION__ && (
+                {__ORION_INTERNAL_DOCS__ && (
                   <button
                     type="button"
                     role="menuitem"

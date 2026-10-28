@@ -4,6 +4,8 @@
 **Date:** 2026-10-07
 **Extends:** [ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) (one frontend, three surfaces, per-path framing) and [ADR-0004](0004-select-fastify-as-the-backend-http-framework.md) (Fastify). It decides the production runtime shape of the application, not the deployment platform, secret store, backup or release procedure, which remain deployment decisions.
 
+**Partially superseded by:** [ADR-0039](0039-isolate-internal-documentation-from-product-distribution.md) replaces only the documentation build selection with production exclusion by default and explicit protected internal builds. The hosting manifest, runtime refusal, proxy, TLS and embed boundaries remain in force.
+
 ## Context
 
 IA-MNS will run in production behind a corporate TLS reverse proxy at one public HTTPS origin. The identity requires the web application and the API under that origin: cookies are `__Host-` cookies, cookie-authenticated endpoints compare `Origin` with `IA_MNS_PUBLIC_ORIGIN`, and the PDT redirect URI is the browser path `/api/identity/pdt/callback`. ADR-0023 requires `frame-ancestors 'none'` on every route except `/embed/pdt` and `/embed/sankhya`, which only their host may frame.

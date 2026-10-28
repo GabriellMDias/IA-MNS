@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "ProductOptions",
   "source": "apps/web/src/features/products/results.tsx",
   "summary": "Presents the numbered choices of a product clarification, such as two interpretations of a word or several matching buyers.",
@@ -22,7 +21,17 @@
     {
       "id": "product-options-choice",
       "label": "Two interpretations",
-      "description": "Synthetic choices; selecting one shows a local message and makes no request."
+      "description": "Synthetic choices; selecting one shows a local message and makes no request.",
+      "live": true
     }
-  ]
+  ],
+  "scope": "feature-specific",
+  "owner": "products",
+  "category": "Data Display",
+  "id": "ProductOptions",
+  "exportName": "ProductOptions",
+  "metadataSource": "apps/web/src/features/products/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/products/results.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/products/components.docs.json"
 }

@@ -1,5 +1,122 @@
 [
   {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Free-form assistant with arbitrary tools or SQL",
+    "anchor": "free-form-assistant-with-arbitrary-tools-or-sql",
+    "text": "Free-form assistant with arbitrary tools or SQL\nRejected because grounded numbers and bounded execution are existing guarantees. The current registry selects only implemented execution code.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Streaming responses and durable workflow engine",
+    "anchor": "streaming-responses-and-durable-workflow-engine",
+    "text": "Streaming responses and durable workflow engine\nDeferred: one bounded read capability does not require autonomous loops or resumable external actions. Progress in PostgreSQL provides recovery without another transport.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "In-memory history or browser persistence",
+    "anchor": "in-memory-history-or-browser-persistence",
+    "text": "In-memory history or browser persistence\nRejected because restart durability and future capability context require a canonical server-owned store. Credentials and confidential transcripts remain out of browser storage.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nProduct identity and conversation are separate from sales semantics.\nHistory, outcomes and per-capability filters survive restart.\nProgress describes real operations and no speculative functionality is advertised.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nLocal PostgreSQL becomes required for the product conversation flow.\nSales interpretation uses a routing request followed by capability planning.\nStored result snapshots need lifecycle controls and are historical, not refreshed ERP data.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nNew tables are additive and application-owned. Docker binds only loopback, persists a named volume, and uses separate migration/runtime credentials. No ERP changes occur. The local provisioning helper applies migrations/grants without dumping credentials or deleting volumes. An interrupted execution is visible after its 120-second lease expires and is never automatically repeated.\n"
+  },
+  {
+    "id": "repository/docs/adr/0019-compose-a-corporate-agent-with-durable-conversations",
+    "title": "ADR-0019: Compose a Corporate Agent with Durable Conversations",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Corporate agent](../domains/corporate-agent.md)\n[Database principles](../database/principles.md)\n[Transactions](../database/transactions-and-concurrency.md)\n[Sales capability](../domains/sales-chat.md)\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "anchor": "adr-0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "text": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy\n**Status:** accepted\n**Date:** 2026-10-01\n**Extends:** [ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md), only temporary owner-controlled device testing. Persistent history, normal loopback development and production verifier requirements remain unchanged.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner requests testing IA-MNS from a phone on the same network. The current web/API bind to loopback, and the credential-free developer access is deliberately unavailable to other devices. Simply exposing that proxy would disclose local confidential history. Production identity remains outside scope.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nAccepted under the owner's request for phone testing, after reviewing the existing isolation rules and validating the non-production, expiry, credential and origin boundaries. Production identity remains deliberately deferred.\nProvide an explicit temporary network-test launcher with a separate loopback API and a web listener bound to one assigned RFC1918 IPv4 address. All protected operations in that API require a random 256-bit bearer, an absolute expiry within two hours, the application-client header and the configured browser origin when present. Cross-site and non-loopback upstream requests are rejected. Normal credential-free local access and the temporary mode are mutually exclusive; production and normal issuer configuration reject this mode.\nThe bearer maps to the existing local developer's conversations. Agent permissions are explicitly provided by composition; currently only sales:read. Future capability registration does not automatically expand this token's permission. The existing access field holds the token in memory, never URL/browser storage. Save its initial value only in an ignored local environment file for the owner to transfer to their device. Stop/expiry terminates the separate services and removes that file; it does not rotate OpenAI/Oracle credentials or alter normal .env.local.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nThis reuses the current bearer UI and owner-scoped API without selecting a production identity provider, adding cookies, weakening the desktop bypass or exposing database listeners. A two-hour absolute lifetime and process-local service separation bound this development convenience. HTTP on a private test network does not provide transport encryption; use only an owner-controlled trusted LAN. This is not shared employee access or a deployment method.\n"
+  },
+  {
+    "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
+    "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
     "id": "repository/docs/adr/0020-bound-temporary-device-testing-to-an-authenticated-development-proxy",
     "title": "ADR-0020: Bound Temporary Device Testing to an Authenticated Development Proxy",
     "group": "Decisions",
@@ -1059,7 +1176,7 @@
     "kind": "repository",
     "heading": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies",
     "anchor": "adr-0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
-    "text": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies\n**Status:** accepted\n**Date:** 2026-10-07\n**Extends:** [ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) (one frontend, three surfaces, per-path framing) and [ADR-0004](0004-select-fastify-as-the-backend-http-framework.md) (Fastify). It decides the production runtime shape of the application, not the deployment platform, secret store, backup or release procedure, which remain deployment decisions.\n"
+    "text": "ADR-0029: Serve the Web and API from One Origin behind Restricted Trusted Proxies\n**Status:** accepted\n**Date:** 2026-10-07\n**Extends:** [ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md) (one frontend, three surfaces, per-path framing) and [ADR-0004](0004-select-fastify-as-the-backend-http-framework.md) (Fastify). It decides the production runtime shape of the application, not the deployment platform, secret store, backup or release procedure, which remain deployment decisions.\n**Partially superseded by:** [ADR-0039](0039-isolate-internal-documentation-from-product-distribution.md) replaces only the documentation build selection with production exclusion by default and explicit protected internal builds. The hosting manifest, runtime refusal, proxy, TLS and embed boundaries remain in force.\n"
   },
   {
     "id": "repository/docs/adr/0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies",
@@ -1276,59 +1393,5 @@
     "heading": "Consequences",
     "anchor": "consequences",
     "text": "Consequences\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
-    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Positive",
-    "anchor": "positive",
-    "text": "Positive\nEvery production artifact, log line and frozen migration set names the same release.\nProduct and foundation versions can be told apart at a glance.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
-    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Negative",
-    "anchor": "negative",
-    "text": "Negative\nTooling that sorts or describes tags must filter by the `ia-mns-v` prefix.\nRecording needs read access to the deployed database's `_prisma_migrations` and to the deployed artifact's migration files, not only to the repository.\nThe release-history entry lands in a change after the tag, so the tagged commit itself never contains its own record.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
-    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Operational or Migration Impact",
-    "anchor": "operational-or-migration-impact",
-    "text": "Operational or Migration Impact\nThe first durable release freezes all migrations committed at its tag. Later schema changes are new forward migrations with an upgrade test from that baseline, and each production release that applies migrations is recorded.\n"
-  },
-  {
-    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
-    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "References",
-    "anchor": "references",
-    "text": "References\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), [foundation versioning](../versioning.md), [release workflow](../database/release-evolution.md), [migration policy](../database/migrations.md)\n[Configuration policy](../architecture/configuration.md) (`ORION_RELEASE_ID`)\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
-    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
-    "anchor": "adr-0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
-    "text": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool\n**Status:** accepted\n**Date:** 2026-10-07\n**Extends:** [ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) (production runtime shape) and [ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) (release tags). Selects the deployment platform, secret delivery, database roles, backups and operational tooling the [technology map](../architecture/technology-decisions.md) left to deployment.\n"
-  },
-  {
-    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
-    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
-    "group": "Decisions",
-    "kind": "repository",
-    "heading": "Context",
-    "anchor": "context",
-    "text": "Context\nThe owner approved on 2026-10-07 running IA-MNS in production on one Ubuntu host of the company network behind the corporate TLS reverse proxy, with its own PostgreSQL in Docker, similar in spirit to how PDT Connect runs but without copying its implementation: PDT runs as root, publishes PostgreSQL, keeps credentials beside the code and runs migrations and seed in the container command at every start. IA-MNS already separates the runtime and migration credentials, refuses unsafe production configuration, and freezes released migrations. The production host, proxy and external systems are operated by people; the repository must provide a reproducible artifact and a procedure an operator can follow without inventing steps. The Sankhya database needs Oracle Instant Client Thick mode (Oracle 12.1); the hop between the proxy and the application and several operational policies are still undecided ([PH-09](../project/human-actions.md#ph-09), [PH-22](../project/human-actions.md#ph-22) to [PH-25](../project/human-actions.md#ph-25)).\n"
   }
 ]

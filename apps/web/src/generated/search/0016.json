@@ -1,5 +1,59 @@
 [
   {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nEvery production artifact, log line and frozen migration set names the same release.\nProduct and foundation versions can be told apart at a glance.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nTooling that sorts or describes tags must filter by the `ia-mns-v` prefix.\nRecording needs read access to the deployed database's `_prisma_migrations` and to the deployed artifact's migration files, not only to the repository.\nThe release-history entry lands in a change after the tag, so the tagged commit itself never contains its own record.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nThe first durable release freezes all migrations committed at its tag. Later schema changes are new forward migrations with an upgrade test from that baseline, and each production release that applies migrations is recorded.\n"
+  },
+  {
+    "id": "repository/docs/adr/0030-name-ia-mns-releases-with-product-tags-distinct-from-orion",
+    "title": "ADR-0030: Name IA-MNS Releases with Product Tags Distinct from Orion",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md), [foundation versioning](../versioning.md), [release workflow](../database/release-evolution.md), [migration policy](../database/migrations.md)\n[Configuration policy](../architecture/configuration.md) (`ORION_RELEASE_ID`)\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "anchor": "adr-0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "text": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool\n**Status:** accepted\n**Date:** 2026-10-07\n**Extends:** [ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md) (production runtime shape) and [ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md) (release tags). Selects the deployment platform, secret delivery, database roles, backups and operational tooling the [technology map](../architecture/technology-decisions.md) left to deployment.\n"
+  },
+  {
+    "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
+    "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner approved on 2026-10-07 running IA-MNS in production on one Ubuntu host of the company network behind the corporate TLS reverse proxy, with its own PostgreSQL in Docker, similar in spirit to how PDT Connect runs but without copying its implementation: PDT runs as root, publishes PostgreSQL, keeps credentials beside the code and runs migrations and seed in the container command at every start. IA-MNS already separates the runtime and migration credentials, refuses unsafe production configuration, and freezes released migrations. The production host, proxy and external systems are operated by people; the repository must provide a reproducible artifact and a procedure an operator can follow without inventing steps. The Sankhya database needs Oracle Instant Client Thick mode (Oracle 12.1); the hop between the proxy and the application and several operational policies are still undecided ([PH-09](../project/human-actions.md#ph-09), [PH-22](../project/human-actions.md#ph-22) to [PH-25](../project/human-actions.md#ph-25)).\n"
+  },
+  {
     "id": "repository/docs/adr/0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool",
     "title": "ADR-0031: Deploy on One Ubuntu Host with Docker Compose and a Release Tool",
     "group": "Decisions",
@@ -891,6 +945,123 @@
     "text": "References\n[Identity authorization](../domains/identity.md#authorization)\n[Operational configuration](../architecture/configuration.md#operational-parameters)\n[Implementation plan](../project/implementation-plan.md#current-work) and [human actions](../project/human-actions.md#ph-13)\n"
   },
   {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "anchor": "adr-0039-isolate-internal-documentation-from-product-distribution",
+    "text": "ADR-0039: Isolate Internal Documentation from Product Distribution\n**Status:** accepted\n**Date:** 2026-10-23\nImported from Orion v3.0.0 (`aafb920a3616f51c0da4b145dbee61a4bf5c3cc7`), where this decision is ADR-0018. IA-MNS records it as ADR-0039 to preserve its existing ADR-0018 sales decision and all product decision identifiers.\n**Partially supersedes:** [ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md), only its documentation build selection. The existing `ia-mns-web.json` manifest and independent `ORION_WEB_DOCS` runtime refusal are preserved. The former `VITE_ORION_DOCS` build variable is retired; use the foundation controls documented below.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Context",
+    "anchor": "context",
+    "text": "Context\nThe owner requires a complete engineering knowledge system for developers and AI agents while separating it from product UI and public documentation. The existing portal uses the React/Vite application, deterministic generated references, a lazy UI import, local search, and synthetic previews. Lazy loading still emits its entire internal catalog and downloads into production artifacts. Removing navigation or adding a browser route guard would leave those files downloadable.\nADR-0008 already selects Vite and code splitting. Development-only identity behavior already uses build-time exclusion. ADR-0017 retains the portal and its sources in projects and makes composition and brand assets project-owned; it does not require shipping engineering assets in product builds. This decision complements that source-retention contract by defining distribution and publication explicitly. These mechanisms can support the requested separation without selecting another framework, authentication provider, or deployment topology.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Decision",
+    "anchor": "decision",
+    "text": "Decision\nRetain the full internal source catalog, generators, local `/docs` routes, search, previews, and AI-readable references. Treat the portal as a development tool. Exclude its routes, imports, UI styles, generated pages, search assets and reference downloads from every default production web build, in Orion and derived projects. Fail the product build if an accidental included import bypasses that boundary.\nAllow explicit internal builds only with an operator acknowledgement that a trusted external host enforces access to the entire artifact. This build selection grants no permission and supplies no authentication. A real internal deployment requires authorization and verified host controls over assets and downloads as well as routes; API controls remain unchanged.\nProduct documentation belongs to the product's UI, audience, ownership and release process. Public API documentation uses a separately approved source inventory, including referenced schemas and examples. Neither public surface inherits or filters the internal catalog automatically. The foundation does not introduce a public publisher in this change.\nKeep portal layout/navigation/styles inside its optional import boundary. Applications retain control of their shell, home, modules, brand and documentation presentation. Preserve the existing toolchain, repository/manifest contract, local URLs, and generated-source ownership.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Rationale",
+    "anchor": "rationale",
+    "text": "Rationale\nCompile-time selection removes actual emitted bytes and reuses Vite rather than introducing an application boundary solely for packaging. Independent publication sources prevent an internal addition from becoming a public disclosure. Retaining complete generation keeps engineering discovery and agent context intact. External hosting enforcement accommodates an explicitly authorized internal deployment without inventing a provider or pretending static client checks protect downloads.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Alternatives Considered",
+    "anchor": "alternatives-considered",
+    "text": "Alternatives Considered\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Hide links or require a browser login",
+    "anchor": "hide-links-or-require-a-browser-login",
+    "text": "Hide links or require a browser login\nThis changes navigation but leaves static references and search content downloadable. It does not establish the required distribution or trust boundary.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Remove the portal and internal sources during derivation",
+    "anchor": "remove-the-portal-and-internal-sources-during-derivation",
+    "text": "Remove the portal and internal sources during derivation\nThis reduces product bytes but also removes developer and agent capabilities, generated-reference validation, and a reusable engineering workflow.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Introduce a separate documentation application immediately",
+    "anchor": "introduce-a-separate-documentation-application-immediately",
+    "text": "Introduce a separate documentation application immediately\nA separate application may be justified by future independent hosting requirements. It is unnecessary for current build exclusion and would add workspace, routing, and validation responsibilities before a concrete deployment exists.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Consequences",
+    "anchor": "consequences",
+    "text": "Consequences\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Positive",
+    "anchor": "positive",
+    "text": "Positive\nDefault products contain no internal portal or generated documentation assets.\nLocal engineering workflows and canonical AI-readable knowledge remain available.\nProduct and public documentation can evolve independently of engineering navigation and branding.\nArtifact and browser tests cover exclusion, explicit inclusion, accidental imports, and existing local behavior.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Negative",
+    "anchor": "negative",
+    "text": "Negative\nInternal deployment operators must explicitly select and protect a distinct artifact; the build cannot verify their real host's access controls.\nProducts that previously used `/docs` as end-user help must migrate those links and content.\nPublic documentation requires an approved source inventory and a product-owned publication implementation when needed.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "Operational or Migration Impact",
+    "anchor": "operational-or-migration-impact",
+    "text": "Operational or Migration Impact\nProduction `/docs` availability intentionally changes; source, local routes, generators, SDKs, database and manifest schemas remain compatible. Rebuild and remove stale deployed assets rather than only changing links. Existing intentional internal deployments must select the protected internal build. The [migration policy](../architecture/living-documentation.md#existing-project-migration) describes adoption. No derived repository, release, remote push, provider, or deployment is changed by this implementation.\n"
+  },
+  {
+    "id": "repository/docs/adr/0039-isolate-internal-documentation-from-product-distribution",
+    "title": "ADR-0039: Isolate Internal Documentation from Product Distribution",
+    "group": "Decisions",
+    "kind": "repository",
+    "heading": "References",
+    "anchor": "references",
+    "text": "References\n[Living Documentation policy](../architecture/living-documentation.md)\n[ADR-0008: web stack](0008-select-react-vite-and-tanstack-for-web-applications.md)\n[ADR-0017: clean derived baseline](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\n[Project derivation](../project-derivation.md)\n[Build isolation tests](../../apps/web/scripts/documentation-build.test.mjs)\n"
+  },
+  {
     "id": "repository/docs/adr/AGENTS",
     "title": "ADR Instructions",
     "group": "Decisions",
@@ -978,7 +1149,7 @@
     "kind": "repository",
     "heading": "Decision index",
     "anchor": "decision-index",
-    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n[ADR-0021](0021-license-ia-mns-under-apache-2-0.md)\nLicense IA-MNS under Apache-2.0\n[ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md)\nOwn the IA-MNS Identity with Verified External Links\n[ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\nServe One Frontend to Three Surfaces with Host Identity Proofs\n[ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\nInterpret Analytics through Structured State and Evaluate AI Behavior\n[ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)\nAdminister the Authentication Policy within Fixed Safeguards\n[ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nHost IA-MNS in Sankhya Om through an In-Repository Add-on\n[ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)\nSelect the Sales Source in the Interface and Read Each Source Separately\n[ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)\nAdminister Operational Parameters Separately from Secrets and Bootstrap Configuration\n[ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)\nServe the Web and API from One Origin behind Restricted Trusted Proxies\n[ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)\nName IA-MNS Releases with Product Tags Distinct from Orion\n[ADR-0031](0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)\nDeploy on One Ubuntu Host with Docker Compose and a Release Tool\n[ADR-0032](0032-resolve-product-selections-through-a-verified-semantic-catalog.md)\nResolve Product Selections through a Verified Semantic Catalog\n[ADR-0033](0033-use-one-reader-and-the-existing-administrator-per-erp.md)\nUse One Reader and the Existing Administrator per ERP\n[ADR-0034](0034-apply-verified-product-selections-to-sales-without-materializing-display-lists.md)\nApply Verified Product Selections to Sales without Materializing Display Lists\n[ADR-0035](0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md)\nCompose Conversations over Authorized Evidence and Semantic Tools\n[ADR-0036](0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md)\nAdd WhatsApp as an Agent Channel Authorized by Owner-Linked Numbers\n[ADR-0037](0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md)\nGrant Identified Per-Source Permissions to People and Groups with Data Restrictions\n[ADR-0038](0038-join-default-user-groups-after-verified-provider-sign-in.md)\nJoin Default User Groups after Verified Provider Sign-In\n"
+    "text": "Decision index\nRecord\nDecision\n[ADR-0001](0001-select-typescript-and-nodejs-as-primary-language-and-runtime.md)\nSelect TypeScript and Node.js as the Primary Language and Runtime\n[ADR-0002](0002-select-pnpm-for-package-and-workspace-management.md)\nSelect pnpm for Package and Workspace Management\n[ADR-0003](0003-establish-repository-validation-and-architecture-enforcement.md)\nEstablish Repository Validation and Architecture Enforcement\n[ADR-0004](0004-select-fastify-as-the-backend-http-framework.md)\nSelect Fastify as the Backend HTTP Framework\n[ADR-0005](0005-select-postgresql-as-the-primary-database.md)\nSelect PostgreSQL as the Primary Database\n[ADR-0006](0006-select-prisma-orm-for-database-access-and-migrations.md)\nSelect Prisma ORM for Database Access and Migrations\n[ADR-0007](0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md)\nEstablish API Contract, OpenAPI, SDK, and Configuration Schema Strategy\n[ADR-0008](0008-select-react-vite-and-tanstack-for-web-applications.md)\nSelect React, Vite, and TanStack for Web Applications\n[ADR-0009](0009-establish-testing-strategy-and-tooling.md)\nEstablish Testing Strategy and Tooling\n[ADR-0010](0010-establish-observability-logging-tracing-metrics-and-error-reporting-strategy.md)\nEstablish Observability, Logging, Tracing, Metrics, and Error Reporting Strategy\n[ADR-0011](0011-establish-continuous-integration-dependency-automation-and-supply-chain-security-strategy.md)\nEstablish Continuous Integration, Dependency Automation, and Supply Chain Security Strategy\n[ADR-0012](0012-verify-jwt-access-tokens-at-the-first-api-boundary.md)\nVerify JWT Access Tokens at the First API Boundary\n[ADR-0013](0013-keep-agents-md-as-the-agent-neutral-instruction-source.md)\nKeep AGENTS.md as the Agent-Neutral Instruction Source\n[ADR-0014](0014-derive-projects-from-orion-through-git-ancestry-with-recorded-provenance.md)\nDerive Projects from Orion through Git Ancestry with Recorded Provenance\n[ADR-0015](0015-name-stable-orion-foundation-revisions-with-semantic-tags.md)\nName Stable Orion Foundation Revisions with Semantic Tags\n[ADR-0016](0016-license-the-orion-foundation-under-apache-2-0.md)\nLicense the Orion Foundation under Apache-2.0\n[ADR-0017](0017-start-derived-projects-from-a-clean-foundation-baseline.md)\nStart Derived Projects from a Clean Foundation Baseline\n[ADR-0018](0018-bound-natural-language-sales-to-a-read-only-query-capability.md)\nBound Natural Language Sales to a Read-Only Query Capability\n[ADR-0019](0019-compose-a-corporate-agent-with-durable-conversations.md)\nCompose a Corporate Agent with Durable Conversations\n[ADR-0020](0020-bound-temporary-device-testing-to-an-authenticated-development-proxy.md)\nBound Temporary Device Testing to an Authenticated Development Proxy\n[ADR-0021](0021-license-ia-mns-under-apache-2-0.md)\nLicense IA-MNS under Apache-2.0\n[ADR-0022](0022-own-the-ia-mns-identity-with-verified-external-links.md)\nOwn the IA-MNS Identity with Verified External Links\n[ADR-0023](0023-serve-one-frontend-to-three-surfaces-with-host-identity-proofs.md)\nServe One Frontend to Three Surfaces with Host Identity Proofs\n[ADR-0024](0024-interpret-analytics-through-structured-state-and-evaluate-ai-behavior.md)\nInterpret Analytics through Structured State and Evaluate AI Behavior\n[ADR-0025](0025-administer-the-authentication-policy-within-fixed-safeguards.md)\nAdminister the Authentication Policy within Fixed Safeguards\n[ADR-0026](0026-host-ia-mns-in-sankhya-om-through-an-in-repository-add-on.md)\nHost IA-MNS in Sankhya Om through an In-Repository Add-on\n[ADR-0027](0027-select-the-sales-source-in-the-interface-and-read-each-source-separately.md)\nSelect the Sales Source in the Interface and Read Each Source Separately\n[ADR-0028](0028-administer-operational-parameters-separately-from-secrets-and-bootstrap-configuration.md)\nAdminister Operational Parameters Separately from Secrets and Bootstrap Configuration\n[ADR-0029](0029-serve-the-web-and-api-from-one-origin-behind-restricted-trusted-proxies.md)\nServe the Web and API from One Origin behind Restricted Trusted Proxies\n[ADR-0030](0030-name-ia-mns-releases-with-product-tags-distinct-from-orion.md)\nName IA-MNS Releases with Product Tags Distinct from Orion\n[ADR-0031](0031-deploy-on-one-ubuntu-host-with-docker-compose-and-a-release-tool.md)\nDeploy on One Ubuntu Host with Docker Compose and a Release Tool\n[ADR-0032](0032-resolve-product-selections-through-a-verified-semantic-catalog.md)\nResolve Product Selections through a Verified Semantic Catalog\n[ADR-0033](0033-use-one-reader-and-the-existing-administrator-per-erp.md)\nUse One Reader and the Existing Administrator per ERP\n[ADR-0034](0034-apply-verified-product-selections-to-sales-without-materializing-display-lists.md)\nApply Verified Product Selections to Sales without Materializing Display Lists\n[ADR-0035](0035-compose-conversations-over-authorized-evidence-and-semantic-tools.md)\nCompose Conversations over Authorized Evidence and Semantic Tools\n[ADR-0036](0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md)\nAdd WhatsApp as an Agent Channel Authorized by Owner-Linked Numbers\n[ADR-0037](0037-grant-identified-per-source-permissions-to-people-and-groups-with-data-restrictions.md)\nGrant Identified Per-Source Permissions to People and Groups with Data Restrictions\n[ADR-0038](0038-join-default-user-groups-after-verified-provider-sign-in.md)\nJoin Default User Groups after Verified Provider Sign-In\n[ADR-0039](0039-isolate-internal-documentation-from-product-distribution.md)\nIsolate Internal Documentation from Product Distribution (Orion ADR-0018)\n"
   },
   {
     "id": "repository/docs/adr/template",
@@ -1095,7 +1266,7 @@
     "kind": "repository",
     "heading": "Documentation Instructions",
     "anchor": "documentation-instructions",
-    "text": "Documentation Instructions\nUse [the task index](README.md) to locate the owner of the information being changed. Read [contributing guidance](contributing.md) when creating, moving, or maintaining documentation.\nPreserve normative meaning, exceptions, and the distinction between requirements, examples, accepted decisions, and implementation availability. Check governing ADRs before treating a choice as unresolved.\nKeep one authoritative policy for each concern. Use links and scoped reading routes rather than copying policy into indexes or agent instructions.\nWhen moving content, retain every unique requirement at an explicit destination and update references. Check local links and section anchors after restructuring.\nKeep numbered accepted ADRs substantively intact. Follow the additional instructions in `adr/AGENTS.md` for ADR work and `runbooks/AGENTS.md` for runbook work.\nUse only available [validation](validation.md); do not describe planned generators, commands, applications, or procedures as implemented.\n"
+    "text": "Documentation Instructions\nUse [the task index](README.md) to locate the owner of the information being changed. Read [contributing guidance](contributing.md) when creating, moving, or maintaining documentation.\nPreserve normative meaning, exceptions, and the distinction between requirements, examples, accepted decisions, and implementation availability. Check governing ADRs before treating a choice as unresolved.\nKeep one authoritative policy for each concern. Use links and scoped reading routes rather than copying policy into indexes or agent instructions.\nWhen moving content, retain every unique requirement at an explicit destination and update references. Check local links and section anchors after restructuring.\nKeep numbered accepted ADRs substantively intact. Follow the additional instructions in `adr/AGENTS.md` for ADR work and `runbooks/AGENTS.md` for runbook work.\nUse only available [validation](validation.md); do not describe planned generators, commands, applications, or procedures as implemented.\nClassify documentation by [audience and publication](architecture/living-documentation.md#documentation-audiences-and-publication). Inclusion in the internal catalog never approves public distribution; preserve canonical engineering sources when changing build exposure.\n"
   },
   {
     "id": "repository/docs/api/error-contract",
@@ -1141,122 +1312,5 @@
     "heading": "Validation Errors",
     "anchor": "validation-errors",
     "text": "Validation Errors\nThe implemented validation response is `400 VALIDATION_FAILED` with the common envelope. Do not expose validator exceptions or echo submitted values. Structural validation is distinct from a valid request that conflicts with current domain state.\nIf field-level details become useful, add an explicit bounded schema to the canonical contract. Identify fields using a stable public request-path convention, never internal database/ORM paths; use stable reason codes where clients need to act and safe human text for explanation. Define multiple-failure bounds and unknown-field behavior. Returning every issue in an attacker-controlled payload must not create an unbounded response.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Mapping and disclosure",
-    "anchor": "mapping-and-disclosure",
-    "text": "Mapping and disclosure\nHTTP status conveys broad protocol meaning; public codes convey application semantics. The [generated registry](../generated/api/errors.md) is the current status mapping. Validation uses `400`, authentication `401`, permission denial `403`, absent/hidden resources `404`, state/version conflicts `409`, rate limiting `429`, unexpected failures `500`, and service unavailability `503` where declared.\nAuthentication and authorization failures follow their [security policies](../security/authentication.md). Avoid account enumeration and disclosure of hidden resource existence, cross-tenant data, claims, or policy internals. An absent and inaccessible resource may deliberately share `404`; test that behavior.\nExpected domain conflicts, stale versions, and incompatible idempotency-key reuse are explicit outcomes. Distinguish safe replay from a conflicting new intent. They should not become internal incidents simply because code represents them as exceptions.\nTranslate known database constraints at the persistence/application boundary according to business meaning. Unexpected database failures stay unexpected; do not disguise every exception as invalid user input.\nTranslate provider business rejection separately from dependency unavailability, configuration failure, or unknown outcome. Expose vendor-specific distinctions only when consumers need them, never raw provider content.\nUse a safe generic error for unexpected failures. Never serialize arbitrary exceptions, stack traces, SQL, secret values, internal paths/hostnames, or diagnostic dumps. Do not return ordinary API failures as hidden error objects inside `200` responses.\nPublic status is not internal severity: expected denials may matter to security monitoring, and a transient dependency failure may be operationally serious. [Error reporting](../reliability/error-reporting.md) owns that distinction.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Unknown Outcome",
-    "anchor": "unknown-outcome",
-    "text": "Unknown Outcome\nA timeout, disconnect, or commit error may leave the caller uncertain whether a write or external effect occurred. Retryability cannot be inferred from HTTP status or transient infrastructure failure alone. Define whether the operation is known not to have occurred, safely replayable, or requires state reconciliation. Introduce a distinct public unknown-outcome code only when consumers need different handling.\nA public retry hint, if introduced, must be machine-readable, bounded, and accurate for the operation. Rate-limit guidance must not disclose anti-abuse internals. Never imply a non-idempotent write is safe to repeat merely because the registry classifies a failure as transient. Each module's recovery conventions own its create replay and mutation reconciliation behavior.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Details and additional delivery modes",
-    "anchor": "details-and-additional-delivery-modes",
-    "text": "Details and additional delivery modes\nEvery public details object needs a typed schema and a consumer purpose. Include only information safe for that caller; omit record dumps, protected resource/tenant identifiers, authorization evaluation, credentials, and provider payloads. Cross-cutting correlation/retry metadata should remain distinguishable from domain details. Once consumed, field meaning and shape are compatibility-sensitive.\nWhen additional modes are introduced:\nMode\nError requirement\nWebhook or upload\nFollow the operation/provider contract while minimizing signature-validation or scanning details. Bound and classify upload failures explicitly.\nAsynchronous work\nA successful acceptance response does not guarantee eventual success. Externally visible job status maps worker failures to stable public semantics, never worker exceptions.\nBatch/partial success\nDefine atomic versus partial processing and item identity in an operation-specific result. Do not ambiguously overload the ordinary single-error envelope.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Diagnostics and consumer behavior",
-    "anchor": "diagnostics-and-consumer-behavior",
-    "text": "Diagnostics and consumer behavior\nReport an unexpected occurrence once at its authoritative boundary. Preserve useful internal causal evidence only within [redaction rules](../security/telemetry-redaction.md); preservation never authorizes raw exception-message or stack export. The current runtime records allowlisted diagnostic fields rather than arbitrary error content. Expected validation, business, and access failures may contribute to safe metrics/security/audit signals without becoming unexpected incidents.\nClients and SDKs must preserve structured error semantics and correlation, and provide a safe fallback for unknown codes. Application consumers should not depend on framework-specific transport exceptions for business meaning. Product code decides whether to display safe server copy or localized client text; it must not parse that copy. The current thin SDK exposes generated response/error typing without adding a separate error-class hierarchy.\nCode meaning, status mappings, details, categories where consumed, and retry behavior require [compatibility review](versioning.md). Adding a code can break exhaustive consumers; renaming/removing a code or changing meaning is potentially breaking. Optional details are only additive if actual clients tolerate them.\n"
-  },
-  {
-    "id": "repository/docs/api/error-contract",
-    "title": "API Error Contract",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Change and verification checklist",
-    "anchor": "change-and-verification-checklist",
-    "text": "Change and verification checklist\nInspect the registry, similar conditions, owning operation, actual consumers, authorization/disclosure policy, and compatibility commitments.\nDefine the safe semantic mapping and outcome/retry behavior. Add details only when needed, with explicit schema and size limits.\nVerify the real transport envelope, status, code, safe message, correlation, hidden-resource handling, and relevant failure paths. Test absent/invalid/expired credentials and other lifecycle states only where that mechanism exists.\nInject unexpected failures and assert that secrets, SQL, provider data, input values, stacks, and internal paths do not escape. Verify one appropriate diagnostic event and safe retry metadata if present.\nRegenerate and check the registry/OpenAPI/SDK references through [validation](../validation.md). Preserve current checks for registered unique codes, operation declarations, and freshness; extend checks for any new detail schemas or released compatibility obligations.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "API Principles",
-    "anchor": "api-principles",
-    "text": "API Principles\n[Task index](../README.md) · [Error contract](error-contract.md) · [Compatibility](versioning.md) · [Validation](../validation.md)\nThis policy owns API boundary design. [ADR-0004](../adr/0004-select-fastify-as-the-backend-http-framework.md) selects Fastify; [ADR-0007](../adr/0007-establish-api-contract-openapi-sdk-and-configuration-schema-strategy.md) selects executable TypeBox wire contracts, generated OpenAPI, and the thin TypeScript SDK. These are implemented. Module-specific behavior belongs to each module's business specification and implementation conventions; [Orion's reference implementation](../project-derivation.md#orions-reference-implementation) shows a complete example.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Locate the authoritative source",
-    "anchor": "locate-the-authoritative-source",
-    "text": "Locate the authoritative source\nTask\nStart here\nChange an operation, request, response, or expected error\nThe owning [module](../../apps/api/README.md#modules)'s TypeBox contracts, then its application operation and tests\nInspect health contracts\n[Health schemas](../../apps/api/src/health-contracts.ts) and [health policy](../reliability/health-checks.md)\nInspect the interoperable API\n[Generated OpenAPI](../generated/api/openapi.json); author changes in executable contracts\nChange a public error\n[Error registry and envelope](../../apps/api/src/errors.ts) and [error policy](error-contract.md)\nChange a consumer\n[SDK public surface](../../packages/sdk/README.md) and [web guide](../../apps/web/README.md)\nRegenerate derived artifacts\n[Artifact workflow](../architecture/backend-execution-and-generated-artifacts.md)\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Ownership and transport boundaries",
-    "anchor": "ownership-and-transport-boundaries",
-    "text": "Ownership and transport boundaries\nAn API exposes an owned application capability, not an arbitrary database table. Each operation needs a clear domain owner, consumer, and canonical contract. Resources and explicit commands are both appropriate when they express real behavior; do not generate CRUD or generic updates for every persisted entity.\nTransport adapters own routing, request validation, authentication integration, safe request context, protocol/error mapping, and response serialization. Application operations and domain rules should not depend on HTTP objects, headers, status codes, or framework APIs unless the behavior itself is transport-specific. Pass only the trusted context an operation needs.\nPersistence records, domain entities, API payloads, events, and UI models have distinct responsibilities. Reuse a representation only when its semantics genuinely match. Explicitly map allowed inputs and outputs: never pass an untrusted body directly to persistence or serialize internal objects merely because they are available. This prevents mass assignment and accidental disclosure while allowing internal refactoring without consumer breakage.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Canonical API Contract",
-    "anchor": "canonical-api-contract",
-    "text": "Canonical API Contract\nMaintain wire-oriented TypeBox schemas and route metadata as the authored source. Fastify uses them for validation and serialization; generated OpenAPI 3.1 describes the interoperable boundary; `openapi-typescript` and `openapi-fetch` provide the default typed client. Every exposed operation must have a stable, unique `operationId`.\nDefine request/response shapes, constraints, authentication, expected errors, and non-structural semantics deliberately before exposing behavior. Do not separately maintain equivalent runtime validators, TypeScript interfaces, OpenAPI schemas, SDK types, or reference tables. Generated artifacts are reproducible representations and must not be hand-edited. Ordinary internal types need not become TypeBox schemas.\nThe API owns its contracts. Extract a shared contract package only for genuine shared ownership. Such a package must not depend on persistence, backend framework implementation, server secrets, or UI code. First-party consumers use the generated SDK and must not import server implementations or database types. The SDK may provide transport, types, credential hooks, and error decoding; it must not own backend business authorization or persistence. Successful-response runtime revalidation is not automatic; introduce it only for a demonstrated trust or reliability requirement.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Validation",
-    "anchor": "validation",
-    "text": "Validation\nTreat bodies, query/path parameters, headers, cookies, uploads, webhooks, and client identifiers as untrusted. Validate structural input at the trusted boundary before application logic relies on it. Structural validation, domain validity, authentication, and authorization remain separate checks.\nFor each field, define meaning, required/optional status, omission versus explicit `null`, type, format, bounds, allowed values, classification, and exposure. Normalize only when domain semantics require it; do not silently modify user content for convenience. Unknown-field behavior must be deliberate and compatible with the consumer contract. Separate create, replacement, partial-update, summary, detail, and privileged schemas where their semantics differ instead of building one universally optional model.\nUse meaningful text and numeric limits based on product needs and resource cost. Bounded states should use explicit enums; consider extensibility under [versioning](versioning.md). Distinguish instants, calendar dates, local times, time zones, and durations. Money requires currency, units, and precision; exact financial amounts must not rely on ambiguous floating-point representations. Use clear English names and canonical descriptions, positive boolean semantics where practical, and established domain terminology. Product localization does not change machine identifiers.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Identifiers",
-    "anchor": "identifiers",
-    "text": "Identifiers\nPublic identifiers represent stable resource identity. They may coincide with storage keys when that is an intentional contract, but must not expose sensitive structure or grant authority. Treat opaque identifiers as opaque. Client-generated IDs are allowed only when explicitly designed for an actual offline, distributed, or idempotency need. Changing storage must not accidentally change public identity.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Authentication",
-    "anchor": "authentication",
-    "text": "Authentication\nProtected operations derive identity and capabilities from the [trusted authentication boundary](../security/authentication.md) and enforce [authorization](../security/authorization.md) on the server. Caller-supplied roles, owner IDs, permissions, tenant IDs, feature flags, or UI visibility cannot grant access. A tenant path alone does not establish membership. Public operations must be explicitly public; administrative/debug capabilities require deliberate privilege, output, and environment controls.\nMake operation security requirements discoverable. Apply stronger controls where credentials, personal data, finances, or administration require them. Hidden resources may deliberately share not-found semantics with absent resources; preserve and test the disclosure policy. Keep bearer credentials out of URLs except for an explicitly designed protocol requiring a short-lived capability. Gateway authentication never replaces application authorization.\n"
-  },
-  {
-    "id": "repository/docs/api/principles",
-    "title": "API Principles",
-    "group": "API guides",
-    "kind": "repository",
-    "heading": "Pagination",
-    "anchor": "pagination",
-    "text": "Pagination\nPotentially growing collections must be bounded. Define default/maximum page sizes, deterministic ordering with a tie-breaker, empty results, supported filters, sorting, and search semantics. Apply authorization before pagination; counts, filters, and related-resource expansion must not reveal inaccessible data.\nChoose offset or cursor pagination according to dataset size, change frequency, query cost, and consumer needs. Cursors are opaque inputs, not authorization evidence; validate their scope and contents and protect sensitive state or integrity where needed. Document membership changes between pages instead of implying a snapshot guarantee.\nAllowlist filter operators and sort fields. Never pass arbitrary client fields or sort expressions to SQL/ORM queries. Bound flexible queries, related-resource depth, response size, and export work; add sparse fields or expansions only when consumers benefit. Inspect query behavior for material N+1 costs. Each module's implementation conventions own its concrete cursor and page-size choices.\n"
   }
 ]

@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "ConversationMaterials",
   "source": "apps/web/src/features/agent/materials.tsx",
   "summary": "Manages owned operational attachments and explicit presentation preferences within one conversation.",
@@ -58,12 +57,23 @@
     {
       "id": "agent-materials-disabled",
       "label": "Conversation materials",
-      "description": "Disabled synthetic material settings; no live upload or preference request."
+      "description": "Disabled synthetic material settings; no live upload or preference request.",
+      "live": true
     },
     {
       "id": "agent-materials-owned",
       "label": "Owned conversation attachments",
-      "description": "Synthetic file metadata and custom presentation with writes disabled; use the plus trigger to inspect the floating views."
+      "description": "Synthetic file metadata and custom presentation with writes disabled; use the plus trigger to inspect the floating views.",
+      "live": true
     }
-  ]
+  ],
+  "scope": "feature-specific",
+  "owner": "agent",
+  "category": "Forms",
+  "id": "ConversationMaterials",
+  "exportName": "ConversationMaterials",
+  "metadataSource": "apps/web/src/features/agent/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/agent/materials.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/agent/components.docs.json"
 }

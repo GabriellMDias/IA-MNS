@@ -487,7 +487,7 @@ test("direct PDT sign-in reaches the same Person, and local sign-in requires the
   const menu = page.getByRole("menu", { name: "Menu da conta" });
   await expect(menu.getByRole("menuitem")).toHaveText([
     "Minha conta",
-    "Documentação",
+    ...(test.info().project.name === "served" ? [] : ["Documentação"]),
     "Tema escuro",
     "Sair",
   ]);

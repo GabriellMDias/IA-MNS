@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "ErrorNotice",
   "summary": "Displays a public API failure message and an optional reload action.",
   "props": [
@@ -36,7 +35,19 @@
     {
       "id": "unavailable-reload",
       "label": "Unavailable service with reload",
-      "description": "A synthetic SERVICE_UNAVAILABLE response; no live request is involved."
+      "description": "A synthetic SERVICE_UNAVAILABLE response; no live request is involved.",
+      "code": "<ErrorNotice error={error} onReload={reload} />",
+      "live": true
     }
-  ]
+  ],
+  "category": "Feedback",
+  "scope": "composed",
+  "owner": "IA-MNS Web UI",
+  "id": "ErrorNotice",
+  "exportName": "ErrorNotice",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.docs.json"
 }

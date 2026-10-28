@@ -46,7 +46,8 @@
     "orion:record-baseline": "node tooling/project/cli.ts record-baseline",
     "orion:check": "node tooling/project/cli.ts check",
     "orion:test": "node --test tooling/project/derivation.test.ts",
-    "validate": "pnpm db:generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm architecture && pnpm architecture:test && pnpm docs:check && pnpm agents:check && pnpm agents:test && pnpm env:example:check && pnpm release:check && pnpm release:test && pnpm orion:check && pnpm orion:test && pnpm references:check && pnpm docs:references:check && pnpm docs:references:test && pnpm test && pnpm build && pnpm smoke && pnpm test:e2e",
+    "docs:isolation:test": "pnpm -C apps/web test:documentation",
+    "validate": "pnpm db:generate && pnpm format:check && pnpm lint && pnpm typecheck && pnpm architecture && pnpm architecture:test && pnpm docs:check && pnpm agents:check && pnpm agents:test && pnpm env:example:check && pnpm release:check && pnpm release:test && pnpm orion:check && pnpm orion:test && pnpm references:check && pnpm docs:references:check && pnpm docs:references:test && pnpm docs:isolation:test && pnpm test && pnpm build && pnpm smoke && pnpm test:e2e",
     "docs:references:test": "node --test tooling/documentation/generate.test.mjs"
   },
   "devDependencies": {
@@ -56,7 +57,7 @@
     "dependency-cruiser": "18.4.0",
     "eslint": "10.11.0",
     "github-slugger": "2.0.0",
-    "markdown-it": "15.0.2",
+    "markdown-it": "15.0.3",
     "prettier": "3.9.8",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.1"

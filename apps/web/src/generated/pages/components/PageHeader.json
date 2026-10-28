@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "PageHeader",
   "summary": "A page title and description with optional back navigation and primary actions.",
   "props": [
@@ -26,7 +25,19 @@
     {
       "id": "ui-page-header",
       "label": "Settings page header",
-      "description": "A synthetic page heading with a local demonstration action."
+      "description": "A synthetic page heading with a local demonstration action.",
+      "code": "<PageHeader title=\"Administração\" description=\"Preferências da equipe.\" />",
+      "live": true
     }
-  ]
+  ],
+  "category": "Layout",
+  "scope": "composed",
+  "owner": "IA-MNS Web UI",
+  "id": "PageHeader",
+  "exportName": "PageHeader",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.docs.json"
 }

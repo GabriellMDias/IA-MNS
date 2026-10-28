@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "ProductAnswer",
   "source": "apps/web/src/features/products/results.tsx",
   "summary": "Presents the products a lookup found in the Pilar da Terra (VR Master) registration with how each criterion was understood.",
@@ -22,7 +21,17 @@
     {
       "id": "product-answer-category",
       "label": "Category with an exclusion",
-      "description": "Synthetic classification paths and products; the preview makes no API, provider or ERP request."
+      "description": "Synthetic classification paths and products; the preview makes no API, provider or ERP request.",
+      "live": true
     }
-  ]
+  ],
+  "scope": "feature-specific",
+  "owner": "products",
+  "category": "Data Display",
+  "id": "ProductAnswer",
+  "exportName": "ProductAnswer",
+  "metadataSource": "apps/web/src/features/products/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/products/results.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/features/products/components.docs.json"
 }

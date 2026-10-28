@@ -1,5 +1,4 @@
 {
-  "kind": "component",
   "name": "Button",
   "summary": "A themed native button with consistent action hierarchy and pending feedback.",
   "props": [
@@ -36,7 +35,19 @@
     {
       "id": "ui-buttons",
       "label": "Action hierarchy",
-      "description": "Button variants and pending feedback; no request or account change."
+      "description": "Button variants and pending feedback; no request or account change.",
+      "code": "<Button loading={saving}>Salvar</Button>\n<Button variant=\"danger\">Encerrar</Button>",
+      "live": true
     }
-  ]
+  ],
+  "category": "Actions",
+  "scope": "shared",
+  "owner": "IA-MNS Web UI",
+  "id": "Button",
+  "exportName": "Button",
+  "source": "apps/web/src/components.tsx",
+  "metadataSource": "apps/web/src/components.docs.json",
+  "kind": "component",
+  "sourceUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.tsx",
+  "metadataUrl": "https://github.com/GabriellMDias/IA-MNS/blob/main/apps/web/src/components.docs.json"
 }

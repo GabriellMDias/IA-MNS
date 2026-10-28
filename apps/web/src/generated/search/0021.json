@@ -1,5 +1,203 @@
 [
   {
+    "id": "repository/docs/domains/sankhya-product-lookup",
+    "title": "Sankhya Product Lookup",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Execution and native API evaluation",
+    "anchor": "execution-and-native-api-evaluation",
+    "text": "Execution and native API evaluation\nThe Oracle adapter owns a pool of at most two connections (queue four, acquisition timeout five seconds), `SET TRANSACTION READ ONLY`, rollback and cancellation, a 15-second per-call timeout and a 30-second operation budget. Results/metadata have explicit row bounds, product lists stop at 200, group nodes at 2,000 and candidates at 60. Identifiers come from the reviewed catalog; all user values are binds. SQL is compiled from the validated AST and never provided by the model. Runtime verification checks used physical/dictionary definitions, keys, mapped relationships, properties, domain options and readable projections before first use and every ten minutes.\n[CRUDServiceProvider.loadRecords](https://developer.sankhya.com.br/reference/get_loadrecords) supports root entities, entity paths, parameterized criteria, pagination and calculated-field selection. It could preserve native instance rules and calculated values better than direct physical SQL. However, `ignoreCalculatedFields` defaults to false, `modifiedSince` depends on change logging, and file-based pagination uses server storage. Entity reads may involve application hooks, rules and authorization different from SQL. A documented read endpoint alone does not establish strict absence of side effects in this installation.\nDirect read-only SQL is implemented for these verified physical filters and consistent count/list snapshots; nested existence predicates avoid collection expansion. Native API execution is deferred until a separately authorized least-privilege API identity and read-side behavior can be validated. No database credentials were transmitted to the API and no API call was made. Future calculated/JAPE-dependent capabilities should compare authorized API results with known entity behavior rather than translate raw dictionary expressions into SQL.\n"
+  },
+  {
+    "id": "repository/docs/domains/sankhya-product-lookup",
+    "title": "Sankhya Product Lookup",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Minimum runtime account",
+    "anchor": "minimum-runtime-account",
+    "text": "Minimum runtime account\nHuman action **PH-08** originally requested provisioning of the dedicated non-owner runtime account `IA_MNS_RO`. The existing administrator remains the Administration/Discovery user; do not create a third account. The current product implementation requires exactly `CREATE SESSION` and object `SELECT` on these **15 tables**, with private local synonyms of the same names:\nPurpose\nRequired tables\nEnabled product paths\nTGFPRO, TGFGRU, TGFMAR, TGFVOL, TGFVOA, TGFPAP, TGFPAR, AD_LISTADCEMB\nDictionary verification\nTDDTAB, TDDCAM, TDDINS, TDDLIG, TDDLGC, TDDOPC, TDDPCO\nNative metadata/guard queries use the normally available `ALL_TAB_COLUMNS`, `ALL_CONSTRAINTS`, `ALL_CONS_COLUMNS`, `ALL_INDEXES`, `ALL_IND_COLUMNS`, `USER_SYNONYMS`, `SESSION_PRIVS`, `USER_TAB_PRIVS_RECD`, `ROLE_TAB_PRIVS`, `SESSION_ROLES` and `USER_TABLES` views. No SELECT ANY TABLE, SELECT ANY DICTIONARY, SELECT_CATALOG_ROLE, CONNECT/RESOURCE/DBA role, procedure execution, object creation, tablespace quota or grant option is required. The DBA creates the private synonyms; **do not grant CREATE SYNONYM to the reader**. TGFCLP, TGFCLA and TSICUS require no runtime table grant. Account-visible metadata for those disabled candidates may consequently be absent.\nOracle grants SELECT at table/view level; the current adapter does not support substituting projection views for these reviewed physical tables. Therefore the database account can read all columns of those 15 objects, while the backend executes only reviewed projections (for TGFPAR: CODPARC, NOMEPARC and FORNECEDOR). These are the minimum grants for the current implementation, not column-level database isolation. Synonyms provide naming, not authorization. [Oracle's privilege guidance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/dbseg/configuring-privilege-and-role-authorization.html) explains object grants and synonym resolution.\nThe following commands are **for the DBA to review and execute privately**, not an agent-executed migration. `ERP_OWNER` denotes the owner of the actual Sankhya tables, not a runtime login; the DBA can locate it with `SELECT OWNER FROM DBA_TABLES WHERE TABLE_NAME = 'TGFPRO'`. Use the owner of this environment if multiple schemas contain that name. Run in the existing ERP database/service using the DBA's established account-management procedure, with spooling/terminal recording disabled; do not save a substituted password in a script:\nSET ECHO OFF\nSET VERIFY OFF\nDEFINE ERP_OWNER = <actual_erp_schema>\nACCEPT reader_password CHAR PROMPT 'New dedicated reader password: ' HIDE\nCREATE USER IA_MNS_RO IDENTIFIED BY \"&reader_password\";\nUNDEFINE reader_password\nGRANT CREATE SESSION TO IA_MNS_RO;\n\nGRANT SELECT ON &ERP_OWNER..TGFPRO TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFGRU TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFMAR TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFVOL TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFVOA TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFPAP TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFPAR TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..AD_LISTADCEMB TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TDDTAB TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TDDCAM TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TDDINS TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TDDLIG TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TDDLGC TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TDDOPC TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TDDPCO TO IA_MNS_RO;\n\nCREATE SYNONYM IA_MNS_RO.TGFPRO FOR &ERP_OWNER..TGFPRO;\nCREATE SYNONYM IA_MNS_RO.TGFGRU FOR &ERP_OWNER..TGFGRU;\nCREATE SYNONYM IA_MNS_RO.TGFMAR FOR &ERP_OWNER..TGFMAR;\nCREATE SYNONYM IA_MNS_RO.TGFVOL FOR &ERP_OWNER..TGFVOL;\nCREATE SYNONYM IA_MNS_RO.TGFVOA FOR &ERP_OWNER..TGFVOA;\nCREATE SYNONYM IA_MNS_RO.TGFPAP FOR &ERP_OWNER..TGFPAP;\nCREATE SYNONYM IA_MNS_RO.TGFPAR FOR &ERP_OWNER..TGFPAR;\nCREATE SYNONYM IA_MNS_RO.AD_LISTADCEMB FOR &ERP_OWNER..AD_LISTADCEMB;\nCREATE SYNONYM IA_MNS_RO.TDDTAB FOR &ERP_OWNER..TDDTAB;\nCREATE SYNONYM IA_MNS_RO.TDDCAM FOR &ERP_OWNER..TDDCAM;\nCREATE SYNONYM IA_MNS_RO.TDDINS FOR &ERP_OWNER..TDDINS;\nCREATE SYNONYM IA_MNS_RO.TDDLIG FOR &ERP_OWNER..TDDLIG;\nCREATE SYNONYM IA_MNS_RO.TDDLGC FOR &ERP_OWNER..TDDLGC;\nCREATE SYNONYM IA_MNS_RO.TDDOPC FOR &ERP_OWNER..TDDOPC;\nCREATE SYNONYM IA_MNS_RO.TDDPCO FOR &ERP_OWNER..TDDPCO;\n\nThe **same configured Sankhya login also serves existing sales**. Before replacing its credentials for a combined products/sales runtime, the DBA also reviews and executes these nine additional grants (**24 objects total**), using the same owner definition:\nGRANT SELECT ON &ERP_OWNER..TGFCAB TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFTOP TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFVEN TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFITE TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TSIEMP TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TCSPRJ TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..TGFVAR TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..AD_MOTIVODEV TO IA_MNS_RO;\nGRANT SELECT ON &ERP_OWNER..AD_RESULTADO_LOTE TO IA_MNS_RO;\nCREATE SYNONYM IA_MNS_RO.TGFCAB FOR &ERP_OWNER..TGFCAB;\nCREATE SYNONYM IA_MNS_RO.TGFTOP FOR &ERP_OWNER..TGFTOP;\nCREATE SYNONYM IA_MNS_RO.TGFVEN FOR &ERP_OWNER..TGFVEN;\nCREATE SYNONYM IA_MNS_RO.TGFITE FOR &ERP_OWNER..TGFITE;\nCREATE SYNONYM IA_MNS_RO.TSIEMP FOR &ERP_OWNER..TSIEMP;\nCREATE SYNONYM IA_MNS_RO.TCSPRJ FOR &ERP_OWNER..TCSPRJ;\nCREATE SYNONYM IA_MNS_RO.TGFVAR FOR &ERP_OWNER..TGFVAR;\nCREATE SYNONYM IA_MNS_RO.AD_MOTIVODEV FOR &ERP_OWNER..AD_MOTIVODEV;\nCREATE SYNONYM IA_MNS_RO.AD_RESULTADO_LOTE FOR &ERP_OWNER..AD_RESULTADO_LOTE;\n\nIf owner association of real Sankhya users is configured, separately preserve SELECT and naming for `SANKHYA_DIRECTORY_VIEW` as requested in PH-08; that view is not needed for product resolution or existing IA-MNS local sign-in. None of these grants permits writes, DDL or execution by the reader.\nThe DBA/owner puts only the new reader username/password in the existing ignored `.env.local` settings `SANKHYA_DB_USER` / `SANKHYA_DB_PASSWORD`, preserves the host/service and Oracle Client settings, and keeps the existing administrator credentials only in `.env.discovery.local` using `SANKHYA_DB_USER_FULLACESS` / `SANKHYA_DB_PASSWORD_FULLACESS`, outside normal runtime configuration. No secret is sent through chat. Then run these **read-only** checks and restart the application:\npnpm -C apps/api products:sankhya:sync --runtime-check\npnpm -C apps/api products:sankhya:regression --runtime --model\n\n`--runtime-check` enforces the real privilege guard and compares only enabled dependencies. It neither promotes nor writes a partial discovery snapshot. This avoids reporting the reader's narrower ALL_* visibility as full-schema drift. `--runtime` makes the complete regression use the strict reader; a privileged-account refusal is a failure in that mode, not an acceptance success. Neither check replaces the final authenticated UI journey. No new account/grants have been executed; current runtime remains blocked.\nThe existing `IA_MNS_RO` account now has all 24 table reads, corresponding private synonyms and the five-column directory view. [Live verification](../project/runtime-access-verification.md) passed the privilege guard, metadata check and 14 Runtime regression checks without AI calls. The old manual examples above remain provisioning reference; the [canonical executable template](../../apps/api/scripts/erp-access/sankhya-runtime.sql) and owner-authorized access tool own current application.\n"
+  },
+  {
+    "id": "repository/docs/domains/sankhya-product-lookup",
+    "title": "Sankhya Product Lookup",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Reproducible synchronization",
+    "anchor": "reproducible-synchronization",
+    "text": "Reproducible synchronization\nDiscovery commands explicitly load the existing administrator from `.env.discovery.local`; `--runtime-check` and `--runtime` load only runtime settings and never read that file. Missing administrative credentials fail without fallback. [Setup](../setup.md#erp-discovery) owns delivery and [ERP access policy](../security/erp-database-access.md) owns permitted operations and confidentiality.\nFrom the repository root, existing ignored `.env.local` supplies the configured Oracle connection and optional Oracle Client directory. No credentials are copied into the catalog.\nCommand\nBehavior\n`pnpm -C apps/api products:sankhya:sync`\nRefreshes bounded metadata into ignored `evals/.local/sankhya/metadata-candidate.json` and `.ts.txt`; reports counts, complete fingerprint drift and used-metadata problems\n`pnpm -C apps/api products:sankhya:sync --check`\nExits nonzero for any snapshot drift or used-metadata problem\n`pnpm -C apps/api products:sankhya:sync --write-reviewed`\nPromotes metadata after review only when current used metadata remains compatible; never enables a capability\n`pnpm -C apps/api products:sankhya:sync --runtime-check`\nRequires a SELECT-only non-owner account, verifies enabled metadata without promoting a partial-visibility snapshot\n`pnpm -C apps/api products:sankhya:regression`\nRuns bounded real-data scenarios, independent SQL symmetric-difference/count checks, ambiguity discovery and runtime-account refusal check\n`pnpm -C apps/api products:sankhya:regression --model`\nAlso validates natural-language requests with the existing authorized OpenAI configuration\n`pnpm -C apps/api products:sankhya:regression --runtime --model`\nRequires the strict runtime reader throughout; validates real filters and language with the interactive product timeout\nChanges to used columns, dictionary expressions/properties, unique keys, verified FK/mapping definitions or domain labels fail closed. Additive unused metadata is retained as a candidate and reported by synchronization, without disabling compatible runtime filters. Promotion does not establish business semantics: inspect changed evidence, review executable paths/conditions, bump the semantic catalog version, extend focused tests and live scenarios, and run the complete repository gate. Version changes invalidate persisted Sankhya selections. For incompatible changes, the generated local candidate supplies the snapshot in a reviewed code change together with the changed catalog, version and tests; the safe promotion command refuses to overwrite the existing artifact while used metadata is incompatible. Never edit generated field facts independently of a fresh candidate.\nThe model receives a small semantic dimension guide and at most six relevant authorized capability descriptions through [targeted metadata retrieval](../../apps/api/src/features/products/metadata-retrieval.ts), not the raw dictionary. The capability permission authorizes the reviewed dimension set; future finer authorization must narrow the passed allowlist.\n"
+  },
+  {
+    "id": "repository/docs/domains/sankhya-product-lookup",
+    "title": "Sankhya Product Lookup",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Validation evidence and remaining work",
+    "anchor": "validation-evidence-and-remaining-work",
+    "text": "Validation evidence and remaining work\nLive scenarios compare exact product-id sets through independently written SQL `MINUS` in both directions and separately verify totals and absence of duplicate output codes. Current scenarios cover description (382 products), a top group including descendants (573), base KG (794), alternate KG (3,035), active resale plus BATATA description (97), KG exclusion including nulls (10,165), registered brand (17), linked supplier (3,560), custom certificate (two) and custom group list (199). Fixture ids and certificate values are derived locally rather than committed. The characteristics ALGODAO case currently returns zero: it verifies empty-result semantics only, not a nonempty match. Counts are dated observations, not fixed assertions about future ERP data.\nOn 2026-10-11, the final discovery regression passed 23 checks with two unsupported scenarios: all 11 independent-SQL cases, three live ambiguity/supplier-role/account checks, and all nine model scenarios (seven exact-set comparisons, ambiguous real unit clarification and safe refusal of buyer responsibility). It uses the same bounded 30-second product request budget as runtime. Full metadata synchronization found no drift; strict `--runtime-check` refused the current privileged account as expected. A dedicated runtime account has not yet been validated. Local reports contain pass/fail/unsupported outcomes and timings under ignored `apps/api/evals/.local/sankhya/`; they are regenerated each run. Unit tests cover compiler safety, string/composite keys, metadata drift, bounded adjacency traversal, privilege refusal/rollback/cancellation, targeted retrieval and ERP-isolated conversation state. VR Master regression suites remain intact. The [combined acceptance evidence](product-lookup.md#verification) records 83 focused resolver tests and the complete passing `pnpm validate` in the actual working tree, plus the final live routing run. No remote CI or production validation was run, and no authenticated real-ERP browser acceptance is claimed.\nWarm source-plus-independent-comparison scenarios initially took approximately 0.5–1.6 seconds; first schema verification added approximately three seconds. These are end-to-end validation timings including reference queries and network overhead, not isolated SQL benchmarks. Group candidate discovery scans product descriptions and aggregates the group graph; unindexed regular expressions, correlated multi-hop existence predicates, full counts and metadata synchronization are the expensive paths. Timeouts and bounds fail safely rather than return incomplete exact totals. Execution-plan analysis under a production-like least-privilege account and larger datasets remains open; no index was changed.\nRemaining work: complete the PH-08 currency/weight confirmations; validate API entity behavior if needed; extend the reviewed frontier and regression with newly meaningful business data; establish nonempty additional-classification and characteristics scenarios; broaden Sankhya business reconciliation for product concepts and qualifiers such as fresh versus processed (current live cases validate explicit description and named-group intent); define requested concepts only where evidence supports them. No production deployment, native API parity or complete ERP-wide capability discovery is claimed.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "IA-MNS WhatsApp Channel",
+    "anchor": "ia-mns-whatsapp-channel",
+    "text": "IA-MNS WhatsApp Channel\n[ADR-0036](../adr/0036-add-whatsapp-as-an-agent-channel-authorized-by-owner-linked-numbers.md) · [Identity](identity.md#whatsapp-numbers) · [Corporate agent](corporate-agent.md) · [Activation and rollback runbook](../runbooks/whatsapp-channel.md) · [Setup](../setup.md#whatsapp-simulator) · [Human actions](../project/human-actions.md#ph-32)\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Purpose and scope",
+    "anchor": "purpose-and-scope",
+    "text": "Purpose and scope\nWhatsApp is the fourth way to reach IA-MNS, beside the direct web application, Sankhya and PDT Connect. It is another entry point to the **same** corporate agent: the same Person, conversations, capabilities, Semantic Product Resolver, sales sources, history, context and permissions. The channel owns no business capability and no business rule; it adapts Meta's WhatsApp Business Platform Cloud API to the agent.\nIt uses the official Cloud API directly with Meta, on a dedicated corporate number operated only through the API (no WhatsApp Business App coexistence, no migration, no human attendance in the app, no intermediary provider). This version is reactive and text-only: it answers messages received from authorized people and never starts a conversation.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Authorization",
+    "anchor": "authorization",
+    "text": "Authorization\nA WhatsApp number linked by an owner to a Person ([identity](identity.md#whatsapp-numbers)) is the channel's only authorization. There is no self-service: no sign-up through WhatsApp, link codes, activation codes or association links, and a Person cannot set or change their own number.\nEvery message goes through these steps, in order; if any fails, the agent is not invoked and no business data is read:\n**Authenticity.** The webhook verifies `X-Hub-Signature-256` (HMAC-SHA256 of the exact request bytes with the Meta app secret) in constant time before parsing. Only changes of the configured phone number ID (and WhatsApp Business Account, when configured) are read; group messages are ignored.\n**Sender identity.** The sender is what Meta reported in that signed message: the number (`from`) and, since 2026, the business-scoped user ID (`from_user_id`, BSUID).\n**Administrative link.** The number must equal a linked number exactly, or its deterministic legacy Brazilian form (see [identifiers](#identifiers)).\n**Exactly one Person.** Database uniqueness makes a second match impossible; any ambiguity is refused.\n**Active Person.** Disabled and consolidated (`merged`) Persons are refused.\n**Effective permissions.** Identity computes them from trusted state for this message, exactly as it would for a new access token (personal grants, group grants, owner role; no automatic membership is created by a message).\nOnly then does the message reach the agent, which applies its own capability permission checks, ERP source isolation and runtime credential limits as on the web.\n**Before each reply part is sent**, steps 2–6 are repeated against the same Person and link version. Answers must still pass the agent's `canReadReply` check, including source permissions, recorded data scope and every retained evidence dependency.\nUnknown, unlinked or refused senders are ignored silently: the webhook answers Meta with 200, nothing is stored and nothing is sent, so the channel never reveals whether a number or Person exists. Only a reason counter (`ia_mns.whatsapp.refused`, reason `unknown`, `ambiguous`, `conflict`, `inactive` or `channel_disabled`) and a content-free webhook summary are recorded.\nAuthorization is decided again at receipt, before processing, after the agent answers and before every reply part. Removing or changing a number, disabling the Person, consolidating it, or turning the channel off stops queued replies at their next authorization check, including answers being prepared. The answer remains in the Person's own conversation history; it is simply not delivered. Changes to permissions or data restrictions also apply after computation and before every answer part or retry, rather than waiting for another inbound message. An external send already started cannot be recalled.\nQueued parts retain their original conversation and turn reference through the inbox. The agent reloads that Person-owned turn and applies the same evidence checks as the web; missing turns, deleted conversations and invalidated evidence fail closed. This retains the original server-authored permissions and scopes across restarts without copying business payloads into another authorization store. Notices contain no business answer and still require the current link and enabled channel.\nLink versions are allocated under the Person lock from a persistent counter on the Person. Unlinking does not reset it; recreating the same number starts a later generation and cannot resume old inbox or outbox work. Migration `202610210002_identity_whatsapp_link_generations` initializes counters from existing links and the highest generations still retained in either queue. The forward migration `202610210003_rotate_legacy_whatsapp_generations` rechecks those maxima and advances every existing active link beyond them: old runtimes may already have reused a version, so pre-upgrade queued messages and replies are conservatively revoked at their next check. Computed answers remain in web history. Deploy both migrations before this runtime; older runtimes do not maintain the counter. Mixed WhatsApp worker versions are unsupported; disable the channel before rolling back to an older runtime and keep it disabled there.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Identifiers",
+    "anchor": "identifiers",
+    "text": "Identifiers\n**Numbers** are entered by owners in international form (`+55 11 98765-4321`, or with `00`) and stored as E.164 digits. National numbers are never completed with an assumed country code.\n**Brazilian mobiles and the ninth digit.** WhatsApp still reports many Brazilian mobile accounts under the pre-2016 eight-digit subscriber number (`551187654321` for `+55 11 98765-4321`). Under the current national plan an eight-digit subscriber number starting with 6–9 can only be that legacy form of a mobile (landlines start with 2–5), so the link stores it as an explicit alias that participates in the uniqueness constraint. No other transformation exists: a mobile written without the ninth digit is refused at entry, a subscriber range where the legacy form would look like a landline (`9 2xxx…` to `9 5xxx…`) receives no alias, and anything that matches neither the number nor its alias is unknown. Replies always go to the identifier Meta reported, never to a constructed number.\n**Business-scoped user IDs (BSUID).** Meta added `from_user_id`/`user_id` to webhooks in 2026 and lets people with usernames hide their number. When a signed message carries both the linked number and a BSUID, the link records that BSUID. Later messages that omit the number match the recorded BSUID; a message whose number matches a link but whose BSUID differs from the recorded one is refused as a conflict (for example a recycled number now used by another WhatsApp account). Changing the number forgets the recorded BSUID. A BSUID never matches a link by itself unless it was learned that way, and replies to a sender without a number use the `recipient` field with the BSUID.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Processing",
+    "anchor": "processing",
+    "text": "Processing\nMeta ──signed webhook──▶ /whatsapp/webhook ──authorize──▶ whatsapp_inbound_messages (pending)\n                                                                  │ claim in send order per Person\n                                                                  ▼\n                       identity (authorize again) ──▶ commands or agent.ask(turn) ──▶ format\n                                                                  │ authorize again\n                                                                  ▼\n            Graph API ◀──authorize before each part── whatsapp_outbound_messages (pending)\n\n**Durable and asynchronous.** Authorized messages of one notification are recorded in one statement before the webhook is acknowledged, so a database failure makes Meta deliver again. The webhook never waits for ERP or AI work. In-process workers (two message workers and one sender) claim work from PostgreSQL with transaction-locked claims and leases, which is safe across processes; the single production host runs one process.\n**Deduplication.** The Meta message id is unique: Meta's repeated deliveries record nothing. The inbound id is the agent turn request id, so a retried or recovered message replays the same turn instead of asking twice.\n**Ordering.** Each Person's messages are processed one at a time in the order they were sent (Meta timestamp, then arrival), after a one-second reorder window that absorbs notifications delivered slightly out of order; reply parts are sent in the same order.\n**Conversation.** A message continues the Person's current WhatsApp conversation while it still exists, is not archived and had activity in the last 12 hours; otherwise a new conversation (channel `whatsapp`) starts. `/nova` starts one explicitly. Conversations of different channels are never merged.\n**Agent.** The message becomes an ordinary agent turn with the sales source the Person chose for WhatsApp. The turn shares the web's concurrency limit, deadline, lease recovery, progress, traces and failure codes. If another turn of the same conversation is running (for example from the web), the message waits.\n**Bounded retries.** A failed processing attempt is retried with backoff up to three attempts, then the person receives a short failure notice.\n**Shutdown.** Workers stop claiming before the agent closes (`preClose`) and release unfinished work for the next start; an interrupted agent turn is reported as interrupted.\n**Idle waits.** A worker removes its wake-up callback on timeout or explicit wake-up. Only current waits are retained, including while the channel is disabled.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Sending, delivery and the service window",
+    "anchor": "sending-delivery-and-the-service-window",
+    "text": "Sending, delivery and the service window\nReplies are sent with the Graph API `/{phone-number-id}/messages` text endpoint (version from `WHATSAPP_GRAPH_API_VERSION`, default `v25.0`), with link previews off. When processing starts, the received message is marked as read with the typing indicator (best effort).\nA WhatsApp message cannot be recalled and Meta offers no idempotency key, so a part is retried only when Meta proves it did not accept it: HTTP 429, throughput and pair-rate errors (`130429`, `131056`, `80007`, `4`), temporary unavailability (`131016`, `1`, `2`) or a connection that never opened; up to five attempts with backoff or `Retry-After`. A timeout, lost response or unexpected server error becomes `unknown` and is never resent; a send claim that expires (process stopped mid-send) also becomes `unknown`. Permanent refusals (for example `131047`, outside the 24-hour window, or `190`, invalid token, which also logs `whatsapp_access_token_rejected`) become `failed`.\nSigned status webhooks move a part forward only (`accepted` → `sent` → `delivered` → `read`; `failed` never replaces a delivery or read). Replies are sent only inside Meta's 24-hour customer service window, measured from the message they answer (with a ten-minute margin); later parts become `expired`. No template or proactive message is sent.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Conversation experience",
+    "anchor": "conversation-experience",
+    "text": "Conversation experience\nText only. Media, locations, reactions and other types receive \"Por enquanto entendo apenas mensagens de texto.\" Messages longer than 2,000 characters (the agent's question limit) receive a short request to shorten them.\nReplies contain the agent's prose followed by its result, as the web would show it: one block per ERP source headed _Fonte: …_ with exact currency formatting and units, never summed across sources; up to 25 table lines and 20 products, then a pointer to the same conversation on the web; product options as a numbered list to answer by number or name; and the agent's suggestions. Texts are split at paragraph, line or word boundaries into at most six messages under WhatsApp's 4,096-character limit.\nCommands start with `/` so questions are never taken as commands: `/fonte sankhya|vrmaster|tudo` chooses the sales source (the channel's equivalent of the web `Fonte` selector, never inferred from a question; default `MNS (Sankhya)`), `/nova` starts a new conversation and `/ajuda` explains both.\nFollow-up questions (\"E no mês passado?\"), pending clarifications, ambiguity resolution and the Semantic Product Resolver work as on the web because the agent keeps the same structured context per conversation.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "History on the web",
+    "anchor": "history-on-the-web",
+    "text": "History on the web\nWhatsApp conversations belong to the Person and appear in the web history with a `WA` mark (`channel: \"whatsapp\"` in the API). They can be read, searched, renamed, pinned, archived and continued on the web like any other conversation; archiving or deleting one makes the next WhatsApp message start a new conversation. Messages typed on the web are not sent to WhatsApp.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Limits, costs and switches",
+    "anchor": "limits-costs-and-switches",
+    "text": "Limits, costs and switches\nControl\nValue\nBehavior\nChannel switch\n**Administração → Parâmetros → Atendimento pelo WhatsApp** (`channels.whatsapp`, installation default `IA_MNS_WHATSAPP_CHANNEL`, `disabled`)\nOff: webhooks are acknowledged without storing or answering anything; queued messages are ignored and queued replies revoked. Takes effect on the next message without a restart.\nPer-Person burst\n15 agent turns per 10 minutes\nFurther messages are ignored; one notice per window.\nPer-Person daily\n200 agent turns per 24 hours\nSame.\nInstallation daily ceiling\n`WHATSAPP_DAILY_LIMIT` (default 500) agent turns per São Paulo day\nFurther messages that day are ignored; one notice per Person.\nWebhook\n600 requests/min per source address, 2 MB body\nResource protection.\nCommands, notices and refused senders do not count as agent turns. Meta charges per its current pricing model; service (reply) conversations inside the customer service window are the only kind this version uses.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Data and retention",
+    "anchor": "data-and-retention",
+    "text": "Data and retention\n`whatsapp_inbound_messages`, `whatsapp_outbound_messages` and `whatsapp_threads` are owned by the `whatsapp` module ([schema reference](../generated/database/schema.md)). Message and reply texts are kept only until processed or accepted by Meta, because the questions and answers live in the agent conversation; identifiers, states and outcome codes remain for 30 days for deduplication, delivery tracking and audit, then are pruned hourly. This period is provisional until the shared retention decision in [PH-09](../project/human-actions.md#ph-09). Link changes are in `identity_audit_events`; the agent turn records each question and answer under the Person.\nAnswers containing business data leave IA-MNS through Meta's infrastructure and are stored on the person's device. Owners must approve this processing boundary before activation ([PH-35](../project/human-actions.md#ph-35)); the [AI data processing](../security/ai-data-processing.md) policy still governs what the agent may send to the model.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Observability",
+    "anchor": "observability",
+    "text": "Observability\nLogs (allowlisted fields only, never message text, numbers, tokens or payloads): `whatsapp_webhook_received` (recorded, refused, duplicate, status and ignored counts), `whatsapp_message_processed` (inbound id, outcome, attempts, duration), `whatsapp_reply_settled` (part, attempt, outcome, Meta code, latency), `whatsapp_reply_outcome_unknown`, `whatsapp_access_token_rejected`, `whatsapp_signature_refused`, `whatsapp_verification_*`, `whatsapp_processing_failed` and `whatsapp_worker_failed`. Agent failures use the shared `agent_execution_failed` diagnostic. Metrics: `ia_mns.whatsapp.inbound` (by outcome), `ia_mns.whatsapp.outbound` (by outcome), `ia_mns.whatsapp.refused` (by reason) and `ia_mns.whatsapp.processing.duration` (seconds from sending to the reply being queued). Consumption is visible through inbound outcomes and the daily ceiling.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Security notes and residual risks",
+    "anchor": "security-notes-and-residual-risks",
+    "text": "Security notes and residual risks\n**The number is a credential.** Anyone holding the phone, an unlocked WhatsApp session (including WhatsApp Web or a linked device) or a SIM-swapped line acts as that Person with that Person's capabilities. Owners should link only corporate-controlled or personally accountable numbers, remove the link as soon as a line is lost, transferred, returned or recycled, and prefer narrow grants for people who use WhatsApp. Operators may reassign numbers after disuse; Meta's BSUID conflict check detects a new WhatsApp account on a linked number only after the link had recorded the previous account's BSUID.\n**No step-up authentication.** Every current capability is read-only (sales and product consultation); administration is not reachable through the agent. WhatsApp offers no second factor IA-MNS could verify, so no new authentication flow was built. A future sensitive or write capability must not be exposed through this channel without a new decision (for example an explicit web confirmation).\n**Owners** who link their own number expose every catalog permission to that phone; link one only when needed.\nMessages and answers are visible to Meta as the platform operator and remain on the person's device beyond IA-MNS's control; deleting a conversation in IA-MNS does not delete WhatsApp messages.\nMeta does not sign the verification GET; it only compares the verify token, which is a secret in configuration.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Configuration",
+    "anchor": "configuration",
+    "text": "Configuration\n`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET` and `WHATSAPP_VERIFY_TOKEN` enable the module together and require the database and IA-MNS identity; `WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_GRAPH_BASE_URL`, `WHATSAPP_GRAPH_API_VERSION` and `WHATSAPP_DAILY_LIMIT` refine it ([configuration reference](../generated/configuration/api.md)). Without them the module adds no route. The webhook is `GET`/`POST /whatsapp/webhook`, which the production origin serves as `https://<ia-mns>/api/whatsapp/webhook`.\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Verification",
+    "anchor": "verification",
+    "text": "Verification\nSynthetic tests on migrated PostgreSQL with the restricted runtime role exercise the real identity service, the real `CorporateAgent` and sales capability with scripted interpretation and synthetic ERP readers, and a synthetic Graph API (`apps/api/test/whatsapp.test.ts`): owner-only number administration (refused for others), validation, the ninth digit and uniqueness; audit; verification and signatures; silent refusal of unknown, conflicting, disabled and switched-off senders; legacy-identifier and BSUID matching; deduplication; ordering of out-of-order deliveries; context continuity (\"E no mês passado?\" keeps the product); source selection; permission enforcement; revocation while an answer is being prepared; delivery statuses; retries and unknown outcomes; and consolidation. Unit tests cover normalization, signatures, payload parsing, commands, formatting, the Graph client's outcome classification and configuration (`whatsapp-units.test.ts`); a browser journey covers the administration field. These are not evidence of a real Meta delivery: the definitive number, Meta account and production activation are [PH-32 to PH-35](../project/human-actions.md#ph-32).\n"
+  },
+  {
+    "id": "repository/docs/domains/whatsapp-channel",
+    "title": "IA-MNS WhatsApp Channel",
+    "group": "Domain guides",
+    "kind": "repository",
+    "heading": "Limits and next steps",
+    "anchor": "limits-and-next-steps",
+    "text": "Limits and next steps\nAudio, transcription, documents and reports are not implemented. The design leaves room for them: an inbound kind besides `text`, a media download step before the agent, and outbound kinds besides text parts.\nNo proactive or template messages, and no reply after the 24-hour window.\nMessages typed on the web in a WhatsApp conversation are not mirrored to WhatsApp.\nMulti-replica deployments work with the database claims but have process-local webhook rate limits ([request protection](../../apps/api/README.md#request-protection)).\n"
+  },
+  {
+    "id": "repository/docs/features/README",
+    "title": "Feature Catalog by Origin",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Feature Catalog by Origin",
+    "anchor": "feature-catalog-by-origin",
+    "text": "Feature Catalog by Origin\nFind an implemented product function, its data source, SQL and filters. Open a linked detail for the behavior and limits. This inventory describes the repository's composition, not which connections or permissions are active in a particular installation. Conditional availability is stated below; future work belongs in the [implementation plan](../project/implementation-plan.md).\n"
+  },
+  {
+    "id": "repository/docs/features/README",
+    "title": "Feature Catalog by Origin",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "VR Master — Pilar da Terra",
+    "anchor": "vr-master--pilar-da-terra",
+    "text": "VR Master — Pilar da Terra\nFunction\nWhat it does / available criteria\nSQL and details\nAvailability\nSales consultation\nValue and quantity; inclusive dates, literal product phrase, monthly/product grouping, previous year or equal-day period comparison\n[Sales options, complete SQL and access predicates](../generated/features/vrmaster/sales.md)\nConfigured Runtime reader and VRM-VEN-01\nProduct lookup\nFind products by the reviewed classification, cost center, buyer, description and flags; include/exclude, descendants and combined criteria\n[Every catalog filter, status, relationships and example SQL](../generated/features/vrmaster/products.md)\nConfigured Runtime reader and VRM-PRD-01; only enabled catalog dimensions\nSales of a product selection\nConstrain sales to a verified current registration selection, including products beyond the visible preview; reuse a completed lookup from this ERP\n[Product membership and permissions](../generated/features/vrmaster/sales.md#semantic-product-membership)\nBoth sales and product permissions\nVR Master is the sales/product data source. PDT Connect is a sign-in integration; signing in through PDT Connect does not select an ERP or grant its sales permission by itself.\n"
+  },
+  {
+    "id": "repository/docs/features/README",
+    "title": "Feature Catalog by Origin",
+    "group": "Project guides",
+    "kind": "repository",
+    "heading": "Sankhya — MNS",
+    "anchor": "sankhya--mns",
+    "text": "Sankhya — MNS\nFunction\nWhat it does / available criteria\nSQL and details\nAvailability\nSales consultation\nNet value, quantity and weight; inclusive dates, literal product phrase, monthly/product grouping and comparisons; preserves the approved joins and exclusions\n[Sales options, complete SQL and access predicates](../generated/features/sankhya/sales.md)\nConfigured Runtime reader and SNK-VEN-01; result-center access additionally needs PH-36\nProduct lookup\nFind unique products through the reviewed Data Dictionary catalog: groups, product attributes, units and other enabled dimensions\n[Every catalog filter, status, relationships and example SQL](../generated/features/sankhya/products.md)\nConfigured Runtime reader and SNK-PRD-01; only enabled catalog dimensions\nSales of a product selection\nConstrain sales through the same complete verified product membership, with include/exclude and hierarchy descendants\n[Product membership and permissions](../generated/features/sankhya/sales.md#semantic-product-membership)\nBoth sales and product permissions\nAccess inside Sankhya Om\nOpen the same application in the add-on and authenticate the current Om user through a verified assertion\n[Host and identity contract](../domains/identity.md#sign-in-methods-and-surfaces) · [add-on](../../apps/sankhya-addon/README.md)\nConfigured trusted host, deployed add-on and identity requirements; see PH-11/PH-16\n"
+  },
+  {
     "id": "repository/docs/features/README",
     "title": "Feature Catalog by Origin",
     "group": "Project guides",
@@ -60,7 +258,7 @@
     "kind": "repository",
     "heading": "Web Component Reference",
     "anchor": "web-component-reference",
-    "text": "Web Component Reference\n[Living documentation](../../architecture/living-documentation.md) · [Component source](../../../apps/web/src/components.tsx)\n"
+    "text": "Web Component Reference\n[Component architecture](../../architecture/web-components.md) · [Living documentation](../../architecture/living-documentation.md)\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -69,7 +267,7 @@
     "kind": "repository",
     "heading": "PageHeader",
     "anchor": "pageheader",
-    "text": "PageHeader\nA page title and description with optional back navigation and primary actions.\n"
+    "text": "PageHeader\nA page title and description with optional back navigation and primary actions.\nCategory: Layout. Scope: composed. Owner: IA-MNS Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `PageHeader`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -78,7 +276,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props",
-    "text": "Props\nName\nType\nMeaning\n`title / description`\n`string / string (optional)`\nThe page h1 and concise supporting text.\n`back / actions`\n`ReactNode (optional)`\nCaller-owned navigation and action controls. No routing or mutation is performed by this component.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`title / description`\n`string / string (optional)`\nThe page h1 and concise supporting text.\nSee type\n—\n`back / actions`\n`ReactNode (optional)`\nCaller-owned navigation and action controls. No routing or mutation is performed by this component.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -96,7 +294,7 @@
     "kind": "repository",
     "heading": "Examples",
     "anchor": "examples",
-    "text": "Examples\n**Settings page header** (`ui-page-header`): A synthetic page heading with a local demonstration action.\n"
+    "text": "Examples\n**Settings page header** (`ui-page-header`): A synthetic page heading with a local demonstration action.\n<PageHeader title=\"Administração\" description=\"Preferências da equipe.\" />\n\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -105,7 +303,7 @@
     "kind": "repository",
     "heading": "SelectField",
     "anchor": "selectfield",
-    "text": "SelectField\nA themed native select with an associated label, help and validation messages.\n"
+    "text": "SelectField\nA themed native select with an associated label, help and validation messages.\nCategory: Inputs. Scope: composed. Owner: IA-MNS Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `SelectField`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -114,7 +312,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props-1",
-    "text": "Props\nName\nType\nMeaning\n`label`\n`string`\nVisible accessible name associated with the select.\n`hint / error`\n`string (optional)`\nDescribed-by text; error also marks the control invalid. The owning form controls announcements.\n`native select props`\n`ComponentProps<select>`\nIncludes options as children, value/defaultValue, disabled, id, handlers, ref and ARIA attributes. An omitted id is generated uniquely.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`label`\n`string`\nVisible accessible name associated with the select.\nSee type\n—\n`hint / error`\n`string (optional)`\nDescribed-by text; error also marks the control invalid. The owning form controls announcements.\nSee type\n—\n`native select props`\n`ComponentProps<select>`\nIncludes options as children, value/defaultValue, disabled, id, handlers, ref and ARIA attributes. An omitted id is generated uniquely.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -132,7 +330,7 @@
     "kind": "repository",
     "heading": "Examples",
     "anchor": "examples-1",
-    "text": "Examples\n**Native choice** (`ui-select-field`): Synthetic options and help; the selection is not saved or sent.\n"
+    "text": "Examples\n**Native choice** (`ui-select-field`): Synthetic options and help; the selection is not saved or sent.\n<SelectField label=\"Duração\"><option value=\"12\">12 horas</option></SelectField>\n\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -141,7 +339,7 @@
     "kind": "repository",
     "heading": "Button",
     "anchor": "button",
-    "text": "Button\nA themed native button with consistent action hierarchy and pending feedback.\n"
+    "text": "Button\nA themed native button with consistent action hierarchy and pending feedback.\nCategory: Actions. Scope: shared. Owner: IA-MNS Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `Button`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -150,7 +348,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props-2",
-    "text": "Props\nName\nType\nMeaning\n`variant`\n`primary | secondary | ghost | danger`\nAction emphasis; defaults to primary. Danger uses semantic error tokens.\n`loading`\n`boolean`\nDisables interaction, exposes aria-busy and adds a decorative spinner without replacing the accessible name.\n`type`\n`button | submit | reset`\nDefaults to button. Forms must explicitly use submit.\n`native button props`\n`ComponentProps<button>`\nForwards native handlers, disabled state, ARIA attributes, ref and children.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`variant`\n`primary | secondary | ghost | danger`\nAction emphasis; defaults to primary. Danger uses semantic error tokens.\nSee type\n—\n`loading`\n`boolean`\nDisables interaction, exposes aria-busy and adds a decorative spinner without replacing the accessible name.\nSee type\n—\n`type`\n`button | submit | reset`\nDefaults to button. Forms must explicitly use submit.\nSee type\n—\n`native button props`\n`ComponentProps<button>`\nForwards native handlers, disabled state, ARIA attributes, ref and children.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -168,7 +366,7 @@
     "kind": "repository",
     "heading": "Examples",
     "anchor": "examples-2",
-    "text": "Examples\n**Action hierarchy** (`ui-buttons`): Button variants and pending feedback; no request or account change.\n"
+    "text": "Examples\n**Action hierarchy** (`ui-buttons`): Button variants and pending feedback; no request or account change.\n<Button loading={saving}>Salvar</Button>\n<Button variant=\"danger\">Encerrar</Button>\n\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -177,7 +375,7 @@
     "kind": "repository",
     "heading": "TextField",
     "anchor": "textfield",
-    "text": "TextField\nA labeled text-like input with associated help and validation messages.\n"
+    "text": "TextField\nA labeled text-like input with associated help and validation messages.\nCategory: Inputs. Scope: composed. Owner: IA-MNS Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `TextField`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -186,7 +384,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props-3",
-    "text": "Props\nName\nType\nMeaning\n`label`\n`string`\nVisible accessible name, associated with the native input.\n`hint / error`\n`string (optional)`\nDescribed-by text; error also marks the input invalid. The owning form controls error announcements.\n`native input props`\n`ComponentProps<input>`\nIncludes type, value/defaultValue, autocomplete, required, id, handlers, ref and ARIA attributes. An omitted id is generated uniquely.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`label`\n`string`\nVisible accessible name, associated with the native input.\nSee type\n—\n`hint / error`\n`string (optional)`\nDescribed-by text; error also marks the input invalid. The owning form controls error announcements.\nSee type\n—\n`native input props`\n`ComponentProps<input>`\nIncludes type, value/defaultValue, autocomplete, required, id, handlers, ref and ARIA attributes. An omitted id is generated uniquely.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -204,7 +402,7 @@
     "kind": "repository",
     "heading": "Examples",
     "anchor": "examples-3",
-    "text": "Examples\n**Labels, help and errors** (`ui-text-fields`): Synthetic profile fields with no persistence or network request.\n"
+    "text": "Examples\n**Labels, help and errors** (`ui-text-fields`): Synthetic profile fields with no persistence or network request.\n<TextField label=\"Nome\" hint=\"Como você aparece no IA-MNS.\" required />\n\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -213,7 +411,7 @@
     "kind": "repository",
     "heading": "SectionCard",
     "anchor": "sectioncard",
-    "text": "SectionCard\nA named section with a consistent heading, optional description and decorative icon.\n"
+    "text": "SectionCard\nA named section with a consistent heading, optional description and decorative icon.\nCategory: Layout. Scope: composed. Owner: IA-MNS Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `SectionCard`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -222,7 +420,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props-4",
-    "text": "Props\nName\nType\nMeaning\n`title`\n`string`\nLevel-two heading and accessible section name.\n`description / icon`\n`string / ReactNode (optional)`\nSupporting text and an aria-hidden decorative icon.\n`native section props`\n`ComponentProps<section>`\nIncludes children, className and native section attributes. The heading owns aria-labelledby.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`title`\n`string`\nLevel-two heading and accessible section name.\nSee type\n—\n`description / icon`\n`string / ReactNode (optional)`\nSupporting text and an aria-hidden decorative icon.\nSee type\n—\n`native section props`\n`ComponentProps<section>`\nIncludes children, className and native section attributes. The heading owns aria-labelledby.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -240,7 +438,7 @@
     "kind": "repository",
     "heading": "Examples",
     "anchor": "examples-4",
-    "text": "Examples\n**Settings section** (`ui-section-card`): A synthetic settings group demonstrating the shared surface and controls.\n"
+    "text": "Examples\n**Settings section** (`ui-section-card`): A synthetic settings group demonstrating the shared surface and controls.\n<SectionCard title=\"Perfil\"><TextField label=\"Nome\" /></SectionCard>\n\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -249,7 +447,7 @@
     "kind": "repository",
     "heading": "StatusBadge",
     "anchor": "statusbadge",
-    "text": "StatusBadge\nA compact textual label for a state or category.\n"
+    "text": "StatusBadge\nA compact textual label for a state or category.\nCategory: Data Display. Scope: shared. Owner: IA-MNS Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `StatusBadge`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -258,7 +456,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props-5",
-    "text": "Props\nName\nType\nMeaning\n`children`\n`ReactNode`\nVisible text communicating the state or category.\n`tone`\n`neutral | accent`\nDefaults to neutral; accent emphasizes an enabled or current state without implying a global severity.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`children`\n`ReactNode`\nVisible text communicating the state or category.\nSee type\n—\n`tone`\n`neutral | accent`\nDefaults to neutral; accent emphasizes an enabled or current state without implying a global severity.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -276,7 +474,7 @@
     "kind": "repository",
     "heading": "Examples",
     "anchor": "examples-5",
-    "text": "Examples\n**State labels** (`ui-status-badges`): Synthetic neutral and accent states.\n"
+    "text": "Examples\n**State labels** (`ui-status-badges`): Synthetic neutral and accent states.\n<StatusBadge tone=\"accent\">Esta sessão</StatusBadge>\n\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -285,7 +483,7 @@
     "kind": "repository",
     "heading": "ErrorNotice",
     "anchor": "errornotice",
-    "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\n"
+    "text": "ErrorNotice\nDisplays a public API failure message and an optional reload action.\nCategory: Feedback. Scope: composed. Owner: IA-MNS Web UI.\nSource: [apps/web/src/components.tsx](../../../apps/web/src/components.tsx) (export `ErrorNotice`). Metadata: [apps/web/src/components.docs.json](../../../apps/web/src/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -294,7 +492,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props-6",
-    "text": "Props\nName\nType\nMeaning\n`error`\n`unknown`\nMapped through the shared public failure-message boundary.\n`operation`\n`read | create | write`\nSelects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read.\n`messages`\n`Record<string, string> (optional)`\nModule-specific wording for its own stable error codes.\n`onReload`\n`() => void`\nOptional recovery action when current data can be refreshed.\n`reloadLabel`\n`string (optional)`\nAccessible name of the reload action; defaults to Reload.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`error`\n`unknown`\nMapped through the shared public failure-message boundary.\nSee type\n—\n`operation`\n`read | create | write`\nSelects the failure wording; failed or lost writes are reported as unknown outcomes. Defaults to read.\nSee type\n—\n`messages`\n`Record<string, string> (optional)`\nModule-specific wording for its own stable error codes.\nSee type\n—\n`onReload`\n`() => void`\nOptional recovery action when current data can be refreshed.\nSee type\n—\n`reloadLabel`\n`string (optional)`\nAccessible name of the reload action; defaults to Reload.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -312,7 +510,7 @@
     "kind": "repository",
     "heading": "Examples",
     "anchor": "examples-6",
-    "text": "Examples\n**Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.\n"
+    "text": "Examples\n**Unavailable service with reload** (`unavailable-reload`): A synthetic SERVICE_UNAVAILABLE response; no live request is involved.\n<ErrorNotice error={error} onReload={reload} />\n\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -321,7 +519,7 @@
     "kind": "repository",
     "heading": "ConversationMaterials",
     "anchor": "conversationmaterials",
-    "text": "ConversationMaterials\nManages owned operational attachments and explicit presentation preferences within one conversation.\n"
+    "text": "ConversationMaterials\nManages owned operational attachments and explicit presentation preferences within one conversation.\nCategory: Forms. Scope: feature-specific. Owner: agent.\nSource: [apps/web/src/features/agent/materials.tsx](../../../apps/web/src/features/agent/materials.tsx) (export `ConversationMaterials`). Metadata: [apps/web/src/features/agent/components.docs.json](../../../apps/web/src/features/agent/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -330,7 +528,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props-7",
-    "text": "Props\nName\nType\nMeaning\n`token`\n`string | null`\nIn-memory credential supplied by the workspace, never retained in storage.\n`conversationId`\n`string (optional)`\nOwned conversation; a new one is created before the first explicit save when absent.\n`source`\n`SalesSourceSelection`\nERP scope of new user-supplied material.\n`attachments`\n`Attachment[]`\nServer metadata only; never inline attachment bodies.\n`preferences`\n`PresentationPreferences (optional)`\nExplicitly saved language, detail and format; omitted values use automatic presentation.\n`disabled`\n`boolean`\nDisables writes while access or conversation lifecycle prevents changes.\n`onCreated`\n`(id: string) => Promise<void>`\nNavigates to a newly persisted conversation before material is saved.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`token`\n`string | null`\nIn-memory credential supplied by the workspace, never retained in storage.\nSee type\n—\n`conversationId`\n`string (optional)`\nOwned conversation; a new one is created before the first explicit save when absent.\nSee type\n—\n`source`\n`SalesSourceSelection`\nERP scope of new user-supplied material.\nSee type\n—\n`attachments`\n`Attachment[]`\nServer metadata only; never inline attachment bodies.\nSee type\n—\n`preferences`\n`PresentationPreferences (optional)`\nExplicitly saved language, detail and format; omitted values use automatic presentation.\nSee type\n—\n`disabled`\n`boolean`\nDisables writes while access or conversation lifecycle prevents changes.\nSee type\n—\n`onCreated`\n`(id: string) => Promise<void>`\nNavigates to a newly persisted conversation before material is saved.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -355,9 +553,9 @@
     "title": "Web Component Reference",
     "group": "Generated references",
     "kind": "repository",
-    "heading": "SalesResults",
-    "anchor": "salesresults",
-    "text": "SalesResults\nPresents validated sales aggregates of one source, distinct units, comparisons and matched products.\n"
+    "heading": "ProductAnswer",
+    "anchor": "productanswer",
+    "text": "ProductAnswer\nPresents the products a lookup found in the Pilar da Terra (VR Master) registration with how each criterion was understood.\nCategory: Data Display. Scope: feature-specific. Owner: products.\nSource: [apps/web/src/features/products/results.tsx](../../../apps/web/src/features/products/results.tsx) (export `ProductAnswer`). Metadata: [apps/web/src/features/products/components.docs.json](../../../apps/web/src/features/products/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -366,7 +564,7 @@
     "kind": "repository",
     "heading": "Props",
     "anchor": "props-8",
-    "text": "Props\nName\nType\nMeaning\n`result`\n`SalesResult`\nGenerated SDK response containing server-owned rows, exact decimal totals, comparison periods and warnings.\n`source`\n`sankhya | vrmaster (optional)`\nSource of the result; selects its measure labels. Defaults to sankhya.\n"
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`answer`\n`ProductAnswer`\nGenerated SDK agent result: each criterion with the records or classification paths it resolved to, exclusions and the business rule of its relationship; counts per section, notes, the exact total and up to 200 products.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -375,78 +573,6 @@
     "kind": "repository",
     "heading": "States",
     "anchor": "states-8",
-    "text": "States\nEmpty sales\nTable\nSingle-unit monthly chart\nComparison details\nMatched products\nAccessibility: Native captioned tables, scoped headers, text values beside chart bars, pressed-state view buttons and native details controls.\nUsage: Render only validated API results. Charts are available for monthly data sharing one unit; different quantity units, including VRMaster packaging types, never share a chart or total.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-8",
-    "text": "Examples\n**Monthly sales with comparison** (`sales-monthly-results`): Synthetic decimal sales and prior-year totals; the preview makes no API or provider request.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "SalesAnswer",
-    "anchor": "salesanswer",
-    "text": "SalesAnswer\nPresents a sales answer with one labeled section per queried source: MNS (Sankhya), Pilar da Terra (VR Master) or both.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-9",
-    "text": "Props\nName\nType\nMeaning\n`answer`\n`SalesAnswer`\nGenerated SDK agent result: the selection and a section per source with its status, reason and result.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-9",
-    "text": "States\nOne source\nBoth sources\nSource unavailable\nMeasure unavailable in a source\nAccessibility: Each source is a group named by its level-2 heading, not a landmark, so repeated answers stay distinct; status text explains a missing result without relying on color.\nUsage: Never add figures across sections: each source keeps its own totals, and a failed source is reported beside the other source's result.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Examples",
-    "anchor": "examples-9",
-    "text": "Examples\n**Both sources, one unavailable** (`sales-answer-both-sources`): Synthetic Tudo answer with a Sankhya total and an unavailable VRMaster; the preview makes no API or provider request.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "ProductAnswer",
-    "anchor": "productanswer",
-    "text": "ProductAnswer\nPresents the products a lookup found in the Pilar da Terra (VR Master) registration with how each criterion was understood.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Props",
-    "anchor": "props-10",
-    "text": "Props\nName\nType\nMeaning\n`answer`\n`ProductAnswer`\nGenerated SDK agent result: each criterion with the records or classification paths it resolved to, exclusions and the business rule of its relationship; counts per section, notes, the exact total and up to 200 products.\n"
-  },
-  {
-    "id": "repository/docs/generated/components/web",
-    "title": "Web Component Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "States",
-    "anchor": "states-10",
     "text": "States\nClassification with exclusions\nSeveral criteria combined\nList shorter than the total\nNo products\nAccessibility: A group named by its level-2 source heading; criteria in a description list; a native captioned table with scoped headers that states when only the first products are listed.\nUsage: Render only validated API results. Always show the interpretation beside the list: classification paths, exclusions and relationship rules are how a person checks what was selected.\n"
   },
   {
@@ -455,7 +581,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-10",
+    "anchor": "examples-8",
     "text": "Examples\n**Category with an exclusion** (`product-answer-category`): Synthetic classification paths and products; the preview makes no API, provider or ERP request.\n"
   },
   {
@@ -465,7 +591,7 @@
     "kind": "repository",
     "heading": "ProductOptions",
     "anchor": "productoptions",
-    "text": "ProductOptions\nPresents the numbered choices of a product clarification, such as two interpretations of a word or several matching buyers.\n"
+    "text": "ProductOptions\nPresents the numbered choices of a product clarification, such as two interpretations of a word or several matching buyers.\nCategory: Data Display. Scope: feature-specific. Owner: products.\nSource: [apps/web/src/features/products/results.tsx](../../../apps/web/src/features/products/results.tsx) (export `ProductOptions`). Metadata: [apps/web/src/features/products/components.docs.json](../../../apps/web/src/features/products/components.docs.json).\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -473,8 +599,8 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Props",
-    "anchor": "props-11",
-    "text": "Props\nName\nType\nMeaning\n`options`\n`ProductOptions`\nGenerated SDK agent result with the dimension, the asked words and numbered option labels.\n`onChoose`\n`(number: number) => void (optional)`\nSends the chosen number as the next message; absent for earlier turns, which show the options as text.\n"
+    "anchor": "props-9",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`options`\n`ProductOptions`\nGenerated SDK agent result with the dimension, the asked words and numbered option labels.\nSee type\n—\n`onChoose`\n`(number: number) => void (optional)`\nSends the chosen number as the next message; absent for earlier turns, which show the options as text.\nSee type\n—\n"
   },
   {
     "id": "repository/docs/generated/components/web",
@@ -482,7 +608,7 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "States",
-    "anchor": "states-11",
+    "anchor": "states-9",
     "text": "States\nChoosable\nHistorical\nAccessibility: A group named by its title; each choice is a native button whose text includes its number, so typing the number is equivalent.\nUsage: Option labels can be personal data such as buyer names: they appear only in this result, never in the reply text that later turns send to the model.\n"
   },
   {
@@ -491,8 +617,80 @@
     "group": "Generated references",
     "kind": "repository",
     "heading": "Examples",
-    "anchor": "examples-11",
+    "anchor": "examples-9",
     "text": "Examples\n**Two interpretations** (`product-options-choice`): Synthetic choices; selecting one shows a local message and makes no request.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "SalesResults",
+    "anchor": "salesresults",
+    "text": "SalesResults\nPresents validated sales aggregates of one source, distinct units, comparisons and matched products.\nCategory: Data Display. Scope: feature-specific. Owner: sales.\nSource: [apps/web/src/features/sales/results.tsx](../../../apps/web/src/features/sales/results.tsx) (export `SalesResults`). Metadata: [apps/web/src/features/sales/components.docs.json](../../../apps/web/src/features/sales/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-10",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`result`\n`SalesResult`\nGenerated SDK response containing server-owned rows, exact decimal totals, comparison periods and warnings.\nSee type\n—\n`source`\n`sankhya | vrmaster (optional)`\nSource of the result; selects its measure labels. Defaults to sankhya.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-10",
+    "text": "States\nEmpty sales\nTable\nSingle-unit monthly chart\nComparison details\nMatched products\nAccessibility: Native captioned tables, scoped headers, text values beside chart bars, pressed-state view buttons and native details controls.\nUsage: Render only validated API results. Charts are available for monthly data sharing one unit; different quantity units, including VRMaster packaging types, never share a chart or total.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-10",
+    "text": "Examples\n**Monthly sales with comparison** (`sales-monthly-results`): Synthetic decimal sales and prior-year totals; the preview makes no API or provider request.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "SalesAnswer",
+    "anchor": "salesanswer",
+    "text": "SalesAnswer\nPresents a sales answer with one labeled section per queried source: MNS (Sankhya), Pilar da Terra (VR Master) or both.\nCategory: Data Display. Scope: feature-specific. Owner: sales.\nSource: [apps/web/src/features/sales/results.tsx](../../../apps/web/src/features/sales/results.tsx) (export `SalesAnswer`). Metadata: [apps/web/src/features/sales/components.docs.json](../../../apps/web/src/features/sales/components.docs.json).\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Props",
+    "anchor": "props-11",
+    "text": "Props\nName\nType\nMeaning\nRequired\nDefault\n`answer`\n`SalesAnswer`\nGenerated SDK agent result: the selection and a section per source with its status, reason and result.\nSee type\n—\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "States",
+    "anchor": "states-11",
+    "text": "States\nOne source\nBoth sources\nSource unavailable\nMeasure unavailable in a source\nAccessibility: Each source is a group named by its level-2 heading, not a landmark, so repeated answers stay distinct; status text explains a missing result without relying on color.\nUsage: Never add figures across sections: each source keeps its own totals, and a failed source is reported beside the other source's result.\n"
+  },
+  {
+    "id": "repository/docs/generated/components/web",
+    "title": "Web Component Reference",
+    "group": "Generated references",
+    "kind": "repository",
+    "heading": "Examples",
+    "anchor": "examples-11",
+    "text": "Examples\n**Both sources, one unavailable** (`sales-answer-both-sources`): Synthetic Tudo answer with a Sankhya total and an unavailable VRMaster; the preview makes no API or provider request.\n"
   },
   {
     "id": "repository/docs/generated/configuration/api",
@@ -655,293 +853,5 @@
     "heading": "Constraints and indexes",
     "anchor": "constraints-and-indexes-7",
     "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_sessions_assurance_check`\n`CHECK (((assurance)::text = ANY ((ARRAY['single'::character varying, 'mfa'::character varying])::text[])))`\nExplicit assurance levels.\n`identity_sessions_expiry_check`\n`CHECK (((idle_expires_at <= expires_at) AND (auth_time <= expires_at)))`\nIdle expiry and authentication time cannot exceed the absolute expiry.\n`identity_sessions_method_check`\n`CHECK (((method)::text = ANY ((ARRAY['local'::character varying, 'pdt'::character varying, 'sankhya'::character varying, 'bootstrap'::character varying, 'enrollment'::character varying])::text[])))`\nImplemented sign-in methods.\n`identity_sessions_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nSession belongs to its Person.\n`identity_sessions_pkey`\n`PRIMARY KEY (id)`\nSession identity.\n`identity_sessions_revocation_check`\n`CHECK (((revoked_at IS NULL) = (revoked_reason IS NULL)))`\nRevocation instant and reason exist together.\n`identity_sessions_surface_check`\n`CHECK (((surface)::text = ANY ((ARRAY['direct'::character varying, 'pdt'::character varying, 'sankhya'::character varying])::text[])))`\nKnown access surfaces.\n`identity_sessions_expiry_idx`\n`CREATE INDEX identity_sessions_expiry_idx ON public.identity_sessions USING btree (expires_at)`\nExpired-session pruning.\n`identity_sessions_person_idx`\n`CREATE INDEX identity_sessions_person_idx ON public.identity_sessions USING btree (person_id, created_at DESC)`\nPer-Person session listing.\n`identity_sessions_previous_refresh_key`\n`CREATE UNIQUE INDEX identity_sessions_previous_refresh_key ON public.identity_sessions USING btree (previous_refresh_hash)`\nReuse detection lookup.\n`identity_sessions_refresh_key`\n`CREATE UNIQUE INDEX identity_sessions_refresh_key ON public.identity_sessions USING btree (refresh_hash)`\nA refresh credential maps to one session.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_role_assignments",
-    "anchor": "identity_role_assignments",
-    "text": "identity_role_assignments\nInternal IA-MNS roles assigned to a Person. owner is the principal administrator with full IA-MNS capability and administration, independent of Sankhya or PDT roles.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Assigned by bootstrap or an existing owner with recent strong authentication; the last active owner cannot be removed. Every change is audited.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nRole holder.\n—\n—\n`role`\n`character varying(40)`\nno\n—\nCONFIDENTIAL\nInternal role code; currently owner.\n—\n—\n`granted_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner Person who assigned the role.\nAssigned by the server-side bootstrap flow.\n—\n`granted_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock assignment instant.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-8",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_role_assignments_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nRole belongs to its Person.\n`identity_role_assignments_pkey`\n`PRIMARY KEY (person_id, role)`\nA role is assigned once per Person.\n`identity_role_assignments_role_check`\n`CHECK (((role)::text = 'owner'::text))`\nOnly defined internal roles.\n`identity_role_assignments_role_idx`\n`CREATE INDEX identity_role_assignments_role_idx ON public.identity_role_assignments USING btree (role)`\nOwner counting and listing.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_capability_grants",
-    "anchor": "identity_capability_grants",
-    "text": "identity_capability_grants\nExplicit capability permissions granted to a Person by an owner, united with group grants. External links alone grant no permission. A grant may be narrowed by data restrictions (identity_grant_restrictions); an explicit grant takes precedence over the provider policy for its permission. The language model never creates grants.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Granted, restricted and revoked by owners with recent strong authentication; changes reach new access tokens within their 10-minute lifetime and agent turns at once. Audited.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nGrantee.\n—\n—\n`permission`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nRegistered source permission such as sales_sankhya:read; validated against the composed catalog. Capability permissions (sales:read, products:read) are derived and never stored.\n—\n—\n`granted_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner Person who granted it or last changed its restrictions.\nGranted by the server-side bootstrap flow.\n—\n`granted_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock instant of the grant or of its last restriction change.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-9",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_capability_grants_permission_check`\n`CHECK (((permission)::text ~ '^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$'::text))`\nPermission naming convention.\n`identity_capability_grants_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nGrant belongs to its Person.\n`identity_capability_grants_pkey`\n`PRIMARY KEY (person_id, permission)`\nA permission is granted once per Person.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_grant_restrictions",
-    "anchor": "identity_grant_restrictions",
-    "text": "identity_grant_restrictions\nData restrictions of a Person's explicit grant (ADR-0037): each row admits one value of one dimension. Values of a dimension are alternatives; every restricted dimension of the grant must match. A grant without rows admits every row of its source.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Replaced together with its grant by owners with recent strong authentication; removed with the grant or the Person. Moved with the grant on consolidation. Audited with value counts.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nGrantee.\n—\n—\n`permission`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nThe restricted permission of the grant.\n—\n—\n`dimension`\n`character varying(32)`\nno\n—\nCONFIDENTIAL\nRestriction dimension the permission declares, such as company or store; enforced by the module that owns the data.\n—\n—\n`value`\n`character varying(40)`\nno\n—\nCONFIDENTIAL\nERP record code admitted for the dimension (for example CODEMP or loja.id), validated against the source when saved.\n—\n—\n`label`\n`character varying(200)`\nno\n—\nCONFIDENTIAL\nDisplay label read from the ERP when saved (company, project, seller, buyer, store or classification name); may be a person's name. Never typed by the browser.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-10",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_grant_restrictions_dimension_check`\n`CHECK (((dimension)::text ~ '^[a-z][a-z_]{1,30}$'::text))`\nDimension naming convention.\n`identity_grant_restrictions_grant_fkey`\n`FOREIGN KEY (person_id, permission) REFERENCES identity_capability_grants(person_id, permission) ON UPDATE CASCADE ON DELETE CASCADE`\nRestriction belongs to its grant and is removed with it.\n`identity_grant_restrictions_label_check`\n`CHECK ((length(btrim((label)::text)) > 0))`\nA label is never blank.\n`identity_grant_restrictions_pkey`\n`PRIMARY KEY (person_id, permission, dimension, value)`\nA value is admitted once per dimension of a grant.\n`identity_grant_restrictions_value_check`\n`CHECK (((value)::text ~ '^-?[0-9]{1,15}$'::text))`\nERP codes are integers.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_groups",
-    "anchor": "identity_groups",
-    "text": "identity_groups\nOwner-managed groups of Persons (ADR-0037). Every member holds the group's grants, united with its own grants.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Created, renamed and deleted by owners with recent strong authentication; deleting a group removes its memberships and grants. Audited.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nImmutable group UUID.\n—\n—\n`name`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nDisplay name chosen by an owner, for example Comercial Matriz.\n—\n—\n`name_key`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nCase-insensitive normalized name (NFKC, lower case) that makes names unique; written by the application.\n—\n—\n`description`\n`character varying(300)`\nyes\n—\nCONFIDENTIAL\nOptional owner description of who belongs to the group.\nNo description.\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nIncremented by every change of name or description; updates apply only to the version the owner saw.\n—\n—\n`created_by`\n`uuid`\nno\n—\nCONFIDENTIAL\nOwner (identity_persons.id) who created the group; attribution without a foreign key, the audit trail is authoritative.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock creation instant.\n—\n—\n`updated_by`\n`uuid`\nno\n—\nCONFIDENTIAL\nOwner (identity_persons.id) who made the last change.\n—\n—\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock instant of the last change.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-11",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_groups_description_check`\n`CHECK (((description IS NULL) OR (length(btrim((description)::text)) > 0)))`\nA description is never blank.\n`identity_groups_name_check`\n`CHECK (((length(btrim((name)::text)) >= 2) AND (length(btrim((name)::text)) <= 80)))`\nNames have 2 to 80 visible characters.\n`identity_groups_pkey`\n`PRIMARY KEY (id)`\nGroup identity.\n`identity_groups_version_check`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`identity_groups_name_key`\n`CREATE UNIQUE INDEX identity_groups_name_key ON public.identity_groups USING btree (name_key)`\nGroup names are unique regardless of case.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_group_members",
-    "anchor": "identity_group_members",
-    "text": "identity_group_members\nMembership of a Person in a group; the member holds the group's grants.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Added and removed by owners with recent strong authentication; removed with the group or the Person, moved to the surviving Person on consolidation. Audited.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`group_id`\n`uuid`\nno\n—\nINTERNAL\nGroup.\n—\n—\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nMember Person.\n—\n—\n`added_by`\n`uuid`\nno\n—\nCONFIDENTIAL\nOwner (identity_persons.id) who added the member; attribution without a foreign key.\n—\n—\n`added_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock instant the member was added.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-12",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_group_members_group_id_fkey`\n`FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE CASCADE`\nRemoved with the group.\n`identity_group_members_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nRemoved with the Person.\n`identity_group_members_pkey`\n`PRIMARY KEY (group_id, person_id)`\nA Person belongs to a group once.\n`identity_group_members_person_idx`\n`CREATE INDEX identity_group_members_person_idx ON public.identity_group_members USING btree (person_id)`\nGroups of a Person when computing access.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_group_grants",
-    "anchor": "identity_group_grants",
-    "text": "identity_group_grants\nPermissions an owner granted to a group, optionally narrowed by identity_group_grant_restrictions; every member holds them.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Granted, restricted and revoked by owners with recent strong authentication; removed with the group. Audited.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`group_id`\n`uuid`\nno\n—\nINTERNAL\nGroup.\n—\n—\n`permission`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nRegistered source permission such as sales_vrmaster:read; validated against the composed catalog.\n—\n—\n`granted_by`\n`uuid`\nno\n—\nCONFIDENTIAL\nOwner (identity_persons.id) who granted it or last changed its restrictions.\n—\n—\n`granted_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock instant of the grant or of its last restriction change.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-13",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_group_grants_group_id_fkey`\n`FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE CASCADE`\nRemoved with the group.\n`identity_group_grants_permission_check`\n`CHECK (((permission)::text ~ '^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$'::text))`\nPermission naming convention.\n`identity_group_grants_pkey`\n`PRIMARY KEY (group_id, permission)`\nA permission is granted once per group.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_group_grant_restrictions",
-    "anchor": "identity_group_grant_restrictions",
-    "text": "identity_group_grant_restrictions\nData restrictions of a group grant, with the same meaning as identity_grant_restrictions.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Replaced together with its grant by owners with recent strong authentication; removed with the grant or the group. Audited with value counts.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`group_id`\n`uuid`\nno\n—\nINTERNAL\nGroup.\n—\n—\n`permission`\n`character varying(80)`\nno\n—\nCONFIDENTIAL\nThe restricted permission of the grant.\n—\n—\n`dimension`\n`character varying(32)`\nno\n—\nCONFIDENTIAL\nRestriction dimension the permission declares, such as company or store; enforced by the module that owns the data.\n—\n—\n`value`\n`character varying(40)`\nno\n—\nCONFIDENTIAL\nERP record code admitted for the dimension (for example CODEMP or loja.id), validated against the source when saved.\n—\n—\n`label`\n`character varying(200)`\nno\n—\nCONFIDENTIAL\nDisplay label read from the ERP when saved (company, project, seller, buyer, store or classification name); may be a person's name. Never typed by the browser.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-14",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_group_grant_restrictions_dimension_check`\n`CHECK (((dimension)::text ~ '^[a-z][a-z_]{1,30}$'::text))`\nDimension naming convention.\n`identity_group_grant_restrictions_grant_fkey`\n`FOREIGN KEY (group_id, permission) REFERENCES identity_group_grants(group_id, permission) ON UPDATE CASCADE ON DELETE CASCADE`\nRestriction belongs to its group grant and is removed with it.\n`identity_group_grant_restrictions_label_check`\n`CHECK ((length(btrim((label)::text)) > 0))`\nA label is never blank.\n`identity_group_grant_restrictions_pkey`\n`PRIMARY KEY (group_id, permission, dimension, value)`\nA value is admitted once per dimension of a group grant.\n`identity_group_grant_restrictions_value_check`\n`CHECK (((value)::text ~ '^-?[0-9]{1,15}$'::text))`\nERP codes are integers.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_tickets",
-    "anchor": "identity_tickets",
-    "text": "identity_tickets\nShort-lived single-use flow state addressed by the SHA-256 of a high-entropy secret: bootstrap, enrollment, reset and link invitations, pending second factor, pending TOTP setup, provisioning choice, profile consolidation, and pending PDT or Sankhya proofs (state, nonce, PKCE verifier).\nOwner: identity. Classification: RESTRICTED.\nLifecycle: Consumed atomically once or expires (minutes; invitations up to 72 hours). Expired rows are pruned by the application after 7 days.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nTicket row UUID.\n—\n—\n`purpose`\n`character varying(24)`\nno\n—\nCONFIDENTIAL\nFlow kind; a ticket is only accepted by its own purpose.\n—\n—\n`token_hash`\n`character(64)`\nno\n—\nRESTRICTED\nSHA-256 of the secret presented by the browser or callback.\n—\n—\n`person_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nPerson the flow acts on.\nThe flow is not yet bound to a Person (sign-in, bootstrap or provisioning).\n—\n`payload`\n`jsonb`\nno\n`'{}'::jsonb`\nRESTRICTED\nAllowlisted flow state such as intent, surface, PKCE verifier, nonce or a verified external identity awaiting a choice. Never passwords.\n—\n—\n`created_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner Person who issued an invitation or reset.\nCreated by the Person's own flow or the bootstrap command.\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock creation instant.\n—\n—\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nCONFIDENTIAL\nApplication-clock expiry.\n—\n—\n`consumed_at`\n`timestamp(3) with time zone`\nyes\n—\nCONFIDENTIAL\nSingle-use consumption instant.\nNot consumed.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-15",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_tickets_expiry_check`\n`CHECK ((expires_at > created_at))`\nExpiry after creation.\n`identity_tickets_payload_check`\n`CHECK ((jsonb_typeof(payload) = 'object'::text))`\nPayload is a JSON object.\n`identity_tickets_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nOptional Person binding.\n`identity_tickets_pkey`\n`PRIMARY KEY (id)`\nTicket identity.\n`identity_tickets_purpose_check`\n`CHECK (((purpose)::text = ANY ((ARRAY['bootstrap'::character varying, 'enrollment'::character varying, 'reset'::character varying, 'link_invitation'::character varying, 'mfa'::character varying, 'mfa_enrollment'::character varying, 'provision'::character varying, 'merge'::character varying, 'totp_setup'::character varying, 'pdt_login'::character varying, 'sankhya_login'::character varying])::text[])))`\nKnown flow purposes.\n`identity_tickets_expiry_idx`\n`CREATE INDEX identity_tickets_expiry_idx ON public.identity_tickets USING btree (expires_at)`\nExpired-ticket pruning.\n`identity_tickets_token_key`\n`CREATE UNIQUE INDEX identity_tickets_token_key ON public.identity_tickets USING btree (token_hash)`\nSecret lookup by hash.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_used_assertions",
-    "anchor": "identity_used_assertions",
-    "text": "identity_used_assertions\nReplay protection for host identity assertions: SHA-256 of each accepted assertion jti until it expires.\nOwner: identity. Classification: INTERNAL.\nLifecycle: Rows are pruned after their expiry.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`jti_hash`\n`character(64)`\nno\n—\nINTERNAL\nSHA-256 of the assertion identifier.\n—\n—\n`expires_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nAssertion expiry; after it the jti cannot be replayed anyway.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-16",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_used_assertions_pkey`\n`PRIMARY KEY (jti_hash)`\nEach assertion is accepted once.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_audit_events",
-    "anchor": "identity_audit_events",
-    "text": "identity_audit_events\nAppend-only audit of security-relevant identity events: sign-in outcomes, provisioning, link and unlink, credential and factor changes, role and grant changes, session revocation and bootstrap.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Append-only for the runtime role. Retention requires an owner-approved policy before shared deployment (PH-09).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nEvent UUID.\n—\n—\n`occurred_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nDatabase-clock event instant.\n—\n—\n`action`\n`character varying(48)`\nno\n—\nCONFIDENTIAL\nAllowlisted dotted action code.\n—\n—\n`actor_person_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nPerson who performed the action.\nAnonymous attempt or server-side bootstrap.\n—\n`target_person_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nPerson affected by the action.\nNo Person resolved, for example a failed anonymous sign-in.\n—\n`details`\n`jsonb`\nno\n`'{}'::jsonb`\nCONFIDENTIAL\nAllowlisted non-secret metadata such as provider, permission, role or reason codes. Never credentials, tokens or free text.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-17",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_audit_events_action_check`\n`CHECK (((action)::text ~ '^[a-z][a-z0-9_.]*$'::text))`\nAction code format.\n`identity_audit_events_details_check`\n`CHECK ((jsonb_typeof(details) = 'object'::text))`\nDetails are a JSON object.\n`identity_audit_events_pkey`\n`PRIMARY KEY (id)`\nEvent identity.\n`identity_audit_events_recent_idx`\n`CREATE INDEX identity_audit_events_recent_idx ON public.identity_audit_events USING btree (occurred_at DESC, id DESC)`\nRecent audit listing.\n`identity_audit_events_target_idx`\n`CREATE INDEX identity_audit_events_target_idx ON public.identity_audit_events USING btree (target_person_id, occurred_at DESC)`\nPer-Person audit history.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_security_policies",
-    "anchor": "identity_security_policies",
-    "text": "identity_security_policies\nThe single owner-administered authentication policy: session lifetime, inactivity timeout, recent-authentication windows, second-factor requirement and remembered browsers. Absent row means the built-in secure defaults.\nOwner: identity. Classification: INTERNAL.\nLifecycle: One row, updated in place by owners with strong recent authentication; every change is recorded in identity_audit_events with previous and new values.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`smallint`\nno\n`1`\nINTERNAL\nSingleton key; always 1.\n—\n—\n`session_max_minutes`\n`integer`\nno\n—\nINTERNAL\nLongest a direct-URL session lasts from sign-in, whatever the activity.\n—\n—\n`idle_timeout_minutes`\n`integer`\nno\n—\nINTERNAL\nLongest a direct-URL session survives without user activity reported by the browser.\n—\n—\n`recent_auth_minutes`\n`integer`\nno\n—\nINTERNAL\nHow long a sign-in or confirmation allows sensitive changes to the person's own account without confirming again.\n—\n—\n`admin_recent_auth_minutes`\n`integer`\nno\n—\nINTERNAL\nHow long a strong sign-in or confirmation allows administrative changes without confirming again.\n—\n—\n`mfa_requirement`\n`character varying(16)`\nno\n—\nINTERNAL\nWho must use a second factor with IA-MNS passwords: everyone, administrators, or none (never applied in production).\n—\n—\n`remember_device_days`\n`smallint`\nno\n—\nINTERNAL\nDays a browser that completed the second factor skips it at sign-in; 0 asks at every sign-in. Owners are remembered only while the second factor is optional, which production never allows.\n—\n—\n`updated_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner who last changed the policy.\nNever changed by a person.\n—\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nDatabase-clock instant of the last change.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-18",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_security_policies_admin_recent_check`\n`CHECK (((admin_recent_auth_minutes >= 5) AND (admin_recent_auth_minutes <= 240)))`\nAdministrative confirmation window between 5 minutes and 4 hours.\n`identity_security_policies_idle_check`\n`CHECK ((((idle_timeout_minutes >= 15) AND (idle_timeout_minutes <= 10080)) AND (idle_timeout_minutes <= session_max_minutes)))`\nInactivity timeout between 15 minutes and 7 days, never longer than the session.\n`identity_security_policies_mfa_check`\n`CHECK (((mfa_requirement)::text = ANY ((ARRAY['everyone'::character varying, 'administrators'::character varying, 'none'::character varying])::text[])))`\nKnown second-factor requirements.\n`identity_security_policies_pkey`\n`PRIMARY KEY (id)`\nSingleton policy.\n`identity_security_policies_recent_check`\n`CHECK ((((recent_auth_minutes >= 5) AND (recent_auth_minutes <= 1440)) AND (recent_auth_minutes <= session_max_minutes)))`\nAccount confirmation window between 5 minutes and 24 hours, never longer than the session.\n`identity_security_policies_remember_check`\n`CHECK (((remember_device_days >= 0) AND (remember_device_days <= 90)))`\nRemembered browsers last at most 90 days.\n`identity_security_policies_session_check`\n`CHECK (((session_max_minutes >= 60) AND (session_max_minutes <= 43200)))`\nSession lifetime between one hour and 30 days.\n`identity_security_policies_singleton_check`\n`CHECK ((id = 1))`\nOnly one policy row exists.\n`identity_security_policies_updated_by_fkey`\n`FOREIGN KEY (updated_by) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE RESTRICT`\nThe last editor is an existing Person.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_trusted_devices",
-    "anchor": "identity_trusted_devices",
-    "text": "identity_trusted_devices\nA browser that completed the second factor for a Person and asked to be remembered; its HttpOnly cookie holds a random token stored here only as SHA-256.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Valid while not revoked and younger than the policy's remember_device_days. Revoked by the Person, by password or second-factor changes, by an owner reset or disabling; expired rows are pruned.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nCONFIDENTIAL\nRemembered-browser identifier.\n—\n—\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPerson whose second factor the browser completed.\n—\n—\n`token_hash`\n`character(64)`\nno\n—\nRESTRICTED\nSHA-256 of the 256-bit browser token; the token itself is never stored.\n—\n—\n`created_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nWhen the second factor was completed on this browser.\n—\n—\n`last_used_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nLast sign-in that skipped the second factor with this browser.\n—\n—\n`revoked_at`\n`timestamp(3) with time zone`\nyes\n—\nCONFIDENTIAL\nWhen the browser stopped being remembered.\nStill remembered while within the policy period.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-19",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_trusted_devices_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nRemoved with the Person.\n`identity_trusted_devices_pkey`\n`PRIMARY KEY (id)`\nRemembered-browser identity.\n`identity_trusted_devices_person_idx`\n`CREATE INDEX identity_trusted_devices_person_idx ON public.identity_trusted_devices USING btree (person_id)`\nRevocation of a Person's remembered browsers.\n`identity_trusted_devices_token_key`\n`CREATE UNIQUE INDEX identity_trusted_devices_token_key ON public.identity_trusted_devices USING btree (token_hash)`\nToken lookup; one row per browser token.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_whatsapp_links",
-    "anchor": "identity_whatsapp_links",
-    "text": "identity_whatsapp_links\nThe WhatsApp number that an owner linked to a Person: the only authorization of the WhatsApp channel. An external identity attribute of an existing Person, never a sign-in method; it grants no permission by itself.\nOwner: identity. Classification: CONFIDENTIAL.\nLifecycle: Created, changed and removed only by owners through administration with recent strong authentication, each change audited in identity_audit_events in the same transaction. A change or removal revokes the channel at once for every message not yet answered. Moved to the surviving Person on consolidation when that Person has none, otherwise removed. Removed with the Person.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPerson that this number identifies on WhatsApp; one number per Person.\n—\n—\n`phone_number`\n`character varying(15)`\nno\n—\nCONFIDENTIAL\nE.164 digits of the number without the plus sign, as validated and normalized on entry.\n—\n—\n`legacy_identifier`\n`character varying(15)`\nyes\n—\nCONFIDENTIAL\nDeterministic legacy WhatsApp identifier of a Brazilian mobile (the number without its ninth digit), under which WhatsApp may report the same account; part of the uniqueness rule.\nThe number has no legacy form (not a Brazilian mobile, or a subscriber range where the legacy form would be ambiguous).\n—\n`platform_user_id`\n`character varying(140)`\nyes\n—\nCONFIDENTIAL\nWhatsApp business-scoped user identifier (BSUID) that Meta reported together with this exact number in a signature-verified message; later messages that omit the number match it, and a different identifier together with the number is refused as a conflict.\nNo verified message from this number has been received since the number was linked or changed.\n—\n`version`\n`integer`\nno\n`1`\nINTERNAL\nIncremented by every change of the number; queued channel work records it and is refused when it no longer matches.\n—\n—\n`linked_by`\n`uuid`\nno\n—\nCONFIDENTIAL\nOwner (identity_persons.id) who first linked a number; historical attribution without a foreign key, the audit trail is authoritative.\n—\n—\n`linked_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nWhen a number was first linked to the Person.\n—\n—\n`updated_by`\n`uuid`\nno\n—\nCONFIDENTIAL\nOwner (identity_persons.id) who made the last change.\n—\n—\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nWhen the number was last set.\n—\n—\n`confirmed_at`\n`timestamp(3) with time zone`\nyes\n—\nCONFIDENTIAL\nWhen a verified message from the current number was first accepted.\nNo message from the current number has been accepted yet.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-20",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_whatsapp_links_legacy_check`\n`CHECK (((legacy_identifier IS NULL) OR (((legacy_identifier)::text ~ '^55[1-9]{2}[6-9][0-9]{7}$'::text) AND ((legacy_identifier)::text <> (phone_number)::text))))`\nOnly the legacy form of a Brazilian mobile, different from the number itself.\n`identity_whatsapp_links_person_id_fkey`\n`FOREIGN KEY (person_id) REFERENCES identity_persons(id) ON UPDATE CASCADE ON DELETE CASCADE`\nRemoved with the Person.\n`identity_whatsapp_links_phone_check`\n`CHECK (((phone_number)::text ~ '^[1-9][0-9]{7,14}$'::text))`\nE.164 digits only (8 to 15, no leading zero).\n`identity_whatsapp_links_pkey`\n`PRIMARY KEY (person_id)`\nOne WhatsApp number per Person.\n`identity_whatsapp_links_platform_user_check`\n`CHECK (((platform_user_id IS NULL) OR ((platform_user_id)::text ~ '^[A-Z]{2}\\.(ENT\\.)?[A-Za-z0-9]{1,128}$'::text)))`\nOnly the business-scoped user identifier format.\n`identity_whatsapp_links_version_check`\n`CHECK ((version >= 1))`\nVersions start at 1.\n`identity_whatsapp_links_legacy_key`\n`CREATE UNIQUE INDEX identity_whatsapp_links_legacy_key ON public.identity_whatsapp_links USING btree (legacy_identifier)`\nA legacy Brazilian identifier identifies at most one Person.\n`identity_whatsapp_links_phone_key`\n`CREATE UNIQUE INDEX identity_whatsapp_links_phone_key ON public.identity_whatsapp_links USING btree (phone_number)`\nA number identifies at most one Person.\n`identity_whatsapp_links_platform_user_key`\n`CREATE UNIQUE INDEX identity_whatsapp_links_platform_user_key ON public.identity_whatsapp_links USING btree (platform_user_id)`\nA WhatsApp user identifier identifies at most one Person.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "identity_provider_groups",
-    "anchor": "identity_provider_groups",
-    "text": "identity_provider_groups\nOwner-selected default group for each external sign-in provider; no implicit permission policy.\nOwner: identity. Classification: INTERNAL.\nLifecycle: Two fixed rows seeded by migration. Owners update with recent strong authentication and optimistic version checks. Verified provider sign-in adds normal, audited membership; changing the selection does not remove existing memberships. A selected group cannot be deleted.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`provider`\n`character varying(16)`\nno\n—\nINTERNAL\nExternal sign-in provider: pdt or sankhya.\n—\n—\n`group_id`\n`uuid`\nyes\n—\nINTERNAL\nExisting normal group joined after successful provider sign-in.\nNo automatic membership for this provider.\n—\n`version`\n`integer`\nno\n`0`\nINTERNAL\nOptimistic concurrency version incremented on every selection change.\n—\n—\n`updated_by`\n`uuid`\nyes\n—\nCONFIDENTIAL\nOwner who selected the group; historical identity_persons identifier without a foreign key, retained through consolidation.\nThe selection has never been changed by an owner.\n—\n`updated_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nWhen the selection was last changed, or initially seeded.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-21",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`identity_provider_groups_actor_check`\n`CHECK (((group_id IS NULL) OR (updated_by IS NOT NULL)))`\nA selected group must have an attributable selecting owner.\n`identity_provider_groups_group_id_fkey`\n`FOREIGN KEY (group_id) REFERENCES identity_groups(id) ON UPDATE CASCADE ON DELETE RESTRICT`\nAn owner must clear or replace a default before deleting its group.\n`identity_provider_groups_pkey`\n`PRIMARY KEY (provider)`\nOne selection per sign-in provider.\n`identity_provider_groups_provider_check`\n`CHECK (((provider)::text = ANY ((ARRAY['pdt'::character varying, 'sankhya'::character varying])::text[])))`\nOnly the two supported external sign-in providers.\n`identity_provider_groups_version_check`\n`CHECK ((version >= 0))`\nNonnegative optimistic version.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "operational_parameters",
-    "anchor": "operational_parameters",
-    "text": "operational_parameters\nValues that owners saved for the operational parameters declared by the runtime catalog in apps/api/src/parameters.ts (ADR-0028). The catalog owns each parameter's type, domain, installation default and effect; a missing row or a null value means the installation default applies. Secrets and bootstrap settings are never stored here.\nOwner: runtime (operational parameters). Classification: INTERNAL.\nLifecycle: At most one row per catalog key, written only by owners through administration with strong recent authentication; a reset stores null instead of deleting. Every change is recorded in identity_audit_events with previous and new values. Retired access.providerGrants rows remain as historical evidence and are ignored by the runtime catalog; provider default groups have separate identity-owned storage.\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`key`\n`character varying(64)`\nno\n—\nINTERNAL\nCatalog key of the parameter, such as ai.model.\n—\n—\n`value`\n`jsonb`\nyes\n—\nINTERNAL\nSaved JSON value in the catalog type of the key (string or array of strings).\nReset by an owner; the installation default applies.\n—\n`version`\n`integer`\nno\n—\nINTERNAL\nConcurrency token incremented by every change; an owner's change applies only to the version they saw.\n—\n—\n`updated_by`\n`uuid`\nno\n—\nCONFIDENTIAL\nPerson (identity_persons.id) who made the last change; historical attribution without a foreign key, because the authoritative trail is the identity audit.\n—\n—\n`updated_at`\n`timestamp(3) with time zone`\nno\n—\nINTERNAL\nApplication-clock instant of the last change; informational, not the concurrency token.\n—\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-22",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`operational_parameters_key_check`\n`CHECK (((key)::text = ANY ((ARRAY['ai.model'::character varying, 'ai.traceLevel'::character varying, 'access.providerGrants'::character varying, 'channels.whatsapp'::character varying])::text[])))`\nOnly parameters declared by the catalog.\n`operational_parameters_pkey`\n`PRIMARY KEY (key)`\nOne saved value per parameter.\n`operational_parameters_value_check`\n`CHECK (((value IS NULL) OR (((key)::text = 'ai.model'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$'::text)) OR (((key)::text = 'ai.traceLevel'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) = ANY (ARRAY['off'::text, 'metadata'::text, 'content'::text]))) OR (((key)::text = 'access.providerGrants'::text) AND (jsonb_typeof(value) = 'array'::text) AND (jsonb_array_length(value) <= 32) AND (NOT jsonb_path_exists(value, '$[*]?(@.type() != \"string\")'::jsonpath))) OR (((key)::text = 'channels.whatsapp'::text) AND (jsonb_typeof(value) = 'string'::text) AND ((value #>> '{}'::text[]) = ANY (ARRAY['enabled'::text, 'disabled'::text])))))`\nEach known key holds only its catalog type and domain (model identifier pattern, trace level, list of at most 32 strings, channel switch).\n`operational_parameters_version_check`\n`CHECK ((version >= 1))`\nVersions start at 1.\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "whatsapp_inbound_messages",
-    "anchor": "whatsapp_inbound_messages",
-    "text": "whatsapp_inbound_messages\nWhatsApp messages from senders that matched exactly one active Person through an owner-linked number when the signature-verified webhook arrived. Unknown, unlinked or unauthorized senders are never recorded. Each row is processed once, in order per Person, after the sender is authorized again.\nOwner: whatsapp. Classification: CONFIDENTIAL.\nLifecycle: Inserted before the webhook is acknowledged and deduplicated by the Meta message id; claimed under a lease, retried a bounded number of times, then completed, ignored (revoked, disabled channel, limits, expired window) or failed. The message text is cleared when processing ends, because the question is kept in the agent conversation. Rows older than 30 days are pruned with their replies (provisional until PH-09).\nColumn\nPostgreSQL type\nNullable\nDefault\nClassification\nMeaning\nNull meaning\nUnit\n`id`\n`uuid`\nno\n—\nINTERNAL\nInbound work identifier; also the agent turn request id, so a repeated attempt replays the same turn.\n—\n—\n`message_id`\n`character varying(256)`\nno\n—\nCONFIDENTIAL\nMeta message id (wamid); the deduplication key for repeated webhook deliveries.\n—\n—\n`person_id`\n`uuid`\nno\n—\nCONFIDENTIAL\nPerson the sender matched when the message arrived; processing refuses the message if the sender no longer matches this Person.\n—\n—\n`link_version`\n`integer`\nno\n—\nINTERNAL\nVersion of the Person's WhatsApp link when the message arrived; a changed or removed link refuses the message.\n—\n—\n`sender_phone`\n`character varying(15)`\nyes\n—\nCONFIDENTIAL\nSender number exactly as Meta reported it (digits), used only to answer the same sender.\nMeta reported only the WhatsApp user identifier.\n—\n`sender_user_id`\n`character varying(140)`\nyes\n—\nCONFIDENTIAL\nWhatsApp business-scoped user identifier Meta reported.\nNot reported by Meta for this message.\n—\n`kind`\n`character varying(16)`\nno\n—\nINTERNAL\ntext, or unsupported for media and other message types this version does not process.\n—\n—\n`body`\n`character varying(4096)`\nyes\n—\nCONFIDENTIAL\nText of the message while it awaits processing.\nNot text, or processing ended and the text was cleared.\n—\n`sent_at`\n`timestamp(3) with time zone`\nno\n—\nCONFIDENTIAL\nWhen the person sent the message, according to Meta; orders processing per Person and bounds the customer service window.\n—\n—\n`received_at`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nCONFIDENTIAL\nWhen the webhook delivered the message.\n—\n—\n`state`\n`character varying(16)`\nno\n`'pending'::character varying`\nINTERNAL\npending, processing, completed, ignored or failed.\n—\n—\n`outcome`\n`character varying(40)`\nyes\n—\nINTERNAL\nAllowlisted code of how processing ended, for example answered, command, revoked, channel_disabled, rate_limited or expired.\nStill pending or processing.\n—\n`attempts`\n`integer`\nno\n`0`\nINTERNAL\nProcessing attempts started; bounded.\n—\n—\n`not_before`\n`timestamp(3) with time zone`\nno\n`CURRENT_TIMESTAMP`\nINTERNAL\nEarliest time the message may be claimed (backoff after a busy conversation or a failed attempt).\n—\n—\n`lease_until`\n`timestamp(3) with time zone`\nyes\n—\nINTERNAL\nExpiry of the current processing claim; an expired claim is reclaimed.\nNot claimed.\n—\n`conversation_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nAgent conversation that received the message as a turn.\nNo turn was submitted (command, refusal or still pending).\n—\n`turn_id`\n`uuid`\nyes\n—\nCONFIDENTIAL\nAgent turn created for the message.\nNo turn was submitted.\n—\n`finished_at`\n`timestamp(3) with time zone`\nyes\n—\nCONFIDENTIAL\nWhen processing ended.\nStill pending or processing.\n—\n"
-  },
-  {
-    "id": "repository/docs/generated/database/schema",
-    "title": "Database Reference",
-    "group": "Generated references",
-    "kind": "repository",
-    "heading": "Constraints and indexes",
-    "anchor": "constraints-and-indexes-23",
-    "text": "Constraints and indexes\nObject\nPhysical definition\nPurpose\n`whatsapp_inbound_messages_attempts_check`\n`CHECK ((attempts >= 0))`\nAttempts are never negative.\n`whatsapp_inbound_messages_kind_check`\n`CHECK (((kind)::text = ANY ((ARRAY['text'::character varying, 'unsupported'::character varying])::text[])))`\nOnly the processed message kinds.\n`whatsapp_inbound_messages_pkey`\n`PRIMARY KEY (id)`\nInbound work identity.\n`whatsapp_inbound_messages_sender_check`\n`CHECK (((sender_phone IS NOT NULL) OR (sender_user_id IS NOT NULL)))`\nEvery message has a sender identifier.\n`whatsapp_inbound_messages_state_check`\n`CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'processing'::character varying, 'completed'::character varying, 'ignored'::character varying, 'failed'::character varying])::text[])))`\nOnly the processing states.\n`whatsapp_inbound_messages_message_key`\n`CREATE UNIQUE INDEX whatsapp_inbound_messages_message_key ON public.whatsapp_inbound_messages USING btree (message_id)`\nOne row per Meta message: repeated webhook deliveries are ignored.\n`whatsapp_inbound_messages_person_idx`\n`CREATE INDEX whatsapp_inbound_messages_person_idx ON public.whatsapp_inbound_messages USING btree (person_id, sent_at, received_at)`\nPer-Person ordering and usage limits.\n`whatsapp_inbound_messages_received_idx`\n`CREATE INDEX whatsapp_inbound_messages_received_idx ON public.whatsapp_inbound_messages USING btree (received_at)`\nDaily cost ceiling and pruning.\n`whatsapp_inbound_messages_work_idx`\n`CREATE INDEX whatsapp_inbound_messages_work_idx ON public.whatsapp_inbound_messages USING btree (state, not_before)`\nClaiming of due work.\n"
   }
 ]

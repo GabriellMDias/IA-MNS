@@ -71,10 +71,8 @@ jobs:
         run: |
           docker build -f infra/production/Dockerfile --target runtime \
             --build-arg RELEASE_ID=ci --build-arg REVISION="$GITHUB_SHA" -t ia-mns-ci:runtime .
-          test "$(docker run --rm ia-mns-ci:runtime id -u)" != "0"
-          docker run --rm ia-mns-ci:runtime node -e \
-            "const o=require('oracledb'); o.initOracleClient({libDir: process.env.SANKHYA_ORACLE_CLIENT_LIB_DIR}); if (o.thin) process.exit(1); console.log('Oracle Client', o.oracleClientVersionString)"
-          test "$(docker run --rm ia-mns-ci:runtime cat /app/web/ia-mns-web.json)" = '{"schemaVersion":1,"documentation":false}'
+          docker run --rm -i ia-mns-ci:runtime node --input-type=module \
+            < infra/production/check-runtime-image.mjs
       - name: Rehearse the production installation with synthetic configuration
         run: sudo --preserve-env=PATH infra/production/rehearsal/run.sh --source "$GITHUB_WORKSPACE" --ref "$GITHUB_SHA"
 

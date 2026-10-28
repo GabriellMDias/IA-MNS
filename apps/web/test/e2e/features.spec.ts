@@ -1,15 +1,22 @@
 import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { startApi, webBuild } from "./stack.ts";
+import { startApi, buildInternalWeb } from "./stack.ts";
 
+let internal: Awaited<ReturnType<typeof buildInternalWeb>> | undefined;
 let served: Awaited<ReturnType<typeof startApi>> | undefined;
 test.beforeAll(async () => {
-  if (test.info().project.name === "served")
-    served = await startApi({ env: { ORION_WEB_ROOT: webBuild } });
+  if (test.info().project.name === "served") {
+    test.setTimeout(120_000);
+    internal = await buildInternalWeb();
+    served = await startApi({
+      env: { ORION_WEB_ROOT: internal.path, ORION_WEB_DOCS: "enabled" },
+    });
+  }
 });
 test.afterAll(async () => {
   await served?.stop();
+  await internal?.stop();
 });
 
 test("feature catalog exposes each ERP's filters and complete SQL without API access", async ({
